@@ -1,0 +1,66 @@
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { getDb } = require('../db/database');
+const { jwtSecret } = require('../config');
+const { requireAuth } = require('./authMiddleware');
+
+const router = express.Router();
+const SALT_ROUNDS = 10;
+
+// POST /api/auth/register
+router.post('/register', (req, res) => {
+  const { username, password, character_name, character_class } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ error: 'username and password are required' });
+  }
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  }
+
+  const db = getDb();
+  const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
+  if (existing) {
+    return res.status(409).json({ error: 'Username already taken' });
+  }
+
+  const password_hash = bcrypt.hashSync(password, SALT_ROUNDS);
+  const result = db
+    .prepare(`INSERT INTO users (username, password_hash, character_name, character_class, role)
+              VALUES (?, ?, ?, ?, 'player')`)
+    .run(username, password_hash, character_name || null, character_class || null);
+
+  const user = db
+    .prepare('SELECT id, username, character_name, character_class, character_level, role FROM users WHERE id = ?')
+    .get(result.lastInsertRowid);
+
+  const token = jwt.sign({ userId: user.id }, jwtSecret, { expiresIn: '30d' });
+  res.status(201).json({ token, user });
+});
+
+// POST /api/auth/login
+router.post('/login', (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ error: 'username and password are required' });
+  }
+
+  const db = getDb();
+  const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
+
+  if (!user || !bcrypt.compareSync(password, user.password_hash)) {
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
+
+  const token = jwt.sign({ userId: user.id }, jwtSecret, { expiresIn: '30d' });
+  const { password_hash, ...safeUser } = user;
+  res.json({ token, user: safeUser });
+});
+
+// GET /api/auth/me
+router.get('/me', requireAuth, (req, res) => {
+  res.json({ user: req.user });
+});
+
+module.exports = router;
