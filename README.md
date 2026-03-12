@@ -385,14 +385,60 @@ Single-file HTML — login, dashboard, all base pages, D3 mindmap, messages, not
 - [ ] Mobile responsive layout
 
 ### 🔲 Phase 4 — Security + Hosting
+
+**Option A — Private group (Tailscale, free forever)**
 - [ ] Tailscale setup guide
+- [ ] GM runs server on their machine
+- [ ] Players install Tailscale app, join network
+- [ ] Access via `http://100.x.x.x:3000` — private, encrypted, no internet exposure
+
+**Option B — Public / multi-group hosting (~€4/month)**
+- [ ] Docker + env var config for clean VPS deployment
+- [ ] Hetzner CAX11 VPS setup guide (~€4/month, always on)
+- [ ] Caddy reverse proxy + Let's Encrypt (automatic HTTPS, free)
+- [ ] Cloudflare free tier in front (DDoS protection + SSL termination)
+
+**Security hardening (required for Option B, recommended for Option A):**
+- [ ] Helmet.js — HTTP security headers
+- [ ] CORS locked to specific origin (not wildcard)
+- [ ] File upload validation — type whitelist, size limits, no executable uploads
+- [ ] Input sanitisation on all text fields
+- [ ] All secrets in environment variables (JWT secret, DB path, never hardcoded)
+- [ ] 2FA on GM account
+- [ ] Audit log — who accessed what, when
 - [ ] JWT refresh tokens
-- [ ] Brute-force rate limiting (done in Phase 3)
+- [ ] Brute-force rate limiting on auth (done in Phase 3)
+- [ ] SQLite → PostgreSQL migration path for multi-user scale
 
 ### 🔲 Phase 5 — Desktop App (Tauri)
 - [ ] Wrap frontend as native app
-- [ ] Direct vault file system access
+- [ ] Direct vault file system access (no HTTP layer needed locally)
 - [ ] GM-only desktop build
+- [ ] Distributable `.exe` / `.app`
+
+---
+
+## Build Plan
+
+### Estimated Scale
+| Part | Lines |
+|---|---|
+| DB migrations (all new tables) | ~300 |
+| Backend routes (20+ route files) | ~3,500 |
+| Frontend HTML/CSS | ~2,000 |
+| Frontend JavaScript | ~4,000 |
+| **Total new code** | **~10,000** |
+
+### Session Breakdown
+Due to context limits, the build is split into 5 focused sessions — each producing working, committable code:
+
+| Session | Scope |
+|---|---|
+| 1 | DB migrations + all backend routes |
+| 2 | Frontend: structure, CSS, all themes + animations, base pages |
+| 3 | Frontend: complex pages (Theory Board, Combat, Character Sheets, GM Dashboard) |
+| 4 | Frontend: flyouts, toasts, SSE, search, audio engine |
+| 5 | Wiring, seed data for all new tables, testing |
 
 ---
 
