@@ -1,13 +1,13 @@
-const Database = require('better-sqlite3');
+const { DatabaseSync } = require('node:sqlite');
 const { dbPath } = require('../config');
 
 let db;
 
 function getDb() {
   if (!db) {
-    db = new Database(dbPath);
-    db.pragma('journal_mode = WAL');
-    db.pragma('foreign_keys = ON');
+    db = new DatabaseSync(dbPath);
+    db.exec('PRAGMA journal_mode = WAL');
+    db.exec('PRAGMA foreign_keys = ON');
   }
   return db;
 }
