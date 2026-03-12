@@ -41,6 +41,10 @@ A self-hosted campaign portal for tabletop RPGs. GM runs the server locally, pla
     /maps/
     /handouts/
     /items/
+  /Jobs/
+  /Bestiary/
+  /Rumours/
+  /Sessions/
   /GM-Only/               ← never served to players
 ```
 
@@ -63,20 +67,25 @@ A self-hosted campaign portal for tabletop RPGs. GM runs the server locally, pla
 | Page | Who | Description |
 |---|---|---|
 | Home | All | Campaign overview, story summary, session count. GM editable |
-| Quests | All | Main/side/delivery quests with images, progress, detail panels |
+| Quests | All | Active quests with images, progress, detail panels |
+| Job Board | All | Available work in towns/locations. Accept → becomes Quest |
 | NPCs | All | NPC cards with portraits, disposition, detail panels |
 | Locations | All | Location cards with art, danger level, detail panels |
 | Hooks | All | Story hooks/clues with type tags, detail panels |
 | Maps | All | Uploaded map images with pan/zoom |
 | Inventory | All | Party inventory — GM manages, players view |
 | Key Items | All | Quest/story-critical items with images and significance |
+| Bestiary | All | Creature entries. GM reveals to players when encountered |
 | Handouts | All | Per-player documents, images, letters. Forward-sharing system |
-| Sessions | All | Per-session log/recap. GM writes, players can add notes |
+| Sessions | All | Per-session log/recap, polls, scheduling |
 | Factions | All | Faction cards with party reputation tracker |
 | Timeline | All | In-world calendar, events pinned by date |
-| Character Sheets | All | Per-player stats, HP, abilities, level |
+| Rumour Mill | All | GM-planted rumours per NPC/location. True or false — players don't know |
+| Character Sheets | All | Per-player stats, HP, stress/sanity, D&D Beyond link. System-specific templates |
+| Ship / Vehicle | All | Party ship or vehicle sheet. System-specific |
 | Theory Board | Players | Personal D3 mindmap — private nodes, custom connections, theory-craft |
-| GM Dashboard | GM only | Create/edit all content, manage handouts, view shared notes |
+| Combat | All | Initiative tracker, HP, conditions. GM edits, players view read-only |
+| GM Dashboard | GM only | Create/edit all content, manage handouts, polls, view shared notes |
 
 ### Flyout Panels (persistent, accessible from any page)
 
@@ -179,6 +188,95 @@ A self-hosted campaign portal for tabletop RPGs. GM runs the server locally, pla
 - GM adds events, optionally linked to quests/NPCs
 - Visual timeline view, scrollable
 
+### Job Board
+
+- Separate from Quests — Jobs are available work, Quests are active commitments
+- GM posts jobs to specific locations (tavern notice board, guild hall, dock master, etc.)
+- Each job: title, reward, difficulty rating, posted by (NPC/faction), location, optional expiry date
+- GM controls visibility — some jobs require being in that location or having the right contacts
+- Players browse available jobs; party accepts → GM promotes to active Quest with one click
+- Jobs can expire, be declined, or be completed without becoming a full quest
+- Vault file written per job: `Jobs/[slug].md`
+
+### Ambient Scene Tools
+
+- **Atmosphere tracker** — current in-world weather, time of day, visible to all players
+- **Sound / music links** — GM attaches a Spotify or YouTube URL to a location or scene, players see a "Now Playing" link they can click to open
+- GM can push atmosphere updates mid-session (triggers a subtle notification)
+
+### Initiative & Combat Tracker (GM-side)
+
+- Turn order list, drag to reorder
+- HP tracker per combatant (monsters hidden from players, party HP visible to relevant player only)
+- Status conditions per combatant
+- Round counter
+- Visible to players as a read-only "Combat" panel during active encounter
+
+### XP / Milestone Tracker
+
+- GM awards XP or marks milestone
+- Threshold per level stored per campaign system
+- Auto-notifies players when level-up threshold reached
+- Updates character sheet level automatically on milestone
+
+### Between-Session Polls
+
+- GM posts a question with options ("Where do we go next?", "What did your character do between sessions?")
+- Players vote, results visible to GM immediately, revealed to party when GM chooses
+- Results stored in session log
+
+### Session Scheduling
+
+- GM proposes dates, players mark availability (yes / maybe / no)
+- GM confirms session date, all players notified
+- Confirmed sessions appear in Timeline automatically
+
+### Bestiary
+
+- Monster/creature entries with stats, description, image
+- GM-only by default
+- GM can reveal an entry to players when encountered (e.g. after a Nature check)
+- Linked to sessions where creature was encountered
+
+### Rumour Mill
+
+- GM creates rumours (true or false) and assigns them to NPCs or locations
+- Tracks which players have heard which rumours (via handout or message)
+- Players see their rumours as a list — no indication which are true
+- GM sees full truth status
+
+### Stress / Sanity Tracker
+
+- System-specific mental health mechanic shown on dashboard
+- D&D: optional exhaustion tracker
+- Call of Cthulhu: Sanity (current/max), Indefinite Insanity flag
+- Alien: Stress dice count, Panic threshold
+- Achtung! Cthulhu: both War Stress + Sanity
+- Per-player, GM can adjust, player can see their own
+
+### Ship / Vehicle Sheet
+
+- Coriolis, Alien, Dune: separate sheet for the party's ship/vehicle
+- Stats vary by system (hull, systems, crew capacity, weapons)
+- Linked to party inventory for consumables
+- GM and all players can view, GM edits
+
+### Favourites / Pins
+
+- Players pin frequently referenced items (NPCs, locations, quests) to their dashboard
+- Pinned items shown as a quick-access row at top of dashboard
+
+### Reading Confirmations
+
+- GM can mark any message or handout as "requires acknowledgement"
+- Players see a confirm button; GM dashboard shows who has/hasn't confirmed
+- Useful for rule clarifications, session zero agreements, important lore drops
+
+### Last Updated Indicators
+
+- Subtle "updated" badge on cards when content has changed since player's last visit
+- Clears when player opens the detail panel
+
 ### Campaign Switcher
 
 - Multiple campaigns in one install (D&D, Alien, etc.)
@@ -203,18 +301,18 @@ Single-file HTML — login, dashboard, all base pages, D3 mindmap, messages, not
 ### 🔲 Phase 3 — Full Feature Build (current)
 
 **Backend:**
-- [ ] New DB tables: inventory, key_items, campaign, maps, handouts, handout_permissions, sessions, factions, faction_reputation, timeline_events, agenda_cards, character_sheets, theory_nodes, theory_edges, notifications
-- [ ] GM write routes for NPCs, Quests, Hooks, Locations (POST/PUT/DELETE)
+- [ ] New DB tables: inventory, key_items, campaign, maps, handouts, handout_permissions, sessions, session_polls, session_scheduling, factions, faction_reputation, timeline_events, agenda_cards, character_sheets, ship_sheets, theory_nodes, theory_edges, notifications, bestiary, rumours, rumour_exposure, jobs, combat_tracker, stress_sanity, pins, read_confirmations
+- [ ] GM write routes for NPCs, Quests, Hooks, Locations, Jobs, Bestiary (POST/PUT/DELETE)
 - [ ] Image/file upload (multer → vault/Assets/)
 - [ ] Static file serving for uploads
 - [ ] Bidirectional messages (player → GM)
-- [ ] New routes: inventory, key-items, campaign, maps, handouts, sessions, factions, timeline, agenda, characters, theory-board, search, notifications
+- [ ] New routes: inventory, key-items, campaign, maps, handouts, sessions, factions, timeline, agenda, characters, ship, theory-board, search, notifications, bestiary, rumours, jobs, combat, stress, pins, confirmations, atmosphere, polls, scheduling
 - [ ] SSE endpoint (/api/events)
 - [ ] Rate limiting on auth
 
 **Frontend:**
 - [ ] Complete portal rewrite
-- [ ] All new pages (Home, Inventory, Key Items, Maps, Handouts, Sessions, Factions, Timeline, Character Sheets, Theory Board, GM Dashboard)
+- [ ] All new pages (Home, Job Board, Inventory, Key Items, Maps, Bestiary, Handouts, Sessions, Factions, Timeline, Rumour Mill, Character Sheets, Ship/Vehicle Sheet, Theory Board, Combat Tracker, GM Dashboard)
 - [ ] Messages + Notifications as right-side flyout panels
 - [ ] Top bar with search (Cmd+K), messages icon, bell icon
 - [ ] Toast notification system
@@ -223,7 +321,14 @@ Single-file HTML — login, dashboard, all base pages, D3 mindmap, messages, not
 - [ ] Image upload UI
 - [ ] Mindmap node popout card
 - [ ] Editable player theory board
-- [ ] Campaign switcher
+- [ ] Campaign switcher with system-specific templates (D&D 5e, CoC, Alien, Coriolis, Dune, Achtung! Cthulhu)
+- [ ] Stress/sanity tracker on dashboard (system-specific)
+- [ ] Atmosphere tracker + scene music links (GM pushes, players see)
+- [ ] XP/milestone tracker with auto level-up notification
+- [ ] Favourites/pins row on dashboard
+- [ ] Reading confirmations on messages/handouts
+- [ ] Last-updated indicators on cards
+- [ ] Between-session polls + session scheduling
 - [ ] Backup/export button (GM only)
 - [ ] Mobile responsive layout
 
