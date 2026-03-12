@@ -283,6 +283,51 @@ A self-hosted campaign portal for tabletop RPGs. GM runs the server locally, pla
 - Each campaign: own vault folder, player roster, colour theme
 - GM selects active campaign from top bar
 
+### UI / UX & Theming
+
+#### Responsive Layout
+- Mobile-first — sidebar collapses to bottom nav bar on small screens
+- Cards stack to single column on mobile
+- Flyout panels go full-screen on mobile
+- Touch-friendly tap targets throughout
+
+#### Per-System Themes
+Each campaign system loads a distinct CSS variable set, font stack, background texture, and animation profile:
+
+| System | Aesthetic | Animations |
+|---|---|---|
+| D&D 5e | Dark parchment, gold, candlelight | Torch flicker on sidebar, ink-fade page transitions |
+| Call of Cthulhu | Sepia, typewriter font, aged paper | Film grain overlay, text glitch on sanity events |
+| Alien | Cold corporate green-on-black terminal | Scanline effect, CRT cursor flicker, data readout reveals |
+| Coriolis | Deep space blue, Arabic-inspired geometry | Star particle background, shimmer transitions |
+| Dune | Desert amber, sand texture, House sigils | Heat haze shimmer, sand particle drift |
+| Achtung! Cthulhu | WW2 field report, olive drab + red | Stamped text reveals, paper tear transitions |
+
+#### Per-System Ambient Audio
+- Each theme ships with a looping ambient audio track (loaded locally, no external dependency)
+- Player can toggle audio on/off with a single button in the top bar
+- Volume slider in settings
+- GM can also push a scene-specific track mid-session (overrides ambient)
+- Tracks stored in `/assets/audio/[system]/` — swappable by the GM
+
+| System | Default Ambient |
+|---|---|
+| D&D 5e | Tavern ambience / dungeon drip / forest night |
+| Call of Cthulhu | 1920s rain on window / asylum corridor |
+| Alien | Ship hum / ventilation / deep space silence |
+| Coriolis | Station crowd / prayer bells / void wind |
+| Dune | Desert wind / Sietch chants / spice harvester drone |
+| Achtung! Cthulhu | Battlefield distant artillery / bunker radio static |
+
+#### Other UX Details
+- **Skeleton loaders** — cards show animated skeleton instead of blank space while loading
+- **Empty state illustrations** — themed empty state per page (not just "No items found")
+- **Keyboard navigation** — arrow keys through cards, Esc closes panels, Cmd+K for search
+- **Drag and drop** — reorder initiative tracker, sort inventory
+- **Onboarding flow** — first-time GM setup wizard: name campaign, pick system, invite players
+- **Print styles** — NPC sheets, quest summaries, character sheets print cleanly
+- **Accessibility** — ARIA labels, focus management in modals and flyouts
+
 ### Backup / Export
 
 - GM one-click export: zips vault folder + SQLite DB
@@ -322,6 +367,13 @@ Single-file HTML — login, dashboard, all base pages, D3 mindmap, messages, not
 - [ ] Mindmap node popout card
 - [ ] Editable player theory board
 - [ ] Campaign switcher with system-specific templates (D&D 5e, CoC, Alien, Coriolis, Dune, Achtung! Cthulhu)
+- [ ] Per-system CSS themes with animations (torch flicker, CRT scanlines, film grain, etc.)
+- [ ] Per-system ambient audio (looping, toggle on/off, volume control, GM can push scene track)
+- [ ] Skeleton loaders + themed empty states
+- [ ] Onboarding wizard for first-time GM setup
+- [ ] Keyboard navigation + drag and drop
+- [ ] Print styles for sheets and summaries
+- [ ] Accessibility (ARIA, focus management)
 - [ ] Stress/sanity tracker on dashboard (system-specific)
 - [ ] Atmosphere tracker + scene music links (GM pushes, players see)
 - [ ] XP/milestone tracker with auto level-up notification
