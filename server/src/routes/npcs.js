@@ -18,11 +18,18 @@ const router = express.Router();
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
   const campId = getActiveCampaignId();
-  const hiddenFilter = req.user.role === 'gm' ? '' : 'AND (hidden IS NULL OR hidden = 0)';
-  const campFilter = campId ? 'AND (campaign_id = ? OR campaign_id IS NULL)' : '';
-  const rows = campId
-    ? db.prepare(`SELECT * FROM vault_files WHERE type = 'npc' ${hiddenFilter} ${campFilter} ORDER BY title ASC`).all(campId)
-    : db.prepare(`SELECT * FROM vault_files WHERE type = 'npc' ${hiddenFilter} ORDER BY title ASC`).all();
+  let rows;
+  if (req.user.role === 'gm') {
+    const campClause = campId ? 'AND (campaign_id = ? OR campaign_id IS NULL)' : '';
+    rows = campId
+      ? db.prepare(`SELECT * FROM vault_files WHERE type = 'npc' ${campClause} ORDER BY title ASC`).all(campId)
+      : db.prepare(`SELECT * FROM vault_files WHERE type = 'npc' ORDER BY title ASC`).all();
+  } else {
+    const visClause = `AND (hidden IS NULL OR hidden = 0 OR EXISTS (SELECT 1 FROM item_shares WHERE item_type='npc' AND item_id=vault_files.id AND user_id=?))`;
+    rows = campId
+      ? db.prepare(`SELECT * FROM vault_files WHERE type = 'npc' ${visClause} AND (campaign_id = ? OR campaign_id IS NULL) ORDER BY title ASC`).all(req.user.id, campId)
+      : db.prepare(`SELECT * FROM vault_files WHERE type = 'npc' ${visClause} ORDER BY title ASC`).all(req.user.id);
+  }
   const npcs = rows.map((r) => ({ id: r.id, path: r.path, title: r.title, hidden: r.hidden || 0, ...JSON.parse(r.frontmatter || '{}') }));
   res.json({ npcs });
 });

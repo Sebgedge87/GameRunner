@@ -1465,6 +1465,8 @@ function openDetail(type,id){
 }
 const TYPE_RELOAD_STR={quest:'loadQuests',npc:'loadNpcs',location:'loadLocations',hook:'loadHooks',faction:'loadFactions',timeline:'loadTimeline',inventory:'loadInventory','key-item':'loadInventory',job:'loadJobs',bestiary:'loadBestiary',rumour:'loadRumours',map:'loadMaps'};
 function df(label,value){if(!value&&value!==0)return'';return`<div class="detail-field"><div class="detail-field-label">${label}</div><div class="detail-field-value">${esc(String(value))}</div></div>`;}
+function openDetailByName(type,name){if(!name)return;const store=TYPE_STORE_DETAIL[type]?.();if(!store)return;const item=store.find(x=>(x.title||x.name||'').toLowerCase()===name.toLowerCase());if(item){closeModal('detail-modal');setTimeout(()=>openDetail(type,item.id),80);}else showToast(`"${name}" not found`,'error');}
+function dfLink(label,value,linkType){if(!value&&value!==0)return'';const safe=String(value).replace(/\\/g,'\\\\').replace(/'/g,"\\'");return`<div class="detail-field"><div class="detail-field-label">${label}</div><div class="detail-field-value"><span style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;color:var(--accent)" onclick="openDetailByName('${linkType}','${safe}')">${esc(String(value))}</span></div></div>`;}
 function renderDetailContent(type,d){
   const img=d.image_path?`<img class="detail-img" src="${API}${d.image_path.startsWith('/')?'':'/'}${d.image_path}" onerror="this.style.display='none'" alt=""/>`:
             d.image_url?`<img class="detail-img" src="${d.image_url.startsWith('http')?'':API}${d.image_url}" onerror="this.style.display='none'" alt=""/>`:'';
@@ -1476,13 +1478,13 @@ function renderDetailContent(type,d){
         <div class="detail-meta"><span class="tag tag-${esc(d.type||'side')}">${esc(d.type||'side')}</span><span class="tag tag-${esc(d.status||'active')}">${esc(d.status||'active')}</span></div>
         ${d.progress!=null?`<div style="margin-bottom:10px"><div class="progress-bar" style="height:6px"><div class="progress-fill" style="width:${d.progress}%"></div></div><div style="font-size:10px;color:var(--text3);margin-top:2px;font-family:'JetBrains Mono',monospace">${d.progress}% complete</div></div>`:''}
         ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}
-        ${df('Location',d.location)}${df('Connected To',Array.isArray(d.connected_to)?d.connected_to.join(', '):d.connected_to)}`;
+        ${dfLink('Location',d.location,'location')}${df('Connected To',Array.isArray(d.connected_to)?d.connected_to.join(', '):d.connected_to)}`;
       break;
     case 'npc':
       body=`${img}<div class="detail-title">${esc(title)}</div>
         <div class="detail-meta">${d.role?`<span class="tag">${esc(d.role)}</span>`:''}<span class="tag tag-${esc(d.disposition||'neutral')}">${esc(d.disposition||'neutral')}</span>${d.faction?`<span class="tag">${esc(d.faction)}</span>`:''}</div>
         ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}
-        ${df('Location',d.location)}${df('Connected To',Array.isArray(d.connected_to)?d.connected_to.join(', '):d.connected_to)}
+        ${dfLink('Location',d.location,'location')}${df('Connected To',Array.isArray(d.connected_to)?d.connected_to.join(', '):d.connected_to)}
         ${isGm&&d.gm_notes?`<div class="detail-gm-box"><div class="detail-gm-label">GM NOTES</div><div class="detail-body" style="margin:0">${esc(d.gm_notes)}</div></div>`:''}`;
       break;
     case 'location':
@@ -1507,7 +1509,7 @@ function renderDetailContent(type,d){
       body=`<div class="detail-title">${esc(title)}</div>
         <div class="detail-meta">${d.in_world_date?`<span class="tag">${esc(d.in_world_date)}</span>`:''}</div>
         ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}
-        ${df('Linked Quest',d.linked_quest)}`;
+        ${dfLink('Linked Quest',d.linked_quest,'quest')}`;
       break;
     case 'inventory':
       body=`<div class="detail-title">${esc(title)}</div>
@@ -1517,13 +1519,13 @@ function renderDetailContent(type,d){
     case 'key-item':
       body=`${img}<div class="detail-title">${esc(title)}</div>
         ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}
-        ${df('Significance',d.significance)}${df('Linked Quest',d.linked_quest)}`;
+        ${df('Significance',d.significance)}${dfLink('Linked Quest',d.linked_quest,'quest')}`;
       break;
     case 'job':
       body=`<div class="detail-title">${esc(title)}</div>
         <div class="detail-meta"><span class="tag tag-${esc(d.difficulty||'medium')}">${esc(d.difficulty||'medium')}</span><span class="tag tag-${esc(d.status||'open')}">${esc(d.status||'open')}</span></div>
         ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}
-        ${df('Reward',d.reward)}${df('Posted By',d.posted_by)}${df('Location',d.location)}`;
+        ${df('Reward',d.reward)}${dfLink('Posted By',d.posted_by,'npc')}${dfLink('Location',d.location,'location')}`;
       break;
     case 'bestiary':{
       const st=d.stats||{};
@@ -1538,7 +1540,7 @@ function renderDetailContent(type,d){
     case 'rumour':
       body=`<div class="detail-title" style="font-size:16px">${esc(d.text||title)}</div>
         ${isGm?`<div class="detail-meta"><span class="tag" style="background:${d.is_true?'rgba(80,160,80,0.2)':'rgba(160,60,60,0.2)'};color:${d.is_true?'var(--green)':'var(--red)'}">${d.is_true?'TRUE':'FALSE'}</span></div>`:''}
-        ${df('Source NPC',d.source_npc)}${df('Source Location',d.source_location)}`;
+        ${dfLink('Source NPC',d.source_npc,'npc')}${dfLink('Source Location',d.source_location,'location')}`;
       break;
     default:
       body=`<div class="detail-title">${esc(title)}</div><div class="detail-body">${esc(d.description||d.summary||'')}</div>`;
@@ -1606,7 +1608,7 @@ async function toggleHidden(type,id){
 }
 function questCard(q){
   const p=q.progress??0;
-  const gmBtns=isGm?`${eyeBtn('quest',q.id,q.hidden)}<button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('quest',${q.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('quest',${q.id},loadQuests)">Del</button>`:'';
+  const gmBtns=isGm?`${eyeBtn('quest',q.id,q.hidden)}<button class="btn btn-sm" onclick="event.stopPropagation();openShareDialog('quest',${q.id},'${esc(q.title)}')">Share</button><button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('quest',${q.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('quest',${q.id},loadQuests)">Del</button>`:'';
   const hiddenMark=isGm&&q.hidden?`<span class="tag" style="background:#333;color:#888;font-size:10px">hidden</span>`:'';
   return `<div class="card" style="${isGm&&q.hidden?'opacity:0.6':''}cursor:pointer" onclick="openDetail('quest',${q.id})">
     <div class="card-title">${esc(q.title)} ${hiddenMark}</div>
@@ -1633,7 +1635,7 @@ function renderNpcs(){
     <div class="card-meta">${n.role?`<span style="color:var(--text2)">${esc(n.role)}</span>`:''}<span class="tag tag-${esc(n.disposition||'neutral')}">${esc(n.disposition||'unknown')}</span>${n.faction?`<span>${esc(n.faction)}</span>`:''}</div>
     ${n.location?`<div style="font-size:11px;color:var(--text3);margin-bottom:5px">📍 ${esc(n.location)}</div>`:''}
     ${n.connected_to?`<div style="font-size:11px;color:var(--text3)">🔗 ${esc(Array.isArray(n.connected_to)?n.connected_to.join(', '):n.connected_to)}</div>`:''}
-    <div class="card-actions"><button class="delete-btn" onclick="event.stopPropagation();pin('npc',${n.id},'${esc(n.title)}')">📌</button>${isGm?`${eyeBtn('npc',n.id,n.hidden)}<button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('npc',${n.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('npc',${n.id},loadNpcs)">Del</button>`:''}</div>
+    <div class="card-actions"><button class="delete-btn" onclick="event.stopPropagation();pin('npc',${n.id},'${esc(n.title)}')">📌</button>${isGm?`${eyeBtn('npc',n.id,n.hidden)}<button class="btn btn-sm" onclick="event.stopPropagation();openShareDialog('npc',${n.id},'${esc(n.title)}')">Share</button><button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('npc',${n.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('npc',${n.id},loadNpcs)">Del</button>`:''}</div>
   </div>`).join('');
 }
 
@@ -1648,7 +1650,7 @@ function renderLocations(){
     <div class="card-title">${esc(l.title)}</div>
     <div class="card-meta"><span class="tag tag-${esc(l.status||'unvisited')}">${esc(l.status||'unvisited')}</span>${l.danger?`<span class="tag tag-${esc(l.danger)}">${esc(l.danger)}</span>`:''}${l.visited_session?`<span>Session ${l.visited_session}</span>`:''}</div>
     ${l.connected_to?`<div style="font-size:11px;color:var(--text3)">🔗 ${esc(Array.isArray(l.connected_to)?l.connected_to.join(', '):l.connected_to)}</div>`:''}
-    <div class="card-actions"><button class="delete-btn" onclick="event.stopPropagation();pin('location',${l.id},'${esc(l.title)}')">📌</button>${isGm?`${eyeBtn('location',l.id,l.hidden)}<button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('location',${l.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('location',${l.id},loadLocations)">Del</button>`:''}</div>
+    <div class="card-actions"><button class="delete-btn" onclick="event.stopPropagation();pin('location',${l.id},'${esc(l.title)}')">📌</button>${isGm?`${eyeBtn('location',l.id,l.hidden)}<button class="btn btn-sm" onclick="event.stopPropagation();openShareDialog('location',${l.id},'${esc(l.title)}')">Share</button><button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('location',${l.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('location',${l.id},loadLocations)">Del</button>`:''}</div>
   </div>`).join('');
 }
 
@@ -2554,6 +2556,9 @@ const GM_FORMS={
   campaign:`<div class="form-group"><label>Campaign Name</label><input id="gm-f-name" class="form-input" placeholder="The Shattered Crown…"></div>
     <div class="form-group"><label>System</label><select id="gm-f-system" class="form-input"><option value="dnd5e">D&D 5e</option><option value="coc">Call of Cthulhu</option><option value="alien">Alien</option><option value="coriolis">Coriolis</option><option value="dune">Dune</option><option value="achtung">Achtung! Cthulhu</option></select></div>
     <div class="form-group"><label>Subtitle</label><input id="gm-f-subtitle" class="form-input" placeholder="Optional tagline"></div>`,
+  share:`<div class="form-group"><label>Share with players</label>
+    <select id="gm-f-share-users" class="form-input" multiple size="6" style="height:auto;min-height:120px"></select>
+    <small class="muted" style="display:block;margin-top:6px">Hold Ctrl/Cmd to select multiple. Selected players can see this item even when it's hidden.</small></div>`,
 };
 let gmCreateType=null,gmCreateExtra=null,gmEditId=null;
 const PAGE_TO_TYPE={quests:'quest',npcs:'npc',locations:'location',hooks:'hook',handouts:'handout',maps:'map',sessions:'session',notes:'note',factions:'faction',timeline:'timeline',inventory:'inventory',bestiary:'bestiary',rumours:'rumour',jobs:'job',agenda:'agenda'};
@@ -2603,6 +2608,18 @@ async function openGmCreate(type,extra){
     const r=await apiFetch('/api/users');
     if(r.ok){const d=await r.json();const users=d.users||d||[];const sel=document.getElementById('gm-f-user');if(sel)users.forEach(u=>{if(u.role!=='gm'){const o=document.createElement('option');o.value=u.id;o.textContent=u.username;sel.appendChild(o);}});}
   }
+  modal.style.display='flex';
+}
+async function openShareDialog(itemType,itemId,itemTitle){
+  gmCreateType='share';gmCreateExtra={itemType,itemId};
+  const modal=document.getElementById('gm-modal');
+  document.getElementById('gm-modal-title').textContent=`Share "${esc(itemTitle)}"`;
+  document.getElementById('gm-modal-body').innerHTML=GM_FORMS.share;
+  const [uR,sR]=await Promise.all([apiFetch('/api/users'),apiFetch(`/api/shares/${itemType}/${itemId}`)]);
+  const users=(await uR.json()).users?.filter(u=>u.role!=='gm')||[];
+  const sharedIds=new Set((await sR.json()).user_ids||[]);
+  const sel=document.getElementById('gm-f-share-users');
+  if(sel)users.forEach(u=>{const o=document.createElement('option');o.value=u.id;o.textContent=u.username+(u.character_name?` (${u.character_name})`:'');if(sharedIds.has(u.id))o.selected=true;sel.appendChild(o);});
   modal.style.display='flex';
 }
 async function uploadImage(inputId){
@@ -2700,10 +2717,18 @@ async function gmModalSave(){
       endpoint='/api/messages';
       body={content:val('gm-f-content'),recipient_id:gmCreateExtra||null};
       break;
+    case 'share':{
+      endpoint='/api/shares';
+      const shareSel=document.getElementById('gm-f-share-users');
+      const user_ids=[...(shareSel?.selectedOptions||[])].map(o=>Number(o.value));
+      body={item_type:gmCreateExtra.itemType,item_id:gmCreateExtra.itemId,user_ids};
+      const r2=await apiFetch(endpoint,{method:'POST',body:JSON.stringify(body)});
+      if(r2.ok){showToast('Sharing updated','success');closeGmModal();}else showToast('Share failed','error');
+      return;}
     default:
       showToast('Unknown type','error');return;
   }
-  if(!body.title&&!body.name&&!body.content&&!body.text){showToast('Fill in required fields','error');return;}
+  if(type!=='share'&&!body.title&&!body.name&&!body.content&&!body.text){showToast('Fill in required fields','error');return;}
   const isEdit=!!gmEditId;
   const url=isEdit?`${endpoint}/${gmEditId}`:endpoint;
   const method=isEdit?'PUT':'POST';

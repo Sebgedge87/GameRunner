@@ -43,6 +43,7 @@ const searchRoutes = require('./routes/search');
 const backupRoutes = require('./routes/backup');
 const vaultRoutes = require('./routes/vault');
 const xpRoutes = require('./routes/xp');
+const sharesRoutes = require('./routes/shares');
 
 const app = express();
 
@@ -132,6 +133,7 @@ app.use('/api/search', searchRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/vault', vaultRoutes);
 app.use('/api/xp', xpRoutes);
+app.use('/api/shares', sharesRoutes);
 
 // ── Health check ───────────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => {

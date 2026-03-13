@@ -439,6 +439,15 @@ function runMigrations() {
   try { db.exec('ALTER TABLE jobs ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
   try { db.exec('ALTER TABLE bestiary ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
   try { db.exec('ALTER TABLE rumours ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
+  // Per-item sharing table (P4)
+  db.exec(`CREATE TABLE IF NOT EXISTS item_shares (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    item_type TEXT NOT NULL,
+    item_id INTEGER NOT NULL,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    shared_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(item_type, item_id, user_id)
+  )`);
   // XP awards table (P11)
   db.exec(`CREATE TABLE IF NOT EXISTS xp_awards (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
