@@ -1,7 +1,7 @@
 const express = require('express');
 const { getDb, getActiveCampaignId } = require('../db/database');
 const { requireAuth, requireGm } = require('../auth/authMiddleware');
-const { createNotification } = require('../services/notificationService');
+const { createNotification } = require('../services/notifications');
 
 const router = express.Router();
 

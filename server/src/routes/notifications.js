@@ -12,17 +12,17 @@ router.get('/', requireAuth, (req, res) => {
   res.json({ notifications: notifs, unread });
 });
 
+// PUT /api/notifications/read-all — must come before /:id/read to avoid collision
+router.put('/read-all', requireAuth, (req, res) => {
+  const db = getDb();
+  db.prepare('UPDATE notifications SET read_at = CURRENT_TIMESTAMP WHERE user_id = ? AND read_at IS NULL').run(req.user.id);
+  res.json({ success: true });
+});
+
 // PUT /api/notifications/:id/read
 router.put('/:id/read', requireAuth, (req, res) => {
   const db = getDb();
   db.prepare('UPDATE notifications SET read_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?').run(req.params.id, req.user.id);
-  res.json({ success: true });
-});
-
-// PUT /api/notifications/read-all
-router.put('/read-all', requireAuth, (req, res) => {
-  const db = getDb();
-  db.prepare('UPDATE notifications SET read_at = CURRENT_TIMESTAMP WHERE user_id = ? AND read_at IS NULL').run(req.user.id);
   res.json({ success: true });
 });
 

@@ -22,6 +22,39 @@ router.get('/', requireAuth, (req, res) => {
   res.json({ sheets: sheets.map(s => ({ ...s, sheet_data: tryParse(s.sheet_data) })) });
 });
 
+// ── Ship Sheets — must come before /:userId to avoid path collision ─────────
+router.get('/ships/all', requireAuth, (req, res) => {
+  const db = getDb();
+  const ships = db.prepare('SELECT * FROM ship_sheets ORDER BY name').all();
+  res.json({ ships: ships.map(s => ({ ...s, sheet_data: tryParse(s.sheet_data) })) });
+});
+
+router.post('/ships', requireGm, (req, res) => {
+  const { name, system = 'alien', sheet_data = {}, image_path, campaign_id } = req.body;
+  if (!name) return res.status(400).json({ error: 'name is required' });
+  const db = getDb();
+  const result = db.prepare('INSERT INTO ship_sheets (campaign_id, name, system, sheet_data, image_path) VALUES (?, ?, ?, ?, ?)')
+    .run(campaign_id || null, name, system, JSON.stringify(sheet_data), image_path || null);
+  const ship = db.prepare('SELECT * FROM ship_sheets WHERE id = ?').get(result.lastInsertRowid);
+  res.status(201).json({ ship: { ...ship, sheet_data: tryParse(ship.sheet_data) } });
+});
+
+router.put('/ships/:id', requireAuth, (req, res) => {
+  const { name, system, sheet_data, image_path } = req.body;
+  const db = getDb();
+  db.prepare(`
+    UPDATE ship_sheets SET
+      name = COALESCE(?, name),
+      system = COALESCE(?, system),
+      sheet_data = COALESCE(?, sheet_data),
+      image_path = COALESCE(?, image_path),
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).run(name, system, sheet_data !== undefined ? JSON.stringify(sheet_data) : null, image_path, req.params.id);
+  const ship = db.prepare('SELECT * FROM ship_sheets WHERE id = ?').get(req.params.id);
+  res.json({ ship: { ...ship, sheet_data: tryParse(ship.sheet_data) } });
+});
+
 // GET /api/character-sheets/:userId
 router.get('/:userId', requireAuth, (req, res) => {
   if (req.user.role !== 'gm' && req.user.id !== Number(req.params.userId)) {
@@ -56,39 +89,6 @@ router.put('/:userId', requireAuth, (req, res) => {
   `).run(req.params.userId, campaign_id || null, system, JSON.stringify(sheet_data), dnd_beyond_url || null);
   const sheet = db.prepare('SELECT * FROM character_sheets WHERE user_id = ?').get(req.params.userId);
   res.json({ sheet: { ...sheet, sheet_data: tryParse(sheet.sheet_data) } });
-});
-
-// ── Ship Sheets ────────────────────────────────────────────────────────────────
-router.get('/ships/all', requireAuth, (req, res) => {
-  const db = getDb();
-  const ships = db.prepare('SELECT * FROM ship_sheets ORDER BY name').all();
-  res.json({ ships: ships.map(s => ({ ...s, sheet_data: tryParse(s.sheet_data) })) });
-});
-
-router.post('/ships', requireGm, (req, res) => {
-  const { name, system = 'alien', sheet_data = {}, image_path, campaign_id } = req.body;
-  if (!name) return res.status(400).json({ error: 'name is required' });
-  const db = getDb();
-  const result = db.prepare('INSERT INTO ship_sheets (campaign_id, name, system, sheet_data, image_path) VALUES (?, ?, ?, ?, ?)')
-    .run(campaign_id || null, name, system, JSON.stringify(sheet_data), image_path || null);
-  const ship = db.prepare('SELECT * FROM ship_sheets WHERE id = ?').get(result.lastInsertRowid);
-  res.status(201).json({ ship: { ...ship, sheet_data: tryParse(ship.sheet_data) } });
-});
-
-router.put('/ships/:id', requireAuth, (req, res) => {
-  const { name, system, sheet_data, image_path } = req.body;
-  const db = getDb();
-  db.prepare(`
-    UPDATE ship_sheets SET
-      name = COALESCE(?, name),
-      system = COALESCE(?, system),
-      sheet_data = COALESCE(?, sheet_data),
-      image_path = COALESCE(?, image_path),
-      updated_at = CURRENT_TIMESTAMP
-    WHERE id = ?
-  `).run(name, system, sheet_data !== undefined ? JSON.stringify(sheet_data) : null, image_path, req.params.id);
-  const ship = db.prepare('SELECT * FROM ship_sheets WHERE id = ?').get(req.params.id);
-  res.json({ ship: { ...ship, sheet_data: tryParse(ship.sheet_data) } });
 });
 
 module.exports = router;

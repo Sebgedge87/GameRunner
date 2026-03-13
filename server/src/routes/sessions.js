@@ -150,10 +150,10 @@ router.delete('/:sessionId/notes/:noteId', requireAuth, (req, res) => {
 
 // PUT /api/sessions/:id — GM edits session
 router.put('/:id', requireGm, (req, res) => {
-  const { title, summary, session_date } = req.body;
+  const { title, summary, played_at, in_world_date } = req.body;
   const db = getDb();
-  db.prepare('UPDATE sessions SET title = COALESCE(?, title), summary = COALESCE(?, summary), session_date = COALESCE(?, session_date) WHERE id = ?')
-    .run(title || null, summary || null, session_date || null, req.params.id);
+  db.prepare('UPDATE sessions SET title = COALESCE(?, title), summary = COALESCE(?, summary), played_at = COALESCE(?, played_at), in_world_date = COALESCE(?, in_world_date), updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+    .run(title || null, summary || null, played_at || null, in_world_date || null, req.params.id);
   const session = db.prepare('SELECT * FROM sessions WHERE id = ?').get(req.params.id);
   res.json({ session });
 });

@@ -2371,7 +2371,7 @@ async function promptHp(id){
   await saveHp(id,Math.max(0,Math.min(c.max_hp,hp)));
 }
 async function saveHp(id,hp){
-  const r=await apiFetch(`/api/combat/combatants/${id}`,{method:'PUT',body:JSON.stringify({hp})});
+  const r=await apiFetch(`/api/combat/${combatState.encounter.id}/combatants/${id}`,{method:'PUT',body:JSON.stringify({hp_current:hp})});
   if(r.ok){const c=combatState.combatants.find(x=>x.id===id);if(c)c.hp=hp;renderCombat();}
   else showToast('HP update failed','error');
 }
@@ -2381,7 +2381,7 @@ async function addCombatant(){
   const max_hp=parseInt(document.getElementById('cb-hp').value)||10;
   const combatant_type=document.getElementById('cb-type').value;
   if(!name){showToast('Name required','error');return;}
-  const r=await apiFetch('/api/combat/combatants',{method:'POST',body:JSON.stringify({encounter_id:combatState.encounter.id,name,initiative,hp:max_hp,max_hp,combatant_type})});
+  const r=await apiFetch(`/api/combat/${combatState.encounter.id}/combatants`,{method:'POST',body:JSON.stringify({name,initiative,hp_current:max_hp,hp_max:max_hp,is_player:combatant_type==='player'})});
   if(r.ok){const d=await r.json();combatState.combatants.push(d.combatant);document.getElementById('cb-name').value='';document.getElementById('cb-init').value='';document.getElementById('cb-hp').value='';renderCombat();}
   else showToast('Add failed','error');
 }
