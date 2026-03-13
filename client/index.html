@@ -1121,11 +1121,18 @@ function connectSSE(){
   sseSource.onmessage=e=>{
     try{
       const d=JSON.parse(e.data);
-      if(d.type==='new_message'){loadMessages();loadNotifications();showToast('New Message',d.subject||'You have a new message','✉');}
-      if(d.type==='new_handout'){loadHandouts();showToast('New Handout',d.title||'A handout was shared with you','📄');}
+      if(d.type==='notification'){
+        loadNotifications();
+        if(d.notif_type==='message'){loadMessages();showToast(d.title||'New message','info','✉');}
+        else if(d.notif_type==='handout'){loadHandouts();showToast(d.title||'New handout','info','📄');}
+        else showToast(d.title||'Notification','info');
+      }
+      if(d.type==='new_handout'){loadHandouts();showToast(d.title||'New Handout','info','📄');}
+      if(d.type==='handout_group'){loadHandouts();showToast(d.title||'New group handout','info','📄');}
       if(d.type==='combat_update'||d.type==='combat_start'){if(currentPage==='combat')loadCombat();}
+      if(d.type==='combat_end'){if(currentPage==='combat')loadCombat();}
       if(d.type==='agenda_revealed'){loadAgenda();showToast('Secret Objective','Your agenda has been updated','🎯');}
-      if(d.type==='content_updated'){if(currentPage==='dashboard')buildDashboard();}
+      if(d.type==='message_acked'){loadMessages();}
     }catch{}
   };
   sseSource.onerror=()=>{sseSource.close();sseSource=null;setTimeout(connectSSE,10000);};
@@ -1164,7 +1171,6 @@ function closeSidebar(){document.getElementById('sidebar').classList.remove('mob
 async function loadAll(){
   await Promise.all([loadCampaign(),loadQuests(),loadNpcs(),loadLocations(),loadHooks(),loadMessages(),loadNotes(),loadHandouts(),loadUsers(),loadAgenda(),loadStress(),loadPins()]);
   buildDashboard();
-  loadDashScheduling();
   loadNotifications();
 }
 
@@ -2412,7 +2418,7 @@ async function buildDashboard(){
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem">
     <div class="card">
       <h4 style="font-family:var(--font-heading);color:var(--accent);margin:0 0 0.75rem">Active Quests</h4>
-      ${active.length?active.slice(0,5).map(q=>`<div class="list-item" onclick="navTo('quests')"><span>${esc(q.title)}</span><span class="tag tag-quest-active">active</span></div>`).join(''):'<p class="muted">None active.</p>'}
+      ${active.length?active.slice(0,5).map(q=>`<div class="list-item" onclick="navigate('quests')"><span>${esc(q.title)}</span><span class="tag tag-quest-active">active</span></div>`).join(''):'<p class="muted">None active.</p>'}
     </div>
     <div class="card">
       <h4 style="font-family:var(--font-heading);color:var(--accent);margin:0 0 0.75rem">Recent Sessions</h4>

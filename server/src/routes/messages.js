@@ -57,10 +57,11 @@ router.post('/', requireAuth, (req, res) => {
 
   const msg = db.prepare('SELECT * FROM messages WHERE id = ?').get(result.lastInsertRowid);
 
-  // Notify recipient
+  // Notify recipient via SSE + persistent notification
   if (recipientId) {
     const sender = req.user.character_name || req.user.username;
     createNotification(db, recipientId, 'message', `Message from ${sender}`, subject, `/messages/${msg.id}`);
+    broadcastSSE(recipientId, { type: 'new_message', message_id: msg.id, from: sender, subject });
   }
 
   res.status(201).json({ message: msg });
