@@ -418,7 +418,134 @@ Single-file HTML — login, dashboard, all base pages, D3 mindmap, messages, not
 
 ---
 
-## Build Plan
+## Implementation Status & Gap Analysis
+
+> Last audited: 2026-03-13. Tracks what is actually built vs. what the spec requires.
+
+### Legend
+`✅` Done — server + client UI
+`🟡` Partial — backend exists, client UI incomplete
+`❌` Missing — not built
+
+---
+
+### GM Capabilities: Create / Edit / Delete / Hide / Share
+
+| Resource | Create | Edit | Delete | Hide/Unhide | Share to Player |
+|---|---|---|---|---|---|
+| Quests | ✅ modal + vault write | 🟡 API exists, no edit button | 🟡 API exists, no delete button | ❌ no `hidden` field | ❌ no share endpoint |
+| NPCs | ✅ modal + vault write | 🟡 API exists, no edit button | 🟡 API exists, no delete button | ❌ no `hidden` field | ❌ no share endpoint |
+| Locations | ✅ modal + vault write | 🟡 API exists, no edit button | 🟡 API exists, no delete button | ❌ no `hidden` field | ❌ no share endpoint |
+| Hooks | ✅ modal + vault write | 🟡 API exists, no edit button | 🟡 API exists, no delete button | ❌ no `hidden` field | ❌ no share endpoint |
+| Handouts | ✅ modal + file upload | 🟡 no edit button | ❌ no DELETE endpoint or button | ❌ | ✅ share to player(s), reshare |
+| Maps | ✅ modal + file upload | 🟡 API exists, no edit button | ✅ delete button on card | ❌ no `hidden` field | ❌ no share endpoint |
+| Sessions | ✅ modal | ❌ no edit, no delete | ❌ | ❌ | ❌ |
+| Factions | 🟡 API exists, no create form | 🟡 API exists, no edit button | 🟡 API exists, no delete button | ❌ | ❌ |
+| Timeline | 🟡 API exists, no create form | 🟡 API exists, no edit button | 🟡 API exists, no delete button | ❌ | ❌ |
+| Inventory | 🟡 API exists, no create form | 🟡 API exists, no edit button | 🟡 API exists, no delete button | ❌ | ❌ |
+| Key Items | 🟡 API exists, no create form | 🟡 API exists, no edit button | 🟡 API exists, no delete button | ❌ | ❌ |
+| Jobs | 🟡 API exists, no create form | 🟡 API exists, no edit button | 🟡 API exists, no delete button | 🟡 status field exists, no toggle button | ❌ |
+| Bestiary | 🟡 API exists, no create form | 🟡 API exists, no edit button | 🟡 API exists, no delete button | ✅ reveal/hide endpoint, no button | ❌ |
+| Rumours | 🟡 API exists, no create form | ❌ no PUT endpoint | ✅ API + no button | ✅ expose endpoint, no button | ✅ expose model |
+| Notes | ✅ | ✅ own notes | ✅ own notes | ✅ private/public flag | ✅ shared_with_gm flag |
+| Messages | ✅ via flyout | N/A | ❌ | ✅ secret flag | ✅ targeted send |
+| Character Sheets | N/A | ✅ view all | N/A | N/A | N/A |
+| Combat | ✅ start encounter | ✅ manage HP/conditions | ✅ end encounter | ✅ combatant is_hidden | N/A |
+
+---
+
+### Player Capabilities: Create / Edit / Share (own content only)
+
+| Resource | Create | Edit Own | Delete Own | Share / Visibility |
+|---|---|---|---|---|
+| Notes | ✅ create form | ✅ inline edit + save | ✅ delete button | ✅ privacy toggle + share_with_gm checkbox |
+| Session Notes | ✅ add to session | 🟡 API exists, no edit button | ❌ | ✅ private/public toggle |
+| Theory Board | ✅ add nodes + edges | ✅ inline edit label/type | ✅ delete node | ❌ share with GM/party not wired in UI |
+| Messages | ✅ compose via flyout | N/A | ❌ | N/A |
+| Character Sheet | N/A | ✅ edit own sheet | N/A | N/A |
+| Ship Sheet | N/A | ✅ edit own | N/A | N/A |
+| Handouts | ❌ players cannot create | N/A | N/A | 🟡 can reshare if can_reshare=true, no button |
+| Pins | ✅ pin any item | N/A | ✅ unpin | N/A |
+| Polls / Scheduling | ❌ view + vote only | N/A | N/A | N/A |
+
+---
+
+### Prioritised Change List
+
+The following changes are needed to reach full GM management and player self-management. Listed in priority order.
+
+#### Priority 1 — Inline Edit + Delete buttons on all vault resources (Client)
+These routes are fully built on the server. The client just needs edit/delete buttons on each card and a populated edit modal.
+
+- [ ] **Quests** — add Edit button (opens pre-filled modal) + Delete button with confirm
+- [ ] **NPCs** — add Edit button + Delete button with confirm
+- [ ] **Locations** — add Edit button + Delete button with confirm
+- [ ] **Hooks** — add Edit button + Delete button with confirm
+- [ ] **Maps** — add Edit button (title/description/type only, no re-upload needed)
+- [ ] **Handouts** — add Edit button + DELETE `/api/handouts/:id` endpoint + delete button
+- [ ] **Sessions** — add Edit button + DELETE `/api/sessions/:id` endpoint + delete button
+
+#### Priority 2 — Missing create forms (Client + GM modal)
+Server routes exist; just need `GM_FORMS` entries and `gmModalSave` cases added.
+
+- [ ] **Factions** — create form: name, description, goals, image
+- [ ] **Timeline** — create form: title, description, in_world_date, linked_quest (optional)
+- [ ] **Inventory** — create form: name, quantity, holder, description
+- [ ] **Key Items** — create form: name, description, significance, linked_quest, image
+- [ ] **Jobs** — create form: title, reward, difficulty, posted_by, location, expiry
+- [ ] **Bestiary** — create form: name, description, stats (CR/AC/HP), image
+- [ ] **Rumours** — create form: content, is_true, source_npc, source_location
+
+Also add Edit + Delete buttons to client cards for all of the above once forms exist.
+
+#### Priority 3 — Hide/Unhide visibility toggle (Server + Client)
+All vault resources currently send all records to all logged-in users. Need a `hidden` field so GMs can hide things from players mid-session without deleting them.
+
+- [ ] Add `hidden BOOLEAN DEFAULT 0` column to `vault_files` table (migration)
+- [ ] Filter `hidden = 0` from GET responses for non-GM users (quests, npcs, locations, hooks)
+- [ ] Add `PUT /api/quests/:id/visibility`, same for npcs, locations, hooks — toggle `hidden`
+- [ ] Add `hidden` column + filter + toggle to: maps, factions, timeline, inventory, jobs, key_items
+- [ ] Client: add Eye/EyeOff toggle button on each GM card (calls visibility endpoint)
+- [ ] Bestiary: wire existing reveal button in client UI (endpoint exists at `PUT /api/bestiary/:id/reveal`)
+- [ ] Rumours: wire existing expose button in client UI (endpoint exists at `POST /api/rumours/:id/expose`)
+
+#### Priority 4 — Share individual items to players (Server + Client)
+Currently only Handouts support targeted sharing. NPCs, Locations, Quests etc. are all-or-nothing.
+
+- [ ] Add a generic `item_shares` table: `(item_type, item_id, user_id, shared_at)` — or reuse the handout_permissions model
+- [ ] `POST /api/quests/:id/share` — share with specific player(s)
+- [ ] `POST /api/npcs/:id/share` — share with specific player(s)
+- [ ] `POST /api/locations/:id/share` — share with specific player(s)
+- [ ] GET endpoints respect share list: players only see items where `hidden=0` OR they are in `item_shares`
+- [ ] Client: "Share" button on GM quest/npc/location cards → player picker dialog
+
+#### Priority 5 — Player session notes edit + theory board sharing
+
+- [ ] `PUT /api/sessions/:sessionId/notes/:noteId` — edit own session note
+- [ ] `DELETE /api/sessions/:sessionId/notes/:noteId` — delete own session note
+- [ ] Client: edit/delete buttons on own session notes
+- [ ] Theory board "Share with GM" toggle — wire `PUT /api/theories/nodes/:id` with `visibility` field
+- [ ] Handout reshare button — show reshare button in client when `can_reshare = true`
+
+---
+
+### What Works End-to-End Today
+
+- Login / JWT auth / role enforcement
+- GM create modal with FAB `+` button wired to current page type
+- Quests, NPCs, Locations, Hooks: create writes to vault, watcher syncs to DB, cards render
+- Handouts: create, share to player, acknowledge, SSE push
+- Maps: upload image, create record, view full-screen overlay, delete
+- Notes: full CRUD + privacy for players and GM
+- Messages: compose, send, read, acknowledge, SSE push
+- Character sheets: player edit own, GM view all
+- Theory board: full personal D3 graph editor
+- Combat tracker: GM runs encounter, players see live updates
+- Sessions: GM creates, players add notes + vote polls + respond to scheduling
+- Pins: pin/unpin any item to dashboard
+- Bestiary, Rumours, Factions, Timeline, Inventory, Jobs: read-only display (no client create/edit yet)
+
+---
 
 ### Estimated Scale
 | Part | Lines |
