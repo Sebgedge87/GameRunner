@@ -856,32 +856,7 @@ select.form-input{cursor:pointer;}
     <!-- GM Dashboard -->
     <section class="page gm-only" id="page-gm-dashboard">
       <div class="page-header"><div class="page-title">GM Dashboard</div></div>
-      <div class="gm-grid">
-        <div class="gm-block">
-          <div class="gm-block-title">PLAYERS</div>
-          <table class="player-table" id="players-table">
-            <thead><tr><th>Character</th><th>Class</th><th>Lvl</th><th>Last Seen</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-        <div class="gm-block">
-          <div class="gm-block-title">CAMPAIGN CONTROLS</div>
-          <div class="field-group"><label>Current Scene</label><input type="text" id="gm-scene"/></div>
-          <div class="field-group"><label>Weather</label><input type="text" id="gm-weather"/></div>
-          <div class="field-group"><label>In-World Time</label><input type="text" id="gm-time"/></div>
-          <div class="field-group"><label>Music Label</label><input type="text" id="gm-music"/></div>
-          <div class="field-group"><label>Music URL</label><input type="text" id="gm-music-url" placeholder="https://open.spotify.com/..."/></div>
-          <button class="submit-btn" onclick="saveCampaignControls()">SAVE</button>
-          <div id="gm-campaign-status" class="status-msg"></div>
-        </div>
-        <div class="gm-block" style="grid-column:1/-1">
-          <div class="gm-block-title" style="display:flex;justify-content:space-between;align-items:center">
-            AUDIT LOG
-            <a href="/api/backup" style="font-size:11px;color:var(--accent)" onclick="downloadBackup(event)">⬇ Backup</a>
-          </div>
-          <div id="audit-log-list"><div class="loading">Loading...</div></div>
-        </div>
-      </div>
+      <div id="gm-dash-content"><div class="loading">Loading dashboard...</div></div>
     </section>
 
     <!-- Combat -->
@@ -1035,6 +1010,7 @@ select.form-input{cursor:pointer;}
 const API = window.CHRONICLE_API || `${location.protocol}//${location.hostname}:3000`;
 let token = localStorage.getItem('chronicle_token');
 let currentUser = null;
+let isGm = false;
 let activeCampaign = null;
 let sseSource = null;
 let currentPage = 'dashboard';
@@ -1125,6 +1101,7 @@ function showApp(){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='flex';
   const u=currentUser;
+  isGm = u?.role === 'gm';
   document.getElementById('sidebar-user').textContent=(u.character_name||u.username)+(u.character_class?` · ${u.character_class}`:'');
   if(u.role==='gm'){
     document.querySelectorAll('.gm-only').forEach(el=>el.style.display='');
@@ -2313,7 +2290,7 @@ async function loadCombat(){
   renderCombat();
 }
 function renderCombat(){
-  const el=document.getElementById('combat-content');
+  const el=document.getElementById('combat-wrap');
   if(!combatState.encounter){
     el.innerHTML=`<div style="text-align:center;padding:3rem">
       <p class="muted" style="margin-bottom:1rem">No active encounter.</p>
@@ -2392,25 +2369,25 @@ async function addCombatant(){
   const max_hp=parseInt(document.getElementById('cb-hp').value)||10;
   const combatant_type=document.getElementById('cb-type').value;
   if(!name){showToast('Name required','error');return;}
-  const r=await apiFetch(`/api/combat/${combatState.encounter.id}/combatants`,{method:'POST',body:JSON.stringify({name,initiative,hp_current:max_hp,hp_max:max_hp,is_player:combatant_type==='player'})});
+  const r=await apiFetch(`/api/combat/${combatState.encounter.id}/combatants`,{method:'POST',body:JSON.stringify({name,initiative,hp_current:max_hp,hp_max:max_hp,is_player:combatant_type==='pc'})});
   if(r.ok){const d=await r.json();combatState.combatants.push(d.combatant);document.getElementById('cb-name').value='';document.getElementById('cb-init').value='';document.getElementById('cb-hp').value='';renderCombat();}
   else showToast('Add failed','error');
 }
 async function createEncounter(){
   const name=prompt('Encounter name:','Battle');if(!name)return;
-  const r=await apiFetch('/api/combat/encounters',{method:'POST',body:JSON.stringify({name})});
+  const r=await apiFetch('/api/combat',{method:'POST',body:JSON.stringify({name})});
   if(r.ok){const d=await r.json();combatState.encounter=d.encounter;combatState.combatants=[];combatState.round=1;renderCombat();}
   else showToast('Create failed','error');
 }
 async function endEncounter(){
   if(!confirm('End encounter?'))return;
-  const r=await apiFetch(`/api/combat/encounters/${combatState.encounter.id}`,{method:'DELETE'});
+  const r=await apiFetch(`/api/combat/${combatState.encounter.id}`,{method:'DELETE'});
   if(r.ok){combatState.encounter=null;combatState.combatants=[];renderCombat();}
   else showToast('End failed','error');
 }
 async function combatNextRound(){
   combatState.round++;
-  const r=await apiFetch(`/api/combat/encounters/${combatState.encounter.id}`,{method:'PUT',body:JSON.stringify({round:combatState.round})});
+  const r=await apiFetch(`/api/combat/${combatState.encounter.id}/round`,{method:'PUT'});
   if(r.ok){if(combatState.encounter)combatState.encounter.round=combatState.round;renderCombat();showToast(`Round ${combatState.round}`,'info');}
 }
 
@@ -2422,7 +2399,7 @@ async function buildDashboard(){
   const hooks=hR.ok?await hR.json():[];
   const sessions=sR.ok?await sR.json():[];
   const active=quests.filter(q=>q.status==='active');
-  const el=document.getElementById('dash-content');
+  const el=document.getElementById('dash-stats');
   el.innerHTML=`
   <div class="stats-row">
     <div class="stat-card"><div class="stat-value">${quests.length}</div><div class="stat-label">Quests</div></div>
@@ -2642,6 +2619,7 @@ async function uploadImage(inputId){
     const r=await fetch(`${API}/api/uploads`,{method:'POST',headers:{Authorization:`Bearer ${token}`},body:fd});
     if(r.ok){const d=await r.json();return d.url||d.path||null;}
   }catch(_){}
+  showToast('Image upload failed','error');
   return null;
 }
 async function gmModalSave(){
@@ -2670,7 +2648,7 @@ async function gmModalSave(){
       break;
     case 'handout':
       endpoint='/api/handouts';
-      body={title:val('gm-f-title'),content:val('gm-f-content'),target_user_id:val('gm-f-user')||null,image_url:imageUrl};
+      {const tid=val('gm-f-user');body={title:val('gm-f-title'),body:val('gm-f-content'),file_path:imageUrl||null,file_type:imageUrl?'image':'text',share_with:tid?[Number(tid)]:[]};}
       break;
     case 'note':
       endpoint='/api/notes';

@@ -572,6 +572,26 @@ Without this, all content bleeds across games regardless of which campaign is ac
 - [x] Client: XP panel on GM Dashboard with multi-player award form + totals table + award log
 - [x] Players table in GM Dashboard now shows XP total and current level per player
 
+#### Bug Fixes — Stubs & Scaffolding Sweep ✅
+
+Deep-dive audit of the full codebase (server routes + client) identified and fixed:
+
+- [x] **`isGm` undeclared** — variable used in 37+ places but never declared; caused `ReferenceError` on every GM UI branch (card buttons, detail panels, all page renders). Declared as `let isGm = false` and set in `showApp()`.
+- [x] **GM Dashboard blank** — `loadGmDashboard()` injected into `#gm-dash-content` but the page contained a static `gm-grid` with no such element; dynamic content never rendered. Replaced static blocks with the `#gm-dash-content` target div.
+- [x] **Player Dashboard blank** — `buildDashboard()` targeted `#dash-content` but page only had `#dash-stats`; stat cards and active quest list never appeared.
+- [x] **Combat page blank** — `renderCombat()` targeted `#combat-content` but page only had `#combat-wrap`; encounter UI never rendered.
+- [x] **Combat "Start Encounter" broken** — client called `POST /api/combat/encounters`; server route is `POST /api/combat`. Start encounter always returned 404.
+- [x] **Combat "End Encounter" broken** — client called `DELETE /api/combat/encounters/:id`; server route is `DELETE /api/combat/:id`. End encounter always returned 404.
+- [x] **Combat "Next Round" broken** — client called `PUT /api/combat/encounters/:id` with `{round}`; server route is `PUT /api/combat/:id/round` (no body). Round advancement never persisted.
+- [x] **Combat PC/NPC flag always false** — dropdown had `value="pc"` but `addCombatant()` checked `=== 'player'`; all combatants created as `is_player: false` regardless.
+- [x] **Handout content never saved** — `gmModalSave` sent `content` + `image_url` + `target_user_id`; server expects `body` + `file_path` + `share_with`. Handout body and images were silently ignored.
+- [x] **Image upload silent failure** — `uploadImage()` swallowed fetch errors and returned `null` with no user feedback; form then submitted without the image.
+- [x] **`xp.js` bad import** — `require('../services/notificationService')` (file doesn't exist); level-up notifications always failed silently.
+- [x] **`search.js` missing tables** — queried `quests`, `npcs`, `locations`, `hooks` tables that don't exist; search crashed for those types. Fixed to use `vault_files WHERE type=...`.
+- [x] **`sessions.js` bad column** — `PUT /:id` updated `session_date` column that doesn't exist in the schema; editing sessions threw a SQL error.
+- [x] **`characterSheets.js` route order** — `/ships/all` defined after `/:userId`, risking path shadowing. Moved ship routes before the wildcard param.
+- [x] **Form inputs white** — `.form-input` class used everywhere but never defined in CSS; all inputs rendered with browser-default white background.
+
 ---
 
 ### What Works End-to-End Today
