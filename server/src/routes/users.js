@@ -41,6 +41,16 @@ router.put('/:id', requireGm, (req, res) => {
   res.json({ user });
 });
 
+// DELETE /api/users/:id — GM deletes a player account
+router.delete('/:id', requireGm, (req, res) => {
+  const db = getDb();
+  const user = db.prepare('SELECT id, role FROM users WHERE id = ?').get(req.params.id);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  if (user.role === 'gm') return res.status(403).json({ error: 'Cannot delete GM account' });
+  db.prepare('DELETE FROM users WHERE id = ?').run(req.params.id);
+  res.json({ success: true });
+});
+
 // GET /api/users/audit — GM audit log
 router.get('/audit', requireGm, (req, res) => {
   const db = getDb();

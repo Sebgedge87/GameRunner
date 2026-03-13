@@ -423,6 +423,13 @@ function runMigrations() {
     );
   `);
 
+  // Add hidden column to vault_files if not already present
+  try { db.exec('ALTER TABLE vault_files ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
+  // Add hidden column to maps if not already present
+  try { db.exec('ALTER TABLE maps ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
+  // Add locked column to users if not already present (P10: lock login)
+  try { db.exec('ALTER TABLE users ADD COLUMN locked INTEGER DEFAULT 0'); } catch (_) {}
+
   console.log('✅ Migrations complete.');
 }
 

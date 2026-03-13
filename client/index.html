@@ -1401,11 +1401,18 @@ async function loadQuests(){
   const r=await apiFetch('/api/quests');questData=(await r.json()).quests||[];
   renderQuests(questData,'quest-list');
 }
+function eyeBtn(type,id,hidden){return`<button class="btn btn-sm" title="${hidden?'Show to players':'Hide from players'}" onclick="event.stopPropagation();toggleHidden('${type}',${id})">${hidden?'👁 Show':'🚫 Hide'}</button>`;}
+async function toggleHidden(type,id){
+  const r=await apiFetch(`/api/vault/${id}/hidden`,{method:'PUT'});
+  if(r.ok){const d=await r.json();showToast(d.hidden?'Hidden from players':'Visible to players','success');TYPE_RELOAD[type]?.();}
+  else showToast('Failed','error');
+}
 function questCard(q){
   const p=q.progress??0;
-  const gmBtns=isGm?`<button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('quest',${q.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('quest',${q.id},loadQuests)">Del</button>`:'';
-  return `<div class="card">
-    <div class="card-title">${esc(q.title)}</div>
+  const gmBtns=isGm?`${eyeBtn('quest',q.id,q.hidden)}<button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('quest',${q.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('quest',${q.id},loadQuests)">Del</button>`:'';
+  const hiddenMark=isGm&&q.hidden?`<span class="tag" style="background:#333;color:#888;font-size:10px">hidden</span>`:'';
+  return `<div class="card" style="${isGm&&q.hidden?'opacity:0.6':''}">
+    <div class="card-title">${esc(q.title)} ${hiddenMark}</div>
     <div class="card-meta"><span class="tag tag-${esc(q.type||'side')}">${esc(q.type||'side')}</span><span class="tag tag-${esc(q.status||'active')}">${esc(q.status||'active')}</span>${q.location?`<span>📍 ${esc(q.location)}</span>`:''}</div>
     ${q.progress!=null?`<div class="progress-bar"><div class="progress-fill" style="width:${p}%"></div></div><div style="font-size:10px;color:var(--text3);margin-top:2px;font-family:'JetBrains Mono',monospace">${p}% complete</div>`:''}
     ${q.connected_to?`<div style="font-size:11px;color:var(--text3);margin-top:6px">🔗 ${esc(Array.isArray(q.connected_to)?q.connected_to.join(', '):q.connected_to)}</div>`:''}
@@ -1429,7 +1436,7 @@ function renderNpcs(){
     <div class="card-meta">${n.role?`<span style="color:var(--text2)">${esc(n.role)}</span>`:''}<span class="tag tag-${esc(n.disposition||'neutral')}">${esc(n.disposition||'unknown')}</span>${n.faction?`<span>${esc(n.faction)}</span>`:''}</div>
     ${n.location?`<div style="font-size:11px;color:var(--text3);margin-bottom:5px">📍 ${esc(n.location)}</div>`:''}
     ${n.connected_to?`<div style="font-size:11px;color:var(--text3)">🔗 ${esc(Array.isArray(n.connected_to)?n.connected_to.join(', '):n.connected_to)}</div>`:''}
-    <div class="card-actions"><button class="delete-btn" onclick="event.stopPropagation();pin('npc',${n.id},'${esc(n.title)}')">📌</button>${isGm?`<button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('npc',${n.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('npc',${n.id},loadNpcs)">Del</button>`:''}</div>
+    <div class="card-actions"><button class="delete-btn" onclick="event.stopPropagation();pin('npc',${n.id},'${esc(n.title)}')">📌</button>${isGm?`${eyeBtn('npc',n.id,n.hidden)}<button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('npc',${n.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('npc',${n.id},loadNpcs)">Del</button>`:''}</div>
   </div>`).join('');
 }
 
@@ -1444,7 +1451,7 @@ function renderLocations(){
     <div class="card-title">${esc(l.title)}</div>
     <div class="card-meta"><span class="tag tag-${esc(l.status||'unvisited')}">${esc(l.status||'unvisited')}</span>${l.danger?`<span class="tag tag-${esc(l.danger)}">${esc(l.danger)}</span>`:''}${l.visited_session?`<span>Session ${l.visited_session}</span>`:''}</div>
     ${l.connected_to?`<div style="font-size:11px;color:var(--text3)">🔗 ${esc(Array.isArray(l.connected_to)?l.connected_to.join(', '):l.connected_to)}</div>`:''}
-    <div class="card-actions"><button class="delete-btn" onclick="event.stopPropagation();pin('location',${l.id},'${esc(l.title)}')">📌</button>${isGm?`<button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('location',${l.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('location',${l.id},loadLocations)">Del</button>`:''}</div>
+    <div class="card-actions"><button class="delete-btn" onclick="event.stopPropagation();pin('location',${l.id},'${esc(l.title)}')">📌</button>${isGm?`${eyeBtn('location',l.id,l.hidden)}<button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('location',${l.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('location',${l.id},loadLocations)">Del</button>`:''}</div>
   </div>`).join('');
 }
 
@@ -1458,7 +1465,7 @@ function renderHooks(){
     <div class="card-title">${esc(h.title)}</div>
     <div class="card-meta"><span class="tag tag-${esc(h.type||'clue')}">${esc(h.type||'clue')}</span><span class="tag tag-${esc(h.status||'active')}">${esc(h.status||'active')}</span>${h.session_delivered?`<span>Session ${h.session_delivered}</span>`:''}</div>
     ${h.connected_to?`<div style="font-size:11px;color:var(--text3);margin-top:5px">🔗 ${esc(Array.isArray(h.connected_to)?h.connected_to.join(', '):h.connected_to)}</div>`:''}
-    ${isGm?`<div class="card-actions"><button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('hook',${h.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('hook',${h.id},loadHooks)">Del</button></div>`:''}
+    ${isGm?`<div class="card-actions">${eyeBtn('hook',h.id,h.hidden)}<button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('hook',${h.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('hook',${h.id},loadHooks)">Del</button></div>`:''}
   </div>`).join('');
 }
 
@@ -1531,6 +1538,7 @@ function renderHandouts(){
     <div class="card-title">${esc(h.title)}${h.requires_ack&&!h.acked_at?' <span style="color:var(--accent);font-size:10px">● NEW</span>':''}</div>
     <div class="card-meta"><span class="tag tag-${esc(h.file_type||'text')}">${esc(h.file_type||'text')}</span>${h.shared_at?`<span>${fmt(h.shared_at)}</span>`:''}${h.acked_at?'<span style="color:var(--green)">✓</span>':''}</div>
     ${h.description?`<div class="card-body">${esc(h.description)}</div>`:''}
+    ${isGm?`<div class="card-actions" onclick="event.stopPropagation()"><button class="btn btn-sm btn-danger" onclick="gmDelete('handout',${h.id},loadHandouts)">Del</button></div>`:''}
   </div>`).join('');
 }
 function openHandout(id){
@@ -1557,13 +1565,18 @@ async function loadSessions(){
   renderPolls((await rP.json()).polls||[]);
   renderScheduling((await rSch.json()).scheduling||[]);
 }
+let sessionData=[];
 function renderSessionList(sessions){
+  sessionData=sessions;
   const el=document.getElementById('session-list');
   if(!sessions.length){el.innerHTML='<div class="empty-state">No sessions recorded.</div>';return;}
   el.innerHTML=sessions.map(s=>`<div class="session-item">
     <div class="session-header" onclick="toggleSession(this)">
       <div><div class="session-num">SESSION ${s.number||'?'}</div><div class="session-title-text">${esc(s.title)}</div></div>
-      <div class="session-date">${fmt(s.played_at)}</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="session-date">${fmt(s.played_at)}</div>
+        ${isGm?`<button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('session',${s.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('session',${s.id},loadSessions)">Del</button>`:''}
+      </div>
     </div>
     <div class="session-body">
       ${s.summary?`<div class="session-summary">${esc(s.summary)}</div>`:'<div style="color:var(--text3);font-size:12px">No summary recorded.</div>'}
@@ -1681,8 +1694,9 @@ async function loadInventory(){
 }
 
 // ── Maps ──────────────────────────────────────────────────────────────────────
+let mapsData=[];
 async function loadMaps(){
-  const r=await apiFetch('/api/maps');const maps=(await r.json()).maps||[];
+  const r=await apiFetch('/api/maps');mapsData=(await r.json()).maps||[];const maps=mapsData;
   const el=document.getElementById('map-list');
   const gmBtn=isGm?`<button class="btn btn-primary" style="margin-bottom:1rem" onclick="openGmCreate('map')">+ Upload Map</button>`:'';
   if(!maps.length){el.innerHTML=gmBtn+'<div class="empty-state">No maps uploaded yet.</div>';return;}
@@ -1690,7 +1704,7 @@ async function loadMaps(){
     <img class="map-thumb" src="${API}${m.image_path.startsWith('/')?'':'/'}${esc(m.image_path)}" alt="${esc(m.title)}" onerror="this.style.background='var(--bg3)'"/>
     <div class="map-label">${esc(m.title)}</div>
     ${m.description?`<div style="padding:0 12px 8px;font-size:11px;color:var(--text3)">${esc(m.description)}</div>`:''}
-    ${isGm?`<div style="padding:0 12px 8px"><button class="btn btn-sm" onclick="event.stopPropagation();deleteMap(${m.id})">Delete</button></div>`:''}
+    ${isGm?`<div style="padding:0 12px 8px;display:flex;gap:6px" onclick="event.stopPropagation()"><button class="btn btn-sm" onclick="openGmEdit('map',${m.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="deleteMap(${m.id})">Del</button></div>`:''}
   </div>`).join('');
 }
 async function deleteMap(id){
@@ -1753,10 +1767,22 @@ async function loadJobs(){
     ${j.description?`<div class="card-body" style="margin-bottom:7px">${esc(j.description)}</div>`:''}
     <div style="font-size:11px;color:var(--text3);display:flex;gap:10px;flex-wrap:wrap">${j.posted_by?`<span>Posted by: ${esc(j.posted_by)}</span>`:''}${j.location?`<span>📍 ${esc(j.location)}</span>`:''}</div>
     ${j.requires_contact?`<div style="margin-top:7px;font-size:12px;color:var(--accent-dim)">Speak to ${esc(j.posted_by||'the contact')} to accept.</div>`:''}
-    ${isGm?`<div class="card-actions" style="margin-top:8px"><button class="btn btn-sm" onclick="openGmEdit('job',${j.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="gmDelete('job',${j.id},loadJobs)">Del</button></div>`:''}
+    ${isGm?`<div class="card-actions" style="margin-top:8px"><button class="btn btn-sm" onclick="openGmEdit('job',${j.id})">Edit</button>${!j.promoted_quest_id?`<button class="btn btn-sm btn-primary" onclick="promoteJobToQuest(${j.id})">→ Quest</button>`:''}<button class="btn btn-sm btn-danger" onclick="gmDelete('job',${j.id},loadJobs)">Del</button></div>`:''}
   </div>`).join('');
 }
 
+
+async function promoteJobToQuest(jobId){
+  const job=jobData.find(j=>j.id===jobId);
+  if(!job)return;
+  if(!confirm(`Promote "${job.title}" to a Quest?`))return;
+  const qr=await apiFetch('/api/quests',{method:'POST',body:JSON.stringify({title:job.title,description:job.description||'',status:'active',quest_type:'side'})});
+  if(!qr.ok){showToast('Failed to create quest','error');return;}
+  const qd=await qr.json();
+  const questId=qd.quest?.id;
+  if(questId){await apiFetch(`/api/jobs/${jobId}`,{method:'PUT',body:JSON.stringify({status:'taken',promoted_quest_id:questId})});}
+  showToast('Promoted to Quest','success');loadJobs();
+}
 
 // ── Character Sheet ───────────────────────────────────────────────────────────
 async function loadCharacterSheet(){
@@ -1903,11 +1929,12 @@ async function renderMindmap(){
 // ── GM Dashboard ─────────────────────────────────────────────────────────────
 async function loadGmDashboard(){
   if(!isGm)return;
-  const [cR,uR,qR,sR]=await Promise.all([apiFetch('/api/campaigns'),apiFetch('/api/users'),apiFetch('/api/quests'),apiFetch('/api/sessions')]);
+  const [cR,uR,qR,sR,stR]=await Promise.all([apiFetch('/api/campaigns'),apiFetch('/api/users'),apiFetch('/api/quests'),apiFetch('/api/sessions'),apiFetch('/api/stress')]);
   const campaigns=cR.ok?(await cR.json()).campaigns||[]:[];
-  const users=uR.ok?(await uR.json())||[]:[];
+  const users=uR.ok?(await uR.json()).users||[]:[];
   const quests=qR.ok?(await qR.json()).quests||[]:[];
   const sessions=sR.ok?(await sR.json()).sessions||[]:[];
+  const stressMap={};if(stR.ok){((await stR.json()).stress||[]).forEach(s=>{stressMap[s.user_id]=s;});}
   const el=document.getElementById('gm-dash-content');
   const activeCamp=campaigns.find(c=>c.active)||campaigns[0];
   el.innerHTML=`
@@ -1929,8 +1956,9 @@ async function loadGmDashboard(){
   </div>`:'<p class="muted">No active campaign.</p>'}
   <div class="card" style="margin-top:1rem">
     <h3 style="font-family:var(--font-heading);color:var(--accent);margin:0 0 0.75rem">Players</h3>
-    <table class="inv-table"><thead><tr><th>Name</th><th>Role</th><th>Stress</th><th>Action</th></tr></thead><tbody>
-    ${users.map(u=>`<tr><td>${esc(u.username)}</td><td><span class="tag tag-${u.role==='gm'?'quest-active':'npc'}">${u.role}</span></td><td>–</td><td><button class="btn btn-sm" onclick="openGmCreate('message','${u.id}')">Msg</button></td></tr>`).join('')}
+    <button class="btn btn-primary" style="margin-bottom:0.75rem" onclick="openGmCreate('agenda')">+ Set Agenda</button>
+    <table class="inv-table"><thead><tr><th>Name</th><th>Role</th><th>Stress / Sanity</th><th>Actions</th></tr></thead><tbody>
+    ${users.map(u=>{const st=stressMap[u.id];const stVal=st?`<span style="color:${(st.stress||0)>=(st.stress_max||10)*0.7?'var(--red)':'var(--text)'}">${st.stress||0}/${st.stress_max||10}</span>`:'–';const sanVal=st?`<span>${st.sanity??'–'}/${st.sanity_max||100}</span>`:'';return`<tr><td>${esc(u.username)}${u.character_name?`<br><small class="muted">${esc(u.character_name)}</small>`:''}</td><td><span class="tag tag-${u.role==='gm'?'quest-active':'npc'}">${u.role}</span></td><td><div style="font-size:12px">Stress: ${stVal} Sanity: ${sanVal}</div><div style="display:flex;gap:4px;margin-top:4px"><input id="st-s-${u.id}" type="number" class="form-input" style="width:55px;padding:2px 4px;font-size:12px" placeholder="stress" value="${st?.stress??''}" min="0" max="${st?.stress_max||10}"><input id="st-sn-${u.id}" type="number" class="form-input" style="width:55px;padding:2px 4px;font-size:12px" placeholder="sanity" value="${st?.sanity??''}" min="0" max="${st?.sanity_max||100}"><button class="btn btn-sm" onclick="savePlayerStress(${u.id})">Set</button></div></td><td><button class="btn btn-sm" onclick="openGmCreate('message','${u.id}')">Msg</button> <button class="btn btn-sm btn-danger" onclick="deleteUser(${u.id},'${esc(u.username)}')">Del</button></td></tr>`;}).join('')}
     </tbody></table>
   </div>
   <div class="card" style="margin-top:1rem">
@@ -1961,6 +1989,22 @@ async function downloadBackup(){
     a.href=url;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
     showToast('Backup downloaded','success');
   }catch(e){showToast('Backup error','error');}
+}
+
+async function savePlayerStress(userId){
+  const stress=document.getElementById(`st-s-${userId}`)?.value.trim();
+  const sanity=document.getElementById(`st-sn-${userId}`)?.value.trim();
+  const body={};
+  if(stress!=='')body.stress=Number(stress);
+  if(sanity!=='')body.sanity=Number(sanity);
+  if(!Object.keys(body).length){showToast('Enter a value','error');return;}
+  const r=await apiFetch(`/api/stress/${userId}`,{method:'PUT',body:JSON.stringify(body)});
+  if(r.ok)showToast('Stress updated','success');else showToast('Update failed','error');
+}
+async function deleteUser(id,name){
+  if(!confirm(`Delete user "${name}"? This cannot be undone.`))return;
+  const r=await apiFetch(`/api/users/${id}`,{method:'DELETE'});
+  if(r.ok){showToast('User deleted','success');loadGmDashboard();}else showToast('Delete failed','error');
 }
 
 // ── Combat Tracker ────────────────────────────────────────────────────────────
@@ -2223,12 +2267,15 @@ const GM_FORMS={
     <div class="form-group"><label>Source NPC</label><input id="gm-f-npc" class="form-input" placeholder="Who told the players this?"></div>
     <div class="form-group"><label>Source Location</label><input id="gm-f-location" class="form-input"></div>
     <div class="form-group"><label>Is True?</label><select id="gm-f-true" class="form-input"><option value="1">True</option><option value="0">False</option></select></div>`,
+  agenda:`<div class="form-group"><label>Player</label><select id="gm-f-user" class="form-input"><option value="">Select player…</option></select></div>
+    <div class="form-group"><label>Agenda Title</label><input id="gm-f-title" class="form-input" placeholder="Session objective…"></div>
+    <div class="form-group"><label>Body / Details</label><textarea id="gm-f-content" class="form-input" rows="5" placeholder="What should this player focus on?"></textarea></div>`,
 };
 let gmCreateType=null,gmCreateExtra=null,gmEditId=null;
-const PAGE_TO_TYPE={quests:'quest',npcs:'npc',locations:'location',hooks:'hook',handouts:'handout',maps:'map',sessions:'session',notes:'note',factions:'faction',timeline:'timeline',inventory:'inventory',bestiary:'bestiary',rumours:'rumour',jobs:'job'};
-const TYPE_STORE={quest:()=>questData,npc:()=>npcData,location:()=>locationData,hook:()=>hookData,faction:()=>factionData,timeline:()=>timelineData,inventory:()=>inventoryData,bestiary:()=>bestiaryData,rumour:()=>rumourData,job:()=>jobData};
-const TYPE_ENDPOINT={quest:'/api/quests',npc:'/api/npcs',location:'/api/locations',hook:'/api/hooks',handout:'/api/handouts',map:'/api/maps',session:'/api/sessions',note:'/api/notes',faction:'/api/factions',timeline:'/api/timeline',inventory:'/api/inventory','key-item':'/api/key-items',job:'/api/jobs',bestiary:'/api/bestiary',rumour:'/api/rumours'};
-const TYPE_RELOAD={quest:loadQuests,npc:loadNpcs,location:loadLocations,hook:loadHooks,handout:()=>navigate('handouts'),map:loadMaps,session:()=>navigate('sessions'),note:loadNotes,faction:loadFactions,timeline:loadTimeline,inventory:loadInventory,'key-item':loadInventory,job:loadJobs,bestiary:loadBestiary,rumour:loadRumours};
+const PAGE_TO_TYPE={quests:'quest',npcs:'npc',locations:'location',hooks:'hook',handouts:'handout',maps:'map',sessions:'session',notes:'note',factions:'faction',timeline:'timeline',inventory:'inventory',bestiary:'bestiary',rumours:'rumour',jobs:'job',agenda:'agenda'};
+const TYPE_STORE={quest:()=>questData,npc:()=>npcData,location:()=>locationData,hook:()=>hookData,faction:()=>factionData,timeline:()=>timelineData,inventory:()=>inventoryData,bestiary:()=>bestiaryData,rumour:()=>rumourData,job:()=>jobData,map:()=>mapsData};
+const TYPE_ENDPOINT={quest:'/api/quests',npc:'/api/npcs',location:'/api/locations',hook:'/api/hooks',handout:'/api/handouts',map:'/api/maps',session:'/api/sessions',note:'/api/notes',faction:'/api/factions',timeline:'/api/timeline',inventory:'/api/inventory','key-item':'/api/key-items',job:'/api/jobs',bestiary:'/api/bestiary',rumour:'/api/rumours',agenda:'/api/agenda'};
+const TYPE_RELOAD={quest:loadQuests,npc:loadNpcs,location:loadLocations,hook:loadHooks,handout:()=>navigate('handouts'),map:loadMaps,session:()=>navigate('sessions'),note:loadNotes,faction:loadFactions,timeline:loadTimeline,inventory:loadInventory,'key-item':loadInventory,job:loadJobs,bestiary:loadBestiary,rumour:loadRumours,agenda:loadGmDashboard};
 function prefillGmForm(type,d){
   const s=(id,v)=>{const el=document.getElementById(id);if(el&&v!=null)el.value=v;};
   s('gm-f-title',d.title);s('gm-f-name',d.name||d.title);s('gm-f-desc',d.description);
@@ -2267,10 +2314,10 @@ async function openGmCreate(type,extra){
   const body=document.getElementById('gm-modal-body');
   title.textContent=`Create ${type.charAt(0).toUpperCase()+type.slice(1)}`;
   body.innerHTML=GM_FORMS[type]||`<p class="muted">No form for ${esc(type)}</p>`;
-  // populate player select for handouts
-  if(type==='handout'){
+  // populate player select for handouts and agenda
+  if(type==='handout'||type==='agenda'){
     const r=await apiFetch('/api/users');
-    if(r.ok){const users=await r.json();const sel=document.getElementById('gm-f-user');if(sel)users.forEach(u=>{if(u.role!=='gm'){const o=document.createElement('option');o.value=u.id;o.textContent=u.username;sel.appendChild(o);}});}
+    if(r.ok){const d=await r.json();const users=d.users||d||[];const sel=document.getElementById('gm-f-user');if(sel)users.forEach(u=>{if(u.role!=='gm'){const o=document.createElement('option');o.value=u.id;o.textContent=u.username;sel.appendChild(o);}});}
   }
   modal.style.display='flex';
 }
@@ -2354,6 +2401,11 @@ async function gmModalSave(){
     case 'rumour':
       endpoint='/api/rumours';
       body={text:val('gm-f-content'),source_npc:val('gm-f-npc'),source_location:val('gm-f-location'),is_true:val('gm-f-true')==='1'};
+      break;
+    case 'agenda':
+      endpoint='/api/agenda';
+      body={user_id:val('gm-f-user'),title:val('gm-f-title'),body:val('gm-f-content')};
+      if(!body.user_id){showToast('Select a player','error');return;}
       break;
     case 'message':
       endpoint='/api/messages';

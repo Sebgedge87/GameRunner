@@ -17,8 +17,9 @@ const router = express.Router();
 
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
-  const rows = db.prepare(`SELECT * FROM vault_files WHERE type = 'location' ORDER BY title ASC`).all();
-  const locations = rows.map((r) => ({ id: r.id, path: r.path, title: r.title, ...JSON.parse(r.frontmatter || '{}') }));
+  const hiddenFilter = req.user.role === 'gm' ? '' : 'AND (hidden IS NULL OR hidden = 0)';
+  const rows = db.prepare(`SELECT * FROM vault_files WHERE type = 'location' ${hiddenFilter} ORDER BY title ASC`).all();
+  const locations = rows.map((r) => ({ id: r.id, path: r.path, title: r.title, hidden: r.hidden || 0, ...JSON.parse(r.frontmatter || '{}') }));
   res.json({ locations });
 });
 

@@ -41,6 +41,7 @@ const stressRoutes = require('./routes/stress');
 const pinsRoutes = require('./routes/pins');
 const searchRoutes = require('./routes/search');
 const backupRoutes = require('./routes/backup');
+const vaultRoutes = require('./routes/vault');
 
 const app = express();
 
@@ -128,6 +129,7 @@ app.use('/api/stress', stressRoutes);
 app.use('/api/pins', pinsRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/backup', backupRoutes);
+app.use('/api/vault', vaultRoutes);
 
 // ── Health check ───────────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => {

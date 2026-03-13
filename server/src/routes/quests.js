@@ -18,8 +18,9 @@ const router = express.Router();
 // GET /api/quests
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
-  const rows = db.prepare(`SELECT * FROM vault_files WHERE type = 'quest' ORDER BY synced_at DESC`).all();
-  const quests = rows.map((r) => ({ id: r.id, path: r.path, title: r.title, ...JSON.parse(r.frontmatter || '{}') }));
+  const hiddenFilter = req.user.role === 'gm' ? '' : 'AND (hidden IS NULL OR hidden = 0)';
+  const rows = db.prepare(`SELECT * FROM vault_files WHERE type = 'quest' ${hiddenFilter} ORDER BY synced_at DESC`).all();
+  const quests = rows.map((r) => ({ id: r.id, path: r.path, title: r.title, hidden: r.hidden || 0, ...JSON.parse(r.frontmatter || '{}') }));
   res.json({ quests });
 });
 

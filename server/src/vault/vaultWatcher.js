@@ -22,6 +22,8 @@ function syncFile(fullPath) {
   if (!fullPath.endsWith('.md')) return;
 
   const relPath = path.relative(vaultPath, fullPath);
+  // GM-Only folder is never synced to the shared DB
+  if (relPath.startsWith('GM-Only' + path.sep) || relPath.startsWith('GM-Only/')) return;
   let parsed;
   try {
     const raw = fs.readFileSync(fullPath, 'utf8');
@@ -49,6 +51,7 @@ function syncFile(fullPath) {
 function removeFile(fullPath) {
   if (!fullPath.endsWith('.md')) return;
   const relPath = path.relative(vaultPath, fullPath);
+  if (relPath.startsWith('GM-Only' + path.sep) || relPath.startsWith('GM-Only/')) return;
   getDb().prepare('DELETE FROM vault_files WHERE path = ?').run(relPath);
   console.log(`🗑️  Vault: removed ${relPath}`);
 }
