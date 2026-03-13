@@ -1,0 +1,33 @@
+chronicle.local {
+  # Serve the single-file frontend
+  handle /api/* {
+    reverse_proxy chronicle:3000
+  }
+
+  handle /uploads/* {
+    reverse_proxy chronicle:3000
+  }
+
+  handle {
+    root * /srv/client
+    try_files {path} /index.html
+    file_server
+  }
+
+  # Security headers
+  header {
+    Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    X-Content-Type-Options "nosniff"
+    X-Frame-Options "DENY"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    -Server
+  }
+
+  encode gzip
+
+  log {
+    output file /var/log/caddy/chronicle.log
+    format json
+  }
+}

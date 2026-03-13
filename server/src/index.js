@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
 const { port } = require('./config');
@@ -35,6 +36,11 @@ const theoryBoardRoutes = require('./routes/theoryBoard');
 const notificationsRoutes = require('./routes/notifications');
 const usersRoutes = require('./routes/users');
 const uploadsRoutes = require('./routes/uploads');
+const agendaRoutes = require('./routes/agenda');
+const stressRoutes = require('./routes/stress');
+const pinsRoutes = require('./routes/pins');
+const searchRoutes = require('./routes/search');
+const backupRoutes = require('./routes/backup');
 
 const app = express();
 
@@ -46,9 +52,24 @@ app.use('/api/auth', rateLimit({
   legacyHeaders: false,
 }));
 
+// ── Security headers ───────────────────────────────────────────────────────────
+app.use(helmet({
+  contentSecurityPolicy: false, // relaxed for single-file HTML portal
+  crossOriginEmbedderPolicy: false,
+}));
+
+// ── CORS ───────────────────────────────────────────────────────────────────────
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://localhost:3000,http://127.0.0.1:3000').split(',').map(s => s.trim());
+app.use(cors({
+  origin(origin, cb) {
+    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    cb(new Error(`CORS: origin ${origin} not allowed`));
+  },
+  credentials: true,
+}));
+
 // ── Middleware ─────────────────────────────────────────────────────────────────
-app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // ── Request logger (dev) ───────────────────────────────────────────────────────
@@ -102,6 +123,11 @@ app.use('/api/character-sheets', characterSheetsRoutes);
 app.use('/api/theory', theoryBoardRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/uploads', uploadsRoutes);
+app.use('/api/agenda', agendaRoutes);
+app.use('/api/stress', stressRoutes);
+app.use('/api/pins', pinsRoutes);
+app.use('/api/search', searchRoutes);
+app.use('/api/backup', backupRoutes);
 
 // ── Health check ───────────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => {

@@ -15,12 +15,17 @@ const storage = multer.diskStorage({
   },
 });
 
+const ALLOWED_EXTS = /\.(jpg|jpeg|png|gif|webp|pdf|mp3|ogg|wav)$/i;
+const ALLOWED_MIMES = new Set([
+  'image/jpeg','image/png','image/gif','image/webp',
+  'application/pdf','audio/mpeg','audio/ogg','audio/wav','audio/wave',
+]);
+
 const upload = multer({
   storage,
   limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB
   fileFilter: (_req, file, cb) => {
-    const allowed = /\.(jpg|jpeg|png|gif|webp|pdf|mp3|ogg|wav)$/i;
-    if (!allowed.test(file.originalname)) {
+    if (!ALLOWED_EXTS.test(file.originalname) || !ALLOWED_MIMES.has(file.mimetype)) {
       return cb(new Error('File type not allowed'));
     }
     cb(null, true);
