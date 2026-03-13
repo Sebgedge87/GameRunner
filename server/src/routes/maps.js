@@ -22,6 +22,15 @@ router.post('/', requireGm, (req, res) => {
   res.status(201).json({ map });
 });
 
+router.put('/:id', requireGm, (req, res) => {
+  const { title, description, map_type } = req.body;
+  const db = getDb();
+  db.prepare(`UPDATE maps SET title = COALESCE(?, title), description = COALESCE(?, description), map_type = COALESCE(?, map_type) WHERE id = ?`)
+    .run(title || null, description || null, map_type || null, req.params.id);
+  const map = db.prepare('SELECT * FROM maps WHERE id = ?').get(req.params.id);
+  res.json({ map });
+});
+
 router.delete('/:id', requireGm, (req, res) => {
   const db = getDb();
   db.prepare('DELETE FROM maps WHERE id = ?').run(req.params.id);

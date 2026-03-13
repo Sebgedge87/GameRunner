@@ -1665,12 +1665,19 @@ async function loadInventory(){
 async function loadMaps(){
   const r=await apiFetch('/api/maps');const maps=(await r.json()).maps||[];
   const el=document.getElementById('map-list');
-  if(!maps.length){el.innerHTML='<div class="empty-state">No maps.</div>';return;}
-  el.innerHTML=maps.map(m=>`<div class="map-card" onclick="openMap('${esc(m.image_path)}')">
+  const gmBtn=isGm?`<button class="btn btn-primary" style="margin-bottom:1rem" onclick="openGmCreate('map')">+ Upload Map</button>`:'';
+  if(!maps.length){el.innerHTML=gmBtn+'<div class="empty-state">No maps uploaded yet.</div>';return;}
+  el.innerHTML=gmBtn+maps.map(m=>`<div class="map-card" onclick="openMap('${esc(m.image_path)}')">
     <img class="map-thumb" src="${API}${m.image_path.startsWith('/')?'':'/'}${esc(m.image_path)}" alt="${esc(m.title)}" onerror="this.style.background='var(--bg3)'"/>
     <div class="map-label">${esc(m.title)}</div>
     ${m.description?`<div style="padding:0 12px 8px;font-size:11px;color:var(--text3)">${esc(m.description)}</div>`:''}
+    ${isGm?`<div style="padding:0 12px 8px"><button class="btn btn-sm" onclick="event.stopPropagation();deleteMap(${m.id})">Delete</button></div>`:''}
   </div>`).join('');
+}
+async function deleteMap(id){
+  if(!confirm('Delete this map?'))return;
+  const r=await apiFetch(`/api/maps/${id}`,{method:'DELETE'});
+  if(r.ok){showToast('Map deleted','success');loadMaps();}else showToast('Delete failed','error');
 }
 function openMap(path){document.getElementById('map-overlay-img').src=`${API}${path.startsWith('/')?'':'/'}${path}`;document.getElementById('map-overlay').classList.add('open');}
 function closeMapOverlay(){document.getElementById('map-overlay').classList.remove('open');}
@@ -1911,7 +1918,7 @@ async function downloadBackup(){
   a.download=`chronicle-backup-${new Date().toISOString().slice(0,10)}.zip`;
   // Use fetch to pass auth header
   try{
-    const r=await fetch('/api/backup',{headers:{Authorization:`Bearer ${token}`}});
+    const r=await fetch(`${API}/api/backup`,{headers:{Authorization:`Bearer ${token}`}});
     if(!r.ok){showToast('Backup failed','error');return;}
     const blob=await r.blob();
     const url=URL.createObjectURL(blob);
@@ -2143,6 +2150,10 @@ const GM_FORMS={
     <div class="form-group"><label>Summary</label><textarea id="gm-f-desc" class="form-input" rows="4"></textarea></div>
     <div class="form-group"><label>Session Date</label><input id="gm-f-date" class="form-input" type="date"></div>`,
   message:`<div class="form-group"><label>Message</label><textarea id="gm-f-content" class="form-input" rows="4"></textarea></div>`,
+  map:`<div class="form-group"><label>Title</label><input id="gm-f-title" class="form-input" placeholder="Map name"></div>
+    <div class="form-group"><label>Description</label><textarea id="gm-f-desc" class="form-input" rows="3"></textarea></div>
+    <div class="form-group"><label>Type</label><select id="gm-f-map-type" class="form-input"><option value="world">World</option><option value="region">Region</option><option value="city">City</option><option value="dungeon">Dungeon</option><option value="encounter">Encounter</option></select></div>
+    <div class="form-group"><label>Map Image <span style="color:#c95a5a">*</span></label><input type="file" id="gm-f-img" class="form-input" accept="image/*"><small class="muted">JPG, PNG, WebP — max 20 MB</small></div>`,
 };
 let gmCreateType=null,gmCreateExtra=null;
 async function openGmCreate(type,extra){
@@ -2166,7 +2177,7 @@ async function uploadImage(inputId){
   const fd=new FormData();fd.append('file',input.files[0]);
   const token=localStorage.getItem('chronicle_token');
   try{
-    const r=await fetch('/api/uploads',{method:'POST',headers:{Authorization:`Bearer ${token}`},body:fd});
+    const r=await fetch(`${API}/api/uploads`,{method:'POST',headers:{Authorization:`Bearer ${token}`},body:fd});
     if(r.ok){const d=await r.json();return d.url||d.path||null;}
   }catch(_){}
   return null;
@@ -2206,6 +2217,11 @@ async function gmModalSave(){
       endpoint='/api/sessions';
       body={title:val('gm-f-title'),summary:val('gm-f-desc'),session_date:val('gm-f-date')};
       break;
+    case 'map':
+      if(!imageUrl){showToast('Map image is required','error');return;}
+      endpoint='/api/maps';
+      body={title:val('gm-f-title'),description:val('gm-f-desc'),image_path:imageUrl,map_type:val('gm-f-map-type')||'world'};
+      break;
     case 'message':
       endpoint='/api/messages';
       body={content:val('gm-f-content'),recipient_id:gmCreateExtra||null};
@@ -2219,7 +2235,7 @@ async function gmModalSave(){
     showToast(`${type.charAt(0).toUpperCase()+type.slice(1)} created`,'success');
     closeGmModal();
     // Reload relevant page
-    const pageMap={quest:'quests',npc:'npcs',location:'locations',hook:'hooks',handout:'handouts',note:'notes',session:'sessions',message:'messages'};
+    const pageMap={quest:'quests',npc:'npcs',location:'locations',hook:'hooks',handout:'handouts',note:'notes',session:'sessions',message:'messages',map:'maps'};
     if(pageMap[type])navTo(pageMap[type]);
   }else showToast('Save failed','error');
 }
