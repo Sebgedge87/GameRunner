@@ -1,146 +1,234 @@
-# Local Setup Guide
+# Setup Guide
 
 ## Prerequisites
 
 - **Node.js 22.5+** — required for the built-in SQLite module (`node:sqlite`)
-  Check your version: `node --version`
-  Install via [nodejs.org](https://nodejs.org) or [nvm](https://github.com/nvm-sh/nvm): `nvm install 22 && nvm use 22`
+  ```bash
+  node --version   # must be v22.5.0 or higher
+  ```
+  Install via [nodejs.org](https://nodejs.org) or nvm:
+  ```bash
+  nvm install 22 && nvm use 22
+  ```
 - **npm** — bundled with Node.js
 
 ---
 
-## 1. Clone and install dependencies
+## Local Setup
+
+### 1. Clone and install
 
 ```bash
 git clone <repo-url>
 cd GameRunner
-
-# Install server dependencies (package.json is at the repo root)
-npm install
+npm install          # installs from package.json at the repo root
 ```
 
----
-
-## 2. Configure environment
-
-Copy the example env file into the server directory and edit it:
+### 2. Configure environment
 
 ```bash
 cp server/.env.example server/.env
 ```
 
-Open `server/.env` and set:
+Edit `server/.env`:
 
 ```env
 PORT=3000
-
-# Change this to a long random string — used to sign JWTs
-JWT_SECRET=change-me-to-something-long-and-random
-
-# Path where Obsidian-style markdown files are stored (quests, npcs, locations, hooks)
+JWT_SECRET=replace-this-with-a-long-random-string
 VAULT_PATH=./vault
-
-# Path to the SQLite database file
 DB_PATH=./chronicle.db
-
-# Username for the GM account created on first run
 GM_USERNAME=dungeonmaster
 
-# Set to false to prevent new player registrations after initial setup
+# Uncomment to lock registration after first run:
 # REGISTRATION_OPEN=false
 ```
 
-> **Tip:** Generate a strong JWT secret with:
-> ```bash
-> node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-> ```
-
----
-
-## 3. Run the server
-
-### Development (auto-restarts on file changes)
-
+Generate a strong secret:
 ```bash
-npm run dev
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-### Production
+### 3. Start the server
 
 ```bash
-npm start
+npm run dev    # development — auto-restarts on file changes
+# or
+npm start      # production
 ```
 
-The server starts at **http://localhost:3000** (or whatever `PORT` you set).
-Open that URL in your browser — the client portal is served automatically.
+Open **http://localhost:3000** — the app is served directly from the same process, no separate web server needed.
 
----
-
-## 4. First login
-
-On first run, migrations run automatically and a GM account is bootstrapped.
-
-The default GM credentials are:
+### 4. First login
 
 | Field | Value |
 |---|---|
 | Username | `dungeonmaster` (or your `GM_USERNAME`) |
 | Password | `changeme` |
 
-**Change the password immediately** via the GM Dashboard → Players table → Pwd button.
+Change the password immediately: **GM Dashboard → Players → Pwd**.
 
-Players can self-register at the login screen (unless `REGISTRATION_OPEN=false`).
+Players can self-register unless `REGISTRATION_OPEN=false` is set.
 
 ---
 
-## 5. Vault directory (optional)
+## Cloud Deployment
 
-The Chronicle watches a local vault directory for Obsidian-style markdown files. Any `.md` files placed in the right subdirectory are automatically synced to the database.
+The server serves the client HTML itself — no separate web server required. You just need somewhere to run Node.js 22 with a persistent filesystem.
 
-Default layout when a campaign is active:
+### Option A — Railway (easiest, ~$5/mo)
+
+1. Push your code to GitHub
+2. Go to [railway.app](https://railway.app) → **New Project → Deploy from GitHub**
+3. Select this repo; Railway auto-detects Node.js
+4. Add environment variables under **Variables**:
+   ```
+   PORT=3000
+   JWT_SECRET=<strong random string>
+   GM_USERNAME=dungeonmaster
+   NODE_ENV=production
+   ```
+5. Add a **Volume** (for persistent DB + vault):
+   - Mount path: `/data`
+   - Then set `DB_PATH=/data/chronicle.db` and `VAULT_PATH=/data/vault`
+6. Railway gives you a public URL like `https://your-app.up.railway.app` — open it and log in.
+
+### Option B — Render (free tier available)
+
+1. Push to GitHub
+2. Go to [render.com](https://render.com) → **New → Web Service**
+3. Connect the repo; set:
+   - **Build command:** `npm install`
+   - **Start command:** `npm start`
+   - **Node version:** 22
+4. Add environment variables (same as Railway above)
+5. Add a **Persistent Disk** at `/data`, then set `DB_PATH=/data/chronicle.db` and `VAULT_PATH=/data/vault`
+6. Deploy — your public URL is shown in the dashboard.
+
+> ⚠️ Render free tier **sleeps after 15 min of inactivity** — use a paid plan or Railway for always-on access.
+
+### Option C — Fly.io
+
+```bash
+# Install flyctl: https://fly.io/docs/hands-on/install-flyctl/
+fly auth login
+fly launch        # auto-detects from Dockerfile; creates fly.toml
+```
+
+Edit the generated `fly.toml` to add a volume mount:
+```toml
+[mounts]
+  source = "chronicle_data"
+  destination = "/data"
+```
+
+Set secrets:
+```bash
+fly secrets set JWT_SECRET="<strong random string>"
+fly secrets set GM_USERNAME="dungeonmaster"
+fly secrets set DB_PATH="/data/chronicle.db"
+fly secrets set VAULT_PATH="/data/vault"
+```
+
+```bash
+fly deploy
+fly open    # opens browser to your app
+```
+
+### Option D — VPS with Docker (full control)
+
+SSH into your VPS, clone the repo, then:
+
+```bash
+# 1. Create a .env file
+cat > .env <<EOF
+JWT_SECRET=$(openssl rand -hex 32)
+GM_USERNAME=dungeonmaster
+ALLOWED_ORIGINS=https://yourdomain.com
+EOF
+
+# 2. Start
+docker compose up -d
+
+# 3. Test it
+curl http://localhost:3000/api/health
+```
+
+The app runs on port 3000. Put Nginx or Caddy in front for HTTPS:
+
+**Nginx (simplest):**
+```nginx
+server {
+    listen 80;
+    server_name yourdomain.com;
+    return 301 https://$host$request_uri;
+}
+server {
+    listen 443 ssl;
+    server_name yourdomain.com;
+    ssl_certificate     /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        # Required for SSE (real-time updates):
+        proxy_buffering off;
+        proxy_read_timeout 24h;
+    }
+}
+```
+
+**Caddy (auto-HTTPS, included in repo):**
+Edit `Caddyfile` — replace `chronicle.local` with your domain, then:
+```bash
+docker compose -f docker-compose.yml -f docker-compose.caddy.yml up -d
+```
+
+---
+
+## Environment Variables Reference
+
+| Variable | Default | Description |
+|---|---|---|
+| `PORT` | `3000` | Port the server listens on |
+| `JWT_SECRET` | *(required)* | Secret for signing JWTs — use a 32+ char random string |
+| `DB_PATH` | `./chronicle.db` | Path to SQLite database file |
+| `VAULT_PATH` | `./vault` | Path to Obsidian-style markdown vault |
+| `GM_USERNAME` | `dungeonmaster` | Username of the GM account created on first run |
+| `REGISTRATION_OPEN` | `true` | Set to `false` to prevent new player registrations |
+| `ALLOWED_ORIGINS` | `*` | CORS allowed origins (comma-separated for production) |
+| `NODE_ENV` | — | Set to `production` to silence dev logging |
+
+---
+
+## Vault Directory
+
+The server watches for Obsidian-style markdown files and syncs them automatically.
 
 ```
 vault/
 └── <campaign-slug>/
-    ├── Quests/
+    ├── Quests/       ← .md files with YAML frontmatter
     ├── NPCs/
     ├── Locations/
     ├── Hooks/
-    └── GM-Only/     ← never synced to the DB or shown to players
+    └── GM-Only/      ← NEVER synced or shown to players
 ```
-
-Without an active campaign the flat layout (`vault/Quests/`, etc.) is used.
 
 ---
 
-## 6. Useful npm scripts
+## Useful npm Scripts
 
 | Command | Description |
 |---|---|
 | `npm run dev` | Start with nodemon (hot-reload) |
 | `npm start` | Start in production mode |
-| `npm run seed` | Seed example data into the database |
+| `npm run seed` | Seed example data |
 | `npm run migrate` | Run migrations manually |
-
----
-
-## Docker (alternative)
-
-If you prefer Docker:
-
-```bash
-# Copy and edit the env file
-cp server/.env.example .env
-# Set JWT_SECRET and GM_USERNAME in .env, then:
-
-docker compose up -d
-```
-
-The app will be available at **http://localhost:3000**.
-
-Data is persisted in the `chronicle-data` Docker volume.
-
-To use the included Caddy reverse-proxy with TLS, edit `Caddyfile` to replace `chronicle.local` with your domain, then bring up the full stack including Caddy.
 
 ---
 
@@ -148,7 +236,9 @@ To use the included Caddy reverse-proxy with TLS, edit `Caddyfile` to replace `c
 
 | Problem | Fix |
 |---|---|
-| `Error: Cannot find module 'node:sqlite'` | Node.js version is below 22.5 — upgrade it |
-| Port already in use | Change `PORT` in `server/.env` |
-| Blank page / API errors | Check the browser console; confirm the server is running at the expected port |
-| GM account missing | Delete `chronicle.db` and restart — migrations will re-bootstrap it |
+| `Cannot find module 'node:sqlite'` | Node.js < 22.5 — run `nvm install 22 && nvm use 22` |
+| Port 3000 already in use | Change `PORT` in `server/.env` |
+| App loads but API calls fail | Check browser console — if you see CORS errors, set `ALLOWED_ORIGINS` to your domain |
+| SSE / real-time updates not working | Ensure your proxy is configured with `proxy_buffering off` and a long `proxy_read_timeout` |
+| GM account missing after restart | `DB_PATH` is pointing to a non-persistent location — use a volume mount |
+| Blank page | Check browser console for JS errors; confirm server is running (`curl http://localhost:3000/api/health`) |

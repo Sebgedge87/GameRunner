@@ -1007,7 +1007,9 @@ select.form-input{cursor:pointer;}
 <audio id="audio-player" loop></audio>
 
 <script>
-const API = window.CHRONICLE_API || `${location.protocol}//${location.hostname}:3000`;
+// Use relative URLs when served from the same origin (default for both local and cloud).
+// Set window.CHRONICLE_API before this script only if the API is on a different host.
+const API = window.CHRONICLE_API || '';
 let token = localStorage.getItem('chronicle_token');
 let currentUser = null;
 let isGm = false;
