@@ -527,6 +527,54 @@ Currently only Handouts support targeted sharing. NPCs, Locations, Quests etc. a
 - [ ] Theory board "Share with GM" toggle — wire `PUT /api/theories/nodes/:id` with `visibility` field
 - [ ] Handout reshare button — show reshare button in client when `can_reshare = true`
 
+#### Priority 6 — Campaign switcher + multi-campaign data isolation
+Without this, all content bleeds across games regardless of which campaign is active.
+
+- [ ] **Campaign switcher UI** — clickable top-bar dropdown listing all campaigns; click → `PUT /api/campaigns/:id/activate`; currently the banner shows name only, no interaction
+- [ ] **Create new campaign** — add `GM_FORMS.campaign` (name, system, subtitle) + case in `gmModalSave`; FAB should show on gm-dashboard page
+- [ ] **Vault per-campaign scoping** — restructure vault directories to `vault/[campaign-slug]/Quests/`, `NPCs/`, etc.; update vaultWatcher to detect campaign from top-level folder and tag `vault_files.campaign_id`
+- [ ] **GET route filtering** — all vault routes (quests, npcs, locations, hooks), maps, sessions, handouts, factions, timeline, jobs, inventory, key_items, bestiary, rumours must `WHERE campaign_id = <active campaign id>`; currently campaign_id column exists on most tables but is never filtered
+- [ ] **Fix GM Dashboard campaign data bug** — `loadGmDashboard()` treats `cR.json()` as an array but API returns `{ campaigns: [...] }`; `campaigns.find()` silently fails
+
+#### Priority 7 — Card detail panels (click to expand)
+The spec says every card opens a full detail panel. Currently cards have no click handler — they are static read-only tiles.
+
+- [ ] `openDetail(type, id)` function — fetches full item and renders a modal/flyout with image, full description, all linked fields
+- [ ] Wire `onclick="openDetail('quest', ${id})"` on every quest, npc, location, hook, faction, bestiary card
+- [ ] For GM: detail panel includes Edit and Delete buttons
+- [ ] Linked fields (e.g. `linked_quest`, `source_npc`) navigate to that item's detail on click
+
+#### Priority 8 — GM-Only vault folder privacy boundary
+Currently `vault/GM-Only/` files are synced to DB just like everything else and are accessible to any authenticated user.
+
+- [ ] **vaultWatcher**: skip files whose path starts with `GM-Only/` — never write them to `vault_files`
+- [ ] Alternatively: sync them but set a `gm_only = 1` flag and filter from all non-GM GET responses
+- [ ] Ensure no route accidentally exposes these files
+
+#### Priority 9 — Missing GM tools with existing backend
+
+- [ ] **Agenda / Secret Objective Cards** — add `GM_FORMS.agenda` (player select, title, content) + `gmModalSave` case → `POST /api/agenda`; currently route has full CRUD but no UI entry point
+- [ ] **Stress/Sanity adjust** — add GM control in player table on GM Dashboard to set stress per player → `PUT /api/stress/:userId`; currently API-only
+- [ ] **Bestiary reveal button** — wire `PUT /api/bestiary/:id/reveal` in client; endpoint exists, no button
+- [ ] **Rumours expose button** — wire `POST /api/rumours/:id/expose` in client; endpoint exists, no button
+- [ ] **Job → Quest promotion** — add "Promote to Quest" button on job cards → `PUT /api/jobs/:id` with `promoted_quest_id`; field exists in DB, no UI
+- [ ] **Rumours PUT** — add `PUT /api/rumours/:id` server route; currently rumours cannot be edited after creation
+
+#### Priority 10 — User / player management
+
+- [ ] **GM can remove players** — add `DELETE /api/users/:id` (GM only); currently no way to remove an account
+- [ ] **GM can reset player password** — add `PUT /api/users/:id/password` (GM only)
+- [ ] **Registration is open** — `POST /api/auth/register` is publicly accessible; for a private group install this should require a GM-issued invite code or be GM-only
+- [ ] **Client UI** — add Remove and Reset Password buttons to the Players table in GM Dashboard
+
+#### Priority 11 — XP / Milestone tracker (not built)
+No route, no DB table, no client UI exists for this spec feature.
+
+- [ ] Add `xp_awards` table: `(campaign_id, awarded_to, amount, reason, awarded_at)`
+- [ ] `GET /api/xp`, `POST /api/xp` (GM), `DELETE /api/xp/:id` (GM)
+- [ ] Client: XP panel on GM Dashboard + per-player XP total on character sheet dashboard card
+- [ ] Auto-notify player when level-up threshold crossed (SSE event)
+
 ---
 
 ### What Works End-to-End Today
