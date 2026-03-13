@@ -34,9 +34,14 @@ router.post('/', requireGm, (req, res) => {
   if (!title) return res.status(400).json({ error: 'title is required' });
   const filename = `${slug(title)}-${Date.now()}.md`;
   const content = matter.stringify(description, { title, status, quest_type });
-  fs.writeFileSync(path.join(VAULT_DIR, filename), content, 'utf8');
+  const camp = getDb().prepare('SELECT id, name FROM campaigns WHERE active = 1 LIMIT 1').get();
+  const campSlug = camp ? camp.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : null;
+  const targetDir = campSlug ? path.join(vaultPath, campSlug, 'Quests') : VAULT_DIR;
+  if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
+  const relPath = campSlug ? `${campSlug}/Quests/${filename}` : `Quests/${filename}`;
+  fs.writeFileSync(path.join(targetDir, filename), content, 'utf8');
   setTimeout(() => {
-    const row = getDb().prepare(`SELECT * FROM vault_files WHERE path = ?`).get(`Quests/${filename}`);
+    const row = getDb().prepare(`SELECT * FROM vault_files WHERE path = ?`).get(relPath);
     const quest = row ? { id: row.id, path: row.path, title: row.title, ...JSON.parse(row.frontmatter || '{}') } : { title, status, quest_type };
     res.status(201).json({ quest });
   }, 400);

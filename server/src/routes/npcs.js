@@ -33,9 +33,14 @@ router.post('/', requireGm, (req, res) => {
   if (!title) return res.status(400).json({ error: 'name is required' });
   const filename = `${slug(title)}-${Date.now()}.md`;
   const content = matter.stringify(description, { title, role, gm_notes, image_url, status: 'active' });
-  fs.writeFileSync(path.join(VAULT_DIR, filename), content, 'utf8');
+  const camp = getDb().prepare('SELECT id, name FROM campaigns WHERE active = 1 LIMIT 1').get();
+  const campSlug = camp ? camp.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : null;
+  const targetDir = campSlug ? path.join(vaultPath, campSlug, 'NPCs') : VAULT_DIR;
+  if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
+  const relPath = campSlug ? `${campSlug}/NPCs/${filename}` : `NPCs/${filename}`;
+  fs.writeFileSync(path.join(targetDir, filename), content, 'utf8');
   setTimeout(() => {
-    const row = getDb().prepare(`SELECT * FROM vault_files WHERE path = ?`).get(`NPCs/${filename}`);
+    const row = getDb().prepare(`SELECT * FROM vault_files WHERE path = ?`).get(relPath);
     const npc = row ? { id: row.id, path: row.path, title: row.title, ...JSON.parse(row.frontmatter || '{}') } : { title, role };
     res.status(201).json({ npc });
   }, 400);

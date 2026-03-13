@@ -13,9 +13,30 @@ const TYPE_MAP = {
   Players: 'note',
 };
 
-function detectType(relPath) {
-  const firstDir = relPath.split(path.sep)[0];
-  return TYPE_MAP[firstDir] || 'other';
+function slugify(name) {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
+
+// Returns { type, campaignId } for a vault-relative path.
+// Supports both flat layout (Quests/foo.md) and campaign-scoped
+// layout ([campaign-slug]/Quests/foo.md).
+function detectTypeAndCampaign(relPath) {
+  const parts = relPath.split(path.sep);
+  // Flat layout: first segment is a known type folder
+  if (TYPE_MAP[parts[0]]) {
+    return { type: TYPE_MAP[parts[0]], campaignId: null };
+  }
+  // Campaign-scoped layout: first segment is a campaign slug, second is type folder
+  if (parts.length >= 2 && TYPE_MAP[parts[1]]) {
+    const firstSeg = parts[0];
+    const db = getDb();
+    const campaigns = db.prepare('SELECT id, name FROM campaigns').all();
+    const match = campaigns.find(c => slugify(c.name) === firstSeg.toLowerCase() || c.name === firstSeg);
+    if (match) {
+      return { type: TYPE_MAP[parts[1]], campaignId: match.id };
+    }
+  }
+  return { type: 'other', campaignId: null };
 }
 
 function syncFile(fullPath) {
@@ -33,19 +54,20 @@ function syncFile(fullPath) {
   }
 
   const db = getDb();
-  const type = detectType(relPath);
+  const { type, campaignId } = detectTypeAndCampaign(relPath);
   const title = parsed.data.title || path.basename(relPath, '.md');
   const frontmatterJson = JSON.stringify(parsed.data);
 
   db.prepare(`
-    INSERT INTO vault_files (path, type, title, frontmatter, synced_at)
-    VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+    INSERT INTO vault_files (path, type, title, frontmatter, campaign_id, synced_at)
+    VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     ON CONFLICT(path) DO UPDATE SET
       type = excluded.type,
       title = excluded.title,
       frontmatter = excluded.frontmatter,
+      campaign_id = excluded.campaign_id,
       synced_at = CURRENT_TIMESTAMP
-  `).run(relPath, type, title, frontmatterJson);
+  `).run(relPath, type, title, frontmatterJson, campaignId);
 }
 
 function removeFile(fullPath) {

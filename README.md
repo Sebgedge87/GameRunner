@@ -18,12 +18,26 @@ A self-hosted campaign portal for tabletop RPGs. GM runs the server locally, pla
 
 ## Vault Structure
 
+Two layouts are supported. **Campaign-scoped** (preferred for multi-campaign):
+
 ```
 /vault/
-  /Players/
+  /[campaign-slug]/       ← e.g. "curse-of-strahd", matched against campaigns.name
+    /Quests/
+    /NPCs/
+    /Locations/
+    /Hooks/
+  /Players/               ← player notes (global, no campaign scope)
     /[CharacterName]/
       /Notes/
         my-note.md        ← frontmatter: public: false, shared_with_gm: false
+  /GM-Only/               ← never served to players
+```
+
+**Flat layout** (legacy / single-campaign):
+
+```
+/vault/
   /Quests/
   /NPCs/
   /Locations/
@@ -35,16 +49,9 @@ A self-hosted campaign portal for tabletop RPGs. GM runs the server locally, pla
   /Inventory/
   /Factions/
   /Timeline/
-  /Assets/
-    /npcs/
-    /locations/
-    /maps/
-    /handouts/
-    /items/
   /Jobs/
   /Bestiary/
   /Rumours/
-  /Sessions/
   /GM-Only/               ← never served to players
 ```
 
@@ -532,7 +539,7 @@ Without this, all content bleeds across games regardless of which campaign is ac
 
 - [x] **Campaign switcher UI** — clickable top-bar dropdown listing all campaigns; click → `PUT /api/campaigns/:id/activate`; reloads all scoped data
 - [x] **Create new campaign** — `GM_FORMS.campaign` (name, system, subtitle) + `gmModalSave` case → `POST /api/campaigns`; accessible from switcher dropdown "New Campaign" link
-- [ ] **Vault per-campaign scoping** — restructure vault directories to `vault/[campaign-slug]/Quests/`, `NPCs/`, etc.; update vaultWatcher to detect campaign from top-level folder and tag `vault_files.campaign_id`
+- [x] **Vault per-campaign scoping** — new files written to `vault/[campaign-slug]/Quests/` etc. when a campaign is active; vaultWatcher detects campaign from top-level folder slug and tags `vault_files.campaign_id`; flat layout still supported for legacy files
 - [x] **GET route filtering** — all vault routes (quests, npcs, locations, hooks), maps, sessions, factions, timeline, jobs, inventory, key_items, bestiary, rumours now filter by `WHERE campaign_id = <active> OR campaign_id IS NULL`
 - [x] **Fix GM Dashboard campaign data bug** — `loadGmDashboard()` now correctly reads `(await cR.json()).campaigns`
 
