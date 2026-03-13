@@ -510,15 +510,15 @@ The following changes are needed to reach full GM management and player self-man
 - [x] Bestiary: Reveal/Hide button wired to `PUT /api/bestiary/:id/reveal`
 - [x] Rumours: Expose button wired to `POST /api/rumours/:id/expose`
 
-#### Priority 4 — Share individual items to players (Server + Client)
+#### Priority 4 — Share individual items to players (Server + Client) ✅
 Currently only Handouts support targeted sharing. NPCs, Locations, Quests etc. are all-or-nothing.
 
-- [ ] Add a generic `item_shares` table: `(item_type, item_id, user_id, shared_at)` — or reuse the handout_permissions model
-- [ ] `POST /api/quests/:id/share` — share with specific player(s)
-- [ ] `POST /api/npcs/:id/share` — share with specific player(s)
-- [ ] `POST /api/locations/:id/share` — share with specific player(s)
-- [ ] GET endpoints respect share list: players only see items where `hidden=0` OR they are in `item_shares`
-- [ ] Client: "Share" button on GM quest/npc/location cards → player picker dialog
+- [x] Add a generic `item_shares` table: `(item_type, item_id, user_id, shared_at)` — or reuse the handout_permissions model
+- [x] `POST /api/quests/:id/share` — share with specific player(s)
+- [x] `POST /api/npcs/:id/share` — share with specific player(s)
+- [x] `POST /api/locations/:id/share` — share with specific player(s)
+- [x] GET endpoints respect share list: players only see items where `hidden=0` OR they are in `item_shares`
+- [x] Client: "Share" button on GM quest/npc/location cards → player picker dialog
 
 #### Priority 5 — Player session notes edit + theory board sharing ✅
 
@@ -542,7 +542,7 @@ Without this, all content bleeds across games regardless of which campaign is ac
 - [x] `openDetail(type, id)` function — renders rich detail modal from local data store (image, full description, all fields, GM-only sections for gm_notes and rumour truth)
 - [x] Wired on: quest, npc, location, hook, faction, timeline, inventory key-items, job, bestiary, rumour cards
 - [x] GM actions (Edit + Delete) are included in the detail modal footer
-- [ ] Linked fields (e.g. `linked_quest`, `source_npc`) navigate to that item's detail on click
+- [x] Linked fields (e.g. `linked_quest`, `source_npc`) navigate to that item's detail on click
 
 #### Priority 8 — GM-Only vault folder privacy boundary ✅
 
