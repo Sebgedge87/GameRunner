@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Chronicle — Player Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+:root {
+  --bg:#0d0d0f; --bg2:#111116; --bg3:#16161d; --surface:#1a1a24; --surface2:#20202e;
+  --border:#2a2a3a; --border2:#333348;
+  --gold:#c9a84c; --gold2:#e8c96a; --gold-dim:#7a6230;
+  --red:#c94c4c; --green:#4caf7d; --blue:#4c7ac9; --purple:#8b4cc9;
+  --text:#e8e4d9; --text2:#a09890; --text3:#6a6460;
+  --sidebar-w:230px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Crimson Pro',Georgia,serif;font-size:16px;min-height:100vh;overflow-x:hidden;}
+a{color:var(--gold);text-decoration:none;}
+button{cursor:pointer;font-family:inherit;}
+
+/* ── Login ───────────────────────────────────────────────────────────────── */
+#login-screen {
+  display:flex; align-items:center; justify-content:center;
+  min-height:100vh; background:var(--bg);
+  background-image:radial-gradient(ellipse at 50% 0%, #1a1400 0%, transparent 60%);
+}
+.login-box {
+  width:380px; background:var(--surface); border:1px solid var(--border2);
+  border-radius:8px; padding:40px; box-shadow:0 20px 60px rgba(0,0,0,0.6);
+}
+.login-title {
+  font-family:'Cinzel',serif; font-size:22px; color:var(--gold);
+  text-align:center; letter-spacing:2px; margin-bottom:6px;
+}
+.login-sub {
+  text-align:center; color:var(--text3); font-size:13px;
+  font-family:'JetBrains Mono',monospace; margin-bottom:32px;
+}
+.login-field { margin-bottom:18px; }
+.login-field label { display:block; font-size:12px; color:var(--text2); margin-bottom:6px; letter-spacing:1px; text-transform:uppercase; }
+.login-field input {
+  width:100%; background:var(--bg3); border:1px solid var(--border);
+  color:var(--text); padding:10px 14px; border-radius:4px; font-size:15px;
+  font-family:'Crimson Pro',serif; outline:none; transition:border-color .2s;
+}
+.login-field input:focus { border-color:var(--gold-dim); }
+.login-btn {
+  width:100%; background:var(--gold-dim); border:1px solid var(--gold);
+  color:var(--gold2); padding:11px; border-radius:4px; font-family:'Cinzel',serif;
+  font-size:13px; letter-spacing:2px; transition:background .2s;
+}
+.login-btn:hover { background:#9a7a3a; }
+.login-error { color:var(--red); font-size:13px; margin-top:12px; text-align:center; min-height:18px; }
+
+/* ── App Shell ───────────────────────────────────────────────────────────── */
+#app { display:none; flex-direction:row; min-height:100vh; }
+
+/* ── Sidebar ─────────────────────────────────────────────────────────────── */
+#sidebar {
+  width:var(--sidebar-w); background:var(--bg2); border-right:1px solid var(--border);
+  display:flex; flex-direction:column; position:fixed; top:0; left:0; height:100vh; z-index:100;
+}
+.sidebar-header {
+  padding:22px 18px 16px;
+  border-bottom:1px solid var(--border);
+}
+.sidebar-title {
+  font-family:'Cinzel',serif; font-size:15px; color:var(--gold); letter-spacing:2px;
+}
+.sidebar-user {
+  font-size:12px; color:var(--text3); margin-top:4px;
+  font-family:'JetBrains Mono',monospace;
+}
+.sidebar-nav { flex:1; padding:12px 0; overflow-y:auto; }
+.nav-item {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 18px; color:var(--text2); font-size:14px;
+  cursor:pointer; transition:background .15s, color .15s;
+  border-left:3px solid transparent;
+}
+.nav-item:hover { background:var(--surface); color:var(--text); }
+.nav-item.active { background:var(--surface); color:var(--gold); border-left-color:var(--gold); }
+.nav-item .nav-icon { font-size:16px; width:20px; text-align:center; }
+.nav-badge {
+  margin-left:auto; background:var(--red); color:#fff;
+  font-size:10px; padding:2px 6px; border-radius:10px;
+  font-family:'JetBrains Mono',monospace;
+}
+.sidebar-footer {
+  padding:14px 18px; border-top:1px solid var(--border);
+}
+.logout-btn {
+  background:none; border:1px solid var(--border); color:var(--text3);
+  padding:7px 14px; border-radius:4px; font-size:12px; width:100%;
+  letter-spacing:1px; transition:color .2s, border-color .2s;
+}
+.logout-btn:hover { color:var(--text); border-color:var(--border2); }
+
+/* ── Main Content ─────────────────────────────────────────────────────────── */
+#main {
+  margin-left:var(--sidebar-w); flex:1; min-height:100vh;
+  display:flex; flex-direction:column;
+}
+.page { display:none; flex-direction:column; flex:1; padding:30px 36px; }
+.page.active { display:flex; }
+.page-header { margin-bottom:28px; }
+.page-title { font-family:'Cinzel',serif; font-size:24px; color:var(--gold); letter-spacing:2px; }
+.page-sub { color:var(--text3); font-size:13px; margin-top:4px; font-family:'JetBrains Mono',monospace; }
+
+/* ── Cards ───────────────────────────────────────────────────────────────── */
+.card-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
+.card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:6px; padding:20px; transition:border-color .2s;
+}
+.card:hover { border-color:var(--border2); }
+.card-title { font-family:'Cinzel',serif; font-size:15px; color:var(--text); margin-bottom:6px; }
+.card-meta { font-size:12px; color:var(--text3); font-family:'JetBrains Mono',monospace; margin-bottom:10px; display:flex; flex-wrap:wrap; gap:8px; }
+.card-body { font-size:14px; color:var(--text2); line-height:1.6; }
+.tag {
+  display:inline-block; padding:2px 8px; border-radius:3px;
+  font-size:11px; font-family:'JetBrains Mono',monospace; border:1px solid;
+}
+.tag-main    { color:#c9a84c; border-color:#7a6230; background:#1a1500; }
+.tag-side    { color:#4c7ac9; border-color:#2a3a60; background:#0f1520; }
+.tag-delivery{ color:#8b4cc9; border-color:#4a2a70; background:#140f20; }
+.tag-active  { color:#4caf7d; border-color:#2a6040; background:#0f1a12; }
+.tag-inactive{ color:#6a6460; border-color:#3a3830; background:#111110; }
+.tag-friendly{ color:#4caf7d; border-color:#2a6040; background:#0f1a12; }
+.tag-hostile { color:#c94c4c; border-color:#601a1a; background:#1a0f0f; }
+.tag-neutral { color:#a09890; border-color:#3a3830; background:#111110; }
+.tag-unknown { color:#6a6460; border-color:#3a3830; background:#111110; }
+.tag-current { color:#4caf7d; border-color:#2a6040; background:#0f1a12; }
+.tag-visited { color:#4c7ac9; border-color:#2a3a60; background:#0f1520; }
+.tag-unvisited{color:#6a6460; border-color:#3a3830; background:#111110; }
+.tag-low     { color:#4caf7d; border-color:#2a6040; background:#0f1a12; }
+.tag-medium  { color:#c9a84c; border-color:#7a6230; background:#1a1500; }
+.tag-high    { color:#c94c4c; border-color:#601a1a; background:#1a0f0f; }
+.tag-clue    { color:#c9a84c; border-color:#7a6230; background:#1a1500; }
+.tag-mystery { color:#8b4cc9; border-color:#4a2a70; background:#140f20; }
+.tag-intrigue{ color:#4c7ac9; border-color:#2a3a60; background:#0f1520; }
+.tag-none    { color:#4caf7d; border-color:#2a6040; background:#0f1a12; }
+
+/* ── Progress Bar ─────────────────────────────────────────────────────────── */
+.progress-bar { background:var(--bg3); border-radius:3px; height:6px; margin-top:10px; overflow:hidden; }
+.progress-fill { height:100%; background:var(--gold-dim); border-radius:3px; transition:width .4s; }
+
+/* ── Dashboard ───────────────────────────────────────────────────────────── */
+.dash-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:14px; margin-bottom:28px; }
+.stat-card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:6px; padding:18px 16px; text-align:center;
+}
+.stat-num { font-family:'Cinzel',serif; font-size:28px; color:var(--gold); line-height:1; }
+.stat-label { font-size:12px; color:var(--text3); margin-top:6px; letter-spacing:1px; text-transform:uppercase; }
+
+/* ── Messages ────────────────────────────────────────────────────────────── */
+.msg-list { display:flex; flex-direction:column; gap:10px; }
+.msg-item {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:6px; padding:16px 20px; cursor:pointer;
+  transition:border-color .2s; border-left:3px solid transparent;
+}
+.msg-item:hover { border-color:var(--border2); }
+.msg-item.unread { border-left-color:var(--gold); }
+.msg-item.secret { border-left-color:var(--purple); }
+.msg-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px; }
+.msg-subject { font-family:'Cinzel',serif; font-size:14px; color:var(--text); }
+.msg-meta { font-size:11px; color:var(--text3); font-family:'JetBrains Mono',monospace; }
+.msg-preview { font-size:13px; color:var(--text2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* ── Modal ───────────────────────────────────────────────────────────────── */
+.modal-overlay {
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75);
+  z-index:200; align-items:center; justify-content:center;
+}
+.modal-overlay.open { display:flex; }
+.modal {
+  background:var(--surface); border:1px solid var(--border2);
+  border-radius:8px; padding:28px; max-width:560px; width:90%;
+  max-height:80vh; overflow-y:auto;
+}
+.modal-title { font-family:'Cinzel',serif; font-size:17px; color:var(--gold); margin-bottom:16px; }
+.modal-from { font-size:12px; color:var(--text3); font-family:'JetBrains Mono',monospace; margin-bottom:14px; }
+.modal-body { font-size:15px; color:var(--text2); line-height:1.75; white-space:pre-wrap; }
+.modal-close {
+  margin-top:20px; background:none; border:1px solid var(--border);
+  color:var(--text2); padding:8px 20px; border-radius:4px;
+  font-family:'Cinzel',serif; font-size:12px; letter-spacing:1px;
+  transition:color .2s, border-color .2s;
+}
+.modal-close:hover { color:var(--text); border-color:var(--border2); }
+.modal-secret-badge {
+  display:inline-block; background:#140f20; border:1px solid #4a2a70;
+  color:var(--purple); font-size:11px; padding:2px 8px; border-radius:3px;
+  font-family:'JetBrains Mono',monospace; margin-bottom:12px;
+}
+
+/* ── Notes ───────────────────────────────────────────────────────────────── */
+.notes-layout { display:grid; grid-template-columns:1fr 380px; gap:20px; }
+.note-composer {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:6px; padding:20px;
+}
+.composer-title { font-family:'Cinzel',serif; font-size:14px; color:var(--gold); margin-bottom:16px; letter-spacing:1px; }
+.field-group { margin-bottom:14px; }
+.field-group label { display:block; font-size:11px; color:var(--text3); letter-spacing:1px; text-transform:uppercase; margin-bottom:5px; }
+.field-group input,
+.field-group textarea,
+.field-group select {
+  width:100%; background:var(--bg3); border:1px solid var(--border);
+  color:var(--text); padding:8px 12px; border-radius:4px;
+  font-size:14px; font-family:'Crimson Pro',serif; outline:none;
+  transition:border-color .2s; resize:vertical;
+}
+.field-group textarea { min-height:120px; }
+.field-group input:focus,
+.field-group textarea:focus,
+.field-group select:focus { border-color:var(--gold-dim); }
+.field-group select option { background:var(--bg3); }
+.check-row { display:flex; align-items:center; gap:8px; margin-top:10px; }
+.check-row label { font-size:13px; color:var(--text2); margin:0; text-transform:none; letter-spacing:0; }
+.submit-btn {
+  background:var(--gold-dim); border:1px solid var(--gold); color:var(--gold2);
+  padding:9px 20px; border-radius:4px; font-family:'Cinzel',serif;
+  font-size:12px; letter-spacing:1px; transition:background .2s; margin-top:4px;
+}
+.submit-btn:hover { background:#9a7a3a; }
+.note-card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:6px; padding:16px;
+}
+.note-card-title { font-family:'Cinzel',serif; font-size:14px; color:var(--text); margin-bottom:6px; }
+.note-card-body { font-size:13px; color:var(--text2); line-height:1.6; white-space:pre-wrap; }
+.note-card-footer { margin-top:10px; display:flex; justify-content:space-between; align-items:center; }
+.delete-btn {
+  background:none; border:1px solid #601a1a; color:#c94c4c;
+  padding:4px 10px; border-radius:3px; font-size:11px; letter-spacing:1px;
+  transition:background .2s;
+}
+.delete-btn:hover { background:#1a0f0f; }
+
+/* ── GM Compose ──────────────────────────────────────────────────────────── */
+.gm-compose {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:6px; padding:20px; margin-bottom:20px;
+}
+.gm-compose-title { font-family:'Cinzel',serif; font-size:13px; color:var(--gold-dim); letter-spacing:1px; margin-bottom:14px; }
+
+/* ── Mindmap ─────────────────────────────────────────────────────────────── */
+#mindmap-svg {
+  width:100%; background:var(--bg3); border:1px solid var(--border);
+  border-radius:6px; display:block;
+}
+.mindmap-legend {
+  display:flex; gap:16px; flex-wrap:wrap; margin-bottom:14px;
+}
+.legend-item { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text3); }
+.legend-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+
+/* ── Empty State ─────────────────────────────────────────────────────────── */
+.empty-state {
+  text-align:center; padding:60px 20px; color:var(--text3);
+  font-family:'JetBrains Mono',monospace; font-size:13px;
+}
+
+/* ── Loading ─────────────────────────────────────────────────────────────── */
+.loading { color:var(--text3); font-family:'JetBrains Mono',monospace; font-size:13px; padding:20px 0; }
+</style>
+</head>
+<body>
+
+<!-- ── Login ──────────────────────────────────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-title">THE CHRONICLE</div>
+    <div class="login-sub">Player Portal — v2</div>
+    <div class="login-field">
+      <label>Username</label>
+      <input type="text" id="login-user" autocomplete="username" placeholder="aerindel" />
+    </div>
+    <div class="login-field">
+      <label>Password</label>
+      <input type="password" id="login-pass" autocomplete="current-password" placeholder="••••••••" />
+    </div>
+    <button class="login-btn" onclick="doLogin()">ENTER THE CHRONICLE</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ── App Shell ──────────────────────────────────────────────────────────── -->
+<div id="app">
+
+  <!-- Sidebar -->
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">THE CHRONICLE</div>
+      <div class="sidebar-user" id="sidebar-user"></div>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
+        <span class="nav-icon">⚔</span> Dashboard
+      </div>
+      <div class="nav-item" data-page="quests" onclick="navigate('quests')">
+        <span class="nav-icon">📜</span> Quests
+      </div>
+      <div class="nav-item" data-page="npcs" onclick="navigate('npcs')">
+        <span class="nav-icon">👤</span> NPCs
+      </div>
+      <div class="nav-item" data-page="locations" onclick="navigate('locations')">
+        <span class="nav-icon">🗺</span> Locations
+      </div>
+      <div class="nav-item" data-page="hooks" onclick="navigate('hooks')">
+        <span class="nav-icon">🪝</span> Hooks
+      </div>
+      <div class="nav-item" data-page="mindmap" onclick="navigate('mindmap')">
+        <span class="nav-icon">🕸</span> Mindmap
+      </div>
+      <div class="nav-item" data-page="messages" onclick="navigate('messages')">
+        <span class="nav-icon">✉</span> Messages
+        <span class="nav-badge" id="msg-badge" style="display:none"></span>
+      </div>
+      <div class="nav-item" data-page="notes" onclick="navigate('notes')">
+        <span class="nav-icon">📝</span> Notes
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <button class="logout-btn" onclick="doLogout()">SIGN OUT</button>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <main id="main">
+
+    <!-- Dashboard -->
+    <section class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div class="page-title">Dashboard</div>
+        <div class="page-sub" id="dash-session">Loading campaign data...</div>
+      </div>
+      <div class="dash-grid" id="dash-stats"></div>
+      <div class="page-title" style="font-size:16px;margin-bottom:14px;">Active Quests</div>
+      <div class="card-grid" id="dash-quests"></div>
+    </section>
+
+    <!-- Quests -->
+    <section class="page" id="page-quests">
+      <div class="page-header">
+        <div class="page-title">Quests</div>
+        <div class="page-sub">Active threads &amp; objectives</div>
+      </div>
+      <div class="card-grid" id="quest-list"><div class="loading">Loading quests...</div></div>
+    </section>
+
+    <!-- NPCs -->
+    <section class="page" id="page-npcs">
+      <div class="page-header">
+        <div class="page-title">NPCs</div>
+        <div class="page-sub">People of note</div>
+      </div>
+      <div class="card-grid" id="npc-list"><div class="loading">Loading NPCs...</div></div>
+    </section>
+
+    <!-- Locations -->
+    <section class="page" id="page-locations">
+      <div class="page-header">
+        <div class="page-title">Locations</div>
+        <div class="page-sub">Places discovered and unexplored</div>
+      </div>
+      <div class="card-grid" id="location-list"><div class="loading">Loading locations...</div></div>
+    </section>
+
+    <!-- Hooks -->
+    <section class="page" id="page-hooks">
+      <div class="page-header">
+        <div class="page-title">Story Hooks</div>
+        <div class="page-sub">Clues, mysteries, and threads</div>
+      </div>
+      <div class="card-grid" id="hook-list"><div class="loading">Loading hooks...</div></div>
+    </section>
+
+    <!-- Mindmap -->
+    <section class="page" id="page-mindmap">
+      <div class="page-header">
+        <div class="page-title">Mindmap</div>
+        <div class="page-sub">Connection graph — drag to explore</div>
+      </div>
+      <div class="mindmap-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#c9a84c"></div>Quest</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#4c7ac9"></div>NPC</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#4caf7d"></div>Location</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#8b4cc9"></div>Hook</div>
+      </div>
+      <svg id="mindmap-svg" style="height:520px;"></svg>
+    </section>
+
+    <!-- Messages -->
+    <section class="page" id="page-messages">
+      <div class="page-header">
+        <div class="page-title">Messages</div>
+        <div class="page-sub">Correspondence &amp; secrets</div>
+      </div>
+      <div id="gm-compose-wrap" style="display:none">
+        <div class="gm-compose">
+          <div class="gm-compose-title">COMPOSE MESSAGE (GM)</div>
+          <div class="field-group">
+            <label>To (username, blank = all)</label>
+            <input type="text" id="msg-to" placeholder="aerindel" />
+          </div>
+          <div class="field-group">
+            <label>Subject</label>
+            <input type="text" id="msg-subject" />
+          </div>
+          <div class="field-group">
+            <label>Body</label>
+            <textarea id="msg-body"></textarea>
+          </div>
+          <div class="check-row">
+            <input type="checkbox" id="msg-secret" />
+            <label for="msg-secret">Secret (only recipient can see)</label>
+          </div>
+          <button class="submit-btn" style="margin-top:14px" onclick="sendMessage()">SEND MESSAGE</button>
+          <div id="msg-send-status" style="font-size:13px;color:var(--green);margin-top:8px;"></div>
+        </div>
+      </div>
+      <div class="msg-list" id="msg-list"><div class="loading">Loading messages...</div></div>
+    </section>
+
+    <!-- Notes -->
+    <section class="page" id="page-notes">
+      <div class="page-header">
+        <div class="page-title">Notes</div>
+        <div class="page-sub">Your journal — synced to vault</div>
+      </div>
+      <div class="notes-layout">
+        <div id="notes-list-col">
+          <div class="msg-list" id="notes-list"><div class="loading">Loading notes...</div></div>
+        </div>
+        <div>
+          <div class="note-composer">
+            <div class="composer-title">NEW NOTE</div>
+            <div class="field-group">
+              <label>Title</label>
+              <input type="text" id="note-title" placeholder="Session 8 observations..." />
+            </div>
+            <div class="field-group">
+              <label>Body</label>
+              <textarea id="note-body" placeholder="Write your note here..."></textarea>
+            </div>
+            <div class="field-group">
+              <label>Category</label>
+              <select id="note-category">
+                <option>Notes</option>
+                <option>Clues</option>
+                <option>Plans</option>
+                <option>Lore</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label>Privacy</label>
+              <select id="note-privacy">
+                <option value="private">Private</option>
+                <option value="public">Public (all players)</option>
+              </select>
+            </div>
+            <div class="check-row">
+              <input type="checkbox" id="note-share-gm" />
+              <label for="note-share-gm">Share with GM</label>
+            </div>
+            <button class="submit-btn" onclick="createNote()">SAVE NOTE</button>
+            <div id="note-status" style="font-size:13px;color:var(--green);margin-top:8px;"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ── Message Modal ───────────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="msg-modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div id="modal-secret-badge" class="modal-secret-badge" style="display:none">⚠ SECRET MESSAGE</div>
+    <div class="modal-title" id="modal-subject"></div>
+    <div class="modal-from" id="modal-from"></div>
+    <div class="modal-body" id="modal-body"></div>
+    <button class="modal-close" onclick="closeModal()">CLOSE</button>
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:3000';
+let token = localStorage.getItem('chronicle_token');
+let currentUser = null;
+let allMessages = [];
+
+/* ── Auth ──────────────────────────────────────────────────────────────────── */
+async function doLogin() {
+  const username = document.getElementById('login-user').value.trim();
+  const password = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  if (!username || !password) { errEl.textContent = 'Enter username and password.'; return; }
+
+  try {
+    const r = await fetch(`${API}/api/auth/login`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ username, password })
+    });
+    const data = await r.json();
+    if (!r.ok) { errEl.textContent = data.error || 'Login failed.'; return; }
+    token = data.token;
+    currentUser = data.user;
+    localStorage.setItem('chronicle_token', token);
+    showApp();
+  } catch(e) {
+    errEl.textContent = 'Cannot reach server. Is it running?';
+  }
+}
+
+document.getElementById('login-pass').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+async function restoreSession() {
+  if (!token) return;
+  try {
+    const r = await apiFetch('/api/auth/me');
+    if (r.ok) {
+      const d = await r.json();
+      currentUser = d.user;
+      showApp();
+    } else {
+      localStorage.removeItem('chronicle_token');
+      token = null;
+    }
+  } catch { /* server offline, show login */ }
+}
+
+function doLogout() {
+  token = null;
+  currentUser = null;
+  localStorage.removeItem('chronicle_token');
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+}
+
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  const u = currentUser;
+  document.getElementById('sidebar-user').textContent =
+    (u.character_name || u.username) + (u.character_class ? ` · ${u.character_class}` : '');
+  if (u.role === 'gm') {
+    document.getElementById('gm-compose-wrap').style.display = 'block';
+  }
+  loadAll();
+}
+
+/* ── API Helper ──────────────────────────────────────────────────────────── */
+function apiFetch(path, opts = {}) {
+  return fetch(`${API}${path}`, {
+    ...opts,
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type':'application/json', ...(opts.headers||{}) }
+  });
+}
+
+/* ── Navigation ──────────────────────────────────────────────────────────── */
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`page-${page}`).classList.add('active');
+  document.querySelector(`[data-page="${page}"]`).classList.add('active');
+  if (page === 'mindmap') renderMindmap();
+  if (page === 'messages') loadMessages();
+  if (page === 'notes') loadNotes();
+}
+
+/* ── Load All ─────────────────────────────────────────────────────────────── */
+async function loadAll() {
+  await Promise.all([
+    loadQuests(), loadNpcs(), loadLocations(), loadHooks(), loadMessages(), loadNotes()
+  ]);
+  buildDashboard();
+}
+
+/* ── Quests ───────────────────────────────────────────────────────────────── */
+let questData = [];
+async function loadQuests() {
+  const r = await apiFetch('/api/quests');
+  const d = await r.json();
+  questData = d.quests || [];
+  renderQuests(questData, 'quest-list');
+}
+
+function questCard(q) {
+  const progress = q.progress ?? 0;
+  return `
+    <div class="card">
+      <div class="card-title">${esc(q.title)}</div>
+      <div class="card-meta">
+        <span class="tag tag-${q.type||'side'}">${q.type||'side'}</span>
+        <span class="tag tag-${q.status||'active'}">${q.status||'active'}</span>
+        ${q.location ? `<span style="color:var(--text3);font-size:11px">📍 ${esc(q.location)}</span>` : ''}
+      </div>
+      ${q.progress != null ? `<div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;font-family:'JetBrains Mono',monospace">${progress}% complete</div>` : ''}
+      ${q.connected_to ? `<div style="margin-top:10px;font-size:12px;color:var(--text3)">🔗 ${Array.isArray(q.connected_to)?q.connected_to.join(', '):q.connected_to}</div>` : ''}
+    </div>`;
+}
+
+function renderQuests(quests, targetId) {
+  const el = document.getElementById(targetId);
+  if (!quests.length) { el.innerHTML = '<div class="empty-state">No quests found.</div>'; return; }
+  el.innerHTML = quests.map(questCard).join('');
+}
+
+/* ── NPCs ─────────────────────────────────────────────────────────────────── */
+let npcData = [];
+async function loadNpcs() {
+  const r = await apiFetch('/api/npcs');
+  const d = await r.json();
+  npcData = d.npcs || [];
+  renderNpcs();
+}
+
+function renderNpcs() {
+  const el = document.getElementById('npc-list');
+  if (!npcData.length) { el.innerHTML = '<div class="empty-state">No NPCs found.</div>'; return; }
+  el.innerHTML = npcData.map(n => `
+    <div class="card">
+      <div class="card-title">${esc(n.title)}</div>
+      <div class="card-meta">
+        ${n.role ? `<span style="color:var(--text2)">${esc(n.role)}</span>` : ''}
+        <span class="tag tag-${n.disposition||'neutral'}">${n.disposition||'unknown'}</span>
+        ${n.faction ? `<span style="color:var(--text3)">${esc(n.faction)}</span>` : ''}
+      </div>
+      ${n.location ? `<div style="font-size:12px;color:var(--text3);margin-bottom:8px">📍 ${esc(n.location)}</div>` : ''}
+      ${n.connected_to ? `<div style="font-size:12px;color:var(--text3)">🔗 ${Array.isArray(n.connected_to)?n.connected_to.join(', '):n.connected_to}</div>` : ''}
+    </div>`).join('');
+}
+
+/* ── Locations ────────────────────────────────────────────────────────────── */
+let locationData = [];
+async function loadLocations() {
+  const r = await apiFetch('/api/locations');
+  const d = await r.json();
+  locationData = d.locations || [];
+  renderLocations();
+}
+
+function renderLocations() {
+  const el = document.getElementById('location-list');
+  if (!locationData.length) { el.innerHTML = '<div class="empty-state">No locations found.</div>'; return; }
+  el.innerHTML = locationData.map(l => `
+    <div class="card">
+      <div class="card-title">${esc(l.title)}</div>
+      <div class="card-meta">
+        <span class="tag tag-${l.status||'unvisited'}">${l.status||'unvisited'}</span>
+        ${l.danger ? `<span class="tag tag-${l.danger}">${l.danger} danger</span>` : ''}
+        ${l.visited_session ? `<span style="color:var(--text3)">Session ${l.visited_session}</span>` : ''}
+      </div>
+      ${l.connected_to ? `<div style="font-size:12px;color:var(--text3)">🔗 ${Array.isArray(l.connected_to)?l.connected_to.join(', '):l.connected_to}</div>` : ''}
+    </div>`).join('');
+}
+
+/* ── Hooks ────────────────────────────────────────────────────────────────── */
+let hookData = [];
+async function loadHooks() {
+  const r = await apiFetch('/api/hooks');
+  const d = await r.json();
+  hookData = d.hooks || [];
+  renderHooks();
+}
+
+function renderHooks() {
+  const el = document.getElementById('hook-list');
+  if (!hookData.length) { el.innerHTML = '<div class="empty-state">No hooks found.</div>'; return; }
+  el.innerHTML = hookData.map(h => `
+    <div class="card">
+      <div class="card-title">${esc(h.title)}</div>
+      <div class="card-meta">
+        <span class="tag tag-${h.type||'clue'}">${h.type||'clue'}</span>
+        <span class="tag tag-${h.status||'active'}">${h.status||'active'}</span>
+        ${h.session_delivered ? `<span style="color:var(--text3)">Session ${h.session_delivered}</span>` : ''}
+      </div>
+      ${h.connected_to ? `<div style="font-size:12px;color:var(--text3);margin-top:8px">🔗 ${Array.isArray(h.connected_to)?h.connected_to.join(', '):h.connected_to}</div>` : ''}
+    </div>`).join('');
+}
+
+/* ── Messages ─────────────────────────────────────────────────────────────── */
+async function loadMessages() {
+  const r = await apiFetch('/api/messages');
+  const d = await r.json();
+  allMessages = d.messages || [];
+  renderMessages();
+  updateMsgBadge();
+}
+
+function updateMsgBadge() {
+  const unread = allMessages.filter(m => !m.read_at).length;
+  const badge = document.getElementById('msg-badge');
+  if (unread > 0) { badge.textContent = unread; badge.style.display = ''; }
+  else badge.style.display = 'none';
+}
+
+function renderMessages() {
+  const el = document.getElementById('msg-list');
+  if (!allMessages.length) { el.innerHTML = '<div class="empty-state">No messages.</div>'; return; }
+  el.innerHTML = allMessages.map(m => {
+    const unread = !m.read_at;
+    const secret = m.is_secret;
+    const from = m.from_character || m.from_username || 'Unknown';
+    const to = m.to_character || m.to_username || 'All Players';
+    const date = m.created_at ? new Date(m.created_at).toLocaleDateString() : '';
+    return `<div class="msg-item ${unread?'unread':''} ${secret?'secret':''}" onclick="openMessage(${m.id})">
+      <div class="msg-header">
+        <div class="msg-subject">${esc(m.subject)}</div>
+        <div class="msg-meta">${date}</div>
+      </div>
+      <div class="msg-meta" style="margin-bottom:4px">
+        From: ${esc(from)} → To: ${esc(to)}
+        ${secret ? ' · <span style="color:var(--purple)">secret</span>' : ''}
+        ${unread ? ' · <span style="color:var(--gold)">unread</span>' : ''}
+      </div>
+      <div class="msg-preview">${esc(m.body)}</div>
+    </div>`;
+  }).join('');
+}
+
+function openMessage(id) {
+  const m = allMessages.find(x => x.id === id);
+  if (!m) return;
+  document.getElementById('modal-subject').textContent = m.subject;
+  const from = m.from_character || m.from_username || 'Unknown';
+  const to = m.to_character || m.to_username || 'All Players';
+  document.getElementById('modal-from').textContent = `From: ${from} → To: ${to}`;
+  document.getElementById('modal-body').textContent = m.body;
+  const badge = document.getElementById('modal-secret-badge');
+  badge.style.display = m.is_secret ? '' : 'none';
+  document.getElementById('msg-modal').classList.add('open');
+  if (!m.read_at) {
+    apiFetch(`/api/messages/${id}/read`, { method:'PUT' }).then(() => {
+      m.read_at = new Date().toISOString();
+      updateMsgBadge();
+      renderMessages();
+    });
+  }
+}
+
+function closeModal() {
+  document.getElementById('msg-modal').classList.remove('open');
+}
+
+async function sendMessage() {
+  const to = document.getElementById('msg-to').value.trim();
+  const subject = document.getElementById('msg-subject').value.trim();
+  const body = document.getElementById('msg-body').value.trim();
+  const is_secret = document.getElementById('msg-secret').checked;
+  const statusEl = document.getElementById('msg-send-status');
+  statusEl.textContent = '';
+  if (!subject || !body) { statusEl.style.color='var(--red)'; statusEl.textContent = 'Subject and body required.'; return; }
+
+  const r = await apiFetch('/api/messages', {
+    method:'POST', body: JSON.stringify({ to_username: to||undefined, subject, body, is_secret })
+  });
+  if (r.ok) {
+    statusEl.style.color='var(--green)'; statusEl.textContent = 'Message sent.';
+    document.getElementById('msg-to').value = '';
+    document.getElementById('msg-subject').value = '';
+    document.getElementById('msg-body').value = '';
+    document.getElementById('msg-secret').checked = false;
+    loadMessages();
+  } else {
+    const d = await r.json();
+    statusEl.style.color='var(--red)'; statusEl.textContent = d.error || 'Failed to send.';
+  }
+}
+
+/* ── Notes ────────────────────────────────────────────────────────────────── */
+let noteData = [];
+async function loadNotes() {
+  const r = await apiFetch('/api/notes');
+  const d = await r.json();
+  noteData = d.notes || [];
+  renderNotes();
+}
+
+function renderNotes() {
+  const el = document.getElementById('notes-list');
+  if (!noteData.length) { el.innerHTML = '<div class="empty-state">No notes yet. Write one!</div>'; return; }
+  el.innerHTML = noteData.map(n => `
+    <div class="note-card" style="margin-bottom:10px">
+      <div class="note-card-title">${esc(n.title)}</div>
+      <div class="card-meta" style="margin:4px 0 8px">
+        <span class="tag tag-${n.privacy==='public'?'active':'inactive'}">${n.privacy}</span>
+        <span style="color:var(--text3)">${n.category}</span>
+        ${n.shared_with_gm ? '<span style="color:var(--text3)">shared w/ GM</span>' : ''}
+      </div>
+      <div class="note-card-footer">
+        <span style="font-size:11px;color:var(--text3);font-family:\'JetBrains Mono\',monospace">${n.updated_at ? new Date(n.updated_at).toLocaleDateString() : ''}</span>
+        <button class="delete-btn" onclick="deleteNote(${n.id})">DELETE</button>
+      </div>
+    </div>`).join('');
+}
+
+async function createNote() {
+  const title = document.getElementById('note-title').value.trim();
+  const body = document.getElementById('note-body').value.trim();
+  const category = document.getElementById('note-category').value;
+  const privacy = document.getElementById('note-privacy').value;
+  const shared_with_gm = document.getElementById('note-share-gm').checked;
+  const statusEl = document.getElementById('note-status');
+  statusEl.textContent = '';
+  if (!title) { statusEl.style.color='var(--red)'; statusEl.textContent = 'Title required.'; return; }
+
+  const r = await apiFetch('/api/notes', {
+    method:'POST', body: JSON.stringify({ title, body, category, privacy, shared_with_gm })
+  });
+  if (r.ok) {
+    statusEl.style.color='var(--green)'; statusEl.textContent = 'Note saved to vault.';
+    document.getElementById('note-title').value = '';
+    document.getElementById('note-body').value = '';
+    loadNotes();
+  } else {
+    const d = await r.json();
+    statusEl.style.color='var(--red)'; statusEl.textContent = d.error || 'Failed.';
+  }
+}
+
+async function deleteNote(id) {
+  if (!confirm('Delete this note?')) return;
+  const r = await apiFetch(`/api/notes/${id}`, { method:'DELETE' });
+  if (r.ok) loadNotes();
+}
+
+/* ── Dashboard ────────────────────────────────────────────────────────────── */
+function buildDashboard() {
+  const activeQuests = questData.filter(q => q.status === 'active');
+  const unreadMsgs = allMessages.filter(m => !m.read_at).length;
+
+  document.getElementById('dash-session').textContent =
+    `${currentUser.character_name || currentUser.username} · ${currentUser.character_class || ''} · Role: ${currentUser.role}`;
+
+  document.getElementById('dash-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${activeQuests.length}</div><div class="stat-label">Active Quests</div></div>
+    <div class="stat-card"><div class="stat-num">${npcData.length}</div><div class="stat-label">Known NPCs</div></div>
+    <div class="stat-card"><div class="stat-num">${locationData.length}</div><div class="stat-label">Locations</div></div>
+    <div class="stat-card"><div class="stat-num">${hookData.length}</div><div class="stat-label">Active Hooks</div></div>
+    <div class="stat-card"><div class="stat-num">${unreadMsgs}</div><div class="stat-label">Unread Messages</div></div>
+    <div class="stat-card"><div class="stat-num">${noteData.length}</div><div class="stat-label">Your Notes</div></div>
+  `;
+
+  renderQuests(activeQuests, 'dash-quests');
+}
+
+/* ── Mindmap ──────────────────────────────────────────────────────────────── */
+let mindmapLoaded = false;
+async function renderMindmap() {
+  if (mindmapLoaded) return;
+  mindmapLoaded = true;
+  const r = await apiFetch('/api/mindmap');
+  const { nodes, links } = await r.json();
+
+  const svg = d3.select('#mindmap-svg');
+  const rect = document.getElementById('mindmap-svg').getBoundingClientRect();
+  const W = rect.width || 800, H = rect.height || 520;
+  svg.attr('viewBox', `0 0 ${W} ${H}`);
+
+  const colorMap = { quest:'#c9a84c', npc:'#4c7ac9', location:'#4caf7d', hook:'#8b4cc9' };
+
+  const sim = d3.forceSimulation(nodes)
+    .force('link', d3.forceLink(links).id(d => d.id).distance(120).strength(0.6))
+    .force('charge', d3.forceManyBody().strength(-300))
+    .force('center', d3.forceCenter(W/2, H/2))
+    .force('collision', d3.forceCollide(40));
+
+  const g = svg.append('g');
+
+  svg.call(d3.zoom().scaleExtent([0.3,3]).on('zoom', e => g.attr('transform', e.transform)));
+
+  const link = g.append('g').selectAll('line').data(links).join('line')
+    .attr('stroke','#2a2a3a').attr('stroke-width',1.5);
+
+  const node = g.append('g').selectAll('g').data(nodes).join('g')
+    .attr('cursor','grab')
+    .call(d3.drag()
+      .on('start', (e,d) => { if(!e.active) sim.alphaTarget(0.3).restart(); d.fx=d.x; d.fy=d.y; })
+      .on('drag',  (e,d) => { d.fx=e.x; d.fy=e.y; })
+      .on('end',   (e,d) => { if(!e.active) sim.alphaTarget(0); d.fx=null; d.fy=null; }));
+
+  node.append('circle')
+    .attr('r', d => d.type==='quest'?14:10)
+    .attr('fill', d => colorMap[d.type]||'#888')
+    .attr('fill-opacity', 0.25)
+    .attr('stroke', d => colorMap[d.type]||'#888')
+    .attr('stroke-width', 1.5);
+
+  node.append('text')
+    .attr('dy','0.35em').attr('text-anchor','middle')
+    .attr('fill', d => colorMap[d.type]||'#aaa')
+    .attr('font-size',9).attr('font-family','JetBrains Mono,monospace')
+    .text(d => d.type[0].toUpperCase());
+
+  node.append('text')
+    .attr('dy','1.8em').attr('text-anchor','middle')
+    .attr('fill','#a09890').attr('font-size',10)
+    .attr('font-family','Crimson Pro,serif')
+    .attr('pointer-events','none')
+    .text(d => d.label.length > 18 ? d.label.slice(0,16)+'…' : d.label);
+
+  sim.on('tick', () => {
+    link.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y)
+        .attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
+    node.attr('transform', d=>`translate(${d.x},${d.y})`);
+  });
+}
+
+/* ── Utilities ────────────────────────────────────────────────────────────── */
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── Boot ─────────────────────────────────────────────────────────────────── */
+restoreSession();
+</script>
+</body>
+</html>

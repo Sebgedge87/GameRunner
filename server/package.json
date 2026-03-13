@@ -1,0 +1,31 @@
+{
+  "name": "chronicle-server",
+  "version": "1.0.0",
+  "description": "The Chronicle — D&D Campaign Portal Backend",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "nodemon --exec \"node --experimental-sqlite\" src/index.js",
+    "start": "node --experimental-sqlite src/index.js",
+    "seed": "node --experimental-sqlite src/db/seed.js",
+    "migrate": "node --experimental-sqlite src/db/migrations.js"
+  },
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "bcryptjs": "^2.4.3",
+    "chokidar": "^3.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^5.0.1",
+    "express-rate-limit": "^8.3.1",
+    "gray-matter": "^4.0.3",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.1.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  }
+}
