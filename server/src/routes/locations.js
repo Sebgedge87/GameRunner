@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const matter = require('gray-matter');
-const { getDb } = require('../db/database');
+const { getDb, getActiveCampaignId } = require('../db/database');
 const { requireAuth, requireGm } = require('../auth/authMiddleware');
 const { vaultPath } = require('../config');
 
@@ -17,8 +17,12 @@ const router = express.Router();
 
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
+  const campId = getActiveCampaignId();
   const hiddenFilter = req.user.role === 'gm' ? '' : 'AND (hidden IS NULL OR hidden = 0)';
-  const rows = db.prepare(`SELECT * FROM vault_files WHERE type = 'location' ${hiddenFilter} ORDER BY title ASC`).all();
+  const campFilter = campId ? 'AND (campaign_id = ? OR campaign_id IS NULL)' : '';
+  const rows = campId
+    ? db.prepare(`SELECT * FROM vault_files WHERE type = 'location' ${hiddenFilter} ${campFilter} ORDER BY title ASC`).all(campId)
+    : db.prepare(`SELECT * FROM vault_files WHERE type = 'location' ${hiddenFilter} ORDER BY title ASC`).all();
   const locations = rows.map((r) => ({ id: r.id, path: r.path, title: r.title, hidden: r.hidden || 0, ...JSON.parse(r.frontmatter || '{}') }));
   res.json({ locations });
 });

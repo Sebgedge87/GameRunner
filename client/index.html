@@ -154,6 +154,20 @@ input,textarea,select{font-family:'Crimson Pro',serif;}
 /* audio toggle */
 .audio-btn{background:none;border:1px solid var(--border);color:var(--text3);padding:6px 10px;border-radius:4px;font-size:13px;transition:color .2s;}
 .audio-btn.playing{color:var(--accent);border-color:var(--accent-dim);}
+/* ── Campaign switcher ── */
+.camp-switcher{position:relative;}
+.camp-switcher-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:5px 10px;border-radius:4px;font-size:12px;font-family:'JetBrains Mono',monospace;cursor:pointer;white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis;transition:border-color .2s;}
+.camp-switcher-btn:hover{border-color:var(--border2);color:var(--text);}
+.camp-switcher-drop{position:absolute;top:calc(100% + 4px);left:0;min-width:200px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.5);z-index:200;display:none;overflow:hidden;}
+.camp-switcher-drop.open{display:block;}
+.camp-switch-item{padding:9px 14px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .15s;}
+.camp-switch-item:hover{background:var(--surface);}
+.camp-switch-item.active{color:var(--accent2);}
+.camp-switch-item .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0;}
+.camp-switch-item .dot-empty{width:6px;height:6px;border-radius:50%;border:1px solid var(--text3);flex-shrink:0;}
+.camp-switch-sep{height:1px;background:var(--border);margin:4px 0;}
+.camp-switch-new{padding:8px 14px;font-size:12px;color:var(--accent);font-family:'JetBrains Mono',monospace;cursor:pointer;letter-spacing:0.5px;}
+.camp-switch-new:hover{background:var(--surface);}
 /* ── Sidebar ─────────────────────────────────────────────────────────────────── */
 #sidebar{width:var(--sidebar-w);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;transition:transform .25s;}
 .sidebar-header{padding:18px 18px 14px;border-bottom:1px solid var(--border);}
@@ -531,6 +545,14 @@ input,textarea,select{font-family:'Crimson Pro',serif;}
   <!-- Topbar -->
   <div id="topbar">
     <button class="hamburger" onclick="toggleSidebar()">☰</button>
+    <div class="camp-switcher" id="camp-switcher">
+      <button class="camp-switcher-btn" id="camp-switcher-btn" onclick="toggleCampDrop()" title="Switch campaign">—</button>
+      <div class="camp-switcher-drop" id="camp-switcher-drop">
+        <div id="camp-drop-list"></div>
+        <div class="camp-switch-sep"></div>
+        <div class="camp-switch-new" onclick="closeCampDrop();openGmCreate('campaign')">+ New Campaign</div>
+      </div>
+    </div>
     <div class="topbar-search-wrap">
       <span class="topbar-search-icon">⌕</span>
       <input class="topbar-search" id="topbar-search" type="text" placeholder="Search..." autocomplete="off"
@@ -777,6 +799,10 @@ input,textarea,select{font-family:'Crimson Pro',serif;}
             <div class="theory-panel-title">EDIT NODE</div>
             <div class="field-group"><label>Label</label><input type="text" id="theory-edit-label"/></div>
             <div class="field-group"><label>Notes</label><textarea id="theory-edit-notes" style="min-height:55px"></textarea></div>
+            <div class="field-group" style="display:flex;align-items:center;gap:8px">
+              <input type="checkbox" id="theory-edit-shared" style="width:14px;height:14px;cursor:pointer">
+              <label for="theory-edit-shared" style="margin:0;cursor:pointer;font-size:12px;color:var(--text2)">Share with GM</label>
+            </div>
             <div class="row-btns">
               <button class="submit-btn" onclick="saveTheoryNode()">SAVE</button>
               <button class="danger-btn" onclick="deleteTheoryNode()">DELETE</button>
@@ -1128,15 +1154,53 @@ async function loadAll(){
 }
 
 // ── Campaign ──────────────────────────────────────────────────────────────────
+let allCampaigns=[];
 async function loadCampaign(){
   try{
-    const r=await apiFetch('/api/campaigns/active');
-    const d=await r.json();
+    const [rA,rAll]=await Promise.all([apiFetch('/api/campaigns/active'),apiFetch('/api/campaigns')]);
+    const d=await rA.json();
     activeCampaign=d.campaign||null;
+    if(rAll.ok){const da=await rAll.json();allCampaigns=da.campaigns||[];}
     detectThemeFromCampaign();
     renderCampaignBanner();
+    renderCampSwitcher();
   }catch{}
 }
+function renderCampSwitcher(){
+  const btn=document.getElementById('camp-switcher-btn');
+  const list=document.getElementById('camp-drop-list');
+  const sw=document.getElementById('camp-switcher');
+  if(!btn||!list)return;
+  btn.textContent=activeCampaign?activeCampaign.name:'No Campaign';
+  list.innerHTML=allCampaigns.map(c=>`<div class="camp-switch-item${c.active?' active':''}" onclick="switchCampaign(${c.id})">
+    <span class="${c.active?'dot':'dot-empty'}"></span>${esc(c.name)}</div>`).join('');
+  // Only show switcher to GM
+  sw.style.display=isGm?'':'none';
+}
+function toggleCampDrop(){
+  document.getElementById('camp-switcher-drop').classList.toggle('open');
+}
+function closeCampDrop(){
+  document.getElementById('camp-switcher-drop').classList.remove('open');
+}
+async function switchCampaign(id){
+  closeCampDrop();
+  if(activeCampaign&&activeCampaign.id===id)return;
+  const r=await apiFetch(`/api/campaigns/${id}/activate`,{method:'PUT'});
+  if(r.ok){
+    showToast('Campaign switched','success');
+    await loadCampaign();
+    // Reload all content scoped to the new campaign
+    await Promise.all([loadQuests(),loadNpcs(),loadLocations(),loadHooks(),loadMaps(),loadFactions(),loadTimeline(),loadInventory(),loadJobs(),loadBestiary(),loadRumours()]);
+    if(typeof loadSessions==='function')loadSessions();
+    if(isGm&&document.getElementById('gm-dash-content'))loadGmDashboard();
+  }else showToast('Switch failed','error');
+}
+// Close camp drop when clicking outside
+document.addEventListener('click',e=>{
+  const sw=document.getElementById('camp-switcher');
+  if(sw&&!sw.contains(e.target))closeCampDrop();
+});
 function renderCampaignBanner(){
   const el=document.getElementById('campaign-banner');
   if(!activeCampaign){el.style.display='none';return;}
@@ -1538,7 +1602,10 @@ function renderHandouts(){
     <div class="card-title">${esc(h.title)}${h.requires_ack&&!h.acked_at?' <span style="color:var(--accent);font-size:10px">● NEW</span>':''}</div>
     <div class="card-meta"><span class="tag tag-${esc(h.file_type||'text')}">${esc(h.file_type||'text')}</span>${h.shared_at?`<span>${fmt(h.shared_at)}</span>`:''}${h.acked_at?'<span style="color:var(--green)">✓</span>':''}</div>
     ${h.description?`<div class="card-body">${esc(h.description)}</div>`:''}
-    ${isGm?`<div class="card-actions" onclick="event.stopPropagation()"><button class="btn btn-sm btn-danger" onclick="gmDelete('handout',${h.id},loadHandouts)">Del</button></div>`:''}
+    <div class="card-actions" onclick="event.stopPropagation()">
+      ${isGm?`<button class="btn btn-sm" onclick="openGmEdit('handout',${h.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="gmDelete('handout',${h.id},loadHandouts)">Del</button>`:''}
+      ${(!isGm&&h.can_reshare)?`<button class="btn btn-sm" onclick="openHandoutReshare(${h.id})">Reshare</button>`:''}
+    </div>
   </div>`).join('');
 }
 function openHandout(id){
@@ -1556,6 +1623,20 @@ async function ackHandout(){
   if(!currentHandoutId)return;
   const r=await apiFetch(`/api/handouts/${currentHandoutId}/ack`,{method:'POST'});
   if(r.ok){const h=handoutData.find(x=>x.id===currentHandoutId);if(h)h.acked_at=new Date().toISOString();document.getElementById('hmodal-ack-btn').style.display='none';updateHandoutBadge();renderHandouts();}
+}
+async function openHandoutReshare(handoutId){
+  const r=await apiFetch('/api/users');
+  if(!r.ok){showToast('Could not load players','error');return;}
+  const users=(await r.json()).users||[];
+  const players=users.filter(u=>u.role!=='gm');
+  if(!players.length){showToast('No players to share with','error');return;}
+  const opts=players.map(u=>`${u.id}: ${u.username} (${u.character_name||'no character'})`).join('\n');
+  const input=prompt(`Share handout with player (enter username):\n${players.map(u=>u.username).join(', ')}`);
+  if(!input)return;
+  const target=players.find(u=>u.username.toLowerCase()===input.trim().toLowerCase());
+  if(!target){showToast('Player not found','error');return;}
+  const sr=await apiFetch(`/api/handouts/${handoutId}/share`,{method:'POST',body:JSON.stringify({user_ids:[target.id]})});
+  if(sr.ok)showToast(`Shared with ${target.username}`,'success');else showToast('Reshare failed','error');
 }
 
 // ── Sessions ──────────────────────────────────────────────────────────────────
@@ -1580,7 +1661,7 @@ function renderSessionList(sessions){
     </div>
     <div class="session-body">
       ${s.summary?`<div class="session-summary">${esc(s.summary)}</div>`:'<div style="color:var(--text3);font-size:12px">No summary recorded.</div>'}
-      ${s.notes?.length?`<div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin:10px 0 6px">PLAYER NOTES</div>${s.notes.map(n=>`<div class="session-note"><b>${esc(n.character_name||'Anon')}</b>: ${esc(n.body)}</div>`).join('')}`:''}
+      ${s.notes?.length?`<div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin:10px 0 6px">PLAYER NOTES</div>${s.notes.map(n=>`<div class="session-note" id="sess-n-${n.id}"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div><b>${esc(n.character_name||'Anon')}</b>: <span id="sess-nb-${n.id}">${esc(n.body)}</span></div>${(currentUser&&(currentUser.id===n.player_id||isGm))?`<div style="display:flex;gap:4px;flex-shrink:0"><button class="btn btn-sm" onclick="editSessionNote(${s.id},${n.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="deleteSessionNote(${s.id},${n.id})">Del</button></div>`:''}</div></div>`).join('')}`:''}
       <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin:10px 0 6px">ADD NOTE</div>
       <div style="display:flex;gap:8px;align-items:flex-start">
         <textarea id="sess-note-${s.id}" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:7px;border-radius:4px;font-size:12px;font-family:'Crimson Pro',serif;resize:vertical;min-height:60px" placeholder="Your note..."></textarea>
@@ -1598,6 +1679,27 @@ async function addSessionNote(sessionId){
   const r=await apiFetch(`/api/sessions/${sessionId}/notes`,{method:'POST',body:JSON.stringify({body})});
   if(r.ok){s.className='status-msg status-ok';s.textContent='Saved.';document.getElementById(`sess-note-${sessionId}`).value='';loadSessions();}
   else{s.className='status-msg status-err';s.textContent='Failed.';}
+}
+async function editSessionNote(sessionId,noteId){
+  const span=document.getElementById(`sess-nb-${noteId}`);
+  if(!span)return;
+  const cur=span.textContent;
+  const input=document.createElement('textarea');
+  input.value=cur;input.style.cssText='width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:4px;border-radius:3px;font-size:12px;font-family:inherit;resize:vertical;min-height:48px';
+  span.replaceWith(input);
+  const saveBtn=document.createElement('button');
+  saveBtn.textContent='Save';saveBtn.className='btn btn-sm';
+  saveBtn.onclick=async()=>{
+    const body=input.value.trim();if(!body)return;
+    const r=await apiFetch(`/api/sessions/${sessionId}/notes/${noteId}`,{method:'PUT',body:JSON.stringify({body})});
+    if(r.ok){showToast('Note updated','success');loadSessions();}else showToast('Update failed','error');
+  };
+  input.after(saveBtn);
+}
+async function deleteSessionNote(sessionId,noteId){
+  if(!confirm('Delete this note?'))return;
+  const r=await apiFetch(`/api/sessions/${sessionId}/notes/${noteId}`,{method:'DELETE'});
+  if(r.ok){showToast('Note deleted','success');loadSessions();}else showToast('Delete failed','error');
 }
 function renderPolls(polls){
   const el=document.getElementById('polls-list');
@@ -1882,6 +1984,7 @@ function handleNodeClick(d){
   }
   selectedNodeId=d.id;document.getElementById('theory-edit-box').style.display='';
   document.getElementById('theory-edit-label').value=d.label;document.getElementById('theory-edit-notes').value=d.notes||'';
+  const sharedCb=document.getElementById('theory-edit-shared');if(sharedCb)sharedCb.checked=!!(d.shared_with_gm);
   renderTheory();
 }
 async function addTheoryNode(){
@@ -1895,8 +1998,9 @@ async function addTheoryNode(){
 async function saveTheoryNode(){
   if(!selectedNodeId)return;
   const label=document.getElementById('theory-edit-label').value.trim();const notes=document.getElementById('theory-edit-notes').value.trim();
-  const r=await apiFetch(`/api/theory/nodes/${selectedNodeId}`,{method:'PUT',body:JSON.stringify({label,notes})});
-  if(r.ok){const nd=theoryNodes.find(n=>n.id===selectedNodeId);if(nd){nd.label=label;nd.notes=notes;}renderTheory();}
+  const shared_with_gm=document.getElementById('theory-edit-shared')?.checked||false;
+  const r=await apiFetch(`/api/theory/nodes/${selectedNodeId}`,{method:'PUT',body:JSON.stringify({label,notes,shared_with_gm})});
+  if(r.ok){const nd=theoryNodes.find(n=>n.id===selectedNodeId);if(nd){nd.label=label;nd.notes=notes;nd.shared_with_gm=shared_with_gm?1:0;}renderTheory();}
 }
 async function deleteTheoryNode(){
   if(!selectedNodeId||!confirm('Delete node?'))return;
@@ -2270,12 +2374,15 @@ const GM_FORMS={
   agenda:`<div class="form-group"><label>Player</label><select id="gm-f-user" class="form-input"><option value="">Select player…</option></select></div>
     <div class="form-group"><label>Agenda Title</label><input id="gm-f-title" class="form-input" placeholder="Session objective…"></div>
     <div class="form-group"><label>Body / Details</label><textarea id="gm-f-content" class="form-input" rows="5" placeholder="What should this player focus on?"></textarea></div>`,
+  campaign:`<div class="form-group"><label>Campaign Name</label><input id="gm-f-name" class="form-input" placeholder="The Shattered Crown…"></div>
+    <div class="form-group"><label>System</label><select id="gm-f-system" class="form-input"><option value="dnd5e">D&D 5e</option><option value="coc">Call of Cthulhu</option><option value="alien">Alien</option><option value="coriolis">Coriolis</option><option value="dune">Dune</option><option value="achtung">Achtung! Cthulhu</option></select></div>
+    <div class="form-group"><label>Subtitle</label><input id="gm-f-subtitle" class="form-input" placeholder="Optional tagline"></div>`,
 };
 let gmCreateType=null,gmCreateExtra=null,gmEditId=null;
 const PAGE_TO_TYPE={quests:'quest',npcs:'npc',locations:'location',hooks:'hook',handouts:'handout',maps:'map',sessions:'session',notes:'note',factions:'faction',timeline:'timeline',inventory:'inventory',bestiary:'bestiary',rumours:'rumour',jobs:'job',agenda:'agenda'};
 const TYPE_STORE={quest:()=>questData,npc:()=>npcData,location:()=>locationData,hook:()=>hookData,faction:()=>factionData,timeline:()=>timelineData,inventory:()=>inventoryData,bestiary:()=>bestiaryData,rumour:()=>rumourData,job:()=>jobData,map:()=>mapsData};
 const TYPE_ENDPOINT={quest:'/api/quests',npc:'/api/npcs',location:'/api/locations',hook:'/api/hooks',handout:'/api/handouts',map:'/api/maps',session:'/api/sessions',note:'/api/notes',faction:'/api/factions',timeline:'/api/timeline',inventory:'/api/inventory','key-item':'/api/key-items',job:'/api/jobs',bestiary:'/api/bestiary',rumour:'/api/rumours',agenda:'/api/agenda'};
-const TYPE_RELOAD={quest:loadQuests,npc:loadNpcs,location:loadLocations,hook:loadHooks,handout:()=>navigate('handouts'),map:loadMaps,session:()=>navigate('sessions'),note:loadNotes,faction:loadFactions,timeline:loadTimeline,inventory:loadInventory,'key-item':loadInventory,job:loadJobs,bestiary:loadBestiary,rumour:loadRumours,agenda:loadGmDashboard};
+const TYPE_RELOAD={quest:loadQuests,npc:loadNpcs,location:loadLocations,hook:loadHooks,handout:()=>navigate('handouts'),map:loadMaps,session:()=>navigate('sessions'),note:loadNotes,faction:loadFactions,timeline:loadTimeline,inventory:loadInventory,'key-item':loadInventory,job:loadJobs,bestiary:loadBestiary,rumour:loadRumours,agenda:loadGmDashboard,campaign:loadCampaign};
 function prefillGmForm(type,d){
   const s=(id,v)=>{const el=document.getElementById(id);if(el&&v!=null)el.value=v;};
   s('gm-f-title',d.title);s('gm-f-name',d.name||d.title);s('gm-f-desc',d.description);
@@ -2288,7 +2395,7 @@ function prefillGmForm(type,d){
   s('gm-f-npc',d.source_npc);s('gm-f-content',d.text||d.content);
   s('gm-f-true',d.is_true!=null?String(d.is_true?1:0):null);
   s('gm-f-cr',d.stats?.cr);s('gm-f-ac',d.stats?.ac);s('gm-f-hp',d.stats?.hp);
-  s('gm-f-map-type',d.map_type);
+  s('gm-f-map-type',d.map_type);s('gm-f-subtitle',d.subtitle);s('gm-f-system',d.system);
 }
 async function openGmEdit(type,id){
   gmEditId=id;
@@ -2406,6 +2513,11 @@ async function gmModalSave(){
       endpoint='/api/agenda';
       body={user_id:val('gm-f-user'),title:val('gm-f-title'),body:val('gm-f-content')};
       if(!body.user_id){showToast('Select a player','error');return;}
+      break;
+    case 'campaign':
+      endpoint='/api/campaigns';
+      body={name:val('gm-f-name'),system:val('gm-f-system')||'dnd5e',subtitle:val('gm-f-subtitle')||null};
+      if(!body.name){showToast('Campaign name required','error');return;}
       break;
     case 'message':
       endpoint='/api/messages';

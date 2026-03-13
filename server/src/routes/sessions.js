@@ -1,5 +1,5 @@
 const express = require('express');
-const { getDb } = require('../db/database');
+const { getDb, getActiveCampaignId } = require('../db/database');
 const { requireAuth, requireGm } = require('../auth/authMiddleware');
 
 const router = express.Router();
@@ -7,7 +7,10 @@ const router = express.Router();
 // GET /api/sessions
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
-  const sessions = db.prepare('SELECT * FROM sessions ORDER BY number DESC').all();
+  const campId = getActiveCampaignId();
+  const sessions = campId
+    ? db.prepare('SELECT * FROM sessions WHERE (campaign_id = ? OR campaign_id IS NULL) ORDER BY number DESC').all(campId)
+    : db.prepare('SELECT * FROM sessions ORDER BY number DESC').all();
   const withNotes = sessions.map(s => {
     const notes = req.user.role === 'gm'
       ? db.prepare('SELECT sn.*, u.character_name FROM session_notes sn LEFT JOIN users u ON sn.player_id = u.id WHERE sn.session_id = ?').all(s.id)
@@ -121,6 +124,29 @@ router.put('/scheduling/:id/confirm', requireGm, (req, res) => {
   res.json({ success: true });
 });
 
+
+// PUT /api/sessions/:sessionId/notes/:noteId — player edits own note
+router.put('/:sessionId/notes/:noteId', requireAuth, (req, res) => {
+  const db = getDb();
+  const note = db.prepare('SELECT * FROM session_notes WHERE id = ?').get(req.params.noteId);
+  if (!note) return res.status(404).json({ error: 'Not found' });
+  if (note.player_id !== req.user.id && req.user.role !== 'gm') return res.status(403).json({ error: 'Not authorised' });
+  const { body, privacy } = req.body;
+  db.prepare('UPDATE session_notes SET body = COALESCE(?, body), privacy = COALESCE(?, privacy) WHERE id = ?')
+    .run(body || null, privacy || null, req.params.noteId);
+  const updated = db.prepare('SELECT * FROM session_notes WHERE id = ?').get(req.params.noteId);
+  res.json({ note: updated });
+});
+
+// DELETE /api/sessions/:sessionId/notes/:noteId — player deletes own note
+router.delete('/:sessionId/notes/:noteId', requireAuth, (req, res) => {
+  const db = getDb();
+  const note = db.prepare('SELECT * FROM session_notes WHERE id = ?').get(req.params.noteId);
+  if (!note) return res.status(404).json({ error: 'Not found' });
+  if (note.player_id !== req.user.id && req.user.role !== 'gm') return res.status(403).json({ error: 'Not authorised' });
+  db.prepare('DELETE FROM session_notes WHERE id = ?').run(req.params.noteId);
+  res.json({ success: true });
+});
 
 // PUT /api/sessions/:id — GM edits session
 router.put('/:id', requireGm, (req, res) => {

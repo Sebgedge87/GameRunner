@@ -1,12 +1,15 @@
 const express = require('express');
-const { getDb } = require('../db/database');
+const { getDb, getActiveCampaignId } = require('../db/database');
 const { requireAuth, requireGm } = require('../auth/authMiddleware');
 
 const router = express.Router();
 
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
-  const jobs = db.prepare("SELECT * FROM jobs ORDER BY CASE status WHEN 'open' THEN 0 ELSE 1 END, created_at DESC").all();
+  const campId = getActiveCampaignId();
+  const jobs = campId
+    ? db.prepare("SELECT * FROM jobs WHERE (campaign_id = ? OR campaign_id IS NULL) ORDER BY CASE status WHEN 'open' THEN 0 ELSE 1 END, created_at DESC").all(campId)
+    : db.prepare("SELECT * FROM jobs ORDER BY CASE status WHEN 'open' THEN 0 ELSE 1 END, created_at DESC").all();
   res.json({ jobs });
 });
 

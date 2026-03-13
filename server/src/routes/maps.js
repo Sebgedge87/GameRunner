@@ -1,12 +1,15 @@
 const express = require('express');
-const { getDb } = require('../db/database');
+const { getDb, getActiveCampaignId } = require('../db/database');
 const { requireAuth, requireGm } = require('../auth/authMiddleware');
 
 const router = express.Router();
 
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
-  const maps = db.prepare('SELECT * FROM maps ORDER BY created_at DESC').all();
+  const campId = getActiveCampaignId();
+  const maps = campId
+    ? db.prepare('SELECT * FROM maps WHERE (campaign_id = ? OR campaign_id IS NULL) ORDER BY created_at DESC').all(campId)
+    : db.prepare('SELECT * FROM maps ORDER BY created_at DESC').all();
   res.json({ maps });
 });
 

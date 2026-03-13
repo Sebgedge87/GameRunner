@@ -429,6 +429,8 @@ function runMigrations() {
   try { db.exec('ALTER TABLE maps ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
   // Add locked column to users if not already present (P10: lock login)
   try { db.exec('ALTER TABLE users ADD COLUMN locked INTEGER DEFAULT 0'); } catch (_) {}
+  // Add shared_with_gm column to theory_nodes (P5)
+  try { db.exec('ALTER TABLE theory_nodes ADD COLUMN shared_with_gm INTEGER DEFAULT 0'); } catch (_) {}
 
   console.log('✅ Migrations complete.');
 }

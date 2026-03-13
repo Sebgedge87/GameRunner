@@ -12,4 +12,9 @@ function getDb() {
   return db;
 }
 
-module.exports = { getDb };
+function getActiveCampaignId() {
+  const row = getDb().prepare('SELECT id FROM campaigns WHERE active = 1 LIMIT 1').get();
+  return row ? row.id : null;
+}
+
+module.exports = { getDb, getActiveCampaignId };

@@ -420,7 +420,7 @@ Single-file HTML — login, dashboard, all base pages, D3 mindmap, messages, not
 
 ## Implementation Status & Gap Analysis
 
-> Last audited: 2026-03-13. Tracks what is actually built vs. what the spec requires.
+> Last audited: 2026-03-13 (updated). Tracks what is actually built vs. what the spec requires.
 
 ### Legend
 `✅` Done — server + client UI
@@ -437,9 +437,9 @@ Single-file HTML — login, dashboard, all base pages, D3 mindmap, messages, not
 | NPCs | ✅ modal + vault write | 🟡 API exists, no edit button | 🟡 API exists, no delete button | ❌ no `hidden` field | ❌ no share endpoint |
 | Locations | ✅ modal + vault write | 🟡 API exists, no edit button | 🟡 API exists, no delete button | ❌ no `hidden` field | ❌ no share endpoint |
 | Hooks | ✅ modal + vault write | 🟡 API exists, no edit button | 🟡 API exists, no delete button | ❌ no `hidden` field | ❌ no share endpoint |
-| Handouts | ✅ modal + file upload | 🟡 no edit button | ❌ no DELETE endpoint or button | ❌ | ✅ share to player(s), reshare |
+| Handouts | ✅ modal + file upload | ✅ edit button on card | ✅ delete button on card | ❌ | ✅ share to player(s), reshare |
 | Maps | ✅ modal + file upload | 🟡 API exists, no edit button | ✅ delete button on card | ❌ no `hidden` field | ❌ no share endpoint |
-| Sessions | ✅ modal | ❌ no edit, no delete | ❌ | ❌ | ❌ |
+| Sessions | ✅ modal | ✅ edit button on card | ✅ delete button on card | ❌ | ❌ |
 | Factions | 🟡 API exists, no create form | 🟡 API exists, no edit button | 🟡 API exists, no delete button | ❌ | ❌ |
 | Timeline | 🟡 API exists, no create form | 🟡 API exists, no edit button | 🟡 API exists, no delete button | ❌ | ❌ |
 | Inventory | 🟡 API exists, no create form | 🟡 API exists, no edit button | 🟡 API exists, no delete button | ❌ | ❌ |
@@ -459,12 +459,12 @@ Single-file HTML — login, dashboard, all base pages, D3 mindmap, messages, not
 | Resource | Create | Edit Own | Delete Own | Share / Visibility |
 |---|---|---|---|---|
 | Notes | ✅ create form | ✅ inline edit + save | ✅ delete button | ✅ privacy toggle + share_with_gm checkbox |
-| Session Notes | ✅ add to session | 🟡 API exists, no edit button | ❌ | ✅ private/public toggle |
-| Theory Board | ✅ add nodes + edges | ✅ inline edit label/type | ✅ delete node | ❌ share with GM/party not wired in UI |
+| Session Notes | ✅ add to session | ✅ inline edit + save | ✅ delete button | ✅ private/public toggle |
+| Theory Board | ✅ add nodes + edges | ✅ inline edit label/type | ✅ delete node | ✅ Share with GM checkbox |
 | Messages | ✅ compose via flyout | N/A | ❌ | N/A |
 | Character Sheet | N/A | ✅ edit own sheet | N/A | N/A |
 | Ship Sheet | N/A | ✅ edit own | N/A | N/A |
-| Handouts | ❌ players cannot create | N/A | N/A | 🟡 can reshare if can_reshare=true, no button |
+| Handouts | ❌ players cannot create | N/A | N/A | ✅ reshare button shown when can_reshare=true |
 | Pins | ✅ pin any item | N/A | ✅ unpin | N/A |
 | Polls / Scheduling | ❌ view + vote only | N/A | N/A | N/A |
 
@@ -519,22 +519,22 @@ Currently only Handouts support targeted sharing. NPCs, Locations, Quests etc. a
 - [ ] GET endpoints respect share list: players only see items where `hidden=0` OR they are in `item_shares`
 - [ ] Client: "Share" button on GM quest/npc/location cards → player picker dialog
 
-#### Priority 5 — Player session notes edit + theory board sharing
+#### Priority 5 — Player session notes edit + theory board sharing ✅
 
-- [ ] `PUT /api/sessions/:sessionId/notes/:noteId` — edit own session note
-- [ ] `DELETE /api/sessions/:sessionId/notes/:noteId` — delete own session note
-- [ ] Client: edit/delete buttons on own session notes
-- [ ] Theory board "Share with GM" toggle — wire `PUT /api/theories/nodes/:id` with `visibility` field
-- [ ] Handout reshare button — show reshare button in client when `can_reshare = true`
+- [x] `PUT /api/sessions/:sessionId/notes/:noteId` — edit own session note
+- [x] `DELETE /api/sessions/:sessionId/notes/:noteId` — delete own session note
+- [x] Client: edit/delete buttons on own session notes (inline edit via textarea swap)
+- [x] Theory board "Share with GM" checkbox — wired to `PUT /api/theory/nodes/:id` with `shared_with_gm` field; GM sees shared nodes at `GET /api/theory/shared`
+- [x] Handout reshare button — shown on player cards when `can_reshare=true`
 
 #### Priority 6 — Campaign switcher + multi-campaign data isolation
 Without this, all content bleeds across games regardless of which campaign is active.
 
-- [ ] **Campaign switcher UI** — clickable top-bar dropdown listing all campaigns; click → `PUT /api/campaigns/:id/activate`; currently the banner shows name only, no interaction
-- [ ] **Create new campaign** — add `GM_FORMS.campaign` (name, system, subtitle) + case in `gmModalSave`; FAB should show on gm-dashboard page
+- [x] **Campaign switcher UI** — clickable top-bar dropdown listing all campaigns; click → `PUT /api/campaigns/:id/activate`; reloads all scoped data
+- [x] **Create new campaign** — `GM_FORMS.campaign` (name, system, subtitle) + `gmModalSave` case → `POST /api/campaigns`; accessible from switcher dropdown "New Campaign" link
 - [ ] **Vault per-campaign scoping** — restructure vault directories to `vault/[campaign-slug]/Quests/`, `NPCs/`, etc.; update vaultWatcher to detect campaign from top-level folder and tag `vault_files.campaign_id`
-- [ ] **GET route filtering** — all vault routes (quests, npcs, locations, hooks), maps, sessions, handouts, factions, timeline, jobs, inventory, key_items, bestiary, rumours must `WHERE campaign_id = <active campaign id>`; currently campaign_id column exists on most tables but is never filtered
-- [ ] **Fix GM Dashboard campaign data bug** — `loadGmDashboard()` treats `cR.json()` as an array but API returns `{ campaigns: [...] }`; `campaigns.find()` silently fails
+- [x] **GET route filtering** — all vault routes (quests, npcs, locations, hooks), maps, sessions, factions, timeline, jobs, inventory, key_items, bestiary, rumours now filter by `WHERE campaign_id = <active> OR campaign_id IS NULL`
+- [x] **Fix GM Dashboard campaign data bug** — `loadGmDashboard()` now correctly reads `(await cR.json()).campaigns`
 
 #### Priority 7 — Card detail panels (click to expand)
 The spec says every card opens a full detail panel. Currently cards have no click handler — they are static read-only tiles.
@@ -589,9 +589,12 @@ No route, no DB table, no client UI exists for this spec feature.
 - Character sheets: player edit own, GM view all
 - Theory board: full personal D3 graph editor
 - Combat tracker: GM runs encounter, players see live updates
-- Sessions: GM creates, players add notes + vote polls + respond to scheduling
+- Sessions: GM creates/edits/deletes, players add/edit/delete own notes + vote polls + respond to scheduling
 - Pins: pin/unpin any item to dashboard
-- Bestiary, Rumours, Factions, Timeline, Inventory, Jobs: read-only display (no client create/edit yet)
+- Bestiary, Rumours, Factions, Timeline, Inventory, Jobs: full CRUD (create/edit/delete) via GM modal
+- Campaign switcher: top-bar dropdown; GM can create new campaigns + switch active campaign; all GET routes filter by active campaign
+- Theory board: Share with GM checkbox; GM can view all shared nodes at `/api/theory/shared`
+- Handouts: player reshare button when `can_reshare=true`
 
 ---
 

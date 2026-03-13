@@ -1,5 +1,5 @@
 const express = require('express');
-const { getDb } = require('../db/database');
+const { getDb, getActiveCampaignId } = require('../db/database');
 const { requireAuth, requireGm } = require('../auth/authMiddleware');
 
 const router = express.Router();
@@ -7,17 +7,29 @@ const router = express.Router();
 // GET /api/rumours — return rumours the current user has been exposed to
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
+  const campId = getActiveCampaignId();
+  const campClause = campId ? 'AND (r.campaign_id = ? OR r.campaign_id IS NULL)' : '';
   if (req.user.role === 'gm') {
-    const rumours = db.prepare('SELECT * FROM rumours ORDER BY created_at DESC').all();
+    const rumours = campId
+      ? db.prepare(`SELECT * FROM rumours r WHERE 1=1 ${campClause} ORDER BY created_at DESC`).all(campId)
+      : db.prepare('SELECT * FROM rumours ORDER BY created_at DESC').all();
     return res.json({ rumours });
   }
-  const rumours = db.prepare(`
-    SELECT r.*, re.exposed_at
-    FROM rumours r
-    JOIN rumour_exposure re ON re.rumour_id = r.id
-    WHERE re.user_id = ?
-    ORDER BY re.exposed_at DESC
-  `).all(req.user.id);
+  const rumours = campId
+    ? db.prepare(`
+        SELECT r.*, re.exposed_at
+        FROM rumours r
+        JOIN rumour_exposure re ON re.rumour_id = r.id
+        WHERE re.user_id = ? ${campClause}
+        ORDER BY re.exposed_at DESC
+      `).all(req.user.id, campId)
+    : db.prepare(`
+        SELECT r.*, re.exposed_at
+        FROM rumours r
+        JOIN rumour_exposure re ON re.rumour_id = r.id
+        WHERE re.user_id = ?
+        ORDER BY re.exposed_at DESC
+      `).all(req.user.id);
   // Never expose is_true to players
   const safe = rumours.map(({ is_true, ...r }) => r);
   res.json({ rumours: safe });

@@ -12,6 +12,20 @@ router.get('/', requireAuth, (req, res) => {
   res.json({ nodes, edges });
 });
 
+// GET /api/theory/shared — GM sees all nodes shared with GM
+router.get('/shared', requireAuth, (req, res) => {
+  if (req.user.role !== 'gm') return res.status(403).json({ error: 'GM only' });
+  const db = getDb();
+  const nodes = db.prepare(`
+    SELECT tn.*, u.username, u.character_name
+    FROM theory_nodes tn
+    JOIN users u ON tn.user_id = u.id
+    WHERE tn.shared_with_gm = 1
+    ORDER BY tn.created_at DESC
+  `).all();
+  res.json({ nodes });
+});
+
 // POST /api/theory/nodes
 router.post('/nodes', requireAuth, (req, res) => {
   const { label, node_type = 'theory', vault_ref, notes, x = 0, y = 0, campaign_id } = req.body;
@@ -28,9 +42,9 @@ router.put('/nodes/:id', requireAuth, (req, res) => {
   const db = getDb();
   const node = db.prepare('SELECT * FROM theory_nodes WHERE id = ?').get(req.params.id);
   if (!node || node.user_id !== req.user.id) return res.status(403).json({ error: 'Not authorised' });
-  const { label, node_type, vault_ref, notes, x, y } = req.body;
-  db.prepare('UPDATE theory_nodes SET label=COALESCE(?,label), node_type=COALESCE(?,node_type), vault_ref=COALESCE(?,vault_ref), notes=COALESCE(?,notes), x=COALESCE(?,x), y=COALESCE(?,y) WHERE id=?')
-    .run(label, node_type, vault_ref, notes, x, y, req.params.id);
+  const { label, node_type, vault_ref, notes, x, y, shared_with_gm } = req.body;
+  db.prepare('UPDATE theory_nodes SET label=COALESCE(?,label), node_type=COALESCE(?,node_type), vault_ref=COALESCE(?,vault_ref), notes=COALESCE(?,notes), x=COALESCE(?,x), y=COALESCE(?,y), shared_with_gm=COALESCE(?,shared_with_gm) WHERE id=?')
+    .run(label, node_type, vault_ref, notes, x, y, shared_with_gm != null ? (shared_with_gm ? 1 : 0) : null, req.params.id);
   const updated = db.prepare('SELECT * FROM theory_nodes WHERE id = ?').get(req.params.id);
   res.json({ node: updated });
 });

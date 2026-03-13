@@ -1,12 +1,15 @@
 const express = require('express');
-const { getDb } = require('../db/database');
+const { getDb, getActiveCampaignId } = require('../db/database');
 const { requireAuth, requireGm } = require('../auth/authMiddleware');
 
 const router = express.Router();
 
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
-  const factions = db.prepare('SELECT * FROM factions ORDER BY name').all();
+  const campId = getActiveCampaignId();
+  const factions = campId
+    ? db.prepare('SELECT * FROM factions WHERE (campaign_id = ? OR campaign_id IS NULL) ORDER BY name').all(campId)
+    : db.prepare('SELECT * FROM factions ORDER BY name').all();
   const withRep = factions.map(f => {
     const rep = db.prepare('SELECT * FROM faction_reputation WHERE faction_id = ?').get(f.id);
     return { ...f, reputation: rep ? rep.score : 0 };
