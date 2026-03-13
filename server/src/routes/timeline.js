@@ -7,10 +7,20 @@ const router = express.Router();
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
   const campId = getActiveCampaignId();
+  const hiddenClause = req.user.role === 'gm' ? '' : 'AND (hidden IS NULL OR hidden = 0)';
   const events = campId
-    ? db.prepare('SELECT * FROM timeline_events WHERE (campaign_id = ? OR campaign_id IS NULL) ORDER BY in_world_date ASC, created_at ASC').all(campId)
-    : db.prepare('SELECT * FROM timeline_events ORDER BY in_world_date ASC, created_at ASC').all();
+    ? db.prepare(`SELECT * FROM timeline_events WHERE (campaign_id = ? OR campaign_id IS NULL) ${hiddenClause} ORDER BY in_world_date ASC, created_at ASC`).all(campId)
+    : db.prepare(`SELECT * FROM timeline_events WHERE 1=1 ${hiddenClause} ORDER BY in_world_date ASC, created_at ASC`).all();
   res.json({ events });
+});
+
+router.put('/:id/hidden', requireGm, (req, res) => {
+  const db = getDb();
+  const row = db.prepare('SELECT id, hidden FROM timeline_events WHERE id = ?').get(req.params.id);
+  if (!row) return res.status(404).json({ error: 'Not found' });
+  const newVal = row.hidden ? 0 : 1;
+  db.prepare('UPDATE timeline_events SET hidden = ? WHERE id = ?').run(newVal, req.params.id);
+  res.json({ hidden: newVal });
 });
 
 router.post('/', requireGm, (req, res) => {

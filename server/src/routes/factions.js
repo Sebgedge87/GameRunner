@@ -7,9 +7,10 @@ const router = express.Router();
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
   const campId = getActiveCampaignId();
+  const hiddenClause = req.user.role === 'gm' ? '' : 'AND (hidden IS NULL OR hidden = 0)';
   const factions = campId
-    ? db.prepare('SELECT * FROM factions WHERE (campaign_id = ? OR campaign_id IS NULL) ORDER BY name').all(campId)
-    : db.prepare('SELECT * FROM factions ORDER BY name').all();
+    ? db.prepare(`SELECT * FROM factions WHERE (campaign_id = ? OR campaign_id IS NULL) ${hiddenClause} ORDER BY name`).all(campId)
+    : db.prepare(`SELECT * FROM factions WHERE 1=1 ${hiddenClause} ORDER BY name`).all();
   const withRep = factions.map(f => {
     const rep = db.prepare('SELECT * FROM faction_reputation WHERE faction_id = ?').get(f.id);
     return { ...f, reputation: rep ? rep.score : 0 };
@@ -36,6 +37,15 @@ router.put('/:id', requireGm, (req, res) => {
     .run(name, description, goals, image_path, req.params.id);
   const faction = db.prepare('SELECT * FROM factions WHERE id = ?').get(req.params.id);
   res.json({ faction });
+});
+
+router.put('/:id/hidden', requireGm, (req, res) => {
+  const db = getDb();
+  const row = db.prepare('SELECT id, hidden FROM factions WHERE id = ?').get(req.params.id);
+  if (!row) return res.status(404).json({ error: 'Not found' });
+  const newVal = row.hidden ? 0 : 1;
+  db.prepare('UPDATE factions SET hidden = ? WHERE id = ?').run(newVal, req.params.id);
+  res.json({ hidden: newVal });
 });
 
 router.put('/:id/reputation', requireGm, (req, res) => {

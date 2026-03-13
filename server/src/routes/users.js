@@ -1,8 +1,10 @@
 const express = require('express');
+const bcrypt = require('bcryptjs');
 const { getDb } = require('../db/database');
 const { requireAuth, requireGm } = require('../auth/authMiddleware');
 
 const router = express.Router();
+const SALT_ROUNDS = 10;
 
 // GET /api/users — GM sees all; players see list for messaging
 router.get('/', requireAuth, (req, res) => {
@@ -39,6 +41,19 @@ router.put('/:id', requireGm, (req, res) => {
     .run(character_name, character_class, character_level, role, req.params.id);
   const user = db.prepare('SELECT id, username, character_name, character_class, character_level, role FROM users WHERE id = ?').get(req.params.id);
   res.json({ user });
+});
+
+// PUT /api/users/:id/password — GM resets a player's password
+router.put('/:id/password', requireGm, (req, res) => {
+  const { password } = req.body;
+  if (!password || password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  const db = getDb();
+  const user = db.prepare('SELECT id, role FROM users WHERE id = ?').get(req.params.id);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  if (user.role === 'gm') return res.status(403).json({ error: 'Cannot reset GM password this way' });
+  const password_hash = bcrypt.hashSync(password, SALT_ROUNDS);
+  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(password_hash, req.params.id);
+  res.json({ success: true });
 });
 
 // DELETE /api/users/:id — GM deletes a player account

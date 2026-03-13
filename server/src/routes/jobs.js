@@ -7,10 +7,20 @@ const router = express.Router();
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
   const campId = getActiveCampaignId();
+  const hiddenClause = req.user.role === 'gm' ? '' : 'AND (hidden IS NULL OR hidden = 0)';
   const jobs = campId
-    ? db.prepare("SELECT * FROM jobs WHERE (campaign_id = ? OR campaign_id IS NULL) ORDER BY CASE status WHEN 'open' THEN 0 ELSE 1 END, created_at DESC").all(campId)
-    : db.prepare("SELECT * FROM jobs ORDER BY CASE status WHEN 'open' THEN 0 ELSE 1 END, created_at DESC").all();
+    ? db.prepare(`SELECT * FROM jobs WHERE (campaign_id = ? OR campaign_id IS NULL) ${hiddenClause} ORDER BY CASE status WHEN 'open' THEN 0 ELSE 1 END, created_at DESC`).all(campId)
+    : db.prepare(`SELECT * FROM jobs WHERE 1=1 ${hiddenClause} ORDER BY CASE status WHEN 'open' THEN 0 ELSE 1 END, created_at DESC`).all();
   res.json({ jobs });
+});
+
+router.put('/:id/hidden', requireGm, (req, res) => {
+  const db = getDb();
+  const row = db.prepare('SELECT id, hidden FROM jobs WHERE id = ?').get(req.params.id);
+  if (!row) return res.status(404).json({ error: 'Not found' });
+  const newVal = row.hidden ? 0 : 1;
+  db.prepare('UPDATE jobs SET hidden = ? WHERE id = ?').run(newVal, req.params.id);
+  res.json({ hidden: newVal });
 });
 
 router.post('/', requireGm, (req, res) => {

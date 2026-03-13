@@ -2,18 +2,25 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { getDb } = require('../db/database');
-const { jwtSecret } = require('../config');
+const { jwtSecret, registrationOpen } = require('../config');
 const { requireAuth } = require('./authMiddleware');
 
 const router = express.Router();
 const SALT_ROUNDS = 10;
 
 // POST /api/auth/register
+// Blocked when REGISTRATION_OPEN=false in env (unless no users exist — first-run GM setup)
 router.post('/register', (req, res) => {
   const { username, password, character_name, character_class } = req.body;
 
   if (!username || !password) {
     return res.status(400).json({ error: 'username and password are required' });
+  }
+
+  // If registration is closed, only allow the very first user (GM bootstrap)
+  if (!registrationOpen) {
+    const count = getDb().prepare('SELECT COUNT(*) as n FROM users').get().n;
+    if (count > 0) return res.status(403).json({ error: 'Registration is closed. Ask your GM for access.' });
   }
   if (password.length < 6) {
     return res.status(400).json({ error: 'Password must be at least 6 characters' });

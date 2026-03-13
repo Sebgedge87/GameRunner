@@ -7,10 +7,20 @@ const router = express.Router();
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
   const campId = getActiveCampaignId();
+  const hiddenClause = req.user.role === 'gm' ? '' : 'AND (hidden IS NULL OR hidden = 0)';
   const items = campId
-    ? db.prepare('SELECT * FROM inventory WHERE (campaign_id = ? OR campaign_id IS NULL) ORDER BY holder, name').all(campId)
-    : db.prepare('SELECT * FROM inventory ORDER BY holder, name').all();
+    ? db.prepare(`SELECT * FROM inventory WHERE (campaign_id = ? OR campaign_id IS NULL) ${hiddenClause} ORDER BY holder, name`).all(campId)
+    : db.prepare(`SELECT * FROM inventory WHERE 1=1 ${hiddenClause} ORDER BY holder, name`).all();
   res.json({ inventory: items });
+});
+
+router.put('/:id/hidden', requireGm, (req, res) => {
+  const db = getDb();
+  const row = db.prepare('SELECT id, hidden FROM inventory WHERE id = ?').get(req.params.id);
+  if (!row) return res.status(404).json({ error: 'Not found' });
+  const newVal = row.hidden ? 0 : 1;
+  db.prepare('UPDATE inventory SET hidden = ? WHERE id = ?').run(newVal, req.params.id);
+  res.json({ hidden: newVal });
 });
 
 router.post('/', requireGm, (req, res) => {

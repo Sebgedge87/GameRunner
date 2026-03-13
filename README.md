@@ -481,40 +481,34 @@ Single-file HTML — login, dashboard, all base pages, D3 mindmap, messages, not
 
 The following changes are needed to reach full GM management and player self-management. Listed in priority order.
 
-#### Priority 1 — Inline Edit + Delete buttons on all vault resources (Client)
-These routes are fully built on the server. The client just needs edit/delete buttons on each card and a populated edit modal.
+#### Priority 1 — Inline Edit + Delete buttons on all vault resources (Client) ✅
 
-- [ ] **Quests** — add Edit button (opens pre-filled modal) + Delete button with confirm
-- [ ] **NPCs** — add Edit button + Delete button with confirm
-- [ ] **Locations** — add Edit button + Delete button with confirm
-- [ ] **Hooks** — add Edit button + Delete button with confirm
-- [ ] **Maps** — add Edit button (title/description/type only, no re-upload needed)
-- [ ] **Handouts** — add Edit button + DELETE `/api/handouts/:id` endpoint + delete button
-- [ ] **Sessions** — add Edit button + DELETE `/api/sessions/:id` endpoint + delete button
+- [x] **Quests** — Edit (pre-filled modal) + Delete with confirm
+- [x] **NPCs** — Edit + Delete
+- [x] **Locations** — Edit + Delete
+- [x] **Hooks** — Edit + Delete
+- [x] **Maps** — Edit (title/description/type) + Delete
+- [x] **Handouts** — Edit + Delete (`DELETE /api/handouts/:id`)
+- [x] **Sessions** — Edit + Delete (`DELETE /api/sessions/:id`)
 
-#### Priority 2 — Missing create forms (Client + GM modal)
-Server routes exist; just need `GM_FORMS` entries and `gmModalSave` cases added.
+#### Priority 2 — Missing create forms (Client + GM modal) ✅
 
-- [ ] **Factions** — create form: name, description, goals, image
-- [ ] **Timeline** — create form: title, description, in_world_date, linked_quest (optional)
-- [ ] **Inventory** — create form: name, quantity, holder, description
-- [ ] **Key Items** — create form: name, description, significance, linked_quest, image
-- [ ] **Jobs** — create form: title, reward, difficulty, posted_by, location, expiry
-- [ ] **Bestiary** — create form: name, description, stats (CR/AC/HP), image
-- [ ] **Rumours** — create form: content, is_true, source_npc, source_location
+- [x] **Factions** — `GM_FORMS.faction`: name, description, goals, members + Edit/Delete on cards
+- [x] **Timeline** — `GM_FORMS.timeline`: title, in_world_date, description, linked_quest + Edit/Delete
+- [x] **Inventory** — `GM_FORMS.inventory`: name, quantity, holder, description + Edit/Delete
+- [x] **Key Items** — `GM_FORMS['key-item']`: name, description, significance, linked_quest, image + Edit/Delete
+- [x] **Jobs** — `GM_FORMS.job`: title, reward, difficulty, posted_by, location + Edit/Delete
+- [x] **Bestiary** — `GM_FORMS.bestiary`: name, description, CR/AC/HP, image + Edit/Delete
+- [x] **Rumours** — `GM_FORMS.rumour`: text, source_npc, source_location, is_true + Edit/Delete
 
-Also add Edit + Delete buttons to client cards for all of the above once forms exist.
+#### Priority 3 — Hide/Unhide visibility toggle (Server + Client) ✅
 
-#### Priority 3 — Hide/Unhide visibility toggle (Server + Client)
-All vault resources currently send all records to all logged-in users. Need a `hidden` field so GMs can hide things from players mid-session without deleting them.
-
-- [ ] Add `hidden BOOLEAN DEFAULT 0` column to `vault_files` table (migration)
-- [ ] Filter `hidden = 0` from GET responses for non-GM users (quests, npcs, locations, hooks)
-- [ ] Add `PUT /api/quests/:id/visibility`, same for npcs, locations, hooks — toggle `hidden`
-- [ ] Add `hidden` column + filter + toggle to: maps, factions, timeline, inventory, jobs, key_items
-- [ ] Client: add Eye/EyeOff toggle button on each GM card (calls visibility endpoint)
-- [ ] Bestiary: wire existing reveal button in client UI (endpoint exists at `PUT /api/bestiary/:id/reveal`)
-- [ ] Rumours: wire existing expose button in client UI (endpoint exists at `POST /api/rumours/:id/expose`)
+- [x] `hidden` column on `vault_files` (migration); `PUT /api/vault/:id/hidden` toggle; quests/npcs/locations/hooks filter by `hidden=0` for non-GM
+- [x] `hidden` column added to maps, factions, timeline_events, inventory, key_items, jobs, bestiary, rumours (migrations)
+- [x] `PUT /:id/hidden` toggle route on factions, timeline, inventory, key_items, maps, jobs routes
+- [x] Client `eyeBtn()` + `toggleHidden()` wired on all GM cards; routes dispatch to vault or DB endpoint by type
+- [x] Bestiary: Reveal/Hide button wired to `PUT /api/bestiary/:id/reveal`
+- [x] Rumours: Expose button wired to `POST /api/rumours/:id/expose`
 
 #### Priority 4 — Share individual items to players (Server + Client)
 Currently only Handouts support targeted sharing. NPCs, Locations, Quests etc. are all-or-nothing.
@@ -550,28 +544,25 @@ Without this, all content bleeds across games regardless of which campaign is ac
 - [x] GM actions (Edit + Delete) are included in the detail modal footer
 - [ ] Linked fields (e.g. `linked_quest`, `source_npc`) navigate to that item's detail on click
 
-#### Priority 8 — GM-Only vault folder privacy boundary
-Currently `vault/GM-Only/` files are synced to DB just like everything else and are accessible to any authenticated user.
+#### Priority 8 — GM-Only vault folder privacy boundary ✅
 
-- [ ] **vaultWatcher**: skip files whose path starts with `GM-Only/` — never write them to `vault_files`
-- [ ] Alternatively: sync them but set a `gm_only = 1` flag and filter from all non-GM GET responses
-- [ ] Ensure no route accidentally exposes these files
+- [x] vaultWatcher skips files whose path starts with `GM-Only/` — never written to `vault_files`
 
-#### Priority 9 — Missing GM tools with existing backend
+#### Priority 9 — Missing GM tools with existing backend ✅
 
-- [ ] **Agenda / Secret Objective Cards** — add `GM_FORMS.agenda` (player select, title, content) + `gmModalSave` case → `POST /api/agenda`; currently route has full CRUD but no UI entry point
-- [ ] **Stress/Sanity adjust** — add GM control in player table on GM Dashboard to set stress per player → `PUT /api/stress/:userId`; currently API-only
-- [ ] **Bestiary reveal button** — wire `PUT /api/bestiary/:id/reveal` in client; endpoint exists, no button
-- [ ] **Rumours expose button** — wire `POST /api/rumours/:id/expose` in client; endpoint exists, no button
-- [ ] **Job → Quest promotion** — add "Promote to Quest" button on job cards → `PUT /api/jobs/:id` with `promoted_quest_id`; field exists in DB, no UI
-- [ ] **Rumours PUT** — add `PUT /api/rumours/:id` server route; currently rumours cannot be edited after creation
+- [x] **Agenda / Secret Objective Cards** — `GM_FORMS.agenda` + `gmModalSave` case → `POST /api/agenda`; "+ Set Agenda" button in GM Dashboard
+- [x] **Stress/Sanity adjust** — per-player Stress/Sanity inputs + "Set" button in GM Dashboard → `PUT /api/stress/:userId`
+- [x] **Bestiary reveal button** — Reveal/Hide button wired to `PUT /api/bestiary/:id/reveal`
+- [x] **Rumours expose button** — Expose button wired to `POST /api/rumours/:id/expose`
+- [x] **Job → Quest promotion** — "→ Quest" button on job cards → `PUT /api/jobs/:id` with `promoted_quest_id`
+- [x] **Rumours PUT** — `PUT /api/rumours/:id` server route implemented
 
-#### Priority 10 — User / player management
+#### Priority 10 — User / player management ✅
 
-- [ ] **GM can remove players** — add `DELETE /api/users/:id` (GM only); currently no way to remove an account
-- [ ] **GM can reset player password** — add `PUT /api/users/:id/password` (GM only)
-- [ ] **Registration is open** — `POST /api/auth/register` is publicly accessible; for a private group install this should require a GM-issued invite code or be GM-only
-- [ ] **Client UI** — add Remove and Reset Password buttons to the Players table in GM Dashboard
+- [x] **GM can remove players** — `DELETE /api/users/:id` (GM only); "Del" button in Players table
+- [x] **GM can reset player password** — `PUT /api/users/:id/password` (GM only); "Pwd" button in Players table
+- [x] **Registration can be closed** — set `REGISTRATION_OPEN=false` in `.env`; blocks new signups unless DB is empty (first-run GM bootstrap)
+- [x] **Client UI** — Msg / Pwd / Del buttons on each player row in GM Dashboard (GM-only rows only)
 
 #### Priority 11 — XP / Milestone tracker ✅
 

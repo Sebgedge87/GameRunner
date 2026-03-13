@@ -431,6 +431,14 @@ function runMigrations() {
   try { db.exec('ALTER TABLE users ADD COLUMN locked INTEGER DEFAULT 0'); } catch (_) {}
   // Add shared_with_gm column to theory_nodes (P5)
   try { db.exec('ALTER TABLE theory_nodes ADD COLUMN shared_with_gm INTEGER DEFAULT 0'); } catch (_) {}
+  // Add hidden column to non-vault tables (P3)
+  try { db.exec('ALTER TABLE factions ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
+  try { db.exec('ALTER TABLE timeline_events ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
+  try { db.exec('ALTER TABLE inventory ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
+  try { db.exec('ALTER TABLE key_items ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
+  try { db.exec('ALTER TABLE jobs ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
+  try { db.exec('ALTER TABLE bestiary ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
+  try { db.exec('ALTER TABLE rumours ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
   // XP awards table (P11)
   db.exec(`CREATE TABLE IF NOT EXISTS xp_awards (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

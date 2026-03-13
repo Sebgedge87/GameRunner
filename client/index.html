@@ -1597,7 +1597,10 @@ async function loadQuests(){
 }
 function eyeBtn(type,id,hidden){return`<button class="btn btn-sm" title="${hidden?'Show to players':'Hide from players'}" onclick="event.stopPropagation();toggleHidden('${type}',${id})">${hidden?'👁 Show':'🚫 Hide'}</button>`;}
 async function toggleHidden(type,id){
-  const r=await apiFetch(`/api/vault/${id}/hidden`,{method:'PUT'});
+  // vault-backed types use /api/vault/:id/hidden; DB-backed types use their own endpoint
+  const vaultTypes=new Set(['quest','npc','location','hook']);
+  const ep=vaultTypes.has(type)?`/api/vault/${id}/hidden`:`${TYPE_ENDPOINT[type]}/${id}/hidden`;
+  const r=await apiFetch(ep,{method:'PUT'});
   if(r.ok){const d=await r.json();showToast(d.hidden?'Hidden from players':'Visible to players','success');TYPE_RELOAD[type]?.();}
   else showToast('Failed','error');
 }
@@ -1879,7 +1882,7 @@ async function loadFactions(){
       ${f.goals?`<div style="font-size:11px;color:var(--text3);margin-bottom:7px">Goals: ${esc(f.goals)}</div>`:''}
       <div class="rep-bar-wrap"><div class="rep-label"><span>Reputation</span><span style="color:${color}">${label} (${rep>=0?'+':''}${rep})</span></div>
       <div class="rep-track"><div class="rep-fill" style="width:${pct}%;background:${color}"></div></div></div>
-      ${isGm?`<div class="card-actions" style="margin-top:8px" onclick="event.stopPropagation()"><button class="btn btn-sm" onclick="openGmEdit('faction',${f.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="gmDelete('faction',${f.id},loadFactions)">Del</button></div>`:''}
+      ${isGm?`<div class="card-actions" style="margin-top:8px" onclick="event.stopPropagation()">${eyeBtn('faction',f.id,f.hidden)}<button class="btn btn-sm" onclick="openGmEdit('faction',${f.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="gmDelete('faction',${f.id},loadFactions)">Del</button></div>`:''}
     </div>`;
   }).join('');
 }
@@ -1897,7 +1900,7 @@ async function loadTimeline(){
       <div class="timeline-date">${esc(e.in_world_date||'')}${e.session_number?` · Session ${e.session_number}`:''}</div>
       <div class="timeline-title">${esc(e.title)}</div>
       ${e.description?`<div class="timeline-desc">${esc(e.description)}</div>`:''}
-      ${isGm?`<div style="margin-top:6px;display:flex;gap:6px" onclick="event.stopPropagation()"><button class="btn btn-sm" onclick="openGmEdit('timeline',${e.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="gmDelete('timeline',${e.id},loadTimeline)">Del</button></div>`:''}
+      ${isGm?`<div style="margin-top:6px;display:flex;gap:6px" onclick="event.stopPropagation()">${eyeBtn('timeline',e.id,e.hidden)}<button class="btn btn-sm" onclick="openGmEdit('timeline',${e.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="gmDelete('timeline',${e.id},loadTimeline)">Del</button></div>`:''}
     </div>
   </div>`).join('');
 }
@@ -1911,7 +1914,7 @@ async function loadInventory(){
   const gmInvBtn=isGm?`<div style="margin-bottom:8px"><button class="btn btn-primary btn-sm" onclick="openGmCreate('inventory')">+ Add Item</button></div>`:'';
   if(!inventoryData.length){el.innerHTML=gmInvBtn+'<div class="empty-state" style="padding:16px">No items.</div>';}
   else{el.innerHTML=gmInvBtn+`<table class="inv-table"><thead><tr><th>Item</th><th>Qty</th><th>Holder</th><th>Description</th>${isGm?'<th></th>':''}</tr></thead>
-    <tbody>${inventoryData.map(i=>`<tr><td style="color:var(--text)">${esc(i.name)}</td><td>${i.quantity}</td><td>${esc(i.holder||'party')}</td><td>${esc(i.description||'')}</td>${isGm?`<td><button class="btn btn-sm" onclick="openGmEdit('inventory',${i.id})">Edit</button> <button class="btn btn-sm btn-danger" onclick="gmDelete('inventory',${i.id},loadInventory)">Del</button></td>`:''}</tr>`).join('')}</tbody></table>`;}
+    <tbody>${inventoryData.map(i=>`<tr><td style="color:var(--text)">${esc(i.name)}</td><td>${i.quantity}</td><td>${esc(i.holder||'party')}</td><td>${esc(i.description||'')}</td>${isGm?`<td style="white-space:nowrap">${eyeBtn('inventory',i.id,i.hidden)}<button class="btn btn-sm" onclick="openGmEdit('inventory',${i.id})">Edit</button> <button class="btn btn-sm btn-danger" onclick="gmDelete('inventory',${i.id},loadInventory)">Del</button></td>`:''}</tr>`).join('')}</tbody></table>`;}
   const kEl=document.getElementById('key-items-list');
   const gmKeyBtn=isGm?`<button class="btn btn-primary btn-sm" style="margin-bottom:8px" onclick="openGmCreate('key-item')">+ Add Key Item</button>`:'';
   if(!keyItemData.length){kEl.innerHTML=gmKeyBtn+'<div class="empty-state">No key items.</div>';return;}
@@ -1921,7 +1924,7 @@ async function loadInventory(){
     ${k.description?`<div class="card-body">${esc(k.description)}</div>`:''}
     ${k.significance?`<div style="margin-top:7px;font-size:12px;color:var(--accent-dim)">Significance: ${esc(k.significance)}</div>`:''}
     ${k.linked_quest?`<div style="font-size:11px;color:var(--text3);margin-top:5px">🔗 ${esc(k.linked_quest)}</div>`:''}
-    ${isGm?`<div class="card-actions" style="margin-top:8px" onclick="event.stopPropagation()"><button class="btn btn-sm" onclick="openGmEdit('key-item',${k.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="gmDelete('key-item',${k.id},loadInventory)">Del</button></div>`:''}
+    ${isGm?`<div class="card-actions" style="margin-top:8px" onclick="event.stopPropagation()">${eyeBtn('key-item',k.id,k.hidden)}<button class="btn btn-sm" onclick="openGmEdit('key-item',${k.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="gmDelete('key-item',${k.id},loadInventory)">Del</button></div>`:''}
   </div>`).join('');
 }
 
@@ -1936,7 +1939,7 @@ async function loadMaps(){
     <img class="map-thumb" src="${API}${m.image_path.startsWith('/')?'':'/'}${esc(m.image_path)}" alt="${esc(m.title)}" onerror="this.style.background='var(--bg3)'"/>
     <div class="map-label">${esc(m.title)}</div>
     ${m.description?`<div style="padding:0 12px 8px;font-size:11px;color:var(--text3)">${esc(m.description)}</div>`:''}
-    ${isGm?`<div style="padding:0 12px 8px;display:flex;gap:6px" onclick="event.stopPropagation()"><button class="btn btn-sm" onclick="openGmEdit('map',${m.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="deleteMap(${m.id})">Del</button></div>`:''}
+    ${isGm?`<div style="padding:0 12px 8px;display:flex;gap:6px;flex-wrap:wrap" onclick="event.stopPropagation()">${eyeBtn('map',m.id,m.hidden)}<button class="btn btn-sm" onclick="openGmEdit('map',${m.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="deleteMap(${m.id})">Del</button></div>`:''}
   </div>`).join('');
 }
 async function deleteMap(id){
@@ -1999,7 +2002,7 @@ async function loadJobs(){
     ${j.description?`<div class="card-body" style="margin-bottom:7px">${esc(j.description)}</div>`:''}
     <div style="font-size:11px;color:var(--text3);display:flex;gap:10px;flex-wrap:wrap">${j.posted_by?`<span>Posted by: ${esc(j.posted_by)}</span>`:''}${j.location?`<span>📍 ${esc(j.location)}</span>`:''}</div>
     ${j.requires_contact?`<div style="margin-top:7px;font-size:12px;color:var(--accent-dim)">Speak to ${esc(j.posted_by||'the contact')} to accept.</div>`:''}
-    ${isGm?`<div class="card-actions" style="margin-top:8px" onclick="event.stopPropagation()"><button class="btn btn-sm" onclick="openGmEdit('job',${j.id})">Edit</button>${!j.promoted_quest_id?`<button class="btn btn-sm btn-primary" onclick="promoteJobToQuest(${j.id})">→ Quest</button>`:''}<button class="btn btn-sm btn-danger" onclick="gmDelete('job',${j.id},loadJobs)">Del</button></div>`:''}
+    ${isGm?`<div class="card-actions" style="margin-top:8px" onclick="event.stopPropagation()">${eyeBtn('job',j.id,j.hidden)}<button class="btn btn-sm" onclick="openGmEdit('job',${j.id})">Edit</button>${!j.promoted_quest_id?`<button class="btn btn-sm btn-primary" onclick="promoteJobToQuest(${j.id})">→ Quest</button>`:''}<button class="btn btn-sm btn-danger" onclick="gmDelete('job',${j.id},loadJobs)">Del</button></div>`:''}
   </div>`).join('');
 }
 
@@ -2194,7 +2197,7 @@ async function loadGmDashboard(){
     <h3 style="font-family:var(--font-heading);color:var(--accent);margin:0 0 0.75rem">Players</h3>
     <button class="btn btn-primary" style="margin-bottom:0.75rem" onclick="openGmCreate('agenda')">+ Set Agenda</button>
     <table class="inv-table"><thead><tr><th>Name</th><th>Role</th><th>XP / Level</th><th>Stress / Sanity</th><th>Actions</th></tr></thead><tbody>
-    ${users.map(u=>{const st=stressMap[u.id];const xp=xpMap[u.id];const stVal=st?`<span style="color:${(st.stress||0)>=(st.stress_max||10)*0.7?'var(--red)':'var(--text)'}">${st.stress||0}/${st.stress_max||10}</span>`:'–';const sanVal=st?`<span>${st.sanity??'–'}/${st.sanity_max||100}</span>`:'';return`<tr><td>${esc(u.username)}${u.character_name?`<br><small class="muted">${esc(u.character_name)}</small>`:''}</td><td><span class="tag tag-${u.role==='gm'?'quest-active':'npc'}">${u.role}</span></td><td style="white-space:nowrap"><span style="color:var(--accent)">${xp?xp.total:0} XP</span>${xp?`<br><small class="muted">Lvl ${xp.level}</small>`:''}</td><td><div style="font-size:12px">Stress: ${stVal} Sanity: ${sanVal}</div><div style="display:flex;gap:4px;margin-top:4px"><input id="st-s-${u.id}" type="number" class="form-input" style="width:55px;padding:2px 4px;font-size:12px" placeholder="stress" value="${st?.stress??''}" min="0" max="${st?.stress_max||10}"><input id="st-sn-${u.id}" type="number" class="form-input" style="width:55px;padding:2px 4px;font-size:12px" placeholder="sanity" value="${st?.sanity??''}" min="0" max="${st?.sanity_max||100}"><button class="btn btn-sm" onclick="savePlayerStress(${u.id})">Set</button></div></td><td><button class="btn btn-sm" onclick="openGmCreate('message','${u.id}')">Msg</button> <button class="btn btn-sm btn-danger" onclick="deleteUser(${u.id},'${esc(u.username)}')">Del</button></td></tr>`;}).join('')}
+    ${users.map(u=>{const st=stressMap[u.id];const xp=xpMap[u.id];const stVal=st?`<span style="color:${(st.stress||0)>=(st.stress_max||10)*0.7?'var(--red)':'var(--text)'}">${st.stress||0}/${st.stress_max||10}</span>`:'–';const sanVal=st?`<span>${st.sanity??'–'}/${st.sanity_max||100}</span>`:'';return`<tr><td>${esc(u.username)}${u.character_name?`<br><small class="muted">${esc(u.character_name)}</small>`:''}</td><td><span class="tag tag-${u.role==='gm'?'quest-active':'npc'}">${u.role}</span></td><td style="white-space:nowrap"><span style="color:var(--accent)">${xp?xp.total:0} XP</span>${xp?`<br><small class="muted">Lvl ${xp.level}</small>`:''}</td><td><div style="font-size:12px">Stress: ${stVal} Sanity: ${sanVal}</div><div style="display:flex;gap:4px;margin-top:4px"><input id="st-s-${u.id}" type="number" class="form-input" style="width:55px;padding:2px 4px;font-size:12px" placeholder="stress" value="${st?.stress??''}" min="0" max="${st?.stress_max||10}"><input id="st-sn-${u.id}" type="number" class="form-input" style="width:55px;padding:2px 4px;font-size:12px" placeholder="sanity" value="${st?.sanity??''}" min="0" max="${st?.sanity_max||100}"><button class="btn btn-sm" onclick="savePlayerStress(${u.id})">Set</button></div></td><td><button class="btn btn-sm" onclick="openGmCreate('message','${u.id}')">Msg</button>${u.role!=='gm'?` <button class="btn btn-sm" onclick="resetPlayerPassword(${u.id},'${esc(u.username)}')">Pwd</button> <button class="btn btn-sm btn-danger" onclick="deleteUser(${u.id},'${esc(u.username)}')">Del</button>`:''}</td></tr>`;}).join('')}
     </tbody></table>
   </div>
   <div class="card" style="margin-top:1rem">
@@ -2261,6 +2264,13 @@ async function deleteUser(id,name){
   if(!confirm(`Delete user "${name}"? This cannot be undone.`))return;
   const r=await apiFetch(`/api/users/${id}`,{method:'DELETE'});
   if(r.ok){showToast('User deleted','success');loadGmDashboard();}else showToast('Delete failed','error');
+}
+async function resetPlayerPassword(id,name){
+  const pw=prompt(`New password for "${name}" (min 6 chars):`);
+  if(!pw)return;
+  if(pw.length<6){showToast('Password too short','error');return;}
+  const r=await apiFetch(`/api/users/${id}/password`,{method:'PUT',body:JSON.stringify({password:pw})});
+  if(r.ok)showToast('Password reset','success');else showToast('Reset failed','error');
 }
 async function awardXp(){
   const sel=document.getElementById('xp-player-sel');
