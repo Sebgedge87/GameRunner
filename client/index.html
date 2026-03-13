@@ -302,6 +302,13 @@ input,textarea,select{font-family:'Crimson Pro',serif;}
 .danger-btn:hover{background:#1a0f0f;}
 .delete-btn{background:none;border:1px solid #601a1a;color:#c94c4c;padding:3px 8px;border-radius:3px;font-size:10px;letter-spacing:1px;}
 .delete-btn:hover{background:#1a0f0f;}
+.btn{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:4px 10px;border-radius:3px;font-size:11px;cursor:pointer;transition:background .15s;}
+.btn:hover{background:var(--bg2);}
+.btn-sm{padding:3px 8px;font-size:10px;}
+.btn-primary{background:var(--accent-dim);border-color:var(--accent);color:var(--accent2);}
+.btn-primary:hover{background:color-mix(in srgb,var(--accent-dim) 80%,white);}
+.btn-danger{background:none;border-color:#601a1a;color:#c94c4c;}
+.btn-danger:hover{background:#1a0f0f;}
 .upload-zone{border:2px dashed var(--border);border-radius:6px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s;font-size:13px;color:var(--text3);}
 .upload-zone:hover{border-color:var(--accent-dim);}
 .upload-zone input[type=file]{display:none;}
@@ -1396,12 +1403,13 @@ async function loadQuests(){
 }
 function questCard(q){
   const p=q.progress??0;
+  const gmBtns=isGm?`<button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('quest',${q.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('quest',${q.id},loadQuests)">Del</button>`:'';
   return `<div class="card">
     <div class="card-title">${esc(q.title)}</div>
     <div class="card-meta"><span class="tag tag-${esc(q.type||'side')}">${esc(q.type||'side')}</span><span class="tag tag-${esc(q.status||'active')}">${esc(q.status||'active')}</span>${q.location?`<span>📍 ${esc(q.location)}</span>`:''}</div>
     ${q.progress!=null?`<div class="progress-bar"><div class="progress-fill" style="width:${p}%"></div></div><div style="font-size:10px;color:var(--text3);margin-top:2px;font-family:'JetBrains Mono',monospace">${p}% complete</div>`:''}
     ${q.connected_to?`<div style="font-size:11px;color:var(--text3);margin-top:6px">🔗 ${esc(Array.isArray(q.connected_to)?q.connected_to.join(', '):q.connected_to)}</div>`:''}
-    <div class="card-actions"><button class="delete-btn" onclick="event.stopPropagation();pin('quest',${q.id},'${esc(q.title)}')">📌 Pin</button></div>
+    <div class="card-actions"><button class="delete-btn" onclick="event.stopPropagation();pin('quest',${q.id},'${esc(q.title)}')">📌 Pin</button>${gmBtns}</div>
   </div>`;
 }
 function renderQuests(quests,targetId){const el=document.getElementById(targetId);if(!quests.length){el.innerHTML='<div class="empty-state">No quests found.</div>';return;}el.innerHTML=quests.map(questCard).join('');}
@@ -1421,7 +1429,7 @@ function renderNpcs(){
     <div class="card-meta">${n.role?`<span style="color:var(--text2)">${esc(n.role)}</span>`:''}<span class="tag tag-${esc(n.disposition||'neutral')}">${esc(n.disposition||'unknown')}</span>${n.faction?`<span>${esc(n.faction)}</span>`:''}</div>
     ${n.location?`<div style="font-size:11px;color:var(--text3);margin-bottom:5px">📍 ${esc(n.location)}</div>`:''}
     ${n.connected_to?`<div style="font-size:11px;color:var(--text3)">🔗 ${esc(Array.isArray(n.connected_to)?n.connected_to.join(', '):n.connected_to)}</div>`:''}
-    <div class="card-actions"><button class="delete-btn" onclick="event.stopPropagation();pin('npc',${n.id},'${esc(n.title)}')">📌</button></div>
+    <div class="card-actions"><button class="delete-btn" onclick="event.stopPropagation();pin('npc',${n.id},'${esc(n.title)}')">📌</button>${isGm?`<button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('npc',${n.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('npc',${n.id},loadNpcs)">Del</button>`:''}</div>
   </div>`).join('');
 }
 
@@ -1436,7 +1444,7 @@ function renderLocations(){
     <div class="card-title">${esc(l.title)}</div>
     <div class="card-meta"><span class="tag tag-${esc(l.status||'unvisited')}">${esc(l.status||'unvisited')}</span>${l.danger?`<span class="tag tag-${esc(l.danger)}">${esc(l.danger)}</span>`:''}${l.visited_session?`<span>Session ${l.visited_session}</span>`:''}</div>
     ${l.connected_to?`<div style="font-size:11px;color:var(--text3)">🔗 ${esc(Array.isArray(l.connected_to)?l.connected_to.join(', '):l.connected_to)}</div>`:''}
-    <div class="card-actions"><button class="delete-btn" onclick="event.stopPropagation();pin('location',${l.id},'${esc(l.title)}')">📌</button></div>
+    <div class="card-actions"><button class="delete-btn" onclick="event.stopPropagation();pin('location',${l.id},'${esc(l.title)}')">📌</button>${isGm?`<button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('location',${l.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('location',${l.id},loadLocations)">Del</button>`:''}</div>
   </div>`).join('');
 }
 
@@ -1450,6 +1458,7 @@ function renderHooks(){
     <div class="card-title">${esc(h.title)}</div>
     <div class="card-meta"><span class="tag tag-${esc(h.type||'clue')}">${esc(h.type||'clue')}</span><span class="tag tag-${esc(h.status||'active')}">${esc(h.status||'active')}</span>${h.session_delivered?`<span>Session ${h.session_delivered}</span>`:''}</div>
     ${h.connected_to?`<div style="font-size:11px;color:var(--text3);margin-top:5px">🔗 ${esc(Array.isArray(h.connected_to)?h.connected_to.join(', '):h.connected_to)}</div>`:''}
+    ${isGm?`<div class="card-actions"><button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('hook',${h.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('hook',${h.id},loadHooks)">Del</button></div>`:''}
   </div>`).join('');
 }
 
@@ -1609,11 +1618,13 @@ function renderScheduling(scheduling){
 async function respondSched(id,availability){const r=await apiFetch(`/api/sessions/scheduling/${id}/respond`,{method:'POST',body:JSON.stringify({availability})});if(r.ok)loadSessions();}
 
 // ── Factions ──────────────────────────────────────────────────────────────────
+let factionData=[];
 async function loadFactions(){
-  const r=await apiFetch('/api/factions');const factions=(await r.json()).factions||[];
+  const r=await apiFetch('/api/factions');factionData=(await r.json()).factions||[];
   const el=document.getElementById('faction-list');
-  if(!factions.length){el.innerHTML='<div class="empty-state">No factions known.</div>';return;}
-  el.innerHTML=factions.map(f=>{
+  const gmBtn=isGm?`<button class="btn btn-primary" style="margin-bottom:1rem" onclick="openGmCreate('faction')">+ Add Faction</button>`:'';
+  if(!factionData.length){el.innerHTML=gmBtn+'<div class="empty-state">No factions known.</div>';return;}
+  el.innerHTML=gmBtn+factionData.map(f=>{
     const rep=f.reputation||0;const pct=((rep+3)/6)*100;
     const color=rep<0?'var(--red)':rep>0?'var(--green)':'var(--text3)';
     const label=rep<=-3?'Hostile':rep<=-1?'Unfriendly':rep===0?'Neutral':rep<=2?'Friendly':'Allied';
@@ -1623,41 +1634,49 @@ async function loadFactions(){
       ${f.goals?`<div style="font-size:11px;color:var(--text3);margin-bottom:7px">Goals: ${esc(f.goals)}</div>`:''}
       <div class="rep-bar-wrap"><div class="rep-label"><span>Reputation</span><span style="color:${color}">${label} (${rep>=0?'+':''}${rep})</span></div>
       <div class="rep-track"><div class="rep-fill" style="width:${pct}%;background:${color}"></div></div></div>
+      ${isGm?`<div class="card-actions" style="margin-top:8px"><button class="btn btn-sm" onclick="openGmEdit('faction',${f.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="gmDelete('faction',${f.id},loadFactions)">Del</button></div>`:''}
     </div>`;
   }).join('');
 }
 
 // ── Timeline ──────────────────────────────────────────────────────────────────
+let timelineData=[];
 async function loadTimeline(){
-  const r=await apiFetch('/api/timeline');const events=(await r.json()).events||[];
+  const r=await apiFetch('/api/timeline');timelineData=(await r.json()).events||[];
   const el=document.getElementById('timeline-list');
-  if(!events.length){el.innerHTML='<div class="empty-state">No events.</div>';return;}
-  el.innerHTML=events.map(e=>`<div class="timeline-item">
+  const gmBtn=isGm?`<button class="btn btn-primary" style="margin-bottom:1rem" onclick="openGmCreate('timeline')">+ Add Event</button>`:'';
+  if(!timelineData.length){el.innerHTML=gmBtn+'<div class="empty-state">No events.</div>';return;}
+  el.innerHTML=gmBtn+timelineData.map(e=>`<div class="timeline-item">
     <div class="timeline-dot"></div>
     <div class="timeline-content">
       <div class="timeline-date">${esc(e.in_world_date||'')}${e.session_number?` · Session ${e.session_number}`:''}</div>
       <div class="timeline-title">${esc(e.title)}</div>
       ${e.description?`<div class="timeline-desc">${esc(e.description)}</div>`:''}
+      ${isGm?`<div style="margin-top:6px;display:flex;gap:6px"><button class="btn btn-sm" onclick="openGmEdit('timeline',${e.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="gmDelete('timeline',${e.id},loadTimeline)">Del</button></div>`:''}
     </div>
   </div>`).join('');
 }
 
 // ── Inventory ─────────────────────────────────────────────────────────────────
+let inventoryData=[];let keyItemData=[];
 async function loadInventory(){
   const [rI,rK]=await Promise.all([apiFetch('/api/inventory'),apiFetch('/api/key-items')]);
-  const items=(await rI.json()).inventory||[];const keyItems=(await rK.json()).key_items||[];
+  inventoryData=(await rI.json()).inventory||[];keyItemData=(await rK.json()).key_items||[];
   const el=document.getElementById('inventory-wrap');
-  if(!items.length){el.innerHTML='<div class="empty-state" style="padding:16px">No items.</div>';}
-  else{el.innerHTML=`<table class="inv-table"><thead><tr><th>Item</th><th>Qty</th><th>Holder</th><th>Description</th></tr></thead>
-    <tbody>${items.map(i=>`<tr><td style="color:var(--text)">${esc(i.name)}</td><td>${i.quantity}</td><td>${esc(i.holder||'party')}</td><td>${esc(i.description||'')}</td></tr>`).join('')}</tbody></table>`;}
+  const gmInvBtn=isGm?`<div style="margin-bottom:8px"><button class="btn btn-primary btn-sm" onclick="openGmCreate('inventory')">+ Add Item</button></div>`:'';
+  if(!inventoryData.length){el.innerHTML=gmInvBtn+'<div class="empty-state" style="padding:16px">No items.</div>';}
+  else{el.innerHTML=gmInvBtn+`<table class="inv-table"><thead><tr><th>Item</th><th>Qty</th><th>Holder</th><th>Description</th>${isGm?'<th></th>':''}</tr></thead>
+    <tbody>${inventoryData.map(i=>`<tr><td style="color:var(--text)">${esc(i.name)}</td><td>${i.quantity}</td><td>${esc(i.holder||'party')}</td><td>${esc(i.description||'')}</td>${isGm?`<td><button class="btn btn-sm" onclick="openGmEdit('inventory',${i.id})">Edit</button> <button class="btn btn-sm btn-danger" onclick="gmDelete('inventory',${i.id},loadInventory)">Del</button></td>`:''}</tr>`).join('')}</tbody></table>`;}
   const kEl=document.getElementById('key-items-list');
-  if(!keyItems.length){kEl.innerHTML='<div class="empty-state">No key items.</div>';return;}
-  kEl.innerHTML=keyItems.map(k=>`<div class="card">
+  const gmKeyBtn=isGm?`<button class="btn btn-primary btn-sm" style="margin-bottom:8px" onclick="openGmCreate('key-item')">+ Add Key Item</button>`:'';
+  if(!keyItemData.length){kEl.innerHTML=gmKeyBtn+'<div class="empty-state">No key items.</div>';return;}
+  kEl.innerHTML=gmKeyBtn+keyItemData.map(k=>`<div class="card">
     ${k.image_path?`<img class="card-img" src="${API}${k.image_path}" alt="${esc(k.name)}" onerror="this.style.display='none'">`:''}
     <div class="card-title">${esc(k.name)}</div>
     ${k.description?`<div class="card-body">${esc(k.description)}</div>`:''}
     ${k.significance?`<div style="margin-top:7px;font-size:12px;color:var(--accent-dim)">Significance: ${esc(k.significance)}</div>`:''}
     ${k.linked_quest?`<div style="font-size:11px;color:var(--text3);margin-top:5px">🔗 ${esc(k.linked_quest)}</div>`:''}
+    ${isGm?`<div class="card-actions" style="margin-top:8px"><button class="btn btn-sm" onclick="openGmEdit('key-item',${k.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="gmDelete('key-item',${k.id},loadInventory)">Del</button></div>`:''}
   </div>`).join('');
 }
 
@@ -1683,41 +1702,58 @@ function openMap(path){document.getElementById('map-overlay-img').src=`${API}${p
 function closeMapOverlay(){document.getElementById('map-overlay').classList.remove('open');}
 
 // ── Bestiary ──────────────────────────────────────────────────────────────────
+let bestiaryData=[];
 async function loadBestiary(){
-  const r=await apiFetch('/api/bestiary');const creatures=(await r.json()).bestiary||[];
+  const r=await apiFetch('/api/bestiary');bestiaryData=(await r.json()).bestiary||[];
   const el=document.getElementById('bestiary-list');
-  if(!creatures.length){el.innerHTML='<div class="empty-state">No creatures revealed.</div>';return;}
-  el.innerHTML=creatures.map(c=>{const st=c.stats||{};return`<div class="card">
+  const gmBtn=isGm?`<button class="btn btn-primary" style="margin-bottom:1rem" onclick="openGmCreate('bestiary')">+ Add Creature</button>`:'';
+  if(!bestiaryData.length){el.innerHTML=gmBtn+'<div class="empty-state">No creatures revealed.</div>';return;}
+  el.innerHTML=gmBtn+bestiaryData.map(c=>{const st=c.stats||{};return`<div class="card">
     ${c.image_path?`<img class="card-img" src="${API}${c.image_path}" alt="${esc(c.name)}" onerror="this.style.display='none'">`:''}
     <div class="card-title">${esc(c.name)}</div>
     <div class="card-meta">${st.cr!=null?`<span class="tag tag-medium">CR ${st.cr}</span>`:''}${st.ac!=null?`<span>AC ${st.ac}</span>`:''}${st.hp!=null?`<span>HP ${st.hp}</span>`:''}</div>
     ${c.description?`<div class="card-body">${esc(c.description)}</div>`:''}
+    ${isGm?`<div class="card-actions" style="margin-top:8px"><button class="btn btn-sm" onclick="openGmEdit('bestiary',${c.id})">Edit</button><button class="btn btn-sm" onclick="revealCreature(${c.id},${c.revealed?0:1})">${c.revealed?'Hide':'Reveal'}</button><button class="btn btn-sm btn-danger" onclick="gmDelete('bestiary',${c.id},loadBestiary)">Del</button></div>`:''}
   </div>`}).join('');
+}
+async function revealCreature(id,val){
+  await apiFetch(`/api/bestiary/${id}/reveal`,{method:'PUT',body:JSON.stringify({revealed:val})});
+  showToast(val?'Creature revealed to players':'Creature hidden','success');loadBestiary();
 }
 
 // ── Rumours ───────────────────────────────────────────────────────────────────
+let rumourData=[];
 async function loadRumours(){
-  const r=await apiFetch('/api/rumours');const rumours=(await r.json()).rumours||[];
+  const r=await apiFetch('/api/rumours');rumourData=(await r.json()).rumours||[];
   const el=document.getElementById('rumour-list');
-  if(!rumours.length){el.innerHTML='<div class="empty-state">No rumours heard.</div>';return;}
-  el.innerHTML=rumours.map(r=>`<div class="card">
+  const gmBtn=isGm?`<button class="btn btn-primary" style="margin-bottom:1rem" onclick="openGmCreate('rumour')">+ Add Rumour</button>`:'';
+  if(!rumourData.length){el.innerHTML=gmBtn+'<div class="empty-state">No rumours heard.</div>';return;}
+  el.innerHTML=gmBtn+rumourData.map(r=>`<div class="card">
     <div class="card-body" style="font-style:italic;font-size:14px;margin-bottom:8px">"${esc(r.text)}"</div>
     <div class="card-meta">${r.source_npc?`<span>— ${esc(r.source_npc)}</span>`:''}${r.source_location?`<span>📍 ${esc(r.source_location)}</span>`:''}</div>
     ${r.is_true!=null&&currentUser?.role==='gm'?`<div style="margin-top:6px;font-size:10px;color:${r.is_true?'var(--green)':'var(--red)'}">GM: ${r.is_true?'TRUE':'FALSE'}</div>`:''}
+    ${isGm?`<div class="card-actions" style="margin-top:8px"><button class="btn btn-sm" onclick="openGmEdit('rumour',${r.id})">Edit</button><button class="btn btn-sm" onclick="exposeRumour(${r.id})">Expose</button><button class="btn btn-sm btn-danger" onclick="gmDelete('rumour',${r.id},loadRumours)">Del</button></div>`:''}
   </div>`).join('');
+}
+async function exposeRumour(id){
+  const r=await apiFetch(`/api/rumours/${id}/expose`,{method:'POST',body:JSON.stringify({user_ids:[]})});
+  if(r.ok){showToast('Rumour exposed to players','success');loadRumours();}
 }
 
 // ── Jobs ──────────────────────────────────────────────────────────────────────
+let jobData=[];
 async function loadJobs(){
-  const r=await apiFetch('/api/jobs');const jobs=(await r.json()).jobs||[];
+  const r=await apiFetch('/api/jobs');jobData=(await r.json()).jobs||[];
   const el=document.getElementById('job-list');
-  if(!jobs.length){el.innerHTML='<div class="empty-state">No jobs posted.</div>';return;}
-  el.innerHTML=jobs.map(j=>`<div class="card">
+  const gmBtn=isGm?`<button class="btn btn-primary" style="margin-bottom:1rem" onclick="openGmCreate('job')">+ Post Job</button>`:'';
+  if(!jobData.length){el.innerHTML=gmBtn+'<div class="empty-state">No jobs posted.</div>';return;}
+  el.innerHTML=gmBtn+jobData.map(j=>`<div class="card">
     <div class="card-title">${esc(j.title)}</div>
     <div class="card-meta"><span class="tag tag-${esc(j.status||'open')}">${esc(j.status||'open')}</span><span class="tag tag-${esc(j.difficulty||'medium')}">${esc(j.difficulty||'medium')}</span>${j.reward?`<span style="color:var(--accent)">⚜ ${esc(j.reward)}</span>`:''}</div>
     ${j.description?`<div class="card-body" style="margin-bottom:7px">${esc(j.description)}</div>`:''}
     <div style="font-size:11px;color:var(--text3);display:flex;gap:10px;flex-wrap:wrap">${j.posted_by?`<span>Posted by: ${esc(j.posted_by)}</span>`:''}${j.location?`<span>📍 ${esc(j.location)}</span>`:''}</div>
     ${j.requires_contact?`<div style="margin-top:7px;font-size:12px;color:var(--accent-dim)">Speak to ${esc(j.posted_by||'the contact')} to accept.</div>`:''}
+    ${isGm?`<div class="card-actions" style="margin-top:8px"><button class="btn btn-sm" onclick="openGmEdit('job',${j.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="gmDelete('job',${j.id},loadJobs)">Del</button></div>`:''}
   </div>`).join('');
 }
 
@@ -1868,12 +1904,12 @@ async function renderMindmap(){
 async function loadGmDashboard(){
   if(!isGm)return;
   const [cR,uR,qR,sR]=await Promise.all([apiFetch('/api/campaigns'),apiFetch('/api/users'),apiFetch('/api/quests'),apiFetch('/api/sessions')]);
-  const campaigns=cR.ok?await cR.json():[];
-  const users=uR.ok?await uR.json():[];
-  const quests=qR.ok?await qR.json():[];
-  const sessions=sR.ok?await sR.json():[];
+  const campaigns=cR.ok?(await cR.json()).campaigns||[]:[];
+  const users=uR.ok?(await uR.json())||[]:[];
+  const quests=qR.ok?(await qR.json()).quests||[]:[];
+  const sessions=sR.ok?(await sR.json()).sessions||[]:[];
   const el=document.getElementById('gm-dash-content');
-  const activeCamp=campaigns.find(c=>c.is_active)||campaigns[0];
+  const activeCamp=campaigns.find(c=>c.active)||campaigns[0];
   el.innerHTML=`
   <div class="stats-row">
     <div class="stat-card"><div class="stat-value">${users.length}</div><div class="stat-label">Players</div></div>
@@ -2154,9 +2190,75 @@ const GM_FORMS={
     <div class="form-group"><label>Description</label><textarea id="gm-f-desc" class="form-input" rows="3"></textarea></div>
     <div class="form-group"><label>Type</label><select id="gm-f-map-type" class="form-input"><option value="world">World</option><option value="region">Region</option><option value="city">City</option><option value="dungeon">Dungeon</option><option value="encounter">Encounter</option></select></div>
     <div class="form-group"><label>Map Image <span style="color:#c95a5a">*</span></label><input type="file" id="gm-f-img" class="form-input" accept="image/*"><small class="muted">JPG, PNG, WebP — max 20 MB</small></div>`,
+  faction:`<div class="form-group"><label>Name</label><input id="gm-f-name" class="form-input" placeholder="Faction name"></div>
+    <div class="form-group"><label>Description</label><textarea id="gm-f-desc" class="form-input" rows="3"></textarea></div>
+    <div class="form-group"><label>Goals</label><textarea id="gm-f-goals" class="form-input" rows="2" placeholder="What does this faction want?"></textarea></div>
+    <div class="form-group"><label>Known Members</label><input id="gm-f-members" class="form-input" placeholder="Comma-separated names"></div>`,
+  timeline:`<div class="form-group"><label>Title</label><input id="gm-f-title" class="form-input" placeholder="Event title"></div>
+    <div class="form-group"><label>In-World Date</label><input id="gm-f-date" class="form-input" placeholder="Day 14, Year 1502…"></div>
+    <div class="form-group"><label>Description</label><textarea id="gm-f-desc" class="form-input" rows="3"></textarea></div>
+    <div class="form-group"><label>Linked Quest (optional)</label><input id="gm-f-quest" class="form-input" placeholder="Quest title"></div>`,
+  inventory:`<div class="form-group"><label>Item Name</label><input id="gm-f-name" class="form-input"></div>
+    <div class="form-group"><label>Quantity</label><input id="gm-f-qty" class="form-input" type="number" value="1" min="0"></div>
+    <div class="form-group"><label>Holder</label><input id="gm-f-holder" class="form-input" placeholder="party, character name…"></div>
+    <div class="form-group"><label>Description</label><textarea id="gm-f-desc" class="form-input" rows="2"></textarea></div>`,
+  'key-item':`<div class="form-group"><label>Name</label><input id="gm-f-name" class="form-input"></div>
+    <div class="form-group"><label>Description</label><textarea id="gm-f-desc" class="form-input" rows="3"></textarea></div>
+    <div class="form-group"><label>Significance</label><textarea id="gm-f-significance" class="form-input" rows="2" placeholder="Why is this important?"></textarea></div>
+    <div class="form-group"><label>Linked Quest</label><input id="gm-f-quest" class="form-input"></div>
+    <div class="form-group"><label>Image</label><input type="file" id="gm-f-img" class="form-input" accept="image/*"></div>`,
+  job:`<div class="form-group"><label>Title</label><input id="gm-f-title" class="form-input" placeholder="Escort the merchant…"></div>
+    <div class="form-group"><label>Description</label><textarea id="gm-f-desc" class="form-input" rows="3"></textarea></div>
+    <div class="form-group"><label>Reward</label><input id="gm-f-reward" class="form-input" placeholder="500gp, favour, item…"></div>
+    <div class="form-group"><label>Difficulty</label><select id="gm-f-difficulty" class="form-input"><option>easy</option><option>medium</option><option>hard</option><option>deadly</option></select></div>
+    <div class="form-group"><label>Posted By (NPC)</label><input id="gm-f-poster" class="form-input"></div>
+    <div class="form-group"><label>Location</label><input id="gm-f-location" class="form-input"></div>`,
+  bestiary:`<div class="form-group"><label>Name</label><input id="gm-f-name" class="form-input"></div>
+    <div class="form-group"><label>Description</label><textarea id="gm-f-desc" class="form-input" rows="3"></textarea></div>
+    <div class="form-group"><label style="display:flex;gap:12px">CR <input id="gm-f-cr" class="form-input" style="width:80px" type="number" step="0.25" min="0"></label></div>
+    <div class="form-group"><label style="display:flex;gap:12px">AC <input id="gm-f-ac" class="form-input" style="width:80px" type="number"></label></div>
+    <div class="form-group"><label style="display:flex;gap:12px">HP <input id="gm-f-hp" class="form-input" style="width:80px" type="number"></label></div>
+    <div class="form-group"><label>Image</label><input type="file" id="gm-f-img" class="form-input" accept="image/*"></div>`,
+  rumour:`<div class="form-group"><label>Rumour Text</label><textarea id="gm-f-content" class="form-input" rows="3" placeholder="They say the blacksmith…"></textarea></div>
+    <div class="form-group"><label>Source NPC</label><input id="gm-f-npc" class="form-input" placeholder="Who told the players this?"></div>
+    <div class="form-group"><label>Source Location</label><input id="gm-f-location" class="form-input"></div>
+    <div class="form-group"><label>Is True?</label><select id="gm-f-true" class="form-input"><option value="1">True</option><option value="0">False</option></select></div>`,
 };
-let gmCreateType=null,gmCreateExtra=null;
-const PAGE_TO_TYPE={quests:'quest',npcs:'npc',locations:'location',hooks:'hook',handouts:'handout',maps:'map',sessions:'session',notes:'note'};
+let gmCreateType=null,gmCreateExtra=null,gmEditId=null;
+const PAGE_TO_TYPE={quests:'quest',npcs:'npc',locations:'location',hooks:'hook',handouts:'handout',maps:'map',sessions:'session',notes:'note',factions:'faction',timeline:'timeline',inventory:'inventory',bestiary:'bestiary',rumours:'rumour',jobs:'job'};
+const TYPE_STORE={quest:()=>questData,npc:()=>npcData,location:()=>locationData,hook:()=>hookData,faction:()=>factionData,timeline:()=>timelineData,inventory:()=>inventoryData,bestiary:()=>bestiaryData,rumour:()=>rumourData,job:()=>jobData};
+const TYPE_ENDPOINT={quest:'/api/quests',npc:'/api/npcs',location:'/api/locations',hook:'/api/hooks',handout:'/api/handouts',map:'/api/maps',session:'/api/sessions',note:'/api/notes',faction:'/api/factions',timeline:'/api/timeline',inventory:'/api/inventory','key-item':'/api/key-items',job:'/api/jobs',bestiary:'/api/bestiary',rumour:'/api/rumours'};
+const TYPE_RELOAD={quest:loadQuests,npc:loadNpcs,location:loadLocations,hook:loadHooks,handout:()=>navigate('handouts'),map:loadMaps,session:()=>navigate('sessions'),note:loadNotes,faction:loadFactions,timeline:loadTimeline,inventory:loadInventory,'key-item':loadInventory,job:loadJobs,bestiary:loadBestiary,rumour:loadRumours};
+function prefillGmForm(type,d){
+  const s=(id,v)=>{const el=document.getElementById(id);if(el&&v!=null)el.value=v;};
+  s('gm-f-title',d.title);s('gm-f-name',d.name||d.title);s('gm-f-desc',d.description);
+  s('gm-f-role',d.role);s('gm-f-notes',d.gm_notes);s('gm-f-status',d.status);
+  s('gm-f-type',d.quest_type||d.type);s('gm-f-goals',d.goals);s('gm-f-members',d.known_members);
+  s('gm-f-date',d.in_world_date||d.session_date);s('gm-f-quest',d.linked_quest);
+  s('gm-f-qty',d.quantity);s('gm-f-holder',d.holder);s('gm-f-significance',d.significance);
+  s('gm-f-reward',d.reward);s('gm-f-difficulty',d.difficulty);
+  s('gm-f-poster',d.posted_by);s('gm-f-location',d.source_location||d.location);
+  s('gm-f-npc',d.source_npc);s('gm-f-content',d.text||d.content);
+  s('gm-f-true',d.is_true!=null?String(d.is_true?1:0):null);
+  s('gm-f-cr',d.stats?.cr);s('gm-f-ac',d.stats?.ac);s('gm-f-hp',d.stats?.hp);
+  s('gm-f-map-type',d.map_type);
+}
+async function openGmEdit(type,id){
+  gmEditId=id;
+  const store=TYPE_STORE[type]?.();
+  const data=store?.find(x=>x.id===id);
+  await openGmCreate(type);
+  document.getElementById('gm-modal-title').textContent=`Edit ${type.charAt(0).toUpperCase()+type.slice(1)}`;
+  if(data)prefillGmForm(type,data);
+}
+async function gmDelete(type,id,reloadFn){
+  if(!confirm(`Delete this ${type}?`))return;
+  const ep=TYPE_ENDPOINT[type];
+  if(!ep)return showToast('Unknown type','error');
+  const r=await apiFetch(`${ep}/${id}`,{method:'DELETE'});
+  if(r.ok){showToast('Deleted','success');reloadFn?.();}
+  else showToast('Delete failed','error');
+}
 async function openGmCreate(type,extra){
   type=PAGE_TO_TYPE[type]||type;
   gmCreateType=type;gmCreateExtra=extra||null;
@@ -2172,7 +2274,6 @@ async function openGmCreate(type,extra){
   }
   modal.style.display='flex';
 }
-function closeGmModal(){document.getElementById('gm-modal').style.display='none';}
 async function uploadImage(inputId){
   const input=document.getElementById(inputId);
   if(!input||!input.files||!input.files[0])return null;
@@ -2189,6 +2290,7 @@ async function gmModalSave(){
   let imageUrl=null;
   if(document.getElementById('gm-f-img'))imageUrl=await uploadImage('gm-f-img');
   const val=id=>{ const el=document.getElementById(id);return el?el.value.trim():'';};
+  const num=id=>{ const v=val(id);return v!==''?Number(v):null;};
   let endpoint,body;
   switch(type){
     case 'quest':
@@ -2220,9 +2322,38 @@ async function gmModalSave(){
       body={title:val('gm-f-title'),summary:val('gm-f-desc'),session_date:val('gm-f-date')};
       break;
     case 'map':
-      if(!imageUrl){showToast('Map image is required','error');return;}
+      if(!imageUrl&&!gmEditId){showToast('Map image is required','error');return;}
       endpoint='/api/maps';
-      body={title:val('gm-f-title'),description:val('gm-f-desc'),image_path:imageUrl,map_type:val('gm-f-map-type')||'world'};
+      body={title:val('gm-f-title'),description:val('gm-f-desc'),map_type:val('gm-f-map-type')||'world'};
+      if(imageUrl)body.image_path=imageUrl;
+      break;
+    case 'faction':
+      endpoint='/api/factions';
+      body={name:val('gm-f-name'),description:val('gm-f-desc'),goals:val('gm-f-goals'),known_members:val('gm-f-members')};
+      break;
+    case 'timeline':
+      endpoint='/api/timeline';
+      body={title:val('gm-f-title'),description:val('gm-f-desc'),in_world_date:val('gm-f-date'),linked_quest:val('gm-f-quest')||null};
+      break;
+    case 'inventory':
+      endpoint='/api/inventory';
+      body={name:val('gm-f-name'),quantity:num('gm-f-qty')||1,holder:val('gm-f-holder')||'party',description:val('gm-f-desc')};
+      break;
+    case 'key-item':
+      endpoint='/api/key-items';
+      body={name:val('gm-f-name'),description:val('gm-f-desc'),significance:val('gm-f-significance'),linked_quest:val('gm-f-quest')||null,image_url:imageUrl};
+      break;
+    case 'job':
+      endpoint='/api/jobs';
+      body={title:val('gm-f-title'),description:val('gm-f-desc'),reward:val('gm-f-reward'),difficulty:val('gm-f-difficulty')||'medium',posted_by:val('gm-f-poster'),location:val('gm-f-location')};
+      break;
+    case 'bestiary':
+      endpoint='/api/bestiary';
+      body={name:val('gm-f-name'),description:val('gm-f-desc'),stats:{cr:num('gm-f-cr'),ac:num('gm-f-ac'),hp:num('gm-f-hp')},image_url:imageUrl};
+      break;
+    case 'rumour':
+      endpoint='/api/rumours';
+      body={text:val('gm-f-content'),source_npc:val('gm-f-npc'),source_location:val('gm-f-location'),is_true:val('gm-f-true')==='1'};
       break;
     case 'message':
       endpoint='/api/messages';
@@ -2231,16 +2362,18 @@ async function gmModalSave(){
     default:
       showToast('Unknown type','error');return;
   }
-  if(!body.title&&!body.name&&!body.content){showToast('Fill in required fields','error');return;}
-  const r=await apiFetch(endpoint,{method:'POST',body:JSON.stringify(body)});
+  if(!body.title&&!body.name&&!body.content&&!body.text){showToast('Fill in required fields','error');return;}
+  const isEdit=!!gmEditId;
+  const url=isEdit?`${endpoint}/${gmEditId}`:endpoint;
+  const method=isEdit?'PUT':'POST';
+  const r=await apiFetch(url,{method,body:JSON.stringify(body)});
   if(r.ok){
-    showToast(`${type.charAt(0).toUpperCase()+type.slice(1)} created`,'success');
+    showToast(`${type.charAt(0).toUpperCase()+type.slice(1)} ${isEdit?'updated':'created'}`,'success');
     closeGmModal();
-    // Reload relevant page
-    const pageMap={quest:'quests',npc:'npcs',location:'locations',hook:'hooks',handout:'handouts',note:'notes',session:'sessions',message:'messages',map:'maps'};
-    if(pageMap[type])navTo(pageMap[type]);
-  }else showToast('Save failed','error');
+    TYPE_RELOAD[type]?.();
+  }else{const d=await r.json().catch(()=>({}));showToast(d.error||'Save failed','error');}
 }
+function closeGmModal(){document.getElementById('gm-modal').style.display='none';gmEditId=null;}
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 restoreSession();

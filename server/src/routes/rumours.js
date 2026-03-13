@@ -52,4 +52,15 @@ router.delete('/:id', requireGm, (req, res) => {
   res.json({ success: true });
 });
 
+
+// PUT /api/rumours/:id — GM edits rumour
+router.put('/:id', requireGm, (req, res) => {
+  const { text, is_true, source_npc, source_location } = req.body;
+  const db = getDb();
+  db.prepare('UPDATE rumours SET text = COALESCE(?, text), is_true = COALESCE(?, is_true), source_npc = COALESCE(?, source_npc), source_location = COALESCE(?, source_location) WHERE id = ?')
+    .run(text || null, is_true != null ? (is_true ? 1 : 0) : null, source_npc || null, source_location || null, req.params.id);
+  const rumour = db.prepare('SELECT * FROM rumours WHERE id = ?').get(req.params.id);
+  res.json({ rumour });
+});
+
 module.exports = router;

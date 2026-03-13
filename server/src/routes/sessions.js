@@ -121,4 +121,23 @@ router.put('/scheduling/:id/confirm', requireGm, (req, res) => {
   res.json({ success: true });
 });
 
+
+// PUT /api/sessions/:id — GM edits session
+router.put('/:id', requireGm, (req, res) => {
+  const { title, summary, session_date } = req.body;
+  const db = getDb();
+  db.prepare('UPDATE sessions SET title = COALESCE(?, title), summary = COALESCE(?, summary), session_date = COALESCE(?, session_date) WHERE id = ?')
+    .run(title || null, summary || null, session_date || null, req.params.id);
+  const session = db.prepare('SELECT * FROM sessions WHERE id = ?').get(req.params.id);
+  res.json({ session });
+});
+
+// DELETE /api/sessions/:id — GM deletes session
+router.delete('/:id', requireGm, (req, res) => {
+  const db = getDb();
+  db.prepare('DELETE FROM session_notes WHERE session_id = ?').run(req.params.id);
+  db.prepare('DELETE FROM sessions WHERE id = ?').run(req.params.id);
+  res.json({ success: true });
+});
+
 module.exports = router;

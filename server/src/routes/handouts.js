@@ -103,4 +103,13 @@ router.put('/:id/ack', requireAuth, (req, res) => {
   res.json({ success: true });
 });
 
+
+// DELETE /api/handouts/:id — GM deletes handout
+router.delete('/:id', requireGm, (req, res) => {
+  const db = getDb();
+  db.prepare('DELETE FROM handout_permissions WHERE handout_id = ?').run(req.params.id);
+  db.prepare('DELETE FROM handouts WHERE id = ?').run(req.params.id);
+  res.json({ success: true });
+});
+
 module.exports = router;
