@@ -42,6 +42,7 @@ const pinsRoutes = require('./routes/pins');
 const searchRoutes = require('./routes/search');
 const backupRoutes = require('./routes/backup');
 const vaultRoutes = require('./routes/vault');
+const xpRoutes = require('./routes/xp');
 
 const app = express();
 
@@ -130,6 +131,7 @@ app.use('/api/pins', pinsRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/vault', vaultRoutes);
+app.use('/api/xp', xpRoutes);
 
 // ── Health check ───────────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => {

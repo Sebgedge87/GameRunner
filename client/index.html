@@ -289,6 +289,21 @@ input,textarea,select{font-family:'Crimson Pro',serif;}
 .modal-close{background:none;border:1px solid var(--border);color:var(--text2);padding:7px 18px;border-radius:4px;font-family:'Cinzel',serif;font-size:11px;letter-spacing:1px;transition:color .2s,border-color .2s;}
 .modal-close:hover{color:var(--text);border-color:var(--border2);}
 .modal-secret-badge{display:inline-block;background:#140f20;border:1px solid #4a2a70;color:var(--purple);font-size:10px;padding:2px 7px;border-radius:3px;font-family:'JetBrains Mono',monospace;margin-bottom:10px;}
+/* ── Detail Modal ────────────────────────────────────────────────────────────── */
+.detail-modal-box{max-width:760px;}
+.detail-img{max-width:100%;max-height:260px;object-fit:cover;border-radius:6px;margin-bottom:16px;display:block;}
+.detail-title{font-family:'Cinzel',serif;font-size:20px;color:var(--accent);margin-bottom:10px;line-height:1.3;}
+.detail-meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+.detail-body{font-size:14px;color:var(--text2);line-height:1.8;white-space:pre-wrap;margin-bottom:12px;}
+.detail-field{margin-bottom:10px;}
+.detail-field-label{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;letter-spacing:1px;margin-bottom:3px;}
+.detail-field-value{font-size:13px;color:var(--text2);}
+.detail-gm-box{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:10px 14px;margin-top:12px;}
+.detail-gm-label{font-size:10px;color:var(--accent-dim);font-family:'JetBrains Mono',monospace;letter-spacing:1px;margin-bottom:5px;}
+.stat-chips{display:flex;gap:10px;flex-wrap:wrap;}
+.stat-chip{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:6px 12px;text-align:center;}
+.stat-chip-val{font-size:18px;font-family:'JetBrains Mono',monospace;color:var(--text);}
+.stat-chip-lbl{font-size:9px;color:var(--text3);letter-spacing:1px;}
 /* ── Search Results ──────────────────────────────────────────────────────────── */
 #search-dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1px solid var(--border2);border-radius:6px;z-index:500;max-height:400px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,0.5);display:none;}
 #search-dropdown.open{display:block;}
@@ -944,6 +959,16 @@ input,textarea,select{font-family:'Crimson Pro',serif;}
   </div>
 </div>
 
+<!-- ── Detail Panel Modal ─────────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="detail-modal" onclick="if(event.target===this)closeModal('detail-modal')">
+  <div class="modal detail-modal-box">
+    <div id="detail-modal-content"></div>
+    <div class="modal-actions" id="detail-modal-actions">
+      <button class="modal-close" onclick="closeModal('detail-modal')">CLOSE</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Map Overlay ────────────────────────────────────────────────────────────── -->
 <div class="map-overlay" id="map-overlay" onclick="closeMapOverlay()">
   <button class="map-overlay-close" onclick="closeMapOverlay()">CLOSE</button>
@@ -1416,6 +1441,111 @@ async function sendMessageFlyout(){
 function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 
+// ── Detail Panel ──────────────────────────────────────────────────────────────
+const TYPE_STORE_DETAIL={
+  quest:()=>questData,npc:()=>npcData,location:()=>locationData,hook:()=>hookData,
+  faction:()=>factionData,timeline:()=>timelineData,inventory:()=>inventoryData,
+  'key-item':()=>keyItemData,job:()=>jobData,bestiary:()=>bestiaryData,
+  rumour:()=>rumourData,map:()=>mapsData,
+};
+let detailType=null,detailId=null;
+function openDetail(type,id){
+  const store=TYPE_STORE_DETAIL[type]?.();
+  if(!store)return;
+  const item=store.find(x=>x.id===id||x.id===Number(id));
+  if(!item)return;
+  detailType=type;detailId=id;
+  document.getElementById('detail-modal-content').innerHTML=renderDetailContent(type,item);
+  // Actions
+  const actions=document.getElementById('detail-modal-actions');
+  actions.innerHTML=`<button class="modal-close" onclick="closeModal('detail-modal')">CLOSE</button>
+    ${isGm?`<button class="btn btn-sm" onclick="closeModal('detail-modal');openGmEdit('${type}',${id})">Edit</button>
+    <button class="btn btn-sm btn-danger" onclick="closeModal('detail-modal');gmDelete('${type}',${id},${TYPE_RELOAD_STR[type]||'null'})">Delete</button>`:''}`;
+  openModal('detail-modal');
+}
+const TYPE_RELOAD_STR={quest:'loadQuests',npc:'loadNpcs',location:'loadLocations',hook:'loadHooks',faction:'loadFactions',timeline:'loadTimeline',inventory:'loadInventory','key-item':'loadInventory',job:'loadJobs',bestiary:'loadBestiary',rumour:'loadRumours',map:'loadMaps'};
+function df(label,value){if(!value&&value!==0)return'';return`<div class="detail-field"><div class="detail-field-label">${label}</div><div class="detail-field-value">${esc(String(value))}</div></div>`;}
+function renderDetailContent(type,d){
+  const img=d.image_path?`<img class="detail-img" src="${API}${d.image_path.startsWith('/')?'':'/'}${d.image_path}" onerror="this.style.display='none'" alt=""/>`:
+            d.image_url?`<img class="detail-img" src="${d.image_url.startsWith('http')?'':API}${d.image_url}" onerror="this.style.display='none'" alt=""/>`:'';
+  const title=d.title||d.name||d.label||'(Untitled)';
+  let body='';
+  switch(type){
+    case 'quest':
+      body=`${img}<div class="detail-title">${esc(title)}</div>
+        <div class="detail-meta"><span class="tag tag-${esc(d.type||'side')}">${esc(d.type||'side')}</span><span class="tag tag-${esc(d.status||'active')}">${esc(d.status||'active')}</span></div>
+        ${d.progress!=null?`<div style="margin-bottom:10px"><div class="progress-bar" style="height:6px"><div class="progress-fill" style="width:${d.progress}%"></div></div><div style="font-size:10px;color:var(--text3);margin-top:2px;font-family:'JetBrains Mono',monospace">${d.progress}% complete</div></div>`:''}
+        ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}
+        ${df('Location',d.location)}${df('Connected To',Array.isArray(d.connected_to)?d.connected_to.join(', '):d.connected_to)}`;
+      break;
+    case 'npc':
+      body=`${img}<div class="detail-title">${esc(title)}</div>
+        <div class="detail-meta">${d.role?`<span class="tag">${esc(d.role)}</span>`:''}<span class="tag tag-${esc(d.disposition||'neutral')}">${esc(d.disposition||'neutral')}</span>${d.faction?`<span class="tag">${esc(d.faction)}</span>`:''}</div>
+        ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}
+        ${df('Location',d.location)}${df('Connected To',Array.isArray(d.connected_to)?d.connected_to.join(', '):d.connected_to)}
+        ${isGm&&d.gm_notes?`<div class="detail-gm-box"><div class="detail-gm-label">GM NOTES</div><div class="detail-body" style="margin:0">${esc(d.gm_notes)}</div></div>`:''}`;
+      break;
+    case 'location':
+      body=`${img}<div class="detail-title">${esc(title)}</div>
+        <div class="detail-meta"><span class="tag tag-${esc(d.status||'unvisited')}">${esc(d.status||'unvisited')}</span>${d.danger?`<span class="tag tag-${esc(d.danger)}">${esc(d.danger)}</span>`:''}</div>
+        ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}
+        ${df('Connected To',Array.isArray(d.connected_to)?d.connected_to.join(', '):d.connected_to)}${df('Visited Session',d.visited_session)}`;
+      break;
+    case 'hook':
+      body=`<div class="detail-title">${esc(title)}</div>
+        <div class="detail-meta"><span class="tag tag-${esc(d.type||'clue')}">${esc(d.type||'clue')}</span><span class="tag tag-${esc(d.status||'active')}">${esc(d.status||'active')}</span></div>
+        ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}
+        ${df('Connected To',Array.isArray(d.connected_to)?d.connected_to.join(', '):d.connected_to)}${df('Session Delivered',d.session_delivered)}`;
+      break;
+    case 'faction':
+      body=`${img}<div class="detail-title">${esc(title)}</div>
+        <div class="detail-meta">${d.reputation!=null?`<span class="tag">Rep: ${d.reputation>0?'+':''}${d.reputation}</span>`:''}</div>
+        ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}
+        ${df('Goals',d.goals)}${df('Known Members',d.known_members)}`;
+      break;
+    case 'timeline':
+      body=`<div class="detail-title">${esc(title)}</div>
+        <div class="detail-meta">${d.in_world_date?`<span class="tag">${esc(d.in_world_date)}</span>`:''}</div>
+        ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}
+        ${df('Linked Quest',d.linked_quest)}`;
+      break;
+    case 'inventory':
+      body=`<div class="detail-title">${esc(title)}</div>
+        <div class="detail-meta"><span class="tag">×${d.quantity||1}</span><span class="tag">${esc(d.holder||'party')}</span></div>
+        ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}`;
+      break;
+    case 'key-item':
+      body=`${img}<div class="detail-title">${esc(title)}</div>
+        ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}
+        ${df('Significance',d.significance)}${df('Linked Quest',d.linked_quest)}`;
+      break;
+    case 'job':
+      body=`<div class="detail-title">${esc(title)}</div>
+        <div class="detail-meta"><span class="tag tag-${esc(d.difficulty||'medium')}">${esc(d.difficulty||'medium')}</span><span class="tag tag-${esc(d.status||'open')}">${esc(d.status||'open')}</span></div>
+        ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}
+        ${df('Reward',d.reward)}${df('Posted By',d.posted_by)}${df('Location',d.location)}`;
+      break;
+    case 'bestiary':{
+      const st=d.stats||{};
+      body=`${img}<div class="detail-title">${esc(title)}</div>
+        ${(st.cr!=null||st.ac!=null||st.hp!=null)?`<div class="stat-chips" style="margin-bottom:14px">
+          ${st.cr!=null?`<div class="stat-chip"><div class="stat-chip-val">${st.cr}</div><div class="stat-chip-lbl">CR</div></div>`:''}
+          ${st.ac!=null?`<div class="stat-chip"><div class="stat-chip-val">${st.ac}</div><div class="stat-chip-lbl">AC</div></div>`:''}
+          ${st.hp!=null?`<div class="stat-chip"><div class="stat-chip-val">${st.hp}</div><div class="stat-chip-lbl">HP</div></div>`:''}
+        </div>`:''}
+        ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}`;
+      break;}
+    case 'rumour':
+      body=`<div class="detail-title" style="font-size:16px">${esc(d.text||title)}</div>
+        ${isGm?`<div class="detail-meta"><span class="tag" style="background:${d.is_true?'rgba(80,160,80,0.2)':'rgba(160,60,60,0.2)'};color:${d.is_true?'var(--green)':'var(--red)'}">${d.is_true?'TRUE':'FALSE'}</span></div>`:''}
+        ${df('Source NPC',d.source_npc)}${df('Source Location',d.source_location)}`;
+      break;
+    default:
+      body=`<div class="detail-title">${esc(title)}</div><div class="detail-body">${esc(d.description||d.summary||'')}</div>`;
+  }
+  return body;
+}
+
 // ── Search ────────────────────────────────────────────────────────────────────
 let searchTimer=null;
 function debounceSearch(){clearTimeout(searchTimer);searchTimer=setTimeout(runSearch,250);}
@@ -1475,7 +1605,7 @@ function questCard(q){
   const p=q.progress??0;
   const gmBtns=isGm?`${eyeBtn('quest',q.id,q.hidden)}<button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('quest',${q.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('quest',${q.id},loadQuests)">Del</button>`:'';
   const hiddenMark=isGm&&q.hidden?`<span class="tag" style="background:#333;color:#888;font-size:10px">hidden</span>`:'';
-  return `<div class="card" style="${isGm&&q.hidden?'opacity:0.6':''}">
+  return `<div class="card" style="${isGm&&q.hidden?'opacity:0.6':''}cursor:pointer" onclick="openDetail('quest',${q.id})">
     <div class="card-title">${esc(q.title)} ${hiddenMark}</div>
     <div class="card-meta"><span class="tag tag-${esc(q.type||'side')}">${esc(q.type||'side')}</span><span class="tag tag-${esc(q.status||'active')}">${esc(q.status||'active')}</span>${q.location?`<span>📍 ${esc(q.location)}</span>`:''}</div>
     ${q.progress!=null?`<div class="progress-bar"><div class="progress-fill" style="width:${p}%"></div></div><div style="font-size:10px;color:var(--text3);margin-top:2px;font-family:'JetBrains Mono',monospace">${p}% complete</div>`:''}
@@ -1494,7 +1624,7 @@ function renderNpcs(){
   const list=q?npcData.filter(n=>(n.title||'').toLowerCase().includes(q)||(n.role||'').toLowerCase().includes(q)):npcData;
   const el=document.getElementById('npc-list');
   if(!list.length){el.innerHTML='<div class="empty-state">No NPCs found.</div>';return;}
-  el.innerHTML=list.map(n=>`<div class="card">
+  el.innerHTML=list.map(n=>`<div class="card" style="cursor:pointer" onclick="openDetail('npc',${n.id})">
     ${n.image_path?`<img class="card-img" src="${API}${n.image_path}" alt="${esc(n.title)}" onerror="this.style.display='none'">`:''}
     <div class="card-title">${esc(n.title)}</div>
     <div class="card-meta">${n.role?`<span style="color:var(--text2)">${esc(n.role)}</span>`:''}<span class="tag tag-${esc(n.disposition||'neutral')}">${esc(n.disposition||'unknown')}</span>${n.faction?`<span>${esc(n.faction)}</span>`:''}</div>
@@ -1510,7 +1640,7 @@ async function loadLocations(){const r=await apiFetch('/api/locations');location
 function renderLocations(){
   const el=document.getElementById('location-list');
   if(!locationData.length){el.innerHTML='<div class="empty-state">No locations found.</div>';return;}
-  el.innerHTML=locationData.map(l=>`<div class="card">
+  el.innerHTML=locationData.map(l=>`<div class="card" style="cursor:pointer" onclick="openDetail('location',${l.id})">
     ${l.image_path?`<img class="card-img" src="${API}${l.image_path}" alt="${esc(l.title)}" onerror="this.style.display='none'">`:''}
     <div class="card-title">${esc(l.title)}</div>
     <div class="card-meta"><span class="tag tag-${esc(l.status||'unvisited')}">${esc(l.status||'unvisited')}</span>${l.danger?`<span class="tag tag-${esc(l.danger)}">${esc(l.danger)}</span>`:''}${l.visited_session?`<span>Session ${l.visited_session}</span>`:''}</div>
@@ -1525,7 +1655,7 @@ async function loadHooks(){const r=await apiFetch('/api/hooks');hookData=(await 
 function renderHooks(){
   const el=document.getElementById('hook-list');
   if(!hookData.length){el.innerHTML='<div class="empty-state">No hooks.</div>';return;}
-  el.innerHTML=hookData.map(h=>`<div class="card">
+  el.innerHTML=hookData.map(h=>`<div class="card" style="cursor:pointer" onclick="openDetail('hook',${h.id})">
     <div class="card-title">${esc(h.title)}</div>
     <div class="card-meta"><span class="tag tag-${esc(h.type||'clue')}">${esc(h.type||'clue')}</span><span class="tag tag-${esc(h.status||'active')}">${esc(h.status||'active')}</span>${h.session_delivered?`<span>Session ${h.session_delivered}</span>`:''}</div>
     ${h.connected_to?`<div style="font-size:11px;color:var(--text3);margin-top:5px">🔗 ${esc(Array.isArray(h.connected_to)?h.connected_to.join(', '):h.connected_to)}</div>`:''}
@@ -1743,13 +1873,13 @@ async function loadFactions(){
     const rep=f.reputation||0;const pct=((rep+3)/6)*100;
     const color=rep<0?'var(--red)':rep>0?'var(--green)':'var(--text3)';
     const label=rep<=-3?'Hostile':rep<=-1?'Unfriendly':rep===0?'Neutral':rep<=2?'Friendly':'Allied';
-    return `<div class="card">
+    return `<div class="card" style="cursor:pointer" onclick="openDetail('faction',${f.id})">
       <div class="card-title">${esc(f.name)}</div>
       ${f.description?`<div class="card-body" style="margin-bottom:7px">${esc(f.description)}</div>`:''}
       ${f.goals?`<div style="font-size:11px;color:var(--text3);margin-bottom:7px">Goals: ${esc(f.goals)}</div>`:''}
       <div class="rep-bar-wrap"><div class="rep-label"><span>Reputation</span><span style="color:${color}">${label} (${rep>=0?'+':''}${rep})</span></div>
       <div class="rep-track"><div class="rep-fill" style="width:${pct}%;background:${color}"></div></div></div>
-      ${isGm?`<div class="card-actions" style="margin-top:8px"><button class="btn btn-sm" onclick="openGmEdit('faction',${f.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="gmDelete('faction',${f.id},loadFactions)">Del</button></div>`:''}
+      ${isGm?`<div class="card-actions" style="margin-top:8px" onclick="event.stopPropagation()"><button class="btn btn-sm" onclick="openGmEdit('faction',${f.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="gmDelete('faction',${f.id},loadFactions)">Del</button></div>`:''}
     </div>`;
   }).join('');
 }
@@ -1761,13 +1891,13 @@ async function loadTimeline(){
   const el=document.getElementById('timeline-list');
   const gmBtn=isGm?`<button class="btn btn-primary" style="margin-bottom:1rem" onclick="openGmCreate('timeline')">+ Add Event</button>`:'';
   if(!timelineData.length){el.innerHTML=gmBtn+'<div class="empty-state">No events.</div>';return;}
-  el.innerHTML=gmBtn+timelineData.map(e=>`<div class="timeline-item">
+  el.innerHTML=gmBtn+timelineData.map(e=>`<div class="timeline-item" style="cursor:pointer" onclick="openDetail('timeline',${e.id})">
     <div class="timeline-dot"></div>
     <div class="timeline-content">
       <div class="timeline-date">${esc(e.in_world_date||'')}${e.session_number?` · Session ${e.session_number}`:''}</div>
       <div class="timeline-title">${esc(e.title)}</div>
       ${e.description?`<div class="timeline-desc">${esc(e.description)}</div>`:''}
-      ${isGm?`<div style="margin-top:6px;display:flex;gap:6px"><button class="btn btn-sm" onclick="openGmEdit('timeline',${e.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="gmDelete('timeline',${e.id},loadTimeline)">Del</button></div>`:''}
+      ${isGm?`<div style="margin-top:6px;display:flex;gap:6px" onclick="event.stopPropagation()"><button class="btn btn-sm" onclick="openGmEdit('timeline',${e.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="gmDelete('timeline',${e.id},loadTimeline)">Del</button></div>`:''}
     </div>
   </div>`).join('');
 }
@@ -1785,13 +1915,13 @@ async function loadInventory(){
   const kEl=document.getElementById('key-items-list');
   const gmKeyBtn=isGm?`<button class="btn btn-primary btn-sm" style="margin-bottom:8px" onclick="openGmCreate('key-item')">+ Add Key Item</button>`:'';
   if(!keyItemData.length){kEl.innerHTML=gmKeyBtn+'<div class="empty-state">No key items.</div>';return;}
-  kEl.innerHTML=gmKeyBtn+keyItemData.map(k=>`<div class="card">
+  kEl.innerHTML=gmKeyBtn+keyItemData.map(k=>`<div class="card" style="cursor:pointer" onclick="openDetail('key-item',${k.id})">
     ${k.image_path?`<img class="card-img" src="${API}${k.image_path}" alt="${esc(k.name)}" onerror="this.style.display='none'">`:''}
     <div class="card-title">${esc(k.name)}</div>
     ${k.description?`<div class="card-body">${esc(k.description)}</div>`:''}
     ${k.significance?`<div style="margin-top:7px;font-size:12px;color:var(--accent-dim)">Significance: ${esc(k.significance)}</div>`:''}
     ${k.linked_quest?`<div style="font-size:11px;color:var(--text3);margin-top:5px">🔗 ${esc(k.linked_quest)}</div>`:''}
-    ${isGm?`<div class="card-actions" style="margin-top:8px"><button class="btn btn-sm" onclick="openGmEdit('key-item',${k.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="gmDelete('key-item',${k.id},loadInventory)">Del</button></div>`:''}
+    ${isGm?`<div class="card-actions" style="margin-top:8px" onclick="event.stopPropagation()"><button class="btn btn-sm" onclick="openGmEdit('key-item',${k.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="gmDelete('key-item',${k.id},loadInventory)">Del</button></div>`:''}
   </div>`).join('');
 }
 
@@ -1824,12 +1954,12 @@ async function loadBestiary(){
   const el=document.getElementById('bestiary-list');
   const gmBtn=isGm?`<button class="btn btn-primary" style="margin-bottom:1rem" onclick="openGmCreate('bestiary')">+ Add Creature</button>`:'';
   if(!bestiaryData.length){el.innerHTML=gmBtn+'<div class="empty-state">No creatures revealed.</div>';return;}
-  el.innerHTML=gmBtn+bestiaryData.map(c=>{const st=c.stats||{};return`<div class="card">
+  el.innerHTML=gmBtn+bestiaryData.map(c=>{const st=c.stats||{};return`<div class="card" style="cursor:pointer" onclick="openDetail('bestiary',${c.id})">
     ${c.image_path?`<img class="card-img" src="${API}${c.image_path}" alt="${esc(c.name)}" onerror="this.style.display='none'">`:''}
     <div class="card-title">${esc(c.name)}</div>
     <div class="card-meta">${st.cr!=null?`<span class="tag tag-medium">CR ${st.cr}</span>`:''}${st.ac!=null?`<span>AC ${st.ac}</span>`:''}${st.hp!=null?`<span>HP ${st.hp}</span>`:''}</div>
     ${c.description?`<div class="card-body">${esc(c.description)}</div>`:''}
-    ${isGm?`<div class="card-actions" style="margin-top:8px"><button class="btn btn-sm" onclick="openGmEdit('bestiary',${c.id})">Edit</button><button class="btn btn-sm" onclick="revealCreature(${c.id},${c.revealed?0:1})">${c.revealed?'Hide':'Reveal'}</button><button class="btn btn-sm btn-danger" onclick="gmDelete('bestiary',${c.id},loadBestiary)">Del</button></div>`:''}
+    ${isGm?`<div class="card-actions" style="margin-top:8px" onclick="event.stopPropagation()"><button class="btn btn-sm" onclick="openGmEdit('bestiary',${c.id})">Edit</button><button class="btn btn-sm" onclick="revealCreature(${c.id},${c.revealed?0:1})">${c.revealed?'Hide':'Reveal'}</button><button class="btn btn-sm btn-danger" onclick="gmDelete('bestiary',${c.id},loadBestiary)">Del</button></div>`:''}
   </div>`}).join('');
 }
 async function revealCreature(id,val){
@@ -1844,11 +1974,11 @@ async function loadRumours(){
   const el=document.getElementById('rumour-list');
   const gmBtn=isGm?`<button class="btn btn-primary" style="margin-bottom:1rem" onclick="openGmCreate('rumour')">+ Add Rumour</button>`:'';
   if(!rumourData.length){el.innerHTML=gmBtn+'<div class="empty-state">No rumours heard.</div>';return;}
-  el.innerHTML=gmBtn+rumourData.map(r=>`<div class="card">
+  el.innerHTML=gmBtn+rumourData.map(r=>`<div class="card" style="cursor:pointer" onclick="openDetail('rumour',${r.id})">
     <div class="card-body" style="font-style:italic;font-size:14px;margin-bottom:8px">"${esc(r.text)}"</div>
     <div class="card-meta">${r.source_npc?`<span>— ${esc(r.source_npc)}</span>`:''}${r.source_location?`<span>📍 ${esc(r.source_location)}</span>`:''}</div>
     ${r.is_true!=null&&currentUser?.role==='gm'?`<div style="margin-top:6px;font-size:10px;color:${r.is_true?'var(--green)':'var(--red)'}">GM: ${r.is_true?'TRUE':'FALSE'}</div>`:''}
-    ${isGm?`<div class="card-actions" style="margin-top:8px"><button class="btn btn-sm" onclick="openGmEdit('rumour',${r.id})">Edit</button><button class="btn btn-sm" onclick="exposeRumour(${r.id})">Expose</button><button class="btn btn-sm btn-danger" onclick="gmDelete('rumour',${r.id},loadRumours)">Del</button></div>`:''}
+    ${isGm?`<div class="card-actions" style="margin-top:8px" onclick="event.stopPropagation()"><button class="btn btn-sm" onclick="openGmEdit('rumour',${r.id})">Edit</button><button class="btn btn-sm" onclick="exposeRumour(${r.id})">Expose</button><button class="btn btn-sm btn-danger" onclick="gmDelete('rumour',${r.id},loadRumours)">Del</button></div>`:''}
   </div>`).join('');
 }
 async function exposeRumour(id){
@@ -1863,13 +1993,13 @@ async function loadJobs(){
   const el=document.getElementById('job-list');
   const gmBtn=isGm?`<button class="btn btn-primary" style="margin-bottom:1rem" onclick="openGmCreate('job')">+ Post Job</button>`:'';
   if(!jobData.length){el.innerHTML=gmBtn+'<div class="empty-state">No jobs posted.</div>';return;}
-  el.innerHTML=gmBtn+jobData.map(j=>`<div class="card">
+  el.innerHTML=gmBtn+jobData.map(j=>`<div class="card" style="cursor:pointer" onclick="openDetail('job',${j.id})">
     <div class="card-title">${esc(j.title)}</div>
     <div class="card-meta"><span class="tag tag-${esc(j.status||'open')}">${esc(j.status||'open')}</span><span class="tag tag-${esc(j.difficulty||'medium')}">${esc(j.difficulty||'medium')}</span>${j.reward?`<span style="color:var(--accent)">⚜ ${esc(j.reward)}</span>`:''}</div>
     ${j.description?`<div class="card-body" style="margin-bottom:7px">${esc(j.description)}</div>`:''}
     <div style="font-size:11px;color:var(--text3);display:flex;gap:10px;flex-wrap:wrap">${j.posted_by?`<span>Posted by: ${esc(j.posted_by)}</span>`:''}${j.location?`<span>📍 ${esc(j.location)}</span>`:''}</div>
     ${j.requires_contact?`<div style="margin-top:7px;font-size:12px;color:var(--accent-dim)">Speak to ${esc(j.posted_by||'the contact')} to accept.</div>`:''}
-    ${isGm?`<div class="card-actions" style="margin-top:8px"><button class="btn btn-sm" onclick="openGmEdit('job',${j.id})">Edit</button>${!j.promoted_quest_id?`<button class="btn btn-sm btn-primary" onclick="promoteJobToQuest(${j.id})">→ Quest</button>`:''}<button class="btn btn-sm btn-danger" onclick="gmDelete('job',${j.id},loadJobs)">Del</button></div>`:''}
+    ${isGm?`<div class="card-actions" style="margin-top:8px" onclick="event.stopPropagation()"><button class="btn btn-sm" onclick="openGmEdit('job',${j.id})">Edit</button>${!j.promoted_quest_id?`<button class="btn btn-sm btn-primary" onclick="promoteJobToQuest(${j.id})">→ Quest</button>`:''}<button class="btn btn-sm btn-danger" onclick="gmDelete('job',${j.id},loadJobs)">Del</button></div>`:''}
   </div>`).join('');
 }
 
@@ -2033,12 +2163,14 @@ async function renderMindmap(){
 // ── GM Dashboard ─────────────────────────────────────────────────────────────
 async function loadGmDashboard(){
   if(!isGm)return;
-  const [cR,uR,qR,sR,stR]=await Promise.all([apiFetch('/api/campaigns'),apiFetch('/api/users'),apiFetch('/api/quests'),apiFetch('/api/sessions'),apiFetch('/api/stress')]);
+  const [cR,uR,qR,sR,stR,xR]=await Promise.all([apiFetch('/api/campaigns'),apiFetch('/api/users'),apiFetch('/api/quests'),apiFetch('/api/sessions'),apiFetch('/api/stress'),apiFetch('/api/xp')]);
   const campaigns=cR.ok?(await cR.json()).campaigns||[]:[];
   const users=uR.ok?(await uR.json()).users||[]:[];
   const quests=qR.ok?(await qR.json()).quests||[]:[];
   const sessions=sR.ok?(await sR.json()).sessions||[]:[];
   const stressMap={};if(stR.ok){((await stR.json()).stress||[]).forEach(s=>{stressMap[s.user_id]=s;});}
+  const xpData=xR.ok?await xR.json():{totals:[],awards:[]};
+  const xpMap={};(xpData.totals||[]).forEach(t=>{xpMap[t.user_id]=t;});
   const el=document.getElementById('gm-dash-content');
   const activeCamp=campaigns.find(c=>c.active)||campaigns[0];
   el.innerHTML=`
@@ -2061,9 +2193,29 @@ async function loadGmDashboard(){
   <div class="card" style="margin-top:1rem">
     <h3 style="font-family:var(--font-heading);color:var(--accent);margin:0 0 0.75rem">Players</h3>
     <button class="btn btn-primary" style="margin-bottom:0.75rem" onclick="openGmCreate('agenda')">+ Set Agenda</button>
-    <table class="inv-table"><thead><tr><th>Name</th><th>Role</th><th>Stress / Sanity</th><th>Actions</th></tr></thead><tbody>
-    ${users.map(u=>{const st=stressMap[u.id];const stVal=st?`<span style="color:${(st.stress||0)>=(st.stress_max||10)*0.7?'var(--red)':'var(--text)'}">${st.stress||0}/${st.stress_max||10}</span>`:'–';const sanVal=st?`<span>${st.sanity??'–'}/${st.sanity_max||100}</span>`:'';return`<tr><td>${esc(u.username)}${u.character_name?`<br><small class="muted">${esc(u.character_name)}</small>`:''}</td><td><span class="tag tag-${u.role==='gm'?'quest-active':'npc'}">${u.role}</span></td><td><div style="font-size:12px">Stress: ${stVal} Sanity: ${sanVal}</div><div style="display:flex;gap:4px;margin-top:4px"><input id="st-s-${u.id}" type="number" class="form-input" style="width:55px;padding:2px 4px;font-size:12px" placeholder="stress" value="${st?.stress??''}" min="0" max="${st?.stress_max||10}"><input id="st-sn-${u.id}" type="number" class="form-input" style="width:55px;padding:2px 4px;font-size:12px" placeholder="sanity" value="${st?.sanity??''}" min="0" max="${st?.sanity_max||100}"><button class="btn btn-sm" onclick="savePlayerStress(${u.id})">Set</button></div></td><td><button class="btn btn-sm" onclick="openGmCreate('message','${u.id}')">Msg</button> <button class="btn btn-sm btn-danger" onclick="deleteUser(${u.id},'${esc(u.username)}')">Del</button></td></tr>`;}).join('')}
+    <table class="inv-table"><thead><tr><th>Name</th><th>Role</th><th>XP / Level</th><th>Stress / Sanity</th><th>Actions</th></tr></thead><tbody>
+    ${users.map(u=>{const st=stressMap[u.id];const xp=xpMap[u.id];const stVal=st?`<span style="color:${(st.stress||0)>=(st.stress_max||10)*0.7?'var(--red)':'var(--text)'}">${st.stress||0}/${st.stress_max||10}</span>`:'–';const sanVal=st?`<span>${st.sanity??'–'}/${st.sanity_max||100}</span>`:'';return`<tr><td>${esc(u.username)}${u.character_name?`<br><small class="muted">${esc(u.character_name)}</small>`:''}</td><td><span class="tag tag-${u.role==='gm'?'quest-active':'npc'}">${u.role}</span></td><td style="white-space:nowrap"><span style="color:var(--accent)">${xp?xp.total:0} XP</span>${xp?`<br><small class="muted">Lvl ${xp.level}</small>`:''}</td><td><div style="font-size:12px">Stress: ${stVal} Sanity: ${sanVal}</div><div style="display:flex;gap:4px;margin-top:4px"><input id="st-s-${u.id}" type="number" class="form-input" style="width:55px;padding:2px 4px;font-size:12px" placeholder="stress" value="${st?.stress??''}" min="0" max="${st?.stress_max||10}"><input id="st-sn-${u.id}" type="number" class="form-input" style="width:55px;padding:2px 4px;font-size:12px" placeholder="sanity" value="${st?.sanity??''}" min="0" max="${st?.sanity_max||100}"><button class="btn btn-sm" onclick="savePlayerStress(${u.id})">Set</button></div></td><td><button class="btn btn-sm" onclick="openGmCreate('message','${u.id}')">Msg</button> <button class="btn btn-sm btn-danger" onclick="deleteUser(${u.id},'${esc(u.username)}')">Del</button></td></tr>`;}).join('')}
     </tbody></table>
+  </div>
+  <div class="card" style="margin-top:1rem">
+    <h3 style="font-family:var(--font-heading);color:var(--accent);margin:0 0 0.75rem">XP / Milestones</h3>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:flex-end">
+      <div class="form-group" style="margin:0;flex:1;min-width:150px"><label>Players</label>
+        <select id="xp-player-sel" class="form-input" multiple style="min-height:72px">
+          ${users.filter(u=>u.role!=='gm').map(u=>`<option value="${u.id}">${esc(u.username)}${u.character_name?' — '+esc(u.character_name):''}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group" style="margin:0;width:90px"><label>XP</label><input id="xp-amount" type="number" class="form-input" min="0" placeholder="e.g. 300"></div>
+      <div class="form-group" style="margin:0;flex:2;min-width:200px"><label>Reason</label><input id="xp-reason" class="form-input" placeholder="Defeated boss, solved puzzle…"></div>
+      <button class="btn btn-primary" onclick="awardXp()">Award XP</button>
+    </div>
+    <table class="inv-table"><thead><tr><th>Player</th><th>Total XP</th><th>Level</th></tr></thead><tbody>
+    ${(xpData.totals||[]).sort((a,b)=>b.total-a.total).map(t=>`<tr><td>${esc(t.character_name||t.username)}</td><td>${t.total}</td><td>${t.level}</td></tr>`).join('')||'<tr><td colspan="3" style="color:var(--text3);text-align:center">No XP awarded yet</td></tr>'}
+    </tbody></table>
+    ${xpData.awards?.length?`<details style="margin-top:12px"><summary style="cursor:pointer;font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;letter-spacing:0.5px">AWARD LOG</summary>
+      <table class="inv-table" style="margin-top:8px"><thead><tr><th>Player</th><th>XP</th><th>Reason</th><th>Date</th><th></th></tr></thead><tbody>
+      ${xpData.awards.map(a=>`<tr><td>${esc(a.character_name||a.username)}</td><td>+${a.amount}</td><td>${esc(a.reason||'—')}</td><td style="font-size:11px;color:var(--text3)">${fmt(a.awarded_at)}</td><td><button class="btn btn-sm btn-danger" onclick="removeXpAward(${a.id})">×</button></td></tr>`).join('')}
+      </tbody></table></details>`:''}
   </div>
   <div class="card" style="margin-top:1rem">
     <h3 style="font-family:var(--font-heading);color:var(--accent);margin:0 0 0.75rem">Backup &amp; Export</h3>
@@ -2109,6 +2261,21 @@ async function deleteUser(id,name){
   if(!confirm(`Delete user "${name}"? This cannot be undone.`))return;
   const r=await apiFetch(`/api/users/${id}`,{method:'DELETE'});
   if(r.ok){showToast('User deleted','success');loadGmDashboard();}else showToast('Delete failed','error');
+}
+async function awardXp(){
+  const sel=document.getElementById('xp-player-sel');
+  const user_ids=[...sel.selectedOptions].map(o=>Number(o.value));
+  const amount=Number(document.getElementById('xp-amount').value);
+  const reason=document.getElementById('xp-reason').value.trim();
+  if(!user_ids.length){showToast('Select at least one player','error');return;}
+  if(!amount||amount<=0){showToast('Enter a positive XP amount','error');return;}
+  const r=await apiFetch('/api/xp',{method:'POST',body:JSON.stringify({user_ids,amount,reason})});
+  if(r.ok){showToast(`+${amount} XP awarded`,'success');loadGmDashboard();}else showToast('Award failed','error');
+}
+async function removeXpAward(id){
+  if(!confirm('Remove this XP award?'))return;
+  const r=await apiFetch(`/api/xp/${id}`,{method:'DELETE'});
+  if(r.ok){showToast('Award removed','success');loadGmDashboard();}else showToast('Remove failed','error');
 }
 
 // ── Combat Tracker ────────────────────────────────────────────────────────────

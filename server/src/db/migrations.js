@@ -431,6 +431,16 @@ function runMigrations() {
   try { db.exec('ALTER TABLE users ADD COLUMN locked INTEGER DEFAULT 0'); } catch (_) {}
   // Add shared_with_gm column to theory_nodes (P5)
   try { db.exec('ALTER TABLE theory_nodes ADD COLUMN shared_with_gm INTEGER DEFAULT 0'); } catch (_) {}
+  // XP awards table (P11)
+  db.exec(`CREATE TABLE IF NOT EXISTS xp_awards (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    campaign_id INTEGER REFERENCES campaigns(id),
+    awarded_to INTEGER REFERENCES users(id),
+    amount INTEGER NOT NULL DEFAULT 0,
+    reason TEXT,
+    awarded_by INTEGER REFERENCES users(id),
+    awarded_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
 
   console.log('✅ Migrations complete.');
 }

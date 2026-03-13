@@ -536,12 +536,11 @@ Without this, all content bleeds across games regardless of which campaign is ac
 - [x] **GET route filtering** — all vault routes (quests, npcs, locations, hooks), maps, sessions, factions, timeline, jobs, inventory, key_items, bestiary, rumours now filter by `WHERE campaign_id = <active> OR campaign_id IS NULL`
 - [x] **Fix GM Dashboard campaign data bug** — `loadGmDashboard()` now correctly reads `(await cR.json()).campaigns`
 
-#### Priority 7 — Card detail panels (click to expand)
-The spec says every card opens a full detail panel. Currently cards have no click handler — they are static read-only tiles.
+#### Priority 7 — Card detail panels ✅
 
-- [ ] `openDetail(type, id)` function — fetches full item and renders a modal/flyout with image, full description, all linked fields
-- [ ] Wire `onclick="openDetail('quest', ${id})"` on every quest, npc, location, hook, faction, bestiary card
-- [ ] For GM: detail panel includes Edit and Delete buttons
+- [x] `openDetail(type, id)` function — renders rich detail modal from local data store (image, full description, all fields, GM-only sections for gm_notes and rumour truth)
+- [x] Wired on: quest, npc, location, hook, faction, timeline, inventory key-items, job, bestiary, rumour cards
+- [x] GM actions (Edit + Delete) are included in the detail modal footer
 - [ ] Linked fields (e.g. `linked_quest`, `source_npc`) navigate to that item's detail on click
 
 #### Priority 8 — GM-Only vault folder privacy boundary
@@ -567,13 +566,13 @@ Currently `vault/GM-Only/` files are synced to DB just like everything else and 
 - [ ] **Registration is open** — `POST /api/auth/register` is publicly accessible; for a private group install this should require a GM-issued invite code or be GM-only
 - [ ] **Client UI** — add Remove and Reset Password buttons to the Players table in GM Dashboard
 
-#### Priority 11 — XP / Milestone tracker (not built)
-No route, no DB table, no client UI exists for this spec feature.
+#### Priority 11 — XP / Milestone tracker ✅
 
-- [ ] Add `xp_awards` table: `(campaign_id, awarded_to, amount, reason, awarded_at)`
-- [ ] `GET /api/xp`, `POST /api/xp` (GM), `DELETE /api/xp/:id` (GM)
-- [ ] Client: XP panel on GM Dashboard + per-player XP total on character sheet dashboard card
-- [ ] Auto-notify player when level-up threshold crossed (SSE event)
+- [x] `xp_awards` table: `(campaign_id, awarded_to, amount, reason, awarded_by, awarded_at)`
+- [x] `GET /api/xp`, `POST /api/xp` (GM awards to one or more players), `DELETE /api/xp/:id` (GM)
+- [x] D&D 5e XP level thresholds — auto-detect level from total XP, notify player on level-up via SSE
+- [x] Client: XP panel on GM Dashboard with multi-player award form + totals table + award log
+- [x] Players table in GM Dashboard now shows XP total and current level per player
 
 ---
 
