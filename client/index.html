@@ -918,7 +918,7 @@ input,textarea,select{font-family:'Crimson Pro',serif;}
 </div>
 
 <!-- ── GM FAB ─────────────────────────────────────────────────────────────────── -->
-<button class="gm-fab gm-only" id="gm-fab" onclick="openGmCreate()" title="Create item">+</button>
+<button class="gm-fab gm-only" id="gm-fab" onclick="openGmCreate(this.dataset.ctx)" title="Create item">+</button>
 
 <!-- ── Onboarding Wizard ──────────────────────────────────────────────────────── -->
 <div id="onboarding">
@@ -2156,7 +2156,9 @@ const GM_FORMS={
     <div class="form-group"><label>Map Image <span style="color:#c95a5a">*</span></label><input type="file" id="gm-f-img" class="form-input" accept="image/*"><small class="muted">JPG, PNG, WebP — max 20 MB</small></div>`,
 };
 let gmCreateType=null,gmCreateExtra=null;
+const PAGE_TO_TYPE={quests:'quest',npcs:'npc',locations:'location',hooks:'hook',handouts:'handout',maps:'map',sessions:'session',notes:'note'};
 async function openGmCreate(type,extra){
+  type=PAGE_TO_TYPE[type]||type;
   gmCreateType=type;gmCreateExtra=extra||null;
   const modal=document.getElementById('gm-modal');
   const title=document.getElementById('gm-modal-title');
