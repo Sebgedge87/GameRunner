@@ -34,7 +34,8 @@ router.post('/', requireGm, (req, res) => {
 // PUT /api/campaigns/:id — GM updates campaign
 router.put('/:id', requireGm, (req, res) => {
   const db = getDb();
-  const { name, system, subtitle, description, theme, current_scene, current_weather, current_time, music_url, music_label, session_count } = req.body;
+  const { name, system, subtitle, description, theme, current_scene, current_weather, current_time, music_url: rawMusicUrl, music_label, session_count } = req.body;
+  const music_url = rawMusicUrl == null ? undefined : (/^https?:\/\//i.test(rawMusicUrl) ? rawMusicUrl : null);
   db.prepare(`
     UPDATE campaigns SET
       name = COALESCE(?, name),

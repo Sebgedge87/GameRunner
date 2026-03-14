@@ -6,7 +6,7 @@ const router = express.Router();
 
 // GET /api/search?q=term
 router.get('/', requireAuth, (req, res) => {
-  const q = (req.query.q || '').trim();
+  const q = (req.query.q || '').trim().slice(0, 200);
   if (!q || q.length < 2) return res.json({ results: [] });
   const db = getDb();
   const like = `%${q}%`;

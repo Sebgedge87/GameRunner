@@ -1014,7 +1014,7 @@ let token = localStorage.getItem('chronicle_token');
 let currentUser = null;
 let isGm = false;
 let activeCampaign = null;
-let sseSource = null;
+let sseSource = null; let sseReconnectTimer = null;
 let currentPage = 'dashboard';
 let allUsers = [];
 
@@ -1091,6 +1091,7 @@ async function restoreSession(){
 
 function doLogout(){
   token=null;currentUser=null;
+  clearTimeout(sseReconnectTimer);sseReconnectTimer=null;
   if(sseSource){sseSource.close();sseSource=null;}
   localStorage.removeItem('chronicle_token');
   document.getElementById('app').style.display='none';
@@ -1135,11 +1136,12 @@ function connectSSE(){
       if(d.type==='message_acked'){loadMessages();}
     }catch{}
   };
-  sseSource.onerror=()=>{sseSource.close();sseSource=null;setTimeout(connectSSE,10000);};
+  sseSource.onerror=()=>{sseSource.close();sseSource=null;sseReconnectTimer=setTimeout(connectSSE,10000);};
 }
 
 // ── Navigation ────────────────────────────────────────────────────────────────
 function navigate(page){
+  if(currentPage==='mindmap'&&page!=='mindmap'&&mindmapSim){mindmapSim.stop();}
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const pageEl=document.getElementById(`page-${page}`);
@@ -1185,7 +1187,7 @@ async function loadCampaign(){
     detectThemeFromCampaign();
     renderCampaignBanner();
     renderCampSwitcher();
-  }catch{}
+  }catch(e){console.error('[loadCampaign]',e);showToast('Failed to load campaign','error');}
 }
 function renderCampSwitcher(){
   const btn=document.getElementById('camp-switcher-btn');
@@ -1244,7 +1246,7 @@ async function loadUsers(){
     allUsers=d.users||[];
     populateMsgSelects();
     if(currentUser?.role==='gm')populateCharPlayerSelect();
-  }catch{}
+  }catch(e){console.error('[loadUsers]',e);}
 }
 function populateMsgSelects(){
   ['flyout-msg-to'].forEach(id=>{
@@ -1279,7 +1281,7 @@ async function loadAgenda(){
     const cards=d.agenda||[];
     agendaData=currentUser.role==='gm'?null:(cards[0]||null);
     renderAgenda();
-  }catch{}
+  }catch(e){console.error('[loadAgenda]',e);}
 }
 function renderAgenda(){
   const el=document.getElementById('agenda-wrap');
@@ -1298,7 +1300,7 @@ async function loadStress(){
     const rows=d.stress||[];
     stressData=rows[0]||null;
     renderStress();
-  }catch{}
+  }catch(e){console.error('[loadStress]',e);}
 }
 function renderStress(){
   const el=document.getElementById('stress-wrap');
@@ -1330,7 +1332,7 @@ async function loadPins(){
     const d=await r.json();
     pinsData=d.pins||[];
     renderPins();
-  }catch{}
+  }catch(e){console.error('[loadPins]',e);}
 }
 function renderPins(){
   const el=document.getElementById('pins-wrap');
@@ -1363,7 +1365,7 @@ async function loadNotifications(){
     const unread=notifData.filter(n=>!n.read_at).length;
     const b=document.getElementById('notif-badge');
     if(unread>0){b.textContent=unread;b.style.display='';}else b.style.display='none';
-  }catch{}
+  }catch(e){console.error('[loadNotifications]',e);}
 }
 function renderNotifications(){
   const el=document.getElementById('notifs-body');
@@ -1561,7 +1563,7 @@ async function runSearch(){
       <div><div class="search-result-title">${esc(r.title)}</div>${r.subtitle?`<div class="search-result-sub">${esc(r.subtitle)}</div>`:''}</div>
     </div>`).join('');
     drop.classList.add('open');
-  }catch{}
+  }catch(e){console.error('[runSearch]',e);drop.innerHTML='<div class="search-result" style="color:var(--text3)">Search failed</div>';drop.classList.add('open');}
 }
 function openSearchDrop(){if(document.getElementById('search-dropdown').innerHTML)document.getElementById('search-dropdown').classList.add('open');}
 function closeSearchDrop(){document.getElementById('search-dropdown').classList.remove('open');}
@@ -1756,10 +1758,7 @@ async function ackHandout(){
   if(r.ok){const h=handoutData.find(x=>x.id===currentHandoutId);if(h)h.acked_at=new Date().toISOString();document.getElementById('hmodal-ack-btn').style.display='none';updateHandoutBadge();renderHandouts();}
 }
 async function openHandoutReshare(handoutId){
-  const r=await apiFetch('/api/users');
-  if(!r.ok){showToast('Could not load players','error');return;}
-  const users=(await r.json()).users||[];
-  const players=users.filter(u=>u.role!=='gm');
+  const players=allUsers.filter(u=>u.role!=='gm');
   if(!players.length){showToast('No players to share with','error');return;}
   const opts=players.map(u=>`${u.id}: ${u.username} (${u.character_name||'no character'})`).join('\n');
   const input=prompt(`Share handout with player (enter username):\n${players.map(u=>u.username).join(', ')}`);
@@ -2142,22 +2141,22 @@ async function createTheoryEdge(sourceId,targetId){const r=await apiFetch('/api/
 function toggleConnectMode(){connectMode=!connectMode;connectSource=null;document.getElementById('theory-connect-btn').classList.toggle('active',connectMode);document.getElementById('theory-connect-status').textContent=connectMode?'Click first node...':'';}
 
 // ── Mindmap ───────────────────────────────────────────────────────────────────
-let mindmapLoaded=false;
+let mindmapLoaded=false;let mindmapSim=null;
 async function renderMindmap(){
   if(mindmapLoaded)return;mindmapLoaded=true;
   const r=await apiFetch('/api/mindmap');const{nodes,links}=await r.json();
   const svg=d3.select('#mindmap-svg');const rect=document.getElementById('mindmap-svg').getBoundingClientRect();
   const W=rect.width||800,H=rect.height||500;svg.attr('viewBox',`0 0 ${W} ${H}`);
   const colorMap={quest:'#c9a84c',npc:'#4c7ac9',location:'#4caf7d',hook:'#8b4cc9'};
-  const sim=d3.forceSimulation(nodes).force('link',d3.forceLink(links).id(d=>d.id).distance(120).strength(0.6)).force('charge',d3.forceManyBody().strength(-300)).force('center',d3.forceCenter(W/2,H/2)).force('collision',d3.forceCollide(40));
+  mindmapSim=d3.forceSimulation(nodes).force('link',d3.forceLink(links).id(d=>d.id).distance(120).strength(0.6)).force('charge',d3.forceManyBody().strength(-300)).force('center',d3.forceCenter(W/2,H/2)).force('collision',d3.forceCollide(40));
   const g=svg.append('g');svg.call(d3.zoom().scaleExtent([0.3,3]).on('zoom',e=>g.attr('transform',e.transform)));
   const link=g.append('g').selectAll('line').data(links).join('line').attr('stroke','#2a2a3a').attr('stroke-width',1.5);
   const node=g.append('g').selectAll('g').data(nodes).join('g').attr('cursor','grab')
-    .call(d3.drag().on('start',(e,d)=>{if(!e.active)sim.alphaTarget(0.3).restart();d.fx=d.x;d.fy=d.y;}).on('drag',(e,d)=>{d.fx=e.x;d.fy=e.y;}).on('end',(e,d)=>{if(!e.active)sim.alphaTarget(0);d.fx=null;d.fy=null;}));
+    .call(d3.drag().on('start',(e,d)=>{if(!e.active)mindmapSim.alphaTarget(0.3).restart();d.fx=d.x;d.fy=d.y;}).on('drag',(e,d)=>{d.fx=e.x;d.fy=e.y;}).on('end',(e,d)=>{if(!e.active)mindmapSim.alphaTarget(0);d.fx=null;d.fy=null;}));
   node.append('circle').attr('r',d=>d.type==='quest'?14:10).attr('fill',d=>colorMap[d.type]||'#888').attr('fill-opacity',0.25).attr('stroke',d=>colorMap[d.type]||'#888').attr('stroke-width',1.5);
   node.append('text').attr('dy','0.35em').attr('text-anchor','middle').attr('fill',d=>colorMap[d.type]||'#aaa').attr('font-size',9).attr('font-family','JetBrains Mono,monospace').text(d=>d.type[0].toUpperCase());
   node.append('text').attr('dy','1.8em').attr('text-anchor','middle').attr('fill','#a09890').attr('font-size',10).attr('font-family','Crimson Pro,serif').attr('pointer-events','none').text(d=>d.label.length>18?d.label.slice(0,16)+'…':d.label);
-  sim.on('tick',()=>{link.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);node.attr('transform',d=>`translate(${d.x},${d.y})`);});
+  mindmapSim.on('tick',()=>{link.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);node.attr('transform',d=>`translate(${d.x},${d.y})`);});
 }
 
 
@@ -2400,12 +2399,11 @@ async function combatNextRound(){
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
-async function buildDashboard(){
-  const [qR,nR,hR,sR]=await Promise.all([apiFetch('/api/quests'),apiFetch('/api/npcs'),apiFetch('/api/hooks'),apiFetch('/api/sessions')]);
-  const quests=qR.ok?await qR.json():[];
-  const npcs=nR.ok?await nR.json():[];
-  const hooks=hR.ok?await hR.json():[];
-  const sessions=sR.ok?await sR.json():[];
+function buildDashboard(){
+  const quests=questData;
+  const npcs=npcData;
+  const hooks=hookData;
+  const sessions=sessionData;
   const active=quests.filter(q=>q.status==='active');
   const el=document.getElementById('dash-stats');
   el.innerHTML=`
@@ -2428,7 +2426,7 @@ async function buildDashboard(){
   <div id="dash-scheduling-section" style="margin-top:1rem"></div>`;
   loadDashScheduling(sessions);
 }
-async function loadDashScheduling(sessions){
+function loadDashScheduling(sessions){
   const upcoming=sessions?sessions.filter(s=>s.scheduled_at&&new Date(s.scheduled_at)>new Date()):[];
   const el=document.getElementById('dash-scheduling-section');
   if(!el)return;

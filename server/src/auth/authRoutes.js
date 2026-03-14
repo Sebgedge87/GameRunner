@@ -25,6 +25,9 @@ router.post('/register', (req, res) => {
   if (password.length < 6) {
     return res.status(400).json({ error: 'Password must be at least 6 characters' });
   }
+  if (password.length > 128) {
+    return res.status(400).json({ error: 'Password must be 128 characters or fewer' });
+  }
 
   const db = getDb();
   const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
