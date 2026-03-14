@@ -2420,23 +2420,28 @@ function buildDashboard(){
     </div>
     <div class="card">
       <h4 style="font-family:var(--font-heading);color:var(--accent);margin:0 0 0.75rem">Recent Sessions</h4>
-      ${sessions.length?sessions.slice(0,5).map(s=>`<div class="list-item"><span>${esc(s.title)}</span><span class="muted" style="font-size:0.78rem">${fmt(s.session_date)}</span></div>`).join(''):'<p class="muted">No sessions yet.</p>'}
+      ${sessions.length?sessions.slice(0,5).map(s=>`<div class="list-item"><span>${esc(s.title)}</span><span class="muted" style="font-size:0.78rem">${fmt(s.played_at)}</span></div>`).join(''):'<p class="muted">No sessions yet.</p>'}
     </div>
   </div>
   <div id="dash-scheduling-section" style="margin-top:1rem"></div>`;
-  loadDashScheduling(sessions);
+  loadDashScheduling();
 }
-function loadDashScheduling(sessions){
-  const upcoming=sessions?sessions.filter(s=>s.scheduled_at&&new Date(s.scheduled_at)>new Date()):[];
+async function loadDashScheduling(){
   const el=document.getElementById('dash-scheduling-section');
   if(!el)return;
-  if(!upcoming.length){el.innerHTML='';return;}
-  const next=upcoming.sort((a,b)=>new Date(a.scheduled_at)-new Date(b.scheduled_at))[0];
-  el.innerHTML=`<div class="card">
-    <h4 style="font-family:var(--font-heading);color:var(--accent);margin:0 0 0.5rem">Next Session</h4>
-    <div style="font-size:1.1rem;font-family:var(--font-heading)">${esc(next.title)}</div>
-    <div class="muted" style="font-size:0.85rem;margin-top:0.25rem">${fmtTime(next.scheduled_at)}</div>
-  </div>`;
+  try{
+    const r=await apiFetch('/api/sessions/scheduling');
+    if(!r.ok){el.innerHTML='';return;}
+    const all=(await r.json()).scheduling||[];
+    const upcoming=all.filter(s=>s.proposed_date&&new Date(s.proposed_date)>new Date());
+    if(!upcoming.length){el.innerHTML='';return;}
+    const next=upcoming.sort((a,b)=>new Date(a.proposed_date)-new Date(b.proposed_date))[0];
+    el.innerHTML=`<div class="card">
+      <h4 style="font-family:var(--font-heading);color:var(--accent);margin:0 0 0.5rem">Next Session</h4>
+      <div style="font-size:1.1rem;font-family:var(--font-heading)">${esc(next.title||'Proposed date')}</div>
+      <div class="muted" style="font-size:0.85rem;margin-top:0.25rem">${fmtTime(next.proposed_date)}</div>
+    </div>`;
+  }catch{el.innerHTML='';}
 }
 
 // ── Onboarding Wizard ─────────────────────────────────────────────────────────
