@@ -1,6 +1,7 @@
 const express = require('express');
 const { getDb, getActiveCampaignId } = require('../db/database');
 const { requireAuth, requireGm } = require('../auth/authMiddleware');
+const { makeHiddenToggle } = require('../utils/routeHelpers');
 
 const router = express.Router();
 
@@ -39,14 +40,7 @@ router.put('/:id', requireGm, (req, res) => {
   res.json({ faction });
 });
 
-router.put('/:id/hidden', requireGm, (req, res) => {
-  const db = getDb();
-  const row = db.prepare('SELECT id, hidden FROM factions WHERE id = ?').get(req.params.id);
-  if (!row) return res.status(404).json({ error: 'Not found' });
-  const newVal = row.hidden ? 0 : 1;
-  db.prepare('UPDATE factions SET hidden = ? WHERE id = ?').run(newVal, req.params.id);
-  res.json({ hidden: newVal });
-});
+makeHiddenToggle(router, 'factions');
 
 router.put('/:id/reputation', requireGm, (req, res) => {
   const { score, campaign_id } = req.body;

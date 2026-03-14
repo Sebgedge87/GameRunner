@@ -94,4 +94,4 @@ function startVaultWatcher() {
   return watcher;
 }
 
-module.exports = { startVaultWatcher };
+module.exports = { startVaultWatcher, syncFile };

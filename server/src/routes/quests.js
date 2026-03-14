@@ -5,13 +5,11 @@ const matter = require('gray-matter');
 const { getDb, getActiveCampaignId } = require('../db/database');
 const { requireAuth, requireGm } = require('../auth/authMiddleware');
 const { vaultPath } = require('../config');
+const { syncFile } = require('../vault/vaultWatcher');
+const { slug } = require('../utils/routeHelpers');
 
 const VAULT_DIR = path.join(vaultPath, 'Quests');
 if (!fs.existsSync(VAULT_DIR)) fs.mkdirSync(VAULT_DIR, { recursive: true });
-
-function slug(title) {
-  return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-}
 
 const router = express.Router();
 
@@ -42,16 +40,16 @@ router.post('/', requireGm, (req, res) => {
   const filename = `${slug(title)}-${Date.now()}.md`;
   const content = matter.stringify(description, { title, status, quest_type });
   const camp = getDb().prepare('SELECT id, name FROM campaigns WHERE active = 1 LIMIT 1').get();
-  const campSlug = camp ? camp.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : null;
+  const campSlug = camp ? slug(camp.name) : null;
   const targetDir = campSlug ? path.join(vaultPath, campSlug, 'Quests') : VAULT_DIR;
   if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
   const relPath = campSlug ? `${campSlug}/Quests/${filename}` : `Quests/${filename}`;
-  fs.writeFileSync(path.join(targetDir, filename), content, 'utf8');
-  setTimeout(() => {
-    const row = getDb().prepare(`SELECT * FROM vault_files WHERE path = ?`).get(relPath);
-    const quest = row ? { id: row.id, path: row.path, title: row.title, ...JSON.parse(row.frontmatter || '{}') } : { title, status, quest_type };
-    res.status(201).json({ quest });
-  }, 400);
+  const fullPath = path.join(targetDir, filename);
+  fs.writeFileSync(fullPath, content, 'utf8');
+  syncFile(fullPath);
+  const row = getDb().prepare(`SELECT * FROM vault_files WHERE path = ?`).get(relPath);
+  const quest = row ? { id: row.id, path: row.path, title: row.title, ...JSON.parse(row.frontmatter || '{}') } : { title, status, quest_type };
+  res.status(201).json({ quest });
 });
 
 // PUT /api/quests/:id

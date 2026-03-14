@@ -423,6 +423,8 @@ function runMigrations() {
     );
   `);
 
+  // Add campaign_id column to vault_files if not already present
+  try { db.exec('ALTER TABLE vault_files ADD COLUMN campaign_id INTEGER REFERENCES campaigns(id)'); } catch (_) {}
   // Add hidden column to vault_files if not already present
   try { db.exec('ALTER TABLE vault_files ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
   // Add hidden column to maps if not already present

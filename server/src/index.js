@@ -62,7 +62,11 @@ app.use(helmet({
 }));
 
 // ── CORS ───────────────────────────────────────────────────────────────────────
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://localhost:3000,http://127.0.0.1:3000').split(',').map(s => s.trim());
+const port = process.env.PORT || 3000;
+const builtinOrigins = [`http://localhost:${port}`, `http://127.0.0.1:${port}`, 'http://localhost:5173'];
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? [...new Set([...builtinOrigins, ...process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim())])]
+  : builtinOrigins;
 app.use(cors({
   origin(origin, cb) {
     if (!origin || allowedOrigins.includes(origin)) return cb(null, true);

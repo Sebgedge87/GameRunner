@@ -1,6 +1,7 @@
 const express = require('express');
 const { getDb, getActiveCampaignId } = require('../db/database');
 const { requireAuth, requireGm } = require('../auth/authMiddleware');
+const { makeHiddenToggle } = require('../utils/routeHelpers');
 
 const router = express.Router();
 
@@ -14,14 +15,7 @@ router.get('/', requireAuth, (req, res) => {
   res.json({ events });
 });
 
-router.put('/:id/hidden', requireGm, (req, res) => {
-  const db = getDb();
-  const row = db.prepare('SELECT id, hidden FROM timeline_events WHERE id = ?').get(req.params.id);
-  if (!row) return res.status(404).json({ error: 'Not found' });
-  const newVal = row.hidden ? 0 : 1;
-  db.prepare('UPDATE timeline_events SET hidden = ? WHERE id = ?').run(newVal, req.params.id);
-  res.json({ hidden: newVal });
-});
+makeHiddenToggle(router, 'timeline_events');
 
 router.post('/', requireGm, (req, res) => {
   const { campaign_id, title, description, in_world_date, session_number, linked_type, linked_id } = req.body;
