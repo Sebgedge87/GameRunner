@@ -450,6 +450,9 @@ function runMigrations() {
 
   // Add campaign_id column to vault_files if not already present
   try { db.exec('ALTER TABLE vault_files ADD COLUMN campaign_id INTEGER REFERENCES campaigns(id)'); } catch (_) {}
+  // Add max_players and invite_code to campaigns
+  try { db.exec('ALTER TABLE campaigns ADD COLUMN max_players INTEGER DEFAULT 4'); } catch (_) {}
+  try { db.exec('ALTER TABLE campaigns ADD COLUMN invite_code TEXT'); } catch (_) {}
   // Add hidden column to vault_files if not already present
   try { db.exec('ALTER TABLE vault_files ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
   // Add hidden column to maps if not already present

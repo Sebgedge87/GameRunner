@@ -216,6 +216,57 @@ input,textarea,select{font-family:'Crimson Pro',serif;}
 .tag-neutral,.tag-medium,.tag-clue,.tag-easy{color:#a09890;border-color:#3a3830;background:#111110;}
 .tag-intrigue,.tag-text,.tag-image,.tag-location-tag{color:#4c7ac9;border-color:#2a3a60;background:#0f1520;}
 .tag-question{color:#c94c4c;border-color:#601a1a;background:#1a0f0f;}
+/* ── Home / Campaign Lobby ───────────────────────────────────────────────────── */
+.home-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:28px;}
+.home-title{font-family:'Cinzel',serif;font-size:22px;color:var(--text);letter-spacing:.06em;}
+.join-row{display:flex;gap:8px;align-items:center;}
+.camp-lobby-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;}
+.camp-lobby-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:22px;display:flex;flex-direction:column;gap:10px;transition:border-color .2s,box-shadow .2s,transform .15s;cursor:pointer;position:relative;overflow:hidden;}
+.camp-lobby-card:hover{border-color:var(--border2);box-shadow:0 6px 28px rgba(0,0,0,.4);transform:translateY(-2px);}
+.camp-lobby-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--camp-accent,var(--accent));opacity:.7;}
+.camp-lobby-card-create{border:2px dashed var(--border2);background:transparent;align-items:center;justify-content:center;min-height:160px;gap:8px;}
+.camp-lobby-card-create:hover{border-color:var(--accent);background:var(--accent-dim);}
+.camp-lobby-create-icon{font-size:36px;color:var(--text3);}
+.camp-lobby-create-label{font-family:'Cinzel',serif;font-size:14px;color:var(--text3);letter-spacing:.04em;}
+.camp-lobby-card-create:hover .camp-lobby-create-icon,.camp-lobby-card-create:hover .camp-lobby-create-label{color:var(--accent2);}
+.camp-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+.camp-card-sys{font-size:10px;font-family:'JetBrains Mono',monospace;padding:2px 7px;border-radius:3px;border:1px solid;text-transform:uppercase;letter-spacing:.04em;}
+.camp-card-role-gm{color:#c9a84c;border-color:#7a6230;background:#1a1500;font-size:10px;font-family:'JetBrains Mono',monospace;padding:2px 7px;border-radius:3px;}
+.camp-card-role-player{color:var(--text3);border-color:var(--border);background:var(--bg3);font-size:10px;font-family:'JetBrains Mono',monospace;padding:2px 7px;border-radius:3px;}
+.camp-card-name{font-family:'Cinzel',serif;font-size:17px;color:var(--text);line-height:1.3;}
+.camp-card-sub{font-size:12px;color:var(--text3);}
+.camp-card-desc{font-size:13px;color:var(--text2);line-height:1.6;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+.camp-card-footer{display:flex;align-items:center;gap:14px;margin-top:auto;padding-top:8px;border-top:1px solid var(--border);}
+.camp-card-stat{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;}
+.camp-card-enter{margin-left:auto;font-size:11px;color:var(--accent2);font-family:'JetBrains Mono',monospace;letter-spacing:.04em;}
+/* ── Campaign Create Modal ───────────────────────────────────────────────────── */
+.camp-create-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;}
+.camp-create-dialog{background:var(--surface);border:1px solid var(--border2);border-radius:8px;width:100%;max-width:820px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;}
+.camp-create-hdr{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.camp-create-hdr-title{font-family:'Cinzel',serif;font-size:18px;color:var(--text);letter-spacing:.05em;}
+.camp-create-body{display:grid;grid-template-columns:1fr 1fr;gap:0;flex:1;overflow:hidden;}
+.camp-create-left{padding:22px;overflow-y:auto;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:16px;}
+.camp-create-right{padding:22px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;}
+.camp-create-ftr{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;flex-shrink:0;}
+.sys-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.sys-tile{padding:8px;border:1px solid var(--border);border-radius:5px;cursor:pointer;text-align:center;transition:border-color .15s,background .15s;}
+.sys-tile:hover{border-color:var(--border2);}
+.sys-tile.selected{border-color:var(--accent);background:var(--accent-dim);}
+.sys-tile-name{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text2);margin-top:4px;}
+.sys-tile-icon{font-size:20px;}
+.md-toolbar{display:flex;gap:4px;margin-bottom:4px;flex-wrap:wrap;}
+.md-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:3px 8px;border-radius:3px;font-size:11px;cursor:pointer;font-family:'JetBrains Mono',monospace;}
+.md-btn:hover{border-color:var(--border2);color:var(--text);}
+.md-btn.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent2);}
+.md-editor{flex:1;min-height:200px;font-family:'JetBrains Mono',monospace;font-size:12px;resize:none;}
+.md-preview{flex:1;min-height:200px;font-size:13px;color:var(--text2);line-height:1.7;overflow-y:auto;padding:10px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;}
+.md-preview h1,.md-preview h2,.md-preview h3{font-family:'Cinzel',serif;color:var(--accent2);margin:10px 0 4px;}
+.md-preview ul{margin:6px 0 6px 18px;}
+.md-preview code{background:var(--bg);padding:1px 4px;border-radius:3px;font-size:11px;}
+.md-preview hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
+.invite-row{display:flex;gap:6px;}
+.invite-row .form-input{flex:1;font-family:'JetBrains Mono',monospace;letter-spacing:.1em;}
+@media(max-width:640px){.camp-create-body{grid-template-columns:1fr;}.camp-create-left{border-right:none;border-bottom:1px solid var(--border);}}
 /* ── Skeleton Loaders ────────────────────────────────────────────────────────── */
 .skeleton{background:linear-gradient(90deg,var(--surface) 25%,var(--surface2) 50%,var(--surface) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:4px;}
 .skel-card{height:120px;border-radius:6px;margin-bottom:14px;}
@@ -602,7 +653,7 @@ select.form-input{cursor:pointer;}
       <div class="camp-switcher-drop" id="camp-switcher-drop">
         <div id="camp-drop-list"></div>
         <div class="camp-switch-sep"></div>
-        <div class="camp-switch-new" onclick="closeCampDrop();openGmCreate('campaign')">+ New Campaign</div>
+        <div class="camp-switch-new" onclick="closeCampDrop();openCampCreate()">+ New Campaign</div>
       </div>
     </div>
     <div class="topbar-search-wrap">
@@ -637,8 +688,9 @@ select.form-input{cursor:pointer;}
       <div class="sidebar-user" id="sidebar-user"></div>
     </div>
     <div class="sidebar-nav">
+      <div class="nav-item active" data-page="home" onclick="navigate('home')"><span class="nav-icon">⌂</span>Home</div>
       <div class="nav-section">Campaign</div>
-      <div class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')"><span class="nav-icon">⚔</span>Dashboard</div>
+      <div class="nav-item" data-page="dashboard" onclick="navigate('dashboard')"><span class="nav-icon">⚔</span>Dashboard</div>
       <div class="nav-item" data-page="quests" onclick="navigate('quests')"><span class="nav-icon">📜</span>Quests</div>
       <div class="nav-item" data-page="jobs" onclick="navigate('jobs')"><span class="nav-icon">📌</span>Job Board</div>
       <div class="nav-section">World</div>
@@ -671,8 +723,20 @@ select.form-input{cursor:pointer;}
   <!-- Main Content -->
   <main id="main">
 
+    <!-- Home / Lobby -->
+    <section class="page active" id="page-home">
+      <div class="home-header">
+        <div class="home-title">Your Campaigns</div>
+        <div class="join-row">
+          <input id="join-code-input" class="form-input" style="width:150px;font-family:'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase" placeholder="INVITE CODE" maxlength="12">
+          <button class="btn btn-primary btn-sm" onclick="joinCampaign()">Join</button>
+        </div>
+      </div>
+      <div class="camp-lobby-grid" id="home-camps"></div>
+    </section>
+
     <!-- Dashboard -->
-    <section class="page active" id="page-dashboard">
+    <section class="page" id="page-dashboard">
       <div class="page-header"><div class="page-title">Dashboard</div></div>
       <div id="campaign-banner" style="display:none" class="campaign-banner"></div>
       <div id="agenda-wrap" style="margin-bottom:18px"></div>
@@ -990,6 +1054,68 @@ select.form-input{cursor:pointer;}
 <!-- ── GM FAB ─────────────────────────────────────────────────────────────────── -->
 <button class="gm-fab gm-only" id="gm-fab" onclick="openGmCreate(this.dataset.ctx)" title="Create item">+</button>
 
+<!-- ── Campaign Create Modal ──────────────────────────────────────────────────── -->
+<div id="camp-create-modal" class="camp-create-overlay" style="display:none" onclick="if(event.target===this)closeCampCreate()">
+  <div class="camp-create-dialog">
+    <div class="camp-create-hdr">
+      <div class="camp-create-hdr-title">New Campaign</div>
+      <button class="modal-close" onclick="closeCampCreate()">×</button>
+    </div>
+    <div class="camp-create-body">
+      <!-- Left column: settings -->
+      <div class="camp-create-left">
+        <div class="form-group">
+          <label>Campaign Name *</label>
+          <input id="cc-name" class="form-input" placeholder="The Shattered Crown…" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label>Subtitle</label>
+          <input id="cc-subtitle" class="form-input" placeholder="A tale of ruin and glory…">
+        </div>
+        <div class="form-group">
+          <label>Game System</label>
+          <div class="sys-grid" id="cc-sys-grid"></div>
+          <input type="hidden" id="cc-system" value="dnd5e">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="form-group" style="margin:0">
+            <label>Max Players</label>
+            <input id="cc-max-players" class="form-input" type="number" min="1" max="20" value="4" placeholder="4">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label>Invite Code</label>
+            <div class="invite-row">
+              <input id="cc-invite" class="form-input" placeholder="AUTO" maxlength="12" style="text-transform:uppercase">
+              <button class="md-btn" onclick="genInviteCode()" title="Generate">↺</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Right column: description editor -->
+      <div class="camp-create-right">
+        <label style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace">DESCRIPTION</label>
+        <div class="md-toolbar">
+          <button class="md-btn" onclick="mdInsert('**','**')" title="Bold"><b>B</b></button>
+          <button class="md-btn" onclick="mdInsert('*','*')" title="Italic"><i>I</i></button>
+          <button class="md-btn" onclick="mdInsertLine('## ')" title="Heading">H2</button>
+          <button class="md-btn" onclick="mdInsertLine('### ')" title="Sub-heading">H3</button>
+          <button class="md-btn" onclick="mdInsertLine('- ')" title="Bullet">•</button>
+          <button class="md-btn" onclick="mdInsert('`','`')" title="Inline code">&lt;/&gt;</button>
+          <button class="md-btn" onclick="mdInsertLine('---')" title="Divider">—</button>
+          <div style="flex:1"></div>
+          <button class="md-btn" id="md-preview-btn" onclick="toggleMdPreview()">Preview</button>
+        </div>
+        <textarea id="cc-desc" class="form-input md-editor" placeholder="Describe your campaign… supports **markdown**" oninput="syncMdPreview()"></textarea>
+        <div id="cc-desc-preview" class="md-preview" style="display:none"></div>
+      </div>
+    </div>
+    <div class="camp-create-ftr">
+      <button class="btn" onclick="closeCampCreate()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCampCreate()">Create Campaign</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Onboarding Wizard ──────────────────────────────────────────────────────── -->
 <div id="onboarding">
   <div class="wizard-box">
@@ -1171,7 +1297,7 @@ function showApp(){
   const u=currentUser;
   document.getElementById('sidebar-user').textContent=(u.character_name||u.username)+(u.character_class?` · ${u.character_class}`:'');
   connectSSE();
-  loadAll(); // loadCampaign() inside loadAll will set isGm and call updateGmUI()
+  loadAll().then(() => navigate('home'));
   checkOnboarding();
 }
 
@@ -1212,6 +1338,7 @@ function navigate(page){
   currentPage=page;
   if(window.innerWidth<=768)closeSidebar();
   const lazy={
+    home:loadHome,
     mindmap:()=>{if(!mindmapLoaded)renderMindmap();},
     notes:loadNotes,handouts:loadHandouts,sessions:loadSessions,
     factions:loadFactions,timeline:loadTimeline,inventory:loadInventory,
@@ -2810,6 +2937,209 @@ async function gmModalSave(){
   }else{const d=await r.json().catch(()=>({}));showToast(d.error||'Save failed','error');}
 }
 function closeGmModal(){document.getElementById('gm-modal').style.display='none';gmEditId=null;}
+
+// ── Home / Campaign Lobby ─────────────────────────────────────────────────────
+const SYSTEM_META = {
+  dnd5e: { label:'D&D 5e',     icon:'⚔', color:'#c9a84c' },
+  coc:   { label:'Cthulhu',    icon:'🐙', color:'#8b7355' },
+  alien: { label:'Alien RPG',  icon:'👾', color:'#4caf50' },
+  coriolis:{ label:'Coriolis', icon:'🌌', color:'#4a9fd4' },
+  dune:  { label:'Dune',       icon:'🏜', color:'#d4821a' },
+  achtung:{ label:'Achtung!',  icon:'☠', color:'#9e9e9e' },
+};
+
+function loadHome() {
+  const el = document.getElementById('home-camps');
+  if (!el) return;
+  el.innerHTML = renderHomeCards();
+}
+
+function renderHomeCards() {
+  const createTile = `<div class="camp-lobby-card camp-lobby-card-create" onclick="openCampCreate()">
+    <div class="camp-lobby-create-icon">+</div>
+    <div class="camp-lobby-create-label">Create a Campaign</div>
+  </div>`;
+
+  if (!allCampaigns.length) return createTile;
+
+  const cards = allCampaigns.map(c => {
+    const sys = SYSTEM_META[c.system] || SYSTEM_META.dnd5e;
+    const sysColor = sys.color;
+    const roleBadge = c.my_role === 'gm'
+      ? `<span class="camp-card-role-gm">GM</span>`
+      : `<span class="camp-card-role-player">Player</span>`;
+    const sysTag = `<span class="camp-card-sys" style="color:${sysColor};border-color:${sysColor}40;background:${sysColor}18">${sys.icon} ${sys.label}</span>`;
+    const descHtml = c.description
+      ? `<div class="camp-card-desc">${esc(c.description)}</div>`
+      : '';
+    const activeDot = c.active ? `<span style="width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block" title="Active"></span>` : '';
+    return `<div class="camp-lobby-card" style="--camp-accent:${sysColor}" onclick="switchCampaign(${c.id});navigate('dashboard')">
+      <div class="camp-card-top">${sysTag}${roleBadge}</div>
+      <div class="camp-card-name">${esc(c.name)}</div>
+      ${c.subtitle ? `<div class="camp-card-sub">${esc(c.subtitle)}</div>` : ''}
+      ${descHtml}
+      <div class="camp-card-footer">
+        ${activeDot}
+        <span class="camp-card-stat">👥 ${c.player_count||0}${c.max_players?'/'+c.max_players:''}</span>
+        ${c.session_count ? `<span class="camp-card-stat">📅 ${c.session_count} sessions</span>` : ''}
+        <span class="camp-card-enter">Enter →</span>
+      </div>
+    </div>`;
+  }).join('');
+  return cards + createTile;
+}
+
+async function joinCampaign() {
+  const input = document.getElementById('join-code-input');
+  const code = input?.value?.trim().toUpperCase();
+  if (!code) { showToast('Enter an invite code', 'error'); return; }
+  const r = await apiFetch('/api/campaigns/join', { method:'POST', body: JSON.stringify({ code }) });
+  const d = await r.json();
+  if (!r.ok) { showToast(d.error || 'Failed to join', 'error'); return; }
+  if (input) input.value = '';
+  showToast(`Joined "${d.campaign.name}"!`, 'success');
+  await loadCampaign();
+  loadHome();
+}
+
+// ── Campaign Create Modal ─────────────────────────────────────────────────────
+let ccMdPreview = false;
+
+function openCampCreate() {
+  document.getElementById('cc-name').value = '';
+  document.getElementById('cc-subtitle').value = '';
+  document.getElementById('cc-max-players').value = '4';
+  document.getElementById('cc-invite').value = '';
+  document.getElementById('cc-desc').value = '';
+  document.getElementById('cc-desc-preview').innerHTML = '';
+  ccMdPreview = false;
+  document.getElementById('cc-desc').style.display = '';
+  document.getElementById('cc-desc-preview').style.display = 'none';
+  document.getElementById('md-preview-btn').classList.remove('active');
+  buildSysGrid('dnd5e');
+  document.getElementById('camp-create-modal').style.display = 'flex';
+}
+
+function closeCampCreate() {
+  document.getElementById('camp-create-modal').style.display = 'none';
+}
+
+function buildSysGrid(selected) {
+  const grid = document.getElementById('cc-sys-grid');
+  if (!grid) return;
+  grid.innerHTML = Object.entries(SYSTEM_META).map(([k, v]) =>
+    `<div class="sys-tile${k === selected ? ' selected' : ''}" onclick="selectSys('${k}')">
+      <div class="sys-tile-icon">${v.icon}</div>
+      <div class="sys-tile-name">${v.label}</div>
+    </div>`
+  ).join('');
+  document.getElementById('cc-system').value = selected;
+}
+
+function selectSys(key) {
+  document.getElementById('cc-system').value = key;
+  document.querySelectorAll('.sys-tile').forEach(t => t.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+}
+
+function genInviteCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  document.getElementById('cc-invite').value = code;
+}
+
+// Minimal markdown renderer for description preview
+function renderMd(raw) {
+  if (!raw) return '';
+  let t = raw
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+  t = t.replace(/^### (.+)$/gm,'<h3>$1</h3>');
+  t = t.replace(/^## (.+)$/gm,'<h2>$1</h2>');
+  t = t.replace(/^# (.+)$/gm,'<h1>$1</h1>');
+  t = t.replace(/^---$/gm,'<hr>');
+  t = t.replace(/\*\*\*(.+?)\*\*\*/g,'<strong><em>$1</em></strong>');
+  t = t.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  t = t.replace(/\*(.+?)\*/g,'<em>$1</em>');
+  t = t.replace(/`([^`]+)`/g,'<code>$1</code>');
+  t = t.replace(/^[-*] (.+)$/gm,'<li>$1</li>');
+  // Wrap consecutive <li> in <ul>
+  t = t.replace(/(<li>.*?<\/li>\n?)+/gs, m => `<ul>${m}</ul>`);
+  // Paragraphs
+  const parts = t.split(/\n{2,}/);
+  return parts.map(p => {
+    if (/^<(h[123]|ul|hr|blockquote)/.test(p.trim())) return p;
+    return `<p>${p.replace(/\n/g,'<br>')}</p>`;
+  }).join('');
+}
+
+function syncMdPreview() {
+  if (!ccMdPreview) return;
+  const raw = document.getElementById('cc-desc').value;
+  document.getElementById('cc-desc-preview').innerHTML = renderMd(raw);
+}
+
+function toggleMdPreview() {
+  ccMdPreview = !ccMdPreview;
+  const ta = document.getElementById('cc-desc');
+  const pv = document.getElementById('cc-desc-preview');
+  const btn = document.getElementById('md-preview-btn');
+  if (ccMdPreview) {
+    pv.innerHTML = renderMd(ta.value);
+    ta.style.display = 'none';
+    pv.style.display = '';
+    btn.classList.add('active');
+  } else {
+    ta.style.display = '';
+    pv.style.display = 'none';
+    btn.classList.remove('active');
+  }
+}
+
+function mdInsert(before, after) {
+  const ta = document.getElementById('cc-desc');
+  if (!ta) return;
+  const s = ta.selectionStart, e = ta.selectionEnd;
+  const sel = ta.value.slice(s, e) || 'text';
+  ta.value = ta.value.slice(0,s) + before + sel + after + ta.value.slice(e);
+  ta.focus();
+  ta.selectionStart = s + before.length;
+  ta.selectionEnd = s + before.length + sel.length;
+  syncMdPreview();
+}
+
+function mdInsertLine(prefix) {
+  const ta = document.getElementById('cc-desc');
+  if (!ta) return;
+  const s = ta.selectionStart;
+  const lineStart = ta.value.lastIndexOf('\n', s - 1) + 1;
+  ta.value = ta.value.slice(0, lineStart) + prefix + ta.value.slice(lineStart);
+  ta.focus();
+  ta.selectionStart = ta.selectionEnd = lineStart + prefix.length;
+  syncMdPreview();
+}
+
+async function saveCampCreate() {
+  const name = document.getElementById('cc-name').value.trim();
+  if (!name) { showToast('Campaign name is required', 'error'); return; }
+  const body = {
+    name,
+    subtitle: document.getElementById('cc-subtitle').value.trim() || null,
+    system: document.getElementById('cc-system').value || 'dnd5e',
+    max_players: parseInt(document.getElementById('cc-max-players').value) || 4,
+    invite_code: document.getElementById('cc-invite').value.trim().toUpperCase() || null,
+    description: document.getElementById('cc-desc').value.trim() || null,
+  };
+  const r = await apiFetch('/api/campaigns', { method:'POST', body: JSON.stringify(body) });
+  const d = await r.json();
+  if (!r.ok) { showToast(d.error || 'Failed to create', 'error'); return; }
+  closeCampCreate();
+  showToast(`Campaign "${d.campaign.name}" created!`, 'success');
+  await loadCampaign();
+  loadHome();
+  await switchCampaign(d.campaign.id);
+}
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 restoreSession();

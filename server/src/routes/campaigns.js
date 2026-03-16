@@ -1,13 +1,17 @@
 const express = require('express');
+const crypto = require('crypto');
 const { getDb } = require('../db/database');
 const { requireAuth, requireGm } = require('../auth/authMiddleware');
 
 const router = express.Router();
 
-// GET /api/campaigns — list campaigns the current user is a member of (plus any with no members yet)
+function playerCount(db, campaignId) {
+  return db.prepare("SELECT COUNT(*) as n FROM campaign_members WHERE campaign_id=?").get(campaignId)?.n || 0;
+}
+
+// GET /api/campaigns — campaigns the current user is a member of, with role + player count
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
-  // Return all campaigns the user belongs to, with their role in each
   const campaigns = db.prepare(`
     SELECT c.*, COALESCE(cm.role, 'player') AS my_role
     FROM campaigns c
@@ -15,41 +19,81 @@ router.get('/', requireAuth, (req, res) => {
     WHERE cm.user_id = ? OR NOT EXISTS (SELECT 1 FROM campaign_members WHERE campaign_id = c.id)
     ORDER BY c.active DESC, c.created_at DESC
   `).all(req.user.id, req.user.id);
-  res.json({ campaigns });
+
+  const result = campaigns.map(c => ({
+    ...c,
+    player_count: playerCount(db, c.id)
+  }));
+  res.json({ campaigns: result });
 });
 
-// GET /api/campaigns/active — get active campaign (must be defined before /:id routes)
+// GET /api/campaigns/active
 router.get('/active', requireAuth, (req, res) => {
   const db = getDb();
   const campaign = db.prepare('SELECT * FROM campaigns WHERE active = 1 LIMIT 1').get();
   res.json({ campaign: campaign || null });
 });
 
-// POST /api/campaigns — any authenticated user can create a campaign; they become its GM
-router.post('/', requireAuth, (req, res) => {
-  const { name, system = 'dnd5e', subtitle, description, theme } = req.body;
-  if (!name) return res.status(400).json({ error: 'name is required' });
+// POST /api/campaigns/join — redeem an invite code
+router.post('/join', requireAuth, (req, res) => {
+  const { code } = req.body;
+  if (!code) return res.status(400).json({ error: 'code is required' });
   const db = getDb();
+  const campaign = db.prepare('SELECT * FROM campaigns WHERE invite_code = ?').get(code.trim().toUpperCase());
+  if (!campaign) return res.status(404).json({ error: 'Invalid invite code' });
+
+  // Check existing membership
+  const existing = db.prepare('SELECT role FROM campaign_members WHERE campaign_id=? AND user_id=?').get(campaign.id, req.user.id);
+  if (existing) return res.status(409).json({ error: 'You are already in this campaign', campaign });
+
+  // Check capacity
+  const count = playerCount(db, campaign.id);
+  if (campaign.max_players && count >= campaign.max_players) {
+    return res.status(403).json({ error: 'Campaign is full' });
+  }
+
+  db.prepare('INSERT OR IGNORE INTO campaign_members (campaign_id, user_id, role) VALUES (?,?,?)').run(campaign.id, req.user.id, 'player');
+  res.json({ campaign, joined: true });
+});
+
+// POST /api/campaigns — any authenticated user can create; becomes GM
+router.post('/', requireAuth, (req, res) => {
+  const { name, system = 'dnd5e', subtitle, description, theme, max_players, invite_code } = req.body;
+  if (!name) return res.status(400).json({ error: 'name is required' });
+
+  // Auto-generate invite code if not provided
+  const code = invite_code
+    ? invite_code.trim().toUpperCase()
+    : crypto.randomBytes(3).toString('hex').toUpperCase();
+
+  const db = getDb();
+  // Ensure uniqueness
+  const taken = db.prepare('SELECT id FROM campaigns WHERE invite_code = ?').get(code);
+  if (taken) return res.status(409).json({ error: 'Invite code already in use, choose another' });
+
   const result = db.prepare(`
-    INSERT INTO campaigns (name, system, subtitle, description, theme, active)
-    VALUES (?, ?, ?, ?, ?, 0)
-  `).run(name, system, subtitle || null, description || null, theme || system);
+    INSERT INTO campaigns (name, system, subtitle, description, theme, max_players, invite_code, active)
+    VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+  `).run(name, system, subtitle || null, description || null, theme || system,
+         max_players ? parseInt(max_players) : 4, code);
+
   const campaignId = result.lastInsertRowid;
-  // Add all existing users as players, creator as gm
+  // Add all existing users as players; creator as gm
   const allUsers = db.prepare('SELECT id FROM users').all();
   const ins = db.prepare('INSERT OR IGNORE INTO campaign_members (campaign_id, user_id, role) VALUES (?,?,?)');
-  for (const u of allUsers) {
-    ins.run(campaignId, u.id, u.id === req.user.id ? 'gm' : 'player');
-  }
+  for (const u of allUsers) ins.run(campaignId, u.id, u.id === req.user.id ? 'gm' : 'player');
+
   const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(campaignId);
   res.status(201).json({ campaign });
 });
 
-// PUT /api/campaigns/:id — campaign GM updates campaign details
+// PUT /api/campaigns/:id — campaign GM updates details
 router.put('/:id', requireGm, (req, res) => {
   const db = getDb();
-  const { name, system, subtitle, description, theme, current_scene, current_weather, current_time, music_url: rawMusicUrl, music_label, session_count } = req.body;
+  const { name, system, subtitle, description, theme, current_scene, current_weather, current_time,
+          music_url: rawMusicUrl, music_label, session_count, max_players, invite_code } = req.body;
   const music_url = rawMusicUrl == null ? null : (/^https?:\/\//i.test(rawMusicUrl) ? rawMusicUrl : null);
+  const code = invite_code != null ? invite_code.trim().toUpperCase() || null : undefined;
   db.prepare(`
     UPDATE campaigns SET
       name = COALESCE(?, name),
@@ -63,14 +107,18 @@ router.put('/:id', requireGm, (req, res) => {
       music_url = COALESCE(?, music_url),
       music_label = COALESCE(?, music_label),
       session_count = COALESCE(?, session_count),
+      max_players = COALESCE(?, max_players),
+      invite_code = COALESCE(?, invite_code),
       updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
-  `).run(name, system, subtitle, description, theme, current_scene, current_weather, current_time, music_url, music_label, session_count, req.params.id);
+  `).run(name, system, subtitle, description, theme, current_scene, current_weather, current_time,
+         music_url, music_label, session_count, max_players ? parseInt(max_players) : null,
+         code, req.params.id);
   const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(req.params.id);
   res.json({ campaign });
 });
 
-// PUT /api/campaigns/:id/activate — campaign GM switches active campaign
+// PUT /api/campaigns/:id/activate
 router.put('/:id/activate', requireGm, (req, res) => {
   const db = getDb();
   db.prepare('UPDATE campaigns SET active = 0').run();
@@ -79,7 +127,7 @@ router.put('/:id/activate', requireGm, (req, res) => {
   res.json({ campaign });
 });
 
-// GET /api/campaigns/:id/members — list members (campaign GM only)
+// GET /api/campaigns/:id/members
 router.get('/:id/members', requireGm, (req, res) => {
   const db = getDb();
   const members = db.prepare(`
@@ -92,7 +140,7 @@ router.get('/:id/members', requireGm, (req, res) => {
   res.json({ members });
 });
 
-// POST /api/campaigns/:id/members — GM adds a player to the campaign
+// POST /api/campaigns/:id/members — GM adds a member
 router.post('/:id/members', requireGm, (req, res) => {
   const { user_id, role = 'player' } = req.body;
   if (!user_id) return res.status(400).json({ error: 'user_id is required' });
@@ -103,7 +151,7 @@ router.post('/:id/members', requireGm, (req, res) => {
   res.json({ success: true });
 });
 
-// DELETE /api/campaigns/:id/members/:userId — GM removes a player
+// DELETE /api/campaigns/:id/members/:userId
 router.delete('/:id/members/:userId', requireGm, (req, res) => {
   const db = getDb();
   db.prepare('DELETE FROM campaign_members WHERE campaign_id=? AND user_id=?').run(req.params.id, req.params.userId);
