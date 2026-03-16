@@ -11,7 +11,7 @@ function tryParse(str) {
 // GET /api/character-sheets — players see their own; GM sees all
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
-  const sheets = req.user.role === 'gm'
+  const sheets = req.user.isGm
     ? db.prepare(`
         SELECT cs.*, u.username, u.character_name
         FROM character_sheets cs
@@ -57,7 +57,7 @@ router.put('/ships/:id', requireAuth, (req, res) => {
 
 // GET /api/character-sheets/:userId
 router.get('/:userId', requireAuth, (req, res) => {
-  if (req.user.role !== 'gm' && req.user.id !== Number(req.params.userId)) {
+  if (!req.user.isGm && req.user.id !== Number(req.params.userId)) {
     return res.status(403).json({ error: 'Not authorised' });
   }
   const db = getDb();
@@ -73,7 +73,7 @@ router.get('/:userId', requireAuth, (req, res) => {
 
 // PUT /api/character-sheets/:userId — upsert sheet
 router.put('/:userId', requireAuth, (req, res) => {
-  if (req.user.role !== 'gm' && req.user.id !== Number(req.params.userId)) {
+  if (!req.user.isGm && req.user.id !== Number(req.params.userId)) {
     return res.status(403).json({ error: 'Not authorised' });
   }
   const { campaign_id, system = 'dnd5e', sheet_data = {}, dnd_beyond_url } = req.body;

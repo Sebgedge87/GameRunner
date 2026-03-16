@@ -14,7 +14,7 @@ router.get('/', requireAuth, (req, res) => {
 
 // GET /api/theory/shared — GM sees all nodes shared with GM
 router.get('/shared', requireAuth, (req, res) => {
-  if (req.user.role !== 'gm') return res.status(403).json({ error: 'GM only' });
+  if (!req.user.isGm) return res.status(403).json({ error: 'GM only' });
   const db = getDb();
   const nodes = db.prepare(`
     SELECT tn.*, u.username, u.character_name

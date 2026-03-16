@@ -23,7 +23,7 @@ router.get('/', requireAuth, (req, res) => {
 
   // Re-apply strict filter: never leak private notes to wrong users
   const safe = notes.filter((note) => {
-    if (req.user.role === 'gm') {
+    if (req.user.isGm) {
       return note.privacy === 'public' || note.shared_with_gm === 1;
     }
     return note.player_id === req.user.id || note.privacy === 'public';
@@ -65,7 +65,7 @@ router.put('/:id', requireAuth, (req, res) => {
   const db = getDb();
   const note = db.prepare('SELECT * FROM notes WHERE id = ?').get(req.params.id);
   if (!note) return res.status(404).json({ error: 'Note not found' });
-  if (note.player_id !== req.user.id && req.user.role !== 'gm') {
+  if (note.player_id !== req.user.id && !req.user.isGm) {
     return res.status(403).json({ error: 'Forbidden' });
   }
 
@@ -98,7 +98,7 @@ router.delete('/:id', requireAuth, (req, res) => {
   const db = getDb();
   const note = db.prepare('SELECT * FROM notes WHERE id = ?').get(req.params.id);
   if (!note) return res.status(404).json({ error: 'Note not found' });
-  if (note.player_id !== req.user.id && req.user.role !== 'gm') {
+  if (note.player_id !== req.user.id && !req.user.isGm) {
     return res.status(403).json({ error: 'Forbidden' });
   }
 

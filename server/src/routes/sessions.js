@@ -1,5 +1,5 @@
 const express = require('express');
-const { getDb, getActiveCampaignId } = require('../db/database');
+const { getDb, getCampaignId } = require('../db/database');
 const { requireAuth, requireGm } = require('../auth/authMiddleware');
 
 const router = express.Router();
@@ -7,12 +7,12 @@ const router = express.Router();
 // GET /api/sessions
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
-  const campId = getActiveCampaignId();
+  const campId = getCampaignId(req);
   const sessions = campId
     ? db.prepare('SELECT * FROM sessions WHERE (campaign_id = ? OR campaign_id IS NULL) ORDER BY number DESC').all(campId)
     : db.prepare('SELECT * FROM sessions ORDER BY number DESC').all();
   const withNotes = sessions.map(s => {
-    const notes = req.user.role === 'gm'
+    const notes = req.user.isGm
       ? db.prepare('SELECT sn.*, u.character_name FROM session_notes sn LEFT JOIN users u ON sn.player_id = u.id WHERE sn.session_id = ?').all(s.id)
       : db.prepare("SELECT sn.*, u.character_name FROM session_notes sn LEFT JOIN users u ON sn.player_id = u.id WHERE sn.session_id = ? AND (sn.player_id = ? OR sn.privacy = 'public')").all(s.id, req.user.id);
     return { ...s, notes };
@@ -56,7 +56,7 @@ router.get('/polls', requireAuth, (req, res) => {
       options: JSON.parse(p.options),
       vote_count: votes.length,
       my_vote: myVote ? myVote.option_index : null,
-      votes: req.user.role === 'gm' || p.results_public ? votes : null,
+      votes: req.user.isGm || p.results_public ? votes : null,
     };
   });
   res.json({ polls: result });
@@ -130,7 +130,7 @@ router.put('/:sessionId/notes/:noteId', requireAuth, (req, res) => {
   const db = getDb();
   const note = db.prepare('SELECT * FROM session_notes WHERE id = ?').get(req.params.noteId);
   if (!note) return res.status(404).json({ error: 'Not found' });
-  if (note.player_id !== req.user.id && req.user.role !== 'gm') return res.status(403).json({ error: 'Not authorised' });
+  if (note.player_id !== req.user.id && !req.user.isGm) return res.status(403).json({ error: 'Not authorised' });
   const { body, privacy } = req.body;
   db.prepare('UPDATE session_notes SET body = COALESCE(?, body), privacy = COALESCE(?, privacy) WHERE id = ?')
     .run(body || null, privacy || null, req.params.noteId);
@@ -143,7 +143,7 @@ router.delete('/:sessionId/notes/:noteId', requireAuth, (req, res) => {
   const db = getDb();
   const note = db.prepare('SELECT * FROM session_notes WHERE id = ?').get(req.params.noteId);
   if (!note) return res.status(404).json({ error: 'Not found' });
-  if (note.player_id !== req.user.id && req.user.role !== 'gm') return res.status(403).json({ error: 'Not authorised' });
+  if (note.player_id !== req.user.id && !req.user.isGm) return res.status(403).json({ error: 'Not authorised' });
   db.prepare('DELETE FROM session_notes WHERE id = ?').run(req.params.noteId);
   res.json({ success: true });
 });

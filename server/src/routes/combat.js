@@ -78,7 +78,7 @@ router.put('/:id/combatants/:cid', requireAuth, (req, res) => {
   if (!combatant) return res.status(404).json({ error: 'Not found' });
 
   // Players can only update their own combatant's HP/conditions
-  if (req.user.role !== 'gm' && combatant.user_id !== req.user.id) {
+  if (!req.user.isGm && combatant.user_id !== req.user.id) {
     return res.status(403).json({ error: 'Not authorised' });
   }
 

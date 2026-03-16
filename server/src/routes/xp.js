@@ -1,5 +1,5 @@
 const express = require('express');
-const { getDb, getActiveCampaignId } = require('../db/database');
+const { getDb, getCampaignId } = require('../db/database');
 const { requireAuth, requireGm } = require('../auth/authMiddleware');
 const { createNotification } = require('../services/notifications');
 
@@ -20,7 +20,7 @@ function levelFor(xp) {
 // GET /api/xp — totals per player (+ award history for GM)
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
-  const campId = getActiveCampaignId();
+  const campId = getCampaignId(req);
   const campClause = campId ? 'AND (xa.campaign_id = ? OR xa.campaign_id IS NULL)' : '';
   const params = campId ? [campId] : [];
 
@@ -42,7 +42,7 @@ router.get('/', requireAuth, (req, res) => {
 
   res.json({
     totals: Object.values(totals),
-    awards: req.user.role === 'gm' ? awards : awards.filter(a => a.awarded_to === req.user.id),
+    awards: req.user.isGm ? awards : awards.filter(a => a.awarded_to === req.user.id),
   });
 });
 
@@ -53,7 +53,7 @@ router.post('/', requireGm, (req, res) => {
   const ids = Array.isArray(user_ids) ? user_ids : [user_ids];
   if (!ids.length || !Number.isInteger(Number(amount))) return res.status(400).json({ error: 'Invalid input' });
   const db = getDb();
-  const campId = getActiveCampaignId();
+  const campId = getCampaignId(req);
 
   const insert = db.prepare('INSERT INTO xp_awards (campaign_id, awarded_to, amount, reason, awarded_by) VALUES (?, ?, ?, ?, ?)');
   const awards = [];

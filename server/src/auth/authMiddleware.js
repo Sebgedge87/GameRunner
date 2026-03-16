@@ -22,13 +22,30 @@ function requireAuth(req, res, next) {
 
   if (!user) return res.status(401).json({ error: 'User not found' });
 
+  // Determine per-campaign GM status from X-Campaign-Id header.
+  // Global role='gm' always wins; otherwise check campaign_members.
+  if (user.role === 'gm') {
+    user.isGm = true;
+  } else {
+    const campaignId = req.headers['x-campaign-id'];
+    if (campaignId) {
+      const parsed = parseInt(campaignId, 10);
+      const member = !isNaN(parsed)
+        ? getDb().prepare('SELECT role FROM campaign_members WHERE campaign_id=? AND user_id=?').get(parsed, user.id)
+        : null;
+      user.isGm = member?.role === 'gm';
+    } else {
+      user.isGm = false;
+    }
+  }
+
   req.user = user;
   next();
 }
 
 function requireGm(req, res, next) {
   requireAuth(req, res, () => {
-    if (req.user.role !== 'gm') {
+    if (!req.user.isGm) {
       return res.status(403).json({ error: 'GM access required' });
     }
     next();

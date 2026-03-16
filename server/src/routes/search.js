@@ -12,7 +12,7 @@ router.get('/', requireAuth, (req, res) => {
   const like = `%${q}%`;
   const results = [];
 
-  const visClause = req.user.role === 'gm' ? '' : 'AND (hidden IS NULL OR hidden = 0)';
+  const visClause = req.user.isGm ? '' : 'AND (hidden IS NULL OR hidden = 0)';
   const quests = db.prepare(`SELECT id, title, json_extract(frontmatter,'$.status') as subtitle, 'quest' as type FROM vault_files WHERE type='quest' ${visClause} AND title LIKE ? LIMIT 5`).all(like);
   const npcs = db.prepare(`SELECT id, title, json_extract(frontmatter,'$.role') as subtitle, 'npc' as type FROM vault_files WHERE type='npc' ${visClause} AND title LIKE ? LIMIT 5`).all(like);
   const locations = db.prepare(`SELECT id, title, json_extract(frontmatter,'$.status') as subtitle, 'location' as type FROM vault_files WHERE type='location' ${visClause} AND title LIKE ? LIMIT 5`).all(like);
@@ -22,7 +22,7 @@ router.get('/', requireAuth, (req, res) => {
   const factions = db.prepare("SELECT id, name as title, '' as subtitle, 'faction' as type FROM factions WHERE name LIKE ? LIMIT 5").all(like);
 
   let notes = [];
-  if (req.user.role === 'gm') {
+  if (req.user.isGm) {
     notes = db.prepare("SELECT id, title, category as subtitle, 'note' as type FROM notes WHERE title LIKE ? LIMIT 5").all(like);
   } else {
     notes = db.prepare("SELECT id, title, category as subtitle, 'note' as type FROM notes WHERE (user_id = ? OR privacy = 'public') AND title LIKE ? LIMIT 5").all(req.user.id, like);

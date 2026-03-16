@@ -23,7 +23,7 @@ router.get('/', requireAuth, (req, res) => {
 
   // Strip secret flag body from players if they are not the recipient
   const filtered = rows.map(m => {
-    if (m.is_secret && req.user.role !== 'gm' && m.to_user_id !== req.user.id) {
+    if (m.is_secret && !req.user.isGm && m.to_user_id !== req.user.id) {
       return { ...m, body: '[secret]' };
     }
     return m;
@@ -37,7 +37,7 @@ router.post('/', requireAuth, (req, res) => {
   if (!subject || !body) return res.status(400).json({ error: 'subject and body are required' });
 
   // Players cannot send secret messages
-  if (is_secret && req.user.role !== 'gm') {
+  if (is_secret && !req.user.isGm) {
     return res.status(403).json({ error: 'Only the GM can send secret messages' });
   }
 
@@ -72,7 +72,7 @@ router.put('/:id/read', requireAuth, (req, res) => {
   const db = getDb();
   const msg = db.prepare('SELECT * FROM messages WHERE id = ?').get(req.params.id);
   if (!msg) return res.status(404).json({ error: 'Message not found' });
-  if (msg.to_user_id !== null && msg.to_user_id !== req.user.id && req.user.role !== 'gm') {
+  if (msg.to_user_id !== null && msg.to_user_id !== req.user.id && !req.user.isGm) {
     return res.status(403).json({ error: 'Forbidden' });
   }
   db.prepare('UPDATE messages SET read_at = CURRENT_TIMESTAMP WHERE id = ?').run(msg.id);
@@ -84,7 +84,7 @@ router.put('/:id/ack', requireAuth, (req, res) => {
   const db = getDb();
   const msg = db.prepare('SELECT * FROM messages WHERE id = ?').get(req.params.id);
   if (!msg) return res.status(404).json({ error: 'Message not found' });
-  if (msg.to_user_id !== req.user.id && req.user.role !== 'gm') {
+  if (msg.to_user_id !== req.user.id && !req.user.isGm) {
     return res.status(403).json({ error: 'Forbidden' });
   }
   db.prepare('UPDATE messages SET acked_at = CURRENT_TIMESTAMP, read_at = COALESCE(read_at, CURRENT_TIMESTAMP) WHERE id = ?').run(msg.id);

@@ -1,5 +1,5 @@
 const express = require('express');
-const { getDb, getActiveCampaignId } = require('../db/database');
+const { getDb, getCampaignId } = require('../db/database');
 const { requireAuth, requireGm } = require('../auth/authMiddleware');
 
 const router = express.Router();
@@ -7,9 +7,9 @@ const router = express.Router();
 // GET /api/bestiary — players see only revealed; GM sees all
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
-  const campId = getActiveCampaignId();
+  const campId = getCampaignId(req);
   const campClause = campId ? 'AND (campaign_id = ? OR campaign_id IS NULL)' : '';
-  const rows = req.user.role === 'gm'
+  const rows = req.user.isGm
     ? (campId ? db.prepare(`SELECT * FROM bestiary WHERE 1=1 ${campClause} ORDER BY name`).all(campId) : db.prepare('SELECT * FROM bestiary ORDER BY name').all())
     : (campId ? db.prepare(`SELECT * FROM bestiary WHERE revealed = 1 ${campClause} ORDER BY name`).all(campId) : db.prepare('SELECT * FROM bestiary WHERE revealed = 1 ORDER BY name').all());
   const parsed = rows.map(r => ({ ...r, stats: tryParse(r.stats) }));

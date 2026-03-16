@@ -1,5 +1,5 @@
 const express = require('express');
-const { getDb, getActiveCampaignId } = require('../db/database');
+const { getDb, getCampaignId } = require('../db/database');
 const { requireAuth, requireGm } = require('../auth/authMiddleware');
 
 const router = express.Router();
@@ -7,9 +7,9 @@ const router = express.Router();
 // GET /api/rumours — return rumours the current user has been exposed to
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
-  const campId = getActiveCampaignId();
+  const campId = getCampaignId(req);
   const campClause = campId ? 'AND (r.campaign_id = ? OR r.campaign_id IS NULL)' : '';
-  if (req.user.role === 'gm') {
+  if (req.user.isGm) {
     const rumours = campId
       ? db.prepare(`SELECT * FROM rumours r WHERE 1=1 ${campClause} ORDER BY created_at DESC`).all(campId)
       : db.prepare('SELECT * FROM rumours ORDER BY created_at DESC').all();
