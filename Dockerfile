@@ -18,9 +18,12 @@ ENV NODE_ENV=production \
     DB_PATH=/data/chronicle.db \
     VAULT_PATH=/data/vault
 
+COPY start.sh ./start.sh
+RUN chmod +x ./start.sh
+
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
   CMD wget -qO- http://localhost:3000/api/health || exit 1
 
-CMD ["node", "--experimental-sqlite", "server/src/index.js"]
+CMD ["sh", "/app/start.sh"]

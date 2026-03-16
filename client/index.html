@@ -136,6 +136,8 @@ input,textarea,select{font-family:'Crimson Pro',serif;}
 .login-btn:hover{background:color-mix(in srgb,var(--accent-dim) 80%,white);}
 .login-btn:active{transform:scale(0.99);}
 .login-error{color:var(--red);font-size:13px;margin-top:10px;text-align:center;min-height:18px;}
+.login-toggle{text-align:center;margin-top:14px;font-size:12px;color:var(--text3);}
+.login-toggle a{color:var(--accent);cursor:pointer;text-decoration:underline;}
 /* ── App Shell ──────────────────────────────────────────────────────────────── */
 #app{display:none;height:100vh;flex-direction:row;overflow:hidden;}
 /* ── Topbar ─────────────────────────────────────────────────────────────────── */
@@ -554,14 +556,38 @@ select.form-input{cursor:pointer;}
   <div class="login-box">
     <div class="login-title">THE CHRONICLE</div>
     <div class="login-sub">Campaign Portal · v3</div>
-    <div class="login-field"><label>Username</label>
-      <input type="text" id="login-user" autocomplete="username" placeholder="aerindel"/>
+
+    <!-- Login form -->
+    <div id="login-form-wrap">
+      <div class="login-field"><label>Username</label>
+        <input type="text" id="login-user" autocomplete="username" placeholder="aerindel"/>
+      </div>
+      <div class="login-field"><label>Password</label>
+        <input type="password" id="login-pass" autocomplete="current-password" placeholder="••••••••"/>
+      </div>
+      <button class="login-btn" onclick="doLogin()">ENTER THE CHRONICLE</button>
+      <div class="login-error" id="login-error"></div>
+      <div class="login-toggle">No account? <a onclick="showRegisterForm()">Register here</a></div>
     </div>
-    <div class="login-field"><label>Password</label>
-      <input type="password" id="login-pass" autocomplete="current-password" placeholder="••••••••"/>
+
+    <!-- Register form -->
+    <div id="register-form-wrap" style="display:none;">
+      <div class="login-field"><label>Username</label>
+        <input type="text" id="reg-user" autocomplete="username" placeholder="your_name"/>
+      </div>
+      <div class="login-field"><label>Password</label>
+        <input type="password" id="reg-pass" autocomplete="new-password" placeholder="••••••••"/>
+      </div>
+      <div class="login-field"><label>Character Name <span style="color:var(--text3)">(optional)</span></label>
+        <input type="text" id="reg-char-name" placeholder="Aerindel"/>
+      </div>
+      <div class="login-field"><label>Character Class <span style="color:var(--text3)">(optional)</span></label>
+        <input type="text" id="reg-char-class" placeholder="Ranger"/>
+      </div>
+      <button class="login-btn" onclick="doRegister()">JOIN THE CHRONICLE</button>
+      <div class="login-error" id="reg-error"></div>
+      <div class="login-toggle">Already have an account? <a onclick="showLoginForm()">Sign in</a></div>
     </div>
-    <button class="login-btn" onclick="doLogin()">ENTER THE CHRONICLE</button>
-    <div class="login-error" id="login-error"></div>
   </div>
 </div>
 
@@ -1060,6 +1086,34 @@ function toggleAudio(){
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
+function showRegisterForm(){
+  document.getElementById('login-form-wrap').style.display='none';
+  document.getElementById('register-form-wrap').style.display='block';
+  document.getElementById('reg-error').textContent='';
+}
+function showLoginForm(){
+  document.getElementById('register-form-wrap').style.display='none';
+  document.getElementById('login-form-wrap').style.display='block';
+  document.getElementById('login-error').textContent='';
+}
+async function doRegister(){
+  const username=document.getElementById('reg-user').value.trim();
+  const password=document.getElementById('reg-pass').value;
+  const character_name=document.getElementById('reg-char-name').value.trim()||undefined;
+  const character_class=document.getElementById('reg-char-class').value.trim()||undefined;
+  const errEl=document.getElementById('reg-error');
+  errEl.textContent='';
+  if(!username||!password){errEl.textContent='Username and password are required.';return;}
+  try{
+    const r=await fetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password,character_name,character_class})});
+    const data=await r.json();
+    if(!r.ok){errEl.textContent=data.error||'Registration failed.';return;}
+    token=data.token;currentUser=data.user;
+    localStorage.setItem('chronicle_token',token);
+    showApp();
+  }catch{errEl.textContent='Cannot reach server.';}
+}
+document.getElementById('reg-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doRegister();});
 async function doLogin(){
   const username=document.getElementById('login-user').value.trim();
   const password=document.getElementById('login-pass').value;
