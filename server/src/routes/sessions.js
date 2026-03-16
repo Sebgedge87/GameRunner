@@ -63,11 +63,12 @@ router.get('/polls', requireAuth, (req, res) => {
 });
 
 router.post('/polls', requireGm, (req, res) => {
-  const { campaign_id, question, options } = req.body;
+  const { question, options, results_public = false } = req.body;
   if (!question || !Array.isArray(options)) return res.status(400).json({ error: 'question and options[] required' });
+  const campId = getCampaignId(req);
   const db = getDb();
-  const result = db.prepare('INSERT INTO session_polls (campaign_id, question, options, created_by) VALUES (?, ?, ?, ?)')
-    .run(campaign_id || null, question, JSON.stringify(options), req.user.id);
+  const result = db.prepare('INSERT INTO session_polls (campaign_id, question, options, results_public, created_by) VALUES (?, ?, ?, ?, ?)')
+    .run(campId, question, JSON.stringify(options), results_public ? 1 : 0, req.user.id);
   const poll = db.prepare('SELECT * FROM session_polls WHERE id = ?').get(result.lastInsertRowid);
   res.status(201).json({ poll: { ...poll, options: JSON.parse(poll.options) } });
 });
