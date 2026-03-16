@@ -1455,6 +1455,7 @@ function connectSSE(){
       if(d.type==='combat_end'){if(currentPage==='combat')loadCombat();}
       if(d.type==='agenda_revealed'){loadAgenda();showToast('Secret Objective','Your agenda has been updated','🎯');}
       if(d.type==='message_acked'){loadMessages();}
+      if(d.type==='new_message'){loadMessages();showToast(`📬 ${d.from||'Someone'}: ${d.subject||'New message'}`,'info');}
     }catch{}
   };
   sseSource.onerror=()=>{sseSource.close();sseSource=null;sseReconnectTimer=setTimeout(connectSSE,10000);};
@@ -1544,6 +1545,7 @@ async function switchCampaign(id){
   activeCampaign=campaign||null;
   isGm=campaign?.my_role==='gm';
   updateGmUI();
+  if(campaign?.system)applyTheme(campaign.system);
   showToast('Campaign switched','success');
   renderCampaignBanner();
   renderCampSwitcher();
@@ -2563,7 +2565,11 @@ function showMindmapFlyout(d,colorMap){
   if(!flyout)return;
   const color=(colorMap||{})[d.type]||'#888';
   const pageMap={quest:'quests',npc:'npcs',location:'locations',hook:'hooks'};
-  const desc=d.description?`<div style="font-size:12px;color:var(--text2);line-height:1.5;margin-top:6px">${esc(d.description.slice(0,180))}${d.description.length>180?'…':''}</div>`:'';
+  // Try to find the item in the loaded data stores for a richer preview
+  const storeMap={quest:()=>questData,npc:()=>npcData,location:()=>locationData,hook:()=>hookData};
+  const store=storeMap[d.type]?.();
+  const item=store?.find(x=>(x.title||x.name||'').toLowerCase()===d.label.toLowerCase());
+  const desc=(item?.description||d.description||'').slice(0,200);
   flyout.innerHTML=`
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
       <span style="width:9px;height:9px;border-radius:50%;background:${color};flex-shrink:0;display:inline-block"></span>
@@ -2571,9 +2577,11 @@ function showMindmapFlyout(d,colorMap){
       <button onclick="closeMindmapFlyout()" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1;padding:0">×</button>
     </div>
     <div style="font-family:'Cinzel',serif;font-size:14px;color:var(--text);margin-bottom:4px">${esc(d.label)}</div>
-    ${desc}
-    <div style="margin-top:10px">
-      <button class="btn btn-sm" onclick="navigate('${pageMap[d.type]||d.type+'s'}');closeMindmapFlyout()">Open ${esc(d.type)} →</button>
+    ${desc?`<div style="font-size:12px;color:var(--text2);line-height:1.5;margin-top:4px">${esc(desc)}${desc.length===200?'…':''}</div>`:''}
+    ${item?.role?`<div style="font-size:11px;color:var(--text3);margin-top:4px">${esc(item.role)}</div>`:''}
+    ${item?.status?`<div style="margin-top:4px"><span class="tag tag-${esc(item.status)}">${esc(item.status)}</span></div>`:''}
+    <div style="margin-top:10px;display:flex;gap:6px">
+      ${item?`<button class="btn btn-sm btn-primary" onclick="closeMindmapFlyout();navigate('${pageMap[d.type]||d.type+'s'}');setTimeout(()=>openDetail('${d.type}',${item.id}),200)">Open →</button>`:`<button class="btn btn-sm" onclick="navigate('${pageMap[d.type]||d.type+'s'}');closeMindmapFlyout()">Go to ${esc(d.type)}s →</button>`}
     </div>`;
   flyout.style.display='block';
 }
@@ -3173,7 +3181,7 @@ async function gmModalSave(){
     default:
       showToast('Unknown type','error');return;
   }
-  if(type!=='share'&&!body.title&&!body.name&&!body.content&&!body.text){showToast('Fill in required fields','error');return;}
+  if(type!=='share'&&!(body.title||body.name||body.content||body.text||body.question||body.proposed_date||body.subject)){showToast('Fill in required fields','error');return;}
   const isEdit=!!gmEditId;
   const url=isEdit?`${endpoint}/${gmEditId}`:endpoint;
   const method=isEdit?'PUT':'POST';
