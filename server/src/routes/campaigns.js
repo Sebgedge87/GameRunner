@@ -93,7 +93,7 @@ router.put('/:id', requireGm, (req, res) => {
   const { name, system, subtitle, description, theme, current_scene, current_weather, current_time,
           music_url: rawMusicUrl, music_label, session_count, max_players, invite_code, cover_image } = req.body;
   const music_url = rawMusicUrl == null ? null : (/^https?:\/\//i.test(rawMusicUrl) ? rawMusicUrl : null);
-  const code = invite_code != null ? invite_code.trim().toUpperCase() || null : undefined;
+  const code = invite_code != null ? invite_code.trim().toUpperCase() || null : null;
   db.prepare(`
     UPDATE campaigns SET
       name = COALESCE(?, name),
@@ -112,9 +112,11 @@ router.put('/:id', requireGm, (req, res) => {
       cover_image = COALESCE(?, cover_image),
       updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
-  `).run(name, system, subtitle, description, theme, current_scene, current_weather, current_time,
-         music_url, music_label, session_count, max_players ? parseInt(max_players) : null,
-         code, cover_image || null, req.params.id);
+  `).run(name ?? null, system ?? null, subtitle ?? null, description ?? null, theme ?? null,
+         current_scene ?? null, current_weather ?? null, current_time ?? null,
+         music_url ?? null, music_label ?? null, session_count ?? null,
+         max_players ? parseInt(max_players) : null,
+         code, cover_image ?? null, req.params.id);
   const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(req.params.id);
   res.json({ campaign });
 });

@@ -7,7 +7,9 @@
     "dev": "nodemon --exec \"node --experimental-sqlite\" src/index.js",
     "start": "node --experimental-sqlite src/index.js",
     "seed": "node --experimental-sqlite src/db/seed.js",
-    "migrate": "node --experimental-sqlite src/db/migrations.js"
+    "migrate": "node --experimental-sqlite src/db/migrations.js",
+    "test": "NODE_OPTIONS=--experimental-sqlite jest --no-coverage",
+    "test:watch": "NODE_OPTIONS=--experimental-sqlite jest --watch"
   },
   "dependencies": {
     "archiver": "^7.0.1",
@@ -23,7 +25,9 @@
     "multer": "^2.1.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.0"
+    "jest": "^30.3.0",
+    "nodemon": "^3.1.0",
+    "supertest": "^7.2.2"
   },
   "engines": {
     "node": ">=22.5.0"

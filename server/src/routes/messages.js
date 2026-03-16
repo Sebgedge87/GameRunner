@@ -39,6 +39,7 @@ router.delete('/:id', requireAuth, (req, res) => {
   if (msg.from_user_id !== req.user.id && !req.user.isGm) {
     return res.status(403).json({ error: 'Forbidden' });
   }
+  db.prepare('UPDATE messages SET reply_to_id = NULL WHERE reply_to_id = ?').run(msg.id);
   db.prepare('DELETE FROM messages WHERE id = ?').run(msg.id);
   res.json({ success: true });
 });

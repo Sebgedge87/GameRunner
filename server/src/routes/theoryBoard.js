@@ -49,7 +49,7 @@ router.put('/nodes/:id', requireAuth, (req, res) => {
   if (node.user_id !== req.user.id && !req.user.isGm) return res.status(403).json({ error: 'Not authorised' });
   const { label, node_type, vault_ref, notes, x, y } = req.body;
   db.prepare('UPDATE theory_nodes SET label=COALESCE(?,label), node_type=COALESCE(?,node_type), vault_ref=COALESCE(?,vault_ref), notes=COALESCE(?,notes), x=COALESCE(?,x), y=COALESCE(?,y) WHERE id=?')
-    .run(label, node_type, vault_ref, notes, x, y, req.params.id);
+    .run(label ?? null, node_type ?? null, vault_ref ?? null, notes ?? null, x ?? null, y ?? null, req.params.id);
   const updated = db.prepare('SELECT * FROM theory_nodes WHERE id = ?').get(req.params.id);
   res.json({ node: updated });
 });
