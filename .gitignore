@@ -6,3 +6,8 @@ node_modules/
 uploads/
 target/
 dist/
+# Vault markdown files are runtime-generated data
+server/vault/
+# Playwright test artifacts
+playwright-report/
+test-results/
