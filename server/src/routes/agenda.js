@@ -8,7 +8,7 @@ const router = express.Router();
 // GET /api/agenda — player sees own; GM sees all
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
-  const cards = req.user.role === 'gm'
+  const cards = req.user.isGm
     ? db.prepare('SELECT a.*, u.username, u.character_name FROM agenda_cards a LEFT JOIN users u ON a.user_id = u.id ORDER BY u.character_name').all()
     : db.prepare('SELECT * FROM agenda_cards WHERE user_id = ?').all(req.user.id);
   res.json({ agenda: cards });

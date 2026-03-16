@@ -1,5 +1,5 @@
 const express = require('express');
-const { getDb, getActiveCampaignId } = require('../db/database');
+const { getDb, getCampaignId } = require('../db/database');
 const { requireAuth, requireGm } = require('../auth/authMiddleware');
 const { makeHiddenToggle } = require('../utils/routeHelpers');
 
@@ -7,8 +7,8 @@ const router = express.Router();
 
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
-  const campId = getActiveCampaignId();
-  const hiddenClause = req.user.role === 'gm' ? '' : 'AND (hidden IS NULL OR hidden = 0)';
+  const campId = getCampaignId(req);
+  const hiddenClause = req.user.isGm ? '' : 'AND (hidden IS NULL OR hidden = 0)';
   const events = campId
     ? db.prepare(`SELECT * FROM timeline_events WHERE (campaign_id = ? OR campaign_id IS NULL) ${hiddenClause} ORDER BY in_world_date ASC, created_at ASC`).all(campId)
     : db.prepare(`SELECT * FROM timeline_events WHERE 1=1 ${hiddenClause} ORDER BY in_world_date ASC, created_at ASC`).all();

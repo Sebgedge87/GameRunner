@@ -45,6 +45,11 @@ router.post('/register', (req, res) => {
     .prepare('SELECT id, username, character_name, character_class, character_level, role FROM users WHERE id = ?')
     .get(result.lastInsertRowid);
 
+  // Add new user as player in all existing campaigns
+  const allCampaigns = db.prepare('SELECT id FROM campaigns').all();
+  const insCm = db.prepare('INSERT OR IGNORE INTO campaign_members (campaign_id, user_id, role) VALUES (?,?,?)');
+  for (const c of allCampaigns) insCm.run(c.id, user.id, 'player');
+
   const token = jwt.sign({ userId: user.id }, jwtSecret, { expiresIn: '30d' });
   res.status(201).json({ token, user });
 });

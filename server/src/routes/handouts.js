@@ -8,7 +8,7 @@ const router = express.Router();
 // GET /api/handouts — player sees only their shared handouts; GM sees all
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
-  if (req.user.role === 'gm') {
+  if (req.user.isGm) {
     const handouts = db.prepare(`
       SELECT h.*,
         (SELECT COUNT(*) FROM handout_permissions hp WHERE hp.handout_id = h.id) as shared_count
@@ -68,7 +68,7 @@ router.post('/:id/share', requireAuth, (req, res) => {
   if (!handout) return res.status(404).json({ error: 'Not found' });
 
   // Players can only share if they have can_reshare permission
-  if (req.user.role !== 'gm') {
+  if (!req.user.isGm) {
     const perm = db.prepare('SELECT * FROM handout_permissions WHERE handout_id = ? AND user_id = ?').get(handout.id, req.user.id);
     if (!perm || !perm.can_reshare) return res.status(403).json({ error: 'Cannot reshare this handout' });
   }

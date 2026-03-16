@@ -1049,7 +1049,9 @@ function esc(s){if(s==null)return '';return String(s).replace(/&/g,'&amp;').repl
 function fmt(ts){if(!ts)return '';return new Date(ts).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});}
 function fmtTime(ts){if(!ts)return '';return new Date(ts).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});}
 function apiFetch(path,opts={}){
-  return fetch(`${API}${path}`,{...opts,headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json',...(opts.headers||{})}});
+  const headers={'Authorization':`Bearer ${token}`,'Content-Type':'application/json',...(opts.headers||{})};
+  if(activeCampaign?.id) headers['X-Campaign-Id']=activeCampaign.id;
+  return fetch(`${API}${path}`,{...opts,headers});
 }
 function skel(n=3){return Array(n).fill('<div class="skel-card skeleton"></div>').join('');}
 
@@ -1154,18 +1156,22 @@ function doLogout(){
   document.getElementById('login-pass').value='';
 }
 
+function updateGmUI(){
+  if(isGm){
+    document.querySelectorAll('.gm-only').forEach(el=>el.style.display='');
+    document.getElementById('gm-fab').classList.add('show');
+  }else{
+    document.querySelectorAll('.gm-only').forEach(el=>el.style.display='none');
+    document.getElementById('gm-fab').classList.remove('show');
+  }
+}
 function showApp(){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='flex';
   const u=currentUser;
-  isGm = u?.role === 'gm';
   document.getElementById('sidebar-user').textContent=(u.character_name||u.username)+(u.character_class?` · ${u.character_class}`:'');
-  if(u.role==='gm'){
-    document.querySelectorAll('.gm-only').forEach(el=>el.style.display='');
-    document.getElementById('gm-fab').classList.add('show');
-  }
   connectSSE();
-  loadAll();
+  loadAll(); // loadCampaign() inside loadAll will set isGm and call updateGmUI()
   checkOnboarding();
 }
 
@@ -1217,7 +1223,7 @@ function navigate(page){
   // Show/hide GM FAB
   const gmPages=['quests','npcs','locations','hooks','factions','timeline','inventory','maps','bestiary','rumours','jobs','sessions','handouts'];
   const fab=document.getElementById('gm-fab');
-  if(fab&&currentUser?.role==='gm'&&gmPages.includes(page)){fab.classList.add('show');fab.dataset.ctx=page;}
+  if(fab&&isGm&&gmPages.includes(page)){fab.classList.add('show');fab.dataset.ctx=page;}
   else if(fab)fab.classList.remove('show');
 }
 function toggleSidebar(){document.getElementById('sidebar').classList.toggle('mobile-open');}
@@ -1238,6 +1244,10 @@ async function loadCampaign(){
     const d=await rA.json();
     activeCampaign=d.campaign||null;
     if(rAll.ok){const da=await rAll.json();allCampaigns=da.campaigns||[];}
+    // Per-campaign GM: my_role comes back from GET /api/campaigns
+    const myCamp=allCampaigns.find(c=>c.id===activeCampaign?.id);
+    isGm = myCamp ? myCamp.my_role==='gm' : false;
+    updateGmUI();
     detectThemeFromCampaign();
     renderCampaignBanner();
     renderCampSwitcher();
@@ -1249,10 +1259,10 @@ function renderCampSwitcher(){
   const sw=document.getElementById('camp-switcher');
   if(!btn||!list)return;
   btn.textContent=activeCampaign?activeCampaign.name:'No Campaign';
-  list.innerHTML=allCampaigns.map(c=>`<div class="camp-switch-item${c.active?' active':''}" onclick="switchCampaign(${c.id})">
-    <span class="${c.active?'dot':'dot-empty'}"></span>${esc(c.name)}</div>`).join('');
-  // Only show switcher to GM
-  sw.style.display=isGm?'':'none';
+  list.innerHTML=allCampaigns.map(c=>`<div class="camp-switch-item${c.id===activeCampaign?.id?' active':''}" onclick="switchCampaign(${c.id})">
+    <span class="${c.id===activeCampaign?.id?'dot':'dot-empty'}"></span>${esc(c.name)}${c.my_role==='gm'?'<span style="font-size:10px;color:var(--accent);margin-left:auto">GM</span>':''}</div>`).join('');
+  // Show campaign switcher to everyone
+  sw.style.display='';
 }
 function toggleCampDrop(){
   document.getElementById('camp-switcher-drop').classList.toggle('open');
@@ -1263,15 +1273,21 @@ function closeCampDrop(){
 async function switchCampaign(id){
   closeCampDrop();
   if(activeCampaign&&activeCampaign.id===id)return;
-  const r=await apiFetch(`/api/campaigns/${id}/activate`,{method:'PUT'});
-  if(r.ok){
-    showToast('Campaign switched','success');
-    await loadCampaign();
-    // Reload all content scoped to the new campaign
-    await Promise.all([loadQuests(),loadNpcs(),loadLocations(),loadHooks(),loadMaps(),loadFactions(),loadTimeline(),loadInventory(),loadJobs(),loadBestiary(),loadRumours()]);
-    if(typeof loadSessions==='function')loadSessions();
-    if(isGm&&document.getElementById('gm-dash-content'))loadGmDashboard();
-  }else showToast('Switch failed','error');
+  const campaign=allCampaigns.find(c=>c.id===id);
+  // GMs of this campaign make it globally active; players just switch their local view
+  if(campaign?.my_role==='gm'){
+    const r=await apiFetch(`/api/campaigns/${id}/activate`,{method:'PUT',headers:{'X-Campaign-Id':id}});
+    if(!r.ok){showToast('Switch failed','error');return;}
+  }
+  activeCampaign=campaign||null;
+  isGm=campaign?.my_role==='gm';
+  updateGmUI();
+  showToast('Campaign switched','success');
+  renderCampaignBanner();
+  renderCampSwitcher();
+  await Promise.all([loadQuests(),loadNpcs(),loadLocations(),loadHooks(),loadMaps(),loadFactions(),loadTimeline(),loadInventory(),loadJobs(),loadBestiary(),loadRumours()]);
+  if(typeof loadSessions==='function')loadSessions();
+  if(isGm&&document.getElementById('gm-dash-content'))loadGmDashboard();
 }
 // Close camp drop when clicking outside
 document.addEventListener('click',e=>{
@@ -1299,7 +1315,7 @@ async function loadUsers(){
     const d=await r.json();
     allUsers=d.users||[];
     populateMsgSelects();
-    if(currentUser?.role==='gm')populateCharPlayerSelect();
+    if(isGm)populateCharPlayerSelect();
   }catch(e){console.error('[loadUsers]',e);}
 }
 function populateMsgSelects(){
@@ -1333,13 +1349,13 @@ async function loadAgenda(){
     const r=await apiFetch('/api/agenda');
     const d=await r.json();
     const cards=d.agenda||[];
-    agendaData=currentUser.role==='gm'?null:(cards[0]||null);
+    agendaData=isGm?null:(cards[0]||null);
     renderAgenda();
   }catch(e){console.error('[loadAgenda]',e);}
 }
 function renderAgenda(){
   const el=document.getElementById('agenda-wrap');
-  if(!agendaData||currentUser.role==='gm'){el.innerHTML='';return;}
+  if(!agendaData||isGm){el.innerHTML='';return;}
   const a=agendaData;
   if(!a.revealed){el.innerHTML=`<div class="agenda-card"><div class="agenda-card-title">SECRET OBJECTIVE</div><div class="agenda-locked">🔒 Sealed — awaiting revelation</div></div>`;return;}
   el.innerHTML=`<div class="agenda-card"><div class="agenda-card-title">SECRET OBJECTIVE</div><div class="agenda-body">${esc(a.body||a.title)}</div></div>`;
@@ -1358,7 +1374,7 @@ async function loadStress(){
 }
 function renderStress(){
   const el=document.getElementById('stress-wrap');
-  if(!stressData||currentUser.role==='gm'){el.innerHTML='';return;}
+  if(!stressData||isGm){el.innerHTML='';return;}
   const s=stressData;
   const sys=activeCampaign?.system||'dnd5e';
   let html='<div style="display:flex;gap:16px;flex-wrap:wrap">';
@@ -1893,7 +1909,7 @@ function renderPolls(polls){
     return `<div class="poll-card"><div class="poll-q">${esc(p.question)}</div><div>${opts.map((o,i)=>`
       <div class="poll-option ${p.my_vote===i?'voted':''}" onclick="votePoll(${p.id},${i})">
         <span style="font-size:15px">${p.my_vote===i?'●':'○'}</span> ${esc(String(o))}
-        ${(p.results_public||currentUser?.role==='gm')&&p.votes?`<span class="inline-label" style="margin-left:auto">${p.votes.filter(v=>v.option_index===i).length}v</span>`:''}
+        ${(p.results_public||isGm)&&p.votes?`<span class="inline-label" style="margin-left:auto">${p.votes.filter(v=>v.option_index===i).length}v</span>`:''}
       </div>`).join('')}</div></div>`;
   }).join('');
 }
@@ -2031,7 +2047,7 @@ async function loadRumours(){
   el.innerHTML=gmBtn+rumourData.map(r=>`<div class="card" style="cursor:pointer" onclick="openDetail('rumour',${r.id})">
     <div class="card-body" style="font-style:italic;font-size:14px;margin-bottom:8px">"${esc(r.text)}"</div>
     <div class="card-meta">${r.source_npc?`<span>— ${esc(r.source_npc)}</span>`:''}${r.source_location?`<span>📍 ${esc(r.source_location)}</span>`:''}</div>
-    ${r.is_true!=null&&currentUser?.role==='gm'?`<div style="margin-top:6px;font-size:10px;color:${r.is_true?'var(--green)':'var(--red)'}">GM: ${r.is_true?'TRUE':'FALSE'}</div>`:''}
+    ${r.is_true!=null&&isGm?`<div style="margin-top:6px;font-size:10px;color:${r.is_true?'var(--green)':'var(--red)'}">GM: ${r.is_true?'TRUE':'FALSE'}</div>`:''}
     ${isGm?`<div class="card-actions" style="margin-top:8px" onclick="event.stopPropagation()"><button class="btn btn-sm" onclick="openGmEdit('rumour',${r.id})">Edit</button><button class="btn btn-sm" onclick="exposeRumour(${r.id})">Expose</button><button class="btn btn-sm btn-danger" onclick="gmDelete('rumour',${r.id},loadRumours)">Del</button></div>`:''}
   </div>`).join('');
 }
@@ -2074,7 +2090,7 @@ async function promoteJobToQuest(jobId){
 async function loadCharacterSheet(){
   const r=await apiFetch('/api/character-sheets');const d=await r.json();
   const sheets=d.sheets||[];
-  const mySheet=currentUser.role==='gm'?(sheets[0]||null):sheets.find(s=>s.user_id===currentUser.id)||null;
+  const mySheet=isGm?(sheets[0]||null):sheets.find(s=>s.user_id===currentUser.id)||null;
   renderCharSheet(mySheet);
   const sys=activeCampaign?.system;if(sys==='alien'||sys==='starfinder')loadShips();
 }

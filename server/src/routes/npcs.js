@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const matter = require('gray-matter');
-const { getDb, getActiveCampaignId } = require('../db/database');
+const { getDb, getCampaignId } = require('../db/database');
 const { requireAuth, requireGm } = require('../auth/authMiddleware');
 const { vaultPath } = require('../config');
 const { syncFile } = require('../vault/vaultWatcher');
@@ -15,9 +15,9 @@ const router = express.Router();
 
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
-  const campId = getActiveCampaignId();
+  const campId = getCampaignId(req);
   let rows;
-  if (req.user.role === 'gm') {
+  if (req.user.isGm) {
     const campClause = campId ? 'AND (campaign_id = ? OR campaign_id IS NULL)' : '';
     rows = campId
       ? db.prepare(`SELECT * FROM vault_files WHERE type = 'npc' ${campClause} ORDER BY title ASC`).all(campId)

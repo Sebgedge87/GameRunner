@@ -7,7 +7,7 @@ const router = express.Router();
 // GET /api/stress — player sees own; GM sees all
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
-  const rows = req.user.role === 'gm'
+  const rows = req.user.isGm
     ? db.prepare('SELECT s.*, u.username, u.character_name FROM stress_sanity s JOIN users u ON s.user_id = u.id').all()
     : db.prepare('SELECT * FROM stress_sanity WHERE user_id = ?').all(req.user.id);
   res.json({ stress: rows });
@@ -15,7 +15,7 @@ router.get('/', requireAuth, (req, res) => {
 
 // PUT /api/stress/:userId — upsert stress/sanity for a user
 router.put('/:userId', requireAuth, (req, res) => {
-  if (req.user.role !== 'gm' && req.user.id !== Number(req.params.userId)) {
+  if (!req.user.isGm && req.user.id !== Number(req.params.userId)) {
     return res.status(403).json({ error: 'Not authorised' });
   }
   const { campaign_id, stress, stress_max, sanity, sanity_max, exhaustion, panic_threshold, indefinite_insanity } = req.body;

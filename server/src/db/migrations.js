@@ -423,6 +423,31 @@ function runMigrations() {
     );
   `);
 
+  // ── Campaign Members ─────────────────────────────────────────────────────────
+  db.exec(`CREATE TABLE IF NOT EXISTS campaign_members (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    campaign_id INTEGER NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role TEXT DEFAULT 'player',
+    joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(campaign_id, user_id)
+  )`);
+
+  // Backfill: give global GM role='gm' in all existing campaigns; add all players as members
+  try {
+    const gmUser = db.prepare("SELECT id FROM users WHERE role='gm' LIMIT 1").get();
+    if (gmUser) {
+      const allCampaigns = db.prepare('SELECT id FROM campaigns').all();
+      const allUsers = db.prepare('SELECT id FROM users').all();
+      const ins = db.prepare('INSERT OR IGNORE INTO campaign_members (campaign_id, user_id, role) VALUES (?,?,?)');
+      for (const c of allCampaigns) {
+        for (const u of allUsers) {
+          ins.run(c.id, u.id, u.id === gmUser.id ? 'gm' : 'player');
+        }
+      }
+    }
+  } catch (_) {}
+
   // Add campaign_id column to vault_files if not already present
   try { db.exec('ALTER TABLE vault_files ADD COLUMN campaign_id INTEGER REFERENCES campaigns(id)'); } catch (_) {}
   // Add hidden column to vault_files if not already present
