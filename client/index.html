@@ -268,6 +268,36 @@ input,textarea,select{font-family:'Crimson Pro',serif;}
 .md-btn:hover{border-color:var(--border2);color:var(--text);}
 .md-btn.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent2);}
 .md-editor{flex:1;min-height:200px;font-family:'JetBrains Mono',monospace;font-size:12px;resize:none;}
+/* ── Settings ──────────────────────────────────────────────────────────────── */
+.settings-section-title{font-family:'Cinzel',serif;color:var(--accent);font-size:14px;margin:0 0 1rem;letter-spacing:.05em;}
+.settings-row{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:12px 0;border-bottom:1px solid var(--border);}
+.settings-row:last-child{border-bottom:none;}
+.settings-label{font-size:13px;color:var(--text);margin-bottom:2px;}
+.settings-desc{font-size:11px;color:var(--text3);}
+.font-size-group{display:flex;gap:4px;}
+.font-sz-btn{background:var(--bg3);border:1px solid var(--border2);color:var(--text2);border-radius:4px;padding:4px 10px;cursor:pointer;font-family:'Cinzel',serif;transition:border-color .15s,color .15s;}
+.font-sz-btn.active{border-color:var(--accent);color:var(--accent);}
+.toggle-switch{position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0;}
+.toggle-switch input{opacity:0;width:0;height:0;}
+.toggle-track{position:absolute;inset:0;background:var(--bg3);border:1px solid var(--border2);border-radius:11px;cursor:pointer;transition:background .2s;}
+.toggle-switch input:checked+.toggle-track{background:var(--accent);border-color:var(--accent);}
+.toggle-track::before{content:'';position:absolute;width:16px;height:16px;left:2px;top:2px;background:#fff;border-radius:50%;transition:transform .2s;}
+.toggle-switch input:checked+.toggle-track::before{transform:translateX(18px);}
+.theme-swatches{display:flex;gap:10px;flex-wrap:wrap;}
+.theme-swatch{border:2px solid var(--border);border-radius:8px;padding:10px 14px;cursor:pointer;transition:border-color .15s;text-align:center;min-width:90px;}
+.theme-swatch.active{border-color:var(--accent);}
+.theme-swatch:hover{border-color:var(--accent2);}
+.theme-swatch-dot{width:18px;height:18px;border-radius:50%;margin:0 auto 6px;}
+.theme-swatch-name{font-family:'Cinzel',serif;font-size:10px;letter-spacing:.05em;color:var(--text2);}
+/* Accessibility overrides */
+body.high-contrast .card{border-color:var(--text2)!important;}
+body.high-contrast .nav-item{border-left-width:2px;}
+body.high-contrast .tag{outline:1px solid currentColor;}
+body.reduce-motion *{animation:none!important;transition:none!important;}
+body.no-effects::before,body.no-effects::after{display:none!important;}
+body.no-effects *::before,body.no-effects *::after{animation:none!important;}
+body[data-font-size="small"]{font-size:13px;}
+body[data-font-size="large"]{font-size:16px;}
 #slash-menu{position:fixed;z-index:2000;background:var(--surface);border:1px solid var(--border2);border-radius:6px;box-shadow:0 8px 20px rgba(0,0,0,.5);min-width:200px;overflow:hidden;display:none;}
 .slash-item{display:flex;align-items:center;gap:10px;padding:7px 12px;cursor:pointer;font-size:13px;color:var(--text2);transition:background .1s;}
 .slash-item:hover,.slash-item.active{background:var(--accent-dim);color:var(--text);}
@@ -727,6 +757,8 @@ select.form-input{cursor:pointer;}
       <div class="nav-section gm-only" style="display:none">GM</div>
       <div class="nav-item gm-only" style="display:none" data-page="gm-dashboard" onclick="navigate('gm-dashboard')"><span class="nav-icon">👁</span>GM Dashboard</div>
       <div class="nav-item gm-only" style="display:none" data-page="combat" onclick="navigate('combat')"><span class="nav-icon">⚔</span>Combat</div>
+      <div class="nav-section">Preferences</div>
+      <div class="nav-item" data-page="settings" onclick="navigate('settings')"><span class="nav-icon">⚙</span>Settings</div>
     </div>
     <div class="sidebar-footer">
       <button class="logout-btn" onclick="doLogout()">SIGN OUT</button>
@@ -972,6 +1004,77 @@ select.form-input{cursor:pointer;}
       <div id="combat-wrap"><div class="loading">Loading encounter...</div></div>
     </section>
 
+    <!-- Settings -->
+    <section class="page" id="page-settings">
+      <div class="page-header"><div class="page-title">Settings</div><div class="page-sub">Appearance, accessibility &amp; preferences</div></div>
+
+      <!-- Theme -->
+      <div class="card" style="margin-bottom:1rem">
+        <h3 class="settings-section-title">Theme</h3>
+        <p class="muted" style="margin-bottom:1rem;font-size:13px">Choose the visual theme for your campaign system. Each theme changes colours, fonts, and atmospheric effects.</p>
+        <div id="theme-swatches" class="theme-swatches"></div>
+      </div>
+
+      <!-- Accessibility -->
+      <div class="card" style="margin-bottom:1rem">
+        <h3 class="settings-section-title">Accessibility</h3>
+
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">Font Size</div>
+            <div class="settings-desc">Adjust the base text size across the interface.</div>
+          </div>
+          <div class="font-size-group">
+            <button class="font-sz-btn" data-sz="small" onclick="setFontSize('small')">A<small>s</small></button>
+            <button class="font-sz-btn" data-sz="medium" onclick="setFontSize('medium')">A</button>
+            <button class="font-sz-btn" data-sz="large" onclick="setFontSize('large')">A<big>L</big></button>
+          </div>
+        </div>
+
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">High Contrast</div>
+            <div class="settings-desc">Increase border and text contrast for better readability.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="a11y-contrast" onchange="setA11y('contrast',this.checked)">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">Reduce Motion</div>
+            <div class="settings-desc">Disable animations and transitions.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="a11y-motion" onchange="setA11y('motion',this.checked)">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">Disable Atmospheric Effects</div>
+            <div class="settings-desc">Turn off scanlines, CRT glow, film grain, and other visual effects.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="a11y-effects" onchange="setA11y('effects',this.checked)">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Profile -->
+      <div class="card">
+        <h3 class="settings-section-title">Profile</h3>
+        <div class="form-group"><label>Character Name</label><input id="settings-char-name" class="form-input" placeholder="Your character's name…"></div>
+        <div class="form-group"><label>Character Class</label><input id="settings-char-class" class="form-input" placeholder="Fighter, Wizard…"></div>
+        <button class="btn btn-primary" onclick="saveProfile()">Save Profile</button>
+        <div id="settings-profile-status" class="status-msg" style="margin-top:8px"></div>
+      </div>
+    </section>
+
   </main>
 </div>
 
@@ -1017,9 +1120,12 @@ select.form-input{cursor:pointer;}
     <div id="modal-secret-badge" class="modal-secret-badge" style="display:none">⚠ SECRET MESSAGE</div>
     <div class="modal-title" id="modal-subject"></div>
     <div class="modal-from" id="modal-from"></div>
+    <div id="modal-thread" style="display:none;margin-bottom:12px;padding:10px;background:var(--bg3);border-left:2px solid var(--border2);border-radius:4px;font-size:12px;color:var(--text3)"></div>
     <div class="modal-body" id="modal-body"></div>
     <div class="modal-actions">
       <button class="modal-close" onclick="closeModal('msg-modal')">CLOSE</button>
+      <button class="btn btn-sm" id="modal-reply-btn" onclick="replyToMessage()">Reply</button>
+      <button class="btn btn-sm btn-danger" id="modal-delete-btn" onclick="deleteMessage()" style="display:none">Delete</button>
       <button class="submit-btn" id="modal-ack-btn" style="display:none" onclick="ackMessage()">ACKNOWLEDGE</button>
     </div>
   </div>
@@ -1373,7 +1479,7 @@ function navigate(page){
     factions:loadFactions,timeline:loadTimeline,inventory:loadInventory,
     maps:loadMaps,bestiary:loadBestiary,rumours:loadRumours,jobs:loadJobs,
     'character-sheet':loadCharacterSheet,'theory-board':loadTheoryBoard,
-    'gm-dashboard':loadGmDashboard,combat:loadCombat
+    'gm-dashboard':loadGmDashboard,combat:loadCombat,settings:loadSettings
   };
   if(lazy[page])lazy[page]();
   // Show/hide GM FAB
@@ -1649,16 +1755,22 @@ function renderFlyoutMessages(){
   }).join('');
 }
 async function sendMessageFlyout(){
-  const to_username=document.getElementById('flyout-msg-to').value||undefined;
+  const toSel=document.getElementById('flyout-msg-to');
+  const to_user_id=toSel.value?Number(toSel.value):undefined;
+  const reply_to_id=toSel.dataset.replyTo?Number(toSel.dataset.replyTo):undefined;
   const subject=document.getElementById('flyout-msg-subject').value.trim();
   const body=document.getElementById('flyout-msg-body').value.trim();
   const is_secret=document.getElementById('flyout-msg-secret').checked;
   const requires_ack=document.getElementById('flyout-msg-ack').checked;
   const s=document.getElementById('flyout-msg-status');
   if(!subject||!body){s.className='status-msg status-err';s.textContent='Subject and body required.';return;}
-  const r=await apiFetch('/api/messages',{method:'POST',body:JSON.stringify({to_username,subject,body,is_secret,requires_ack})});
-  if(r.ok){s.className='status-msg status-ok';s.textContent='Sent.';document.getElementById('flyout-msg-subject').value='';document.getElementById('flyout-msg-body').value='';loadMessages();}
-  else{const d=await r.json();s.className='status-msg status-err';s.textContent=d.error||'Failed.';}
+  const r=await apiFetch('/api/messages',{method:'POST',body:JSON.stringify({to_user_id,subject,body,is_secret,requires_ack,reply_to_id})});
+  if(r.ok){
+    s.className='status-msg status-ok';s.textContent='Sent.';
+    document.getElementById('flyout-msg-subject').value='';document.getElementById('flyout-msg-body').value='';
+    delete toSel.dataset.replyTo;toSel.value='';
+    loadMessages();
+  }else{const d=await r.json();s.className='status-msg status-err';s.textContent=d.error||'Failed.';}
 }
 
 // ── Modal helpers ─────────────────────────────────────────────────────────────
@@ -1903,6 +2015,11 @@ async function loadMessages(){
   const r=await apiFetch('/api/messages');allMessages=(await r.json()).messages||[];
   renderFlyoutMessages();updateMsgBadge();
   if(currentPage==='dashboard')buildDashboard();
+  // populate recipient select with current users
+  const sel=document.getElementById('flyout-msg-to');
+  if(sel&&sel.options.length<=1){
+    try{const ur=await apiFetch('/api/users');if(ur.ok){const {users=[]}=await ur.json();users.forEach(u=>{if(u.role!=='gm'&&u.id!==currentUser?.id){const o=document.createElement('option');o.value=u.id;o.textContent=u.character_name||u.username;sel.appendChild(o);}});}}catch(_){}
+  }
 }
 function updateMsgBadge(){
   const unread=allMessages.filter(m=>!m.read_at).length;
@@ -1913,11 +2030,17 @@ function openMessage(id){
   const m=allMessages.find(x=>x.id===id);if(!m)return;
   currentMsgId=id;
   document.getElementById('modal-subject').textContent=m.subject;
-  document.getElementById('modal-from').textContent=`From: ${m.from_character||m.from_username||'Unknown'} → To: ${m.to_character||m.to_username||'All Players'}`;
+  document.getElementById('modal-from').textContent=`From: ${m.from_character||m.from_username||'Unknown'} → To: ${m.to_character||m.to_username||'All Players'} · ${fmt(m.created_at)}`;
   document.getElementById('modal-body').textContent=m.body;
   document.getElementById('modal-secret-badge').style.display=m.is_secret?'':'none';
   document.getElementById('modal-ack-btn').style.display=(m.requires_ack&&!m.acked_at)?'':'none';
-  openModal('msg-modal');closeFlyout('msgs');
+  // show reply chain
+  const threadEl=document.getElementById('modal-thread');
+  if(m.reply_to_id){const parent=allMessages.find(x=>x.id===m.reply_to_id);if(parent){threadEl.innerHTML=`<div style="font-size:10px;letter-spacing:.05em;margin-bottom:4px">RE: ${esc(parent.subject)}</div><div>${esc((parent.body||'').slice(0,120))}${parent.body?.length>120?'…':''}</div>`;threadEl.style.display='';} else threadEl.style.display='none';}
+  else threadEl.style.display='none';
+  // show delete for sender or gm
+  document.getElementById('modal-delete-btn').style.display=(isGm||m.from_user_id===currentUser?.id)?'':'none';
+  document.getElementById('msg-modal').style.display='flex';closeFlyout('msgs');
   if(!m.read_at){apiFetch(`/api/messages/${id}/read`,{method:'PUT'}).then(()=>{m.read_at=new Date().toISOString();updateMsgBadge();renderFlyoutMessages();});}
 }
 async function ackMessage(){
@@ -1925,6 +2048,30 @@ async function ackMessage(){
   await apiFetch(`/api/messages/${currentMsgId}/ack`,{method:'PUT'});
   const m=allMessages.find(x=>x.id===currentMsgId);if(m)m.acked_at=new Date().toISOString();
   document.getElementById('modal-ack-btn').style.display='none';
+}
+async function deleteMessage(){
+  if(!currentMsgId||!confirm('Delete this message?'))return;
+  const r=await apiFetch(`/api/messages/${currentMsgId}`,{method:'DELETE'});
+  if(r.ok){closeModal('msg-modal');allMessages=allMessages.filter(x=>x.id!==currentMsgId);renderFlyoutMessages();updateMsgBadge();showToast('Deleted','success');}
+  else showToast('Delete failed','error');
+}
+function replyToMessage(){
+  const m=allMessages.find(x=>x.id===currentMsgId);if(!m)return;
+  closeModal('msg-modal');
+  // open flyout and pre-fill
+  document.getElementById('msgs-overlay').style.display='';
+  document.getElementById('msgs-flyout').style.transform='';
+  document.getElementById('msgs-flyout').classList.add('open');
+  document.getElementById('flyout-msg-subject').value=m.subject.startsWith('Re:')?m.subject:`Re: ${m.subject}`;
+  // pre-select sender as recipient
+  const sel=document.getElementById('flyout-msg-to');
+  if(sel&&m.from_user_id){
+    // try to select the sender
+    for(const opt of sel.options){if(String(opt.value)===String(m.from_user_id)){opt.selected=true;break;}}
+  }
+  // store reply_to for next send
+  document.getElementById('flyout-msg-body').focus();
+  document.getElementById('flyout-msg-to').dataset.replyTo=m.id;
 }
 
 // ── Notes ─────────────────────────────────────────────────────────────────────
@@ -2062,31 +2209,49 @@ async function deleteSessionNote(sessionId,noteId){
   const r=await apiFetch(`/api/sessions/${sessionId}/notes/${noteId}`,{method:'DELETE'});
   if(r.ok){showToast('Note deleted','success');loadSessions();}else showToast('Delete failed','error');
 }
+async function closePoll(id){const r=await apiFetch(`/api/sessions/polls/${id}/close`,{method:'PUT'});if(r.ok)loadSessions();else showToast('Could not close poll','error');}
+async function revealPoll(id){const r=await apiFetch(`/api/sessions/polls/${id}/reveal`,{method:'PUT'});if(r.ok)loadSessions();}
+async function confirmSched(id){const r=await apiFetch(`/api/sessions/scheduling/${id}/confirm`,{method:'PUT'});if(r.ok)loadSessions();}
 function renderPolls(polls){
   const el=document.getElementById('polls-list');
-  if(!polls.length){el.innerHTML='<div class="empty-state" style="padding:16px">No polls.</div>';return;}
-  el.innerHTML=polls.map(p=>{
+  const tile=gmAddTile('poll','Poll');
+  if(!polls.length){el.innerHTML=tile||'<div class="empty-state" style="padding:16px">No polls.</div>';return;}
+  el.innerHTML=tile+polls.map(p=>{
     const opts=Array.isArray(p.options)?p.options:[];
-    return `<div class="poll-card"><div class="poll-q">${esc(p.question)}</div><div>${opts.map((o,i)=>`
-      <div class="poll-option ${p.my_vote===i?'voted':''}" onclick="votePoll(${p.id},${i})">
-        <span style="font-size:15px">${p.my_vote===i?'●':'○'}</span> ${esc(String(o))}
-        ${(p.results_public||isGm)&&p.votes?`<span class="inline-label" style="margin-left:auto">${p.votes.filter(v=>v.option_index===i).length}v</span>`:''}
-      </div>`).join('')}</div></div>`;
+    const total=(p.votes||[]).length;
+    return `<div class="poll-card">
+      <div class="poll-q">${esc(p.question)}${p.closed?` <span class="tag" style="font-size:9px">closed</span>`:''}</div>
+      <div>${opts.map((o,i)=>{
+        const vCount=(p.results_public||isGm)&&p.votes?p.votes.filter(v=>v.option_index===i).length:null;
+        const pct=vCount!==null&&total>0?Math.round(vCount/total*100):null;
+        return `<div class="poll-option ${p.my_vote===i?'voted':''}" onclick="${p.closed?'':'votePoll('+p.id+','+i+')'}">
+          <span style="font-size:15px">${p.my_vote===i?'●':'○'}</span> ${esc(String(o))}
+          ${vCount!==null?`<span class="inline-label" style="margin-left:auto">${vCount}v${pct!==null?' · '+pct+'%':''}</span>`:''}
+        </div>`;
+      }).join('')}</div>
+      ${isGm?`<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+        ${!p.results_public?`<button class="btn btn-sm" onclick="revealPoll(${p.id})">Reveal Results</button>`:''}
+        ${!p.closed?`<button class="btn btn-sm" onclick="closePoll(${p.id})">Close Poll</button>`:''}
+      </div>`:''}
+    </div>`;
   }).join('');
 }
 async function votePoll(id,idx){const r=await apiFetch(`/api/sessions/polls/${id}/vote`,{method:'POST',body:JSON.stringify({option_index:idx})});if(r.ok)loadSessions();}
 function renderScheduling(scheduling){
   const el=document.getElementById('scheduling-list');
-  if(!scheduling.length){el.innerHTML='<div class="empty-state" style="padding:16px">No proposed dates.</div>';return;}
-  el.innerHTML=scheduling.map(d=>{
+  const tile=gmAddTile('schedule','Date');
+  if(!scheduling.length){el.innerHTML=tile||'<div class="empty-state" style="padding:16px">No proposed dates.</div>';return;}
+  el.innerHTML=tile+scheduling.map(d=>{
     const my=d.my_response;
+    const dtLabel=d.proposed_date?new Date(d.proposed_date).toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):esc(d.proposed_date);
     return `<div class="sched-item">
-      <div class="sched-date">${esc(d.proposed_date)}${d.confirmed?`<span class="sched-confirmed" style="margin-left:8px">✓</span>`:''}</div>
+      <div class="sched-date">${dtLabel}${d.title?` — <em>${esc(d.title)}</em>`:''}${d.confirmed?`<span class="tag tag-quest-active" style="margin-left:8px;font-size:9px">CONFIRMED</span>`:''}</div>
       <div class="sched-responses">${(d.responses||[]).map(r=>`<span class="sched-resp sched-${r.availability}">${esc(r.character_name||r.username)}: ${r.availability}</span>`).join('')}</div>
-      <div style="display:flex;gap:5px">
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">
         <button class="filter-tab ${my==='yes'?'active':''}" onclick="respondSched(${d.id},'yes')" style="padding:3px 8px;font-size:10px">Yes</button>
         <button class="filter-tab ${my==='maybe'?'active':''}" onclick="respondSched(${d.id},'maybe')" style="padding:3px 8px;font-size:10px">Maybe</button>
         <button class="filter-tab ${my==='no'?'active':''}" onclick="respondSched(${d.id},'no')" style="padding:3px 8px;font-size:10px">No</button>
+        ${isGm&&!d.confirmed?`<button class="btn btn-sm btn-primary" onclick="confirmSched(${d.id})" style="margin-left:auto">Confirm</button>`:''}
       </div>
     </div>`;
   }).join('');
@@ -2814,6 +2979,11 @@ const GM_FORMS={
   share:`<div class="form-group"><label>Share with players</label>
     <select id="gm-f-share-users" class="form-input" multiple size="6" style="height:auto;min-height:120px"></select>
     <small class="muted" style="display:block;margin-top:6px">Hold Ctrl/Cmd to select multiple. Selected players can see this item even when it's hidden.</small></div>`,
+  poll:`<div class="form-group"><label>Question</label><input id="gm-f-title" class="form-input" placeholder="Which day works best?"></div>
+    <div class="form-group"><label>Options <small class="muted">(one per line)</small></label><textarea id="gm-f-options" class="form-input" rows="5" placeholder="Saturday evening\nSunday afternoon\nWednesday night"></textarea></div>
+    <div class="form-group"><label>Results visible to players?</label><select id="gm-f-results" class="form-input"><option value="0">Hidden until you reveal</option><option value="1">Visible immediately</option></select></div>`,
+  schedule:`<div class="form-group"><label>Proposed Date &amp; Time</label><input type="datetime-local" id="gm-f-date" class="form-input"></div>
+    <div class="form-group"><label>Label <small class="muted">(optional)</small></label><input id="gm-f-title" class="form-input" placeholder="Session 14 — The Vault of Echoes…"></div>`,
 };
 function gmAddTile(type,label){
   if(!isGm)return'';
@@ -2822,8 +2992,8 @@ function gmAddTile(type,label){
 let gmCreateType=null,gmCreateExtra=null,gmEditId=null;
 const PAGE_TO_TYPE={quests:'quest',npcs:'npc',locations:'location',hooks:'hook',handouts:'handout',maps:'map',sessions:'session',notes:'note',factions:'faction',timeline:'timeline',inventory:'inventory',bestiary:'bestiary',rumours:'rumour',jobs:'job',agenda:'agenda'};
 const TYPE_STORE={quest:()=>questData,npc:()=>npcData,location:()=>locationData,hook:()=>hookData,faction:()=>factionData,timeline:()=>timelineData,inventory:()=>inventoryData,bestiary:()=>bestiaryData,rumour:()=>rumourData,job:()=>jobData,map:()=>mapsData};
-const TYPE_ENDPOINT={quest:'/api/quests',npc:'/api/npcs',location:'/api/locations',hook:'/api/hooks',handout:'/api/handouts',map:'/api/maps',session:'/api/sessions',note:'/api/notes',faction:'/api/factions',timeline:'/api/timeline',inventory:'/api/inventory','key-item':'/api/key-items',job:'/api/jobs',bestiary:'/api/bestiary',rumour:'/api/rumours',agenda:'/api/agenda'};
-const TYPE_RELOAD={quest:loadQuests,npc:loadNpcs,location:loadLocations,hook:loadHooks,handout:()=>navigate('handouts'),map:loadMaps,session:()=>navigate('sessions'),note:loadNotes,faction:loadFactions,timeline:loadTimeline,inventory:loadInventory,'key-item':loadInventory,job:loadJobs,bestiary:loadBestiary,rumour:loadRumours,agenda:loadGmDashboard,campaign:loadCampaign};
+const TYPE_ENDPOINT={quest:'/api/quests',npc:'/api/npcs',location:'/api/locations',hook:'/api/hooks',handout:'/api/handouts',map:'/api/maps',session:'/api/sessions',note:'/api/notes',faction:'/api/factions',timeline:'/api/timeline',inventory:'/api/inventory','key-item':'/api/key-items',job:'/api/jobs',bestiary:'/api/bestiary',rumour:'/api/rumours',agenda:'/api/agenda',poll:'/api/sessions/polls',schedule:'/api/sessions/scheduling'};
+const TYPE_RELOAD={quest:loadQuests,npc:loadNpcs,location:loadLocations,hook:loadHooks,handout:()=>navigate('handouts'),map:loadMaps,session:()=>navigate('sessions'),note:loadNotes,faction:loadFactions,timeline:loadTimeline,inventory:loadInventory,'key-item':loadInventory,job:loadJobs,bestiary:loadBestiary,rumour:loadRumours,agenda:loadGmDashboard,campaign:loadCampaign,poll:loadSessions,schedule:loadSessions};
 function prefillGmForm(type,d){
   const s=(id,v)=>{const el=document.getElementById(id);if(el&&v!=null)el.value=v;};
   s('gm-f-title',d.title);s('gm-f-name',d.name||d.title);s('gm-f-desc',d.description);
@@ -2981,6 +3151,16 @@ async function gmModalSave(){
       {const toId=val('gm-f-user')||gmCreateExtra||null;
       const subject=val('gm-f-subject')||'Message';
       body={subject,body:val('gm-f-content'),to_user_id:toId?Number(toId):null};}
+      break;
+    case 'poll':{
+      const opts=val('gm-f-options').split('\n').map(o=>o.trim()).filter(Boolean);
+      if(!opts.length){document.getElementById('gm-modal-status').textContent='Add at least one option.';return;}
+      endpoint='/api/sessions/polls';
+      body={question:val('gm-f-title'),options:opts,results_public:Number(val('gm-f-results')||0)};}
+      break;
+    case 'schedule':
+      endpoint='/api/sessions/scheduling';
+      body={proposed_date:val('gm-f-date'),title:val('gm-f-title')||undefined};
       break;
     case 'share':{
       endpoint='/api/shares';
@@ -3242,6 +3422,82 @@ async function saveCampCreate() {
   await switchCampaign(d.campaign.id);
 }
 
+// ── Settings ──────────────────────────────────────────────────────────────────
+const THEME_META={
+  dnd5e:{name:'D&D 5e',color:'#c9a84c',bg:'#0d0b08'},
+  coc:{name:'Call of Cthulhu',color:'#b8a060',bg:'#0c0b09'},
+  alien:{name:'Alien',color:'#4caf7d',bg:'#080c08'},
+  coriolis:{name:'Coriolis',color:'#6a8ad4',bg:'#080810'},
+  dune:{name:'Dune',color:'#d4a040',bg:'#0e0a06'},
+  achtung:{name:'Achtung!',color:'#8a9e40',bg:'#080a06'},
+};
+function loadSettings(){
+  const saved=localStorage.getItem('chronicle_a11y')?JSON.parse(localStorage.getItem('chronicle_a11y')):{};
+  // restore checkboxes
+  document.getElementById('a11y-contrast').checked=!!saved.contrast;
+  document.getElementById('a11y-motion').checked=!!saved.motion;
+  document.getElementById('a11y-effects').checked=!!saved.effects;
+  // apply body classes
+  document.body.classList.toggle('high-contrast',!!saved.contrast);
+  document.body.classList.toggle('reduce-motion',!!saved.motion);
+  document.body.classList.toggle('no-effects',!!saved.effects);
+  // restore font size
+  const sz=localStorage.getItem('chronicle_font_size')||'medium';
+  document.body.setAttribute('data-font-size',sz);
+  document.querySelectorAll('.font-sz-btn').forEach(b=>b.classList.toggle('active',b.dataset.sz===sz));
+  // profile
+  if(currentUser){
+    const cn=document.getElementById('settings-char-name');
+    const cc=document.getElementById('settings-char-class');
+    if(cn)cn.value=currentUser.character_name||'';
+    if(cc)cc.value=currentUser.character_class||'';
+  }
+  // build theme swatches
+  buildThemeSwatches();
+}
+function buildThemeSwatches(){
+  const wrap=document.getElementById('theme-swatches');if(!wrap)return;
+  const cur=document.documentElement.getAttribute('data-theme')||'dnd5e';
+  wrap.innerHTML=Object.entries(THEME_META).map(([k,v])=>`
+    <div class="theme-swatch${k===cur?' active':''}" onclick="applyTheme('${k}');buildThemeSwatches()">
+      <div class="theme-swatch-dot" style="background:${v.color};box-shadow:0 0 8px ${v.color}66"></div>
+      <div class="theme-swatch-name">${v.name}</div>
+    </div>`).join('');
+}
+function setFontSize(sz){
+  document.body.setAttribute('data-font-size',sz);
+  localStorage.setItem('chronicle_font_size',sz);
+  document.querySelectorAll('.font-sz-btn').forEach(b=>b.classList.toggle('active',b.dataset.sz===sz));
+}
+function setA11y(key,val){
+  const saved=localStorage.getItem('chronicle_a11y')?JSON.parse(localStorage.getItem('chronicle_a11y')):{};
+  saved[key]=val;
+  localStorage.setItem('chronicle_a11y',JSON.stringify(saved));
+  if(key==='contrast')document.body.classList.toggle('high-contrast',val);
+  if(key==='motion')document.body.classList.toggle('reduce-motion',val);
+  if(key==='effects')document.body.classList.toggle('no-effects',val);
+}
+async function saveProfile(){
+  const name=document.getElementById('settings-char-name').value.trim();
+  const cls=document.getElementById('settings-char-class').value.trim();
+  const s=document.getElementById('settings-profile-status');
+  const r=await apiFetch('/api/profile',{method:'PUT',body:JSON.stringify({character_name:name,character_class:cls})});
+  if(r.ok){
+    if(currentUser){currentUser.character_name=name;currentUser.character_class=cls;}
+    s.className='status-msg status-ok';s.textContent='Saved.';
+    document.getElementById('sidebar-user').textContent=name||currentUser?.username||'';
+  }else{s.className='status-msg status-err';s.textContent='Save failed.';}
+}
+function applyA11yOnBoot(){
+  const saved=localStorage.getItem('chronicle_a11y');if(!saved)return;
+  const s=JSON.parse(saved);
+  document.body.classList.toggle('high-contrast',!!s.contrast);
+  document.body.classList.toggle('reduce-motion',!!s.motion);
+  document.body.classList.toggle('no-effects',!!s.effects);
+  const sz=localStorage.getItem('chronicle_font_size')||'medium';
+  document.body.setAttribute('data-font-size',sz);
+}
+
 // ── Slash Commands ────────────────────────────────────────────────────────────
 const SLASH_CMDS=[
   {key:'h1',label:'Heading 1',icon:'H1',insert:'# '},
@@ -3295,6 +3551,7 @@ document.addEventListener('keydown',_slashKeydown);
 document.addEventListener('click',e=>{if(!e.target.closest('#slash-menu'))_slashClose();});
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
+applyA11yOnBoot();
 restoreSession();
 </script>
 <div id="slash-menu"></div>

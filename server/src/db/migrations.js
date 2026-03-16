@@ -471,6 +471,10 @@ function runMigrations() {
   try { db.exec('ALTER TABLE jobs ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
   try { db.exec('ALTER TABLE bestiary ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
   try { db.exec('ALTER TABLE rumours ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
+  // reply_to_id for message threading
+  try { db.exec('ALTER TABLE messages ADD COLUMN reply_to_id INTEGER REFERENCES messages(id)'); } catch (_) {}
+  // title label for scheduling entries
+  try { db.exec('ALTER TABLE session_scheduling ADD COLUMN title TEXT'); } catch (_) {}
   // Per-item sharing table (P4)
   db.exec(`CREATE TABLE IF NOT EXISTS item_shares (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -87,6 +87,19 @@ router.put('/polls/:id/reveal', requireGm, (req, res) => {
   res.json({ success: true });
 });
 
+router.put('/polls/:id/close', requireGm, (req, res) => {
+  const db = getDb();
+  db.prepare('UPDATE session_polls SET closed = 1 WHERE id = ?').run(req.params.id);
+  res.json({ success: true });
+});
+
+router.delete('/polls/:id', requireGm, (req, res) => {
+  const db = getDb();
+  db.prepare('DELETE FROM poll_votes WHERE poll_id = ?').run(req.params.id);
+  db.prepare('DELETE FROM session_polls WHERE id = ?').run(req.params.id);
+  res.json({ success: true });
+});
+
 // ── Scheduling ─────────────────────────────────────────────────────────────────
 router.get('/scheduling', requireAuth, (req, res) => {
   const db = getDb();
@@ -100,11 +113,11 @@ router.get('/scheduling', requireAuth, (req, res) => {
 });
 
 router.post('/scheduling', requireGm, (req, res) => {
-  const { campaign_id, proposed_date } = req.body;
+  const { campaign_id, proposed_date, title } = req.body;
   if (!proposed_date) return res.status(400).json({ error: 'proposed_date required' });
   const db = getDb();
-  const result = db.prepare('INSERT INTO session_scheduling (campaign_id, proposed_date, created_by) VALUES (?, ?, ?)')
-    .run(campaign_id || null, proposed_date, req.user.id);
+  const result = db.prepare('INSERT INTO session_scheduling (campaign_id, proposed_date, title, created_by) VALUES (?, ?, ?, ?)')
+    .run(campaign_id || null, proposed_date, title || null, req.user.id);
   const date = db.prepare('SELECT * FROM session_scheduling WHERE id = ?').get(result.lastInsertRowid);
   res.status(201).json({ date });
 });

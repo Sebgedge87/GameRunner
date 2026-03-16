@@ -31,9 +31,21 @@ router.get('/', requireAuth, (req, res) => {
   res.json({ messages: filtered });
 });
 
+// DELETE /api/messages/:id — sender or GM can delete
+router.delete('/:id', requireAuth, (req, res) => {
+  const db = getDb();
+  const msg = db.prepare('SELECT * FROM messages WHERE id = ?').get(req.params.id);
+  if (!msg) return res.status(404).json({ error: 'Message not found' });
+  if (msg.from_user_id !== req.user.id && !req.user.isGm) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  db.prepare('DELETE FROM messages WHERE id = ?').run(msg.id);
+  res.json({ success: true });
+});
+
 // POST /api/messages — any authenticated user can send
 router.post('/', requireAuth, (req, res) => {
-  const { to_user_id, to_username, subject, body, is_secret = false, requires_ack = false } = req.body;
+  const { to_user_id, to_username, subject, body, is_secret = false, requires_ack = false, reply_to_id = null } = req.body;
   if (!subject || !body) return res.status(400).json({ error: 'subject and body are required' });
 
   // Players cannot send secret messages
@@ -51,9 +63,9 @@ router.post('/', requireAuth, (req, res) => {
   }
 
   const result = db.prepare(`
-    INSERT INTO messages (from_user_id, to_user_id, subject, body, is_secret, requires_ack)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `).run(req.user.id, recipientId, subject, body, is_secret ? 1 : 0, requires_ack ? 1 : 0);
+    INSERT INTO messages (from_user_id, to_user_id, subject, body, is_secret, requires_ack, reply_to_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(req.user.id, recipientId, subject, body, is_secret ? 1 : 0, requires_ack ? 1 : 0, reply_to_id || null);
 
   const msg = db.prepare('SELECT * FROM messages WHERE id = ?').get(result.lastInsertRowid);
 
