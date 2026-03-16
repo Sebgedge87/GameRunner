@@ -4,11 +4,15 @@ const { getDb } = require('../db/database');
 
 function requireAuth(req, res, next) {
   const header = req.headers.authorization;
-  if (!header || !header.startsWith('Bearer ')) {
+  let token;
+  if (header && header.startsWith('Bearer ')) {
+    token = header.slice(7);
+  } else if (req.query.token) {
+    token = req.query.token;
+  } else {
     return res.status(401).json({ error: 'Missing or invalid Authorization header' });
   }
 
-  const token = header.slice(7);
   let payload;
   try {
     payload = jwt.verify(token, jwtSecret);

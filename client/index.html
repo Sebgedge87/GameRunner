@@ -233,6 +233,11 @@ input,textarea,select{font-family:'Crimson Pro',serif;}
 .camp-lobby-create-icon{font-size:36px;color:var(--text3);}
 .camp-lobby-create-label{font-family:'Cinzel',serif;font-size:14px;color:var(--text3);letter-spacing:.04em;}
 .camp-lobby-card-create:hover .camp-lobby-create-icon,.camp-lobby-card-create:hover .camp-lobby-create-label{color:var(--accent2);}
+.add-tile{background:transparent;border:2px dashed var(--border2);border-radius:8px;min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:border-color .15s,background .15s;}
+.add-tile:hover{border-color:var(--accent);background:var(--accent-dim);}
+.add-tile-icon{font-size:30px;color:var(--text3);line-height:1;transition:color .15s;}
+.add-tile-label{font-family:'Cinzel',serif;font-size:11px;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.add-tile:hover .add-tile-icon,.add-tile:hover .add-tile-label{color:var(--accent2);}
 .camp-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
 .camp-card-sys{font-size:10px;font-family:'JetBrains Mono',monospace;padding:2px 7px;border-radius:3px;border:1px solid;text-transform:uppercase;letter-spacing:.04em;}
 .camp-card-role-gm{color:#c9a84c;border-color:#7a6230;background:#1a1500;font-size:10px;font-family:'JetBrains Mono',monospace;padding:2px 7px;border-radius:3px;}
@@ -263,6 +268,10 @@ input,textarea,select{font-family:'Crimson Pro',serif;}
 .md-btn:hover{border-color:var(--border2);color:var(--text);}
 .md-btn.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent2);}
 .md-editor{flex:1;min-height:200px;font-family:'JetBrains Mono',monospace;font-size:12px;resize:none;}
+#slash-menu{position:fixed;z-index:2000;background:var(--surface);border:1px solid var(--border2);border-radius:6px;box-shadow:0 8px 20px rgba(0,0,0,.5);min-width:200px;overflow:hidden;display:none;}
+.slash-item{display:flex;align-items:center;gap:10px;padding:7px 12px;cursor:pointer;font-size:13px;color:var(--text2);transition:background .1s;}
+.slash-item:hover,.slash-item.active{background:var(--accent-dim);color:var(--text);}
+.slash-icon{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);width:20px;text-align:center;}
 .md-preview{flex:1;min-height:200px;font-size:13px;color:var(--text2);line-height:1.7;overflow-y:auto;padding:10px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;}
 .md-preview h1,.md-preview h2,.md-preview h3{font-family:'Cinzel',serif;color:var(--accent2);margin:10px 0 4px;}
 .md-preview ul{margin:6px 0 6px 18px;}
@@ -795,7 +804,11 @@ select.form-input{cursor:pointer;}
         <div class="legend-item"><div class="legend-dot" style="background:#4caf7d"></div>Location</div>
         <div class="legend-item"><div class="legend-dot" style="background:#8b4cc9"></div>Hook</div>
       </div>
-      <svg id="mindmap-svg" style="height:500px;"></svg>
+      <div style="position:relative">
+        <svg id="mindmap-svg" style="height:500px;"></svg>
+        <div id="mindmap-flyout" style="display:none;position:absolute;top:12px;right:12px;width:230px;background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:14px;z-index:10;box-shadow:0 8px 24px rgba(0,0,0,.5)"></div>
+      </div>
+      <div style="margin-top:8px;font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace">Click a node to inspect · Connections auto-generated from item links</div>
     </section>
 
     <!-- Notes -->
@@ -1650,7 +1663,7 @@ async function sendMessageFlyout(){
 
 // ── Modal helpers ─────────────────────────────────────────────────────────────
 function openModal(id){document.getElementById(id).classList.add('open');}
-function closeModal(id){document.getElementById(id).classList.remove('open');}
+function closeModal(id){const el=document.getElementById(id);el.classList.remove('open');el.style.display='';}
 
 // ── Detail Panel ──────────────────────────────────────────────────────────────
 const TYPE_STORE_DETAIL={
@@ -1829,7 +1842,7 @@ function questCard(q){
     <div class="card-actions"><button class="delete-btn" onclick="event.stopPropagation();pin('quest',${q.id},'${esc(q.title)}')">📌 Pin</button>${gmBtns}</div>
   </div>`;
 }
-function renderQuests(quests,targetId){const el=document.getElementById(targetId);if(!quests.length){el.innerHTML='<div class="empty-state">No quests found.</div>';return;}el.innerHTML=quests.map(questCard).join('');}
+function renderQuests(quests,targetId){const el=document.getElementById(targetId);const tile=gmAddTile('quest','Quest');if(!quests.length){el.innerHTML=tile||'<div class="empty-state">No quests found.</div>';return;}el.innerHTML=tile+quests.map(questCard).join('');}
 function filterQuests(status,btn){document.querySelectorAll('.filter-tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');const f=status==='all'?questData:questData.filter(q=>q.status===status);renderQuests(f,'quest-list');}
 
 // ── NPCs ──────────────────────────────────────────────────────────────────────
@@ -1839,7 +1852,8 @@ function renderNpcs(){
   const q=document.getElementById('npc-search')?.value?.toLowerCase()||'';
   const list=q?npcData.filter(n=>(n.title||'').toLowerCase().includes(q)||(n.role||'').toLowerCase().includes(q)):npcData;
   const el=document.getElementById('npc-list');
-  if(!list.length){el.innerHTML='<div class="empty-state">No NPCs found.</div>';return;}
+  const tile=gmAddTile('npc','NPC');
+  if(!list.length){el.innerHTML=tile||'<div class="empty-state">No NPCs found.</div>';return;}
   el.innerHTML=list.map(n=>`<div class="card" style="cursor:pointer" onclick="openDetail('npc',${n.id})">
     ${n.image_path?`<img class="card-img" src="${API}${n.image_path}" alt="${esc(n.title)}" onerror="this.style.display='none'">`:''}
     <div class="card-title">${esc(n.title)}</div>
@@ -1848,6 +1862,7 @@ function renderNpcs(){
     ${n.connected_to?`<div style="font-size:11px;color:var(--text3)">🔗 ${esc(Array.isArray(n.connected_to)?n.connected_to.join(', '):n.connected_to)}</div>`:''}
     <div class="card-actions"><button class="delete-btn" onclick="event.stopPropagation();pin('npc',${n.id},'${esc(n.title)}')">📌</button>${isGm?`${eyeBtn('npc',n.id,n.hidden)}<button class="btn btn-sm" onclick="event.stopPropagation();openShareDialog('npc',${n.id},'${esc(n.title)}')">Share</button><button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('npc',${n.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('npc',${n.id},loadNpcs)">Del</button>`:''}</div>
   </div>`).join('');
+  el.innerHTML=tile+el.innerHTML;
 }
 
 // ── Locations ─────────────────────────────────────────────────────────────────
@@ -1855,7 +1870,8 @@ let locationData=[];
 async function loadLocations(){const r=await apiFetch('/api/locations');locationData=(await r.json()).locations||[];renderLocations();}
 function renderLocations(){
   const el=document.getElementById('location-list');
-  if(!locationData.length){el.innerHTML='<div class="empty-state">No locations found.</div>';return;}
+  const tile=gmAddTile('location','Location');
+  if(!locationData.length){el.innerHTML=tile||'<div class="empty-state">No locations found.</div>';return;}
   el.innerHTML=locationData.map(l=>`<div class="card" style="cursor:pointer" onclick="openDetail('location',${l.id})">
     ${l.image_path?`<img class="card-img" src="${API}${l.image_path}" alt="${esc(l.title)}" onerror="this.style.display='none'">`:''}
     <div class="card-title">${esc(l.title)}</div>
@@ -1863,6 +1879,7 @@ function renderLocations(){
     ${l.connected_to?`<div style="font-size:11px;color:var(--text3)">🔗 ${esc(Array.isArray(l.connected_to)?l.connected_to.join(', '):l.connected_to)}</div>`:''}
     <div class="card-actions"><button class="delete-btn" onclick="event.stopPropagation();pin('location',${l.id},'${esc(l.title)}')">📌</button>${isGm?`${eyeBtn('location',l.id,l.hidden)}<button class="btn btn-sm" onclick="event.stopPropagation();openShareDialog('location',${l.id},'${esc(l.title)}')">Share</button><button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('location',${l.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('location',${l.id},loadLocations)">Del</button>`:''}</div>
   </div>`).join('');
+  el.innerHTML=tile+el.innerHTML;
 }
 
 // ── Hooks ─────────────────────────────────────────────────────────────────────
@@ -1870,13 +1887,14 @@ let hookData=[];
 async function loadHooks(){const r=await apiFetch('/api/hooks');hookData=(await r.json()).hooks||[];renderHooks();}
 function renderHooks(){
   const el=document.getElementById('hook-list');
-  if(!hookData.length){el.innerHTML='<div class="empty-state">No hooks.</div>';return;}
+  const tile=gmAddTile('hook','Hook');if(!hookData.length){el.innerHTML=tile||'<div class="empty-state">No hooks.</div>';return;}
   el.innerHTML=hookData.map(h=>`<div class="card" style="cursor:pointer" onclick="openDetail('hook',${h.id})">
     <div class="card-title">${esc(h.title)}</div>
     <div class="card-meta"><span class="tag tag-${esc(h.type||'clue')}">${esc(h.type||'clue')}</span><span class="tag tag-${esc(h.status||'active')}">${esc(h.status||'active')}</span>${h.session_delivered?`<span>Session ${h.session_delivered}</span>`:''}</div>
     ${h.connected_to?`<div style="font-size:11px;color:var(--text3);margin-top:5px">🔗 ${esc(Array.isArray(h.connected_to)?h.connected_to.join(', '):h.connected_to)}</div>`:''}
     ${isGm?`<div class="card-actions">${eyeBtn('hook',h.id,h.hidden)}<button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('hook',${h.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('hook',${h.id},loadHooks)">Del</button></div>`:''}
   </div>`).join('');
+  el.innerHTML=tile+el.innerHTML;
 }
 
 // ── Messages ──────────────────────────────────────────────────────────────────
@@ -2080,9 +2098,9 @@ let factionData=[];
 async function loadFactions(){
   const r=await apiFetch('/api/factions');factionData=(await r.json()).factions||[];
   const el=document.getElementById('faction-list');
-  const gmBtn=isGm?`<button class="btn btn-primary" style="margin-bottom:1rem" onclick="openGmCreate('faction')">+ Add Faction</button>`:'';
-  if(!factionData.length){el.innerHTML=gmBtn+'<div class="empty-state">No factions known.</div>';return;}
-  el.innerHTML=gmBtn+factionData.map(f=>{
+  const tile=gmAddTile('faction','Faction');
+  if(!factionData.length){el.innerHTML=tile||'<div class="empty-state">No factions known.</div>';return;}
+  el.innerHTML=tile+factionData.map(f=>{
     const rep=f.reputation||0;const pct=((rep+3)/6)*100;
     const color=rep<0?'var(--red)':rep>0?'var(--green)':'var(--text3)';
     const label=rep<=-3?'Hostile':rep<=-1?'Unfriendly':rep===0?'Neutral':rep<=2?'Friendly':'Allied';
@@ -2165,9 +2183,9 @@ let bestiaryData=[];
 async function loadBestiary(){
   const r=await apiFetch('/api/bestiary');bestiaryData=(await r.json()).bestiary||[];
   const el=document.getElementById('bestiary-list');
-  const gmBtn=isGm?`<button class="btn btn-primary" style="margin-bottom:1rem" onclick="openGmCreate('bestiary')">+ Add Creature</button>`:'';
-  if(!bestiaryData.length){el.innerHTML=gmBtn+'<div class="empty-state">No creatures revealed.</div>';return;}
-  el.innerHTML=gmBtn+bestiaryData.map(c=>{const st=c.stats||{};return`<div class="card" style="cursor:pointer" onclick="openDetail('bestiary',${c.id})">
+  const tile=gmAddTile('bestiary','Creature');
+  if(!bestiaryData.length){el.innerHTML=tile||'<div class="empty-state">No creatures revealed.</div>';return;}
+  el.innerHTML=tile+bestiaryData.map(c=>{const st=c.stats||{};return`<div class="card" style="cursor:pointer" onclick="openDetail('bestiary',${c.id})">
     ${c.image_path?`<img class="card-img" src="${API}${c.image_path}" alt="${esc(c.name)}" onerror="this.style.display='none'">`:''}
     <div class="card-title">${esc(c.name)}</div>
     <div class="card-meta">${st.cr!=null?`<span class="tag tag-medium">CR ${st.cr}</span>`:''}${st.ac!=null?`<span>AC ${st.ac}</span>`:''}${st.hp!=null?`<span>HP ${st.hp}</span>`:''}</div>
@@ -2185,9 +2203,9 @@ let rumourData=[];
 async function loadRumours(){
   const r=await apiFetch('/api/rumours');rumourData=(await r.json()).rumours||[];
   const el=document.getElementById('rumour-list');
-  const gmBtn=isGm?`<button class="btn btn-primary" style="margin-bottom:1rem" onclick="openGmCreate('rumour')">+ Add Rumour</button>`:'';
-  if(!rumourData.length){el.innerHTML=gmBtn+'<div class="empty-state">No rumours heard.</div>';return;}
-  el.innerHTML=gmBtn+rumourData.map(r=>`<div class="card" style="cursor:pointer" onclick="openDetail('rumour',${r.id})">
+  const tile=gmAddTile('rumour','Rumour');
+  if(!rumourData.length){el.innerHTML=tile||'<div class="empty-state">No rumours heard.</div>';return;}
+  el.innerHTML=tile+rumourData.map(r=>`<div class="card" style="cursor:pointer" onclick="openDetail('rumour',${r.id})">
     <div class="card-body" style="font-style:italic;font-size:14px;margin-bottom:8px">"${esc(r.text)}"</div>
     <div class="card-meta">${r.source_npc?`<span>— ${esc(r.source_npc)}</span>`:''}${r.source_location?`<span>📍 ${esc(r.source_location)}</span>`:''}</div>
     ${r.is_true!=null&&isGm?`<div style="margin-top:6px;font-size:10px;color:${r.is_true?'var(--green)':'var(--red)'}">GM: ${r.is_true?'TRUE':'FALSE'}</div>`:''}
@@ -2204,9 +2222,9 @@ let jobData=[];
 async function loadJobs(){
   const r=await apiFetch('/api/jobs');jobData=(await r.json()).jobs||[];
   const el=document.getElementById('job-list');
-  const gmBtn=isGm?`<button class="btn btn-primary" style="margin-bottom:1rem" onclick="openGmCreate('job')">+ Post Job</button>`:'';
-  if(!jobData.length){el.innerHTML=gmBtn+'<div class="empty-state">No jobs posted.</div>';return;}
-  el.innerHTML=gmBtn+jobData.map(j=>`<div class="card" style="cursor:pointer" onclick="openDetail('job',${j.id})">
+  const tile=gmAddTile('job','Job');
+  if(!jobData.length){el.innerHTML=tile||'<div class="empty-state">No jobs posted.</div>';return;}
+  el.innerHTML=tile+jobData.map(j=>`<div class="card" style="cursor:pointer" onclick="openDetail('job',${j.id})">
     <div class="card-title">${esc(j.title)}</div>
     <div class="card-meta"><span class="tag tag-${esc(j.status||'open')}">${esc(j.status||'open')}</span><span class="tag tag-${esc(j.difficulty||'medium')}">${esc(j.difficulty||'medium')}</span>${j.reward?`<span style="color:var(--accent)">⚜ ${esc(j.reward)}</span>`:''}</div>
     ${j.description?`<div class="card-body" style="margin-bottom:7px">${esc(j.description)}</div>`:''}
@@ -2369,9 +2387,32 @@ async function renderMindmap(){
   node.append('circle').attr('r',d=>d.type==='quest'?14:10).attr('fill',d=>colorMap[d.type]||'#888').attr('fill-opacity',0.25).attr('stroke',d=>colorMap[d.type]||'#888').attr('stroke-width',1.5);
   node.append('text').attr('dy','0.35em').attr('text-anchor','middle').attr('fill',d=>colorMap[d.type]||'#aaa').attr('font-size',9).attr('font-family','JetBrains Mono,monospace').text(d=>d.type[0].toUpperCase());
   node.append('text').attr('dy','1.8em').attr('text-anchor','middle').attr('fill','#a09890').attr('font-size',10).attr('font-family','Crimson Pro,serif').attr('pointer-events','none').text(d=>d.label.length>18?d.label.slice(0,16)+'…':d.label);
+  node.on('click',(event,d)=>{event.stopPropagation();showMindmapFlyout(d,colorMap);});
+  svg.on('click',()=>closeMindmapFlyout());
   mindmapSim.on('tick',()=>{link.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);node.attr('transform',d=>`translate(${d.x},${d.y})`);});
 }
 
+
+function showMindmapFlyout(d,colorMap){
+  const flyout=document.getElementById('mindmap-flyout');
+  if(!flyout)return;
+  const color=(colorMap||{})[d.type]||'#888';
+  const pageMap={quest:'quests',npc:'npcs',location:'locations',hook:'hooks'};
+  const desc=d.description?`<div style="font-size:12px;color:var(--text2);line-height:1.5;margin-top:6px">${esc(d.description.slice(0,180))}${d.description.length>180?'…':''}</div>`:'';
+  flyout.innerHTML=`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <span style="width:9px;height:9px;border-radius:50%;background:${color};flex-shrink:0;display:inline-block"></span>
+      <span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;font-family:'JetBrains Mono',monospace">${esc(d.type)}</span>
+      <button onclick="closeMindmapFlyout()" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1;padding:0">×</button>
+    </div>
+    <div style="font-family:'Cinzel',serif;font-size:14px;color:var(--text);margin-bottom:4px">${esc(d.label)}</div>
+    ${desc}
+    <div style="margin-top:10px">
+      <button class="btn btn-sm" onclick="navigate('${pageMap[d.type]||d.type+'s'}');closeMindmapFlyout()">Open ${esc(d.type)} →</button>
+    </div>`;
+  flyout.style.display='block';
+}
+function closeMindmapFlyout(){const f=document.getElementById('mindmap-flyout');if(f)f.style.display='none';}
 
 // ── GM Dashboard ─────────────────────────────────────────────────────────────
 async function loadGmDashboard(){
@@ -2724,7 +2765,9 @@ const GM_FORMS={
   session:`<div class="form-group"><label>Title</label><input id="gm-f-title" class="form-input"></div>
     <div class="form-group"><label>Summary</label><textarea id="gm-f-desc" class="form-input" rows="4"></textarea></div>
     <div class="form-group"><label>Session Date</label><input id="gm-f-date" class="form-input" type="date"></div>`,
-  message:`<div class="form-group"><label>Message</label><textarea id="gm-f-content" class="form-input" rows="4"></textarea></div>`,
+  message:`<div class="form-group"><label>To</label><select id="gm-f-user" class="form-input"><option value="">All Players</option></select></div>
+    <div class="form-group"><label>Subject</label><input id="gm-f-subject" class="form-input" placeholder="Re: The dragon's lair…"></div>
+    <div class="form-group"><label>Message</label><textarea id="gm-f-content" class="form-input" rows="5"></textarea></div>`,
   map:`<div class="form-group"><label>Title</label><input id="gm-f-title" class="form-input" placeholder="Map name"></div>
     <div class="form-group"><label>Description</label><textarea id="gm-f-desc" class="form-input" rows="3"></textarea></div>
     <div class="form-group"><label>Type</label><select id="gm-f-map-type" class="form-input"><option value="world">World</option><option value="region">Region</option><option value="city">City</option><option value="dungeon">Dungeon</option><option value="encounter">Encounter</option></select></div>
@@ -2772,6 +2815,10 @@ const GM_FORMS={
     <select id="gm-f-share-users" class="form-input" multiple size="6" style="height:auto;min-height:120px"></select>
     <small class="muted" style="display:block;margin-top:6px">Hold Ctrl/Cmd to select multiple. Selected players can see this item even when it's hidden.</small></div>`,
 };
+function gmAddTile(type,label){
+  if(!isGm)return'';
+  return`<div class="add-tile" onclick="openGmCreate('${type}')"><div class="add-tile-icon">+</div><div class="add-tile-label">New ${label}</div></div>`;
+}
 let gmCreateType=null,gmCreateExtra=null,gmEditId=null;
 const PAGE_TO_TYPE={quests:'quest',npcs:'npc',locations:'location',hooks:'hook',handouts:'handout',maps:'map',sessions:'session',notes:'note',factions:'faction',timeline:'timeline',inventory:'inventory',bestiary:'bestiary',rumours:'rumour',jobs:'job',agenda:'agenda'};
 const TYPE_STORE={quest:()=>questData,npc:()=>npcData,location:()=>locationData,hook:()=>hookData,faction:()=>factionData,timeline:()=>timelineData,inventory:()=>inventoryData,bestiary:()=>bestiaryData,rumour:()=>rumourData,job:()=>jobData,map:()=>mapsData};
@@ -2785,6 +2832,7 @@ function prefillGmForm(type,d){
   s('gm-f-date',d.in_world_date||d.session_date);s('gm-f-quest',d.linked_quest);
   s('gm-f-qty',d.quantity);s('gm-f-holder',d.holder);s('gm-f-significance',d.significance);
   s('gm-f-reward',d.reward);s('gm-f-difficulty',d.difficulty);
+  s('gm-f-subject',d.subject);
   s('gm-f-poster',d.posted_by);s('gm-f-location',d.source_location||d.location);
   s('gm-f-npc',d.source_npc);s('gm-f-content',d.text||d.content);
   s('gm-f-true',d.is_true!=null?String(d.is_true?1:0):null);
@@ -2815,11 +2863,13 @@ async function openGmCreate(type,extra){
   const body=document.getElementById('gm-modal-body');
   title.textContent=`Create ${type.charAt(0).toUpperCase()+type.slice(1)}`;
   body.innerHTML=GM_FORMS[type]||`<p class="muted">No form for ${esc(type)}</p>`;
-  // populate player select for handouts and agenda
-  if(type==='handout'||type==='agenda'){
+  // populate player select for handouts, agenda and messages
+  if(type==='handout'||type==='agenda'||type==='message'){
     const r=await apiFetch('/api/users');
     if(r.ok){const d=await r.json();const users=d.users||d||[];const sel=document.getElementById('gm-f-user');if(sel)users.forEach(u=>{if(u.role!=='gm'){const o=document.createElement('option');o.value=u.id;o.textContent=u.username;sel.appendChild(o);}});}
   }
+  // default session date to today
+  if(type==='session'){const di=document.getElementById('gm-f-date');if(di&&!di.value)di.value=new Date().toISOString().slice(0,10);}
   modal.style.display='flex';
 }
 async function openShareDialog(itemType,itemId,itemTitle){
@@ -2928,7 +2978,9 @@ async function gmModalSave(){
       break;
     case 'message':
       endpoint='/api/messages';
-      body={content:val('gm-f-content'),recipient_id:gmCreateExtra||null};
+      {const toId=val('gm-f-user')||gmCreateExtra||null;
+      const subject=val('gm-f-subject')||'Message';
+      body={subject,body:val('gm-f-content'),to_user_id:toId?Number(toId):null};}
       break;
     case 'share':{
       endpoint='/api/shares';
@@ -3190,8 +3242,61 @@ async function saveCampCreate() {
   await switchCampaign(d.campaign.id);
 }
 
+// ── Slash Commands ────────────────────────────────────────────────────────────
+const SLASH_CMDS=[
+  {key:'h1',label:'Heading 1',icon:'H1',insert:'# '},
+  {key:'h2',label:'Heading 2',icon:'H2',insert:'## '},
+  {key:'h3',label:'Heading 3',icon:'H3',insert:'### '},
+  {key:'bold',label:'Bold',icon:'B',insert:'**bold**'},
+  {key:'italic',label:'Italic',icon:'I',insert:'_italic_'},
+  {key:'list',label:'Bullet list',icon:'•',insert:'- '},
+  {key:'todo',label:'To-do item',icon:'☐',insert:'- [ ] '},
+  {key:'quote',label:'Blockquote',icon:'❝',insert:'> '},
+  {key:'code',label:'Code block',icon:'<>',insert:'```\n\n```'},
+  {key:'hr',label:'Divider',icon:'—',insert:'---\n'},
+  {key:'table',label:'Table',icon:'⊞',insert:'| Col 1 | Col 2 |\n|-------|-------|\n| Cell  | Cell  |\n'},
+];
+let _slashActive=false,_slashTarget=null,_slashIdx=0,_slashFiltered=[];
+function _slashInput(e){
+  const ta=e.target;if(!ta||ta.tagName!=='TEXTAREA')return;
+  const pos=ta.selectionStart;const text=ta.value.slice(0,pos);
+  const lineStart=text.lastIndexOf('\n')+1;const line=text.slice(lineStart);
+  if(line.startsWith('/')){
+    const q=line.slice(1).toLowerCase();
+    _slashFiltered=SLASH_CMDS.filter(c=>!q||c.key.startsWith(q)||c.label.toLowerCase().startsWith(q));
+    if(_slashFiltered.length){_slashActive=true;_slashTarget=ta;_slashIdx=0;_slashRender(ta);return;}
+  }
+  _slashClose();
+}
+function _slashKeydown(e){
+  if(!_slashActive)return;
+  if(e.key==='ArrowDown'){e.preventDefault();_slashIdx=(_slashIdx+1)%_slashFiltered.length;_slashRender();}
+  else if(e.key==='ArrowUp'){e.preventDefault();_slashIdx=(_slashIdx-1+_slashFiltered.length)%_slashFiltered.length;_slashRender();}
+  else if(e.key==='Enter'&&_slashFiltered.length){e.preventDefault();_slashApply(_slashFiltered[_slashIdx]);}
+  else if(e.key==='Escape'){_slashClose();}
+}
+function _slashRender(ta){
+  const menu=document.getElementById('slash-menu');if(!menu)return;
+  const ref=(ta||_slashTarget);const rect=ref.getBoundingClientRect();
+  menu.style.top=(rect.bottom+4)+'px';menu.style.left=rect.left+'px';menu.style.display='block';
+  menu.innerHTML=_slashFiltered.map((c,i)=>`<div class="slash-item${i===_slashIdx?' active':''}" onmousedown="event.preventDefault();_slashApply(SLASH_CMDS.find(x=>x.key==='${c.key}'))"><span class="slash-icon">${c.icon}</span>${c.label}</div>`).join('');
+}
+function _slashApply(cmd){
+  if(!cmd||!_slashTarget)return;
+  const ta=_slashTarget;const pos=ta.selectionStart;const text=ta.value;
+  const lineStart=text.slice(0,pos).lastIndexOf('\n')+1;
+  ta.value=text.slice(0,lineStart)+cmd.insert+text.slice(pos);
+  ta.selectionStart=ta.selectionEnd=lineStart+cmd.insert.length;
+  _slashClose();ta.dispatchEvent(new Event('input'));ta.focus();
+}
+function _slashClose(){_slashActive=false;const m=document.getElementById('slash-menu');if(m)m.style.display='none';}
+document.addEventListener('input',_slashInput);
+document.addEventListener('keydown',_slashKeydown);
+document.addEventListener('click',e=>{if(!e.target.closest('#slash-menu'))_slashClose();});
+
 // ── Boot ──────────────────────────────────────────────────────────────────────
 restoreSession();
 </script>
+<div id="slash-menu"></div>
 </body>
 </html>
