@@ -8,9 +8,8 @@ const router = express.Router();
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
   const campId = getCampaignId(req);
-  const sessions = campId
-    ? db.prepare('SELECT * FROM sessions WHERE (campaign_id = ? OR campaign_id IS NULL) ORDER BY number DESC').all(campId)
-    : db.prepare('SELECT * FROM sessions ORDER BY number DESC').all();
+  if (!campId) return res.json({ sessions: [] });
+  const sessions = db.prepare('SELECT * FROM sessions WHERE campaign_id = ? ORDER BY number DESC').all(campId);
   const withNotes = sessions.map(s => {
     const notes = req.user.isGm
       ? db.prepare('SELECT sn.*, u.character_name FROM session_notes sn LEFT JOIN users u ON sn.player_id = u.id WHERE sn.session_id = ?').all(s.id)
@@ -22,13 +21,14 @@ router.get('/', requireAuth, (req, res) => {
 
 // POST /api/sessions — GM creates session recap
 router.post('/', requireGm, (req, res) => {
-  const { campaign_id, number, title, summary, played_at, in_world_date } = req.body;
+  const { number, title, summary, played_at, in_world_date } = req.body;
   if (!title) return res.status(400).json({ error: 'title is required' });
   const db = getDb();
+  const campId = getCampaignId(req);
   const result = db.prepare(`
     INSERT INTO sessions (campaign_id, number, title, summary, played_at, in_world_date)
     VALUES (?, ?, ?, ?, ?, ?)
-  `).run(campaign_id || null, number || null, title, summary || null, played_at || null, in_world_date || null);
+  `).run(campId || null, number || null, title, summary || null, played_at || null, in_world_date || null);
   const session = db.prepare('SELECT * FROM sessions WHERE id = ?').get(result.lastInsertRowid);
   res.status(201).json({ session });
 });

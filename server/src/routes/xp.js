@@ -21,16 +21,15 @@ function levelFor(xp) {
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
   const campId = getCampaignId(req);
-  const campClause = campId ? 'AND (xa.campaign_id = ? OR xa.campaign_id IS NULL)' : '';
-  const params = campId ? [campId] : [];
+  if (!campId) return res.json({ totals: [], awards: [] });
 
   const awards = db.prepare(`
     SELECT xa.*, u.username, u.character_name
     FROM xp_awards xa
     JOIN users u ON xa.awarded_to = u.id
-    WHERE 1=1 ${campClause}
+    WHERE xa.campaign_id = ?
     ORDER BY xa.awarded_at DESC
-  `).all(...params);
+  `).all(campId);
 
   // Build per-player totals
   const totals = {};
@@ -65,7 +64,7 @@ router.post('/', requireGm, (req, res) => {
       createNotification(db, uid, 'xp', `+${amount} XP awarded${reason ? `: ${reason}` : ''}`, '', '');
     } catch (_) {}
     // Check level-up: get total for this player
-    const total = db.prepare(`SELECT COALESCE(SUM(amount),0) as t FROM xp_awards WHERE awarded_to = ?${campId?' AND (campaign_id=? OR campaign_id IS NULL)':''}`).get(...(campId?[uid,campId]:[uid])).t;
+    const total = db.prepare('SELECT COALESCE(SUM(amount),0) as t FROM xp_awards WHERE awarded_to = ? AND campaign_id = ?').get(uid, campId).t;
     const prev = total - Number(amount);
     if (levelFor(total) > levelFor(prev)) {
       try { createNotification(db, uid, 'xp', `Level up! You are now level ${levelFor(total)}`, '', ''); } catch (_) {}

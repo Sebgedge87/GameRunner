@@ -9,9 +9,8 @@ router.get('/', requireAuth, (req, res) => {
   const db = getDb();
   const campId = getCampaignId(req);
   const hiddenClause = req.user.isGm ? '' : 'AND (hidden IS NULL OR hidden = 0)';
-  const factions = campId
-    ? db.prepare(`SELECT * FROM factions WHERE (campaign_id = ? OR campaign_id IS NULL) ${hiddenClause} ORDER BY name`).all(campId)
-    : db.prepare(`SELECT * FROM factions WHERE 1=1 ${hiddenClause} ORDER BY name`).all();
+  if (!campId) return res.json({ factions: [] });
+  const factions = db.prepare(`SELECT * FROM factions WHERE campaign_id = ? ${hiddenClause} ORDER BY name`).all(campId);
   const withRep = factions.map(f => {
     const rep = db.prepare('SELECT * FROM faction_reputation WHERE faction_id = ?').get(f.id);
     return { ...f, reputation: rep ? rep.score : 0 };
@@ -20,13 +19,14 @@ router.get('/', requireAuth, (req, res) => {
 });
 
 router.post('/', requireGm, (req, res) => {
-  const { name, description, goals, image_path, campaign_id } = req.body;
+  const { name, description, goals, image_path } = req.body;
   if (!name) return res.status(400).json({ error: 'name is required' });
   const db = getDb();
+  const campId = getCampaignId(req);
   const result = db.prepare('INSERT INTO factions (campaign_id, name, description, goals, image_path) VALUES (?, ?, ?, ?, ?)')
-    .run(campaign_id || null, name, description || null, goals || null, image_path || null);
+    .run(campId || null, name, description || null, goals || null, image_path || null);
   db.prepare('INSERT INTO faction_reputation (faction_id, campaign_id, score) VALUES (?, ?, 0)')
-    .run(result.lastInsertRowid, campaign_id || null);
+    .run(result.lastInsertRowid, campId || null);
   const faction = db.prepare('SELECT * FROM factions WHERE id = ?').get(result.lastInsertRowid);
   res.status(201).json({ faction });
 });
@@ -43,11 +43,12 @@ router.put('/:id', requireGm, (req, res) => {
 makeHiddenToggle(router, 'factions');
 
 router.put('/:id/reputation', requireGm, (req, res) => {
-  const { score, campaign_id } = req.body;
+  const { score } = req.body;
   if (score === undefined) return res.status(400).json({ error: 'score required' });
   const db = getDb();
+  const campId = getCampaignId(req);
   db.prepare('INSERT OR REPLACE INTO faction_reputation (faction_id, campaign_id, score, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)')
-    .run(req.params.id, campaign_id || null, Math.max(-3, Math.min(3, score)));
+    .run(req.params.id, campId || null, Math.max(-3, Math.min(3, score)));
   res.json({ success: true });
 });
 

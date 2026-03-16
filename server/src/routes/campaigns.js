@@ -78,10 +78,8 @@ router.post('/', requireAuth, (req, res) => {
          max_players ? parseInt(max_players) : 4, code, cover_image || null);
 
   const campaignId = result.lastInsertRowid;
-  // Add all existing users as players; creator as gm
-  const allUsers = db.prepare('SELECT id FROM users').all();
-  const ins = db.prepare('INSERT OR IGNORE INTO campaign_members (campaign_id, user_id, role) VALUES (?,?,?)');
-  for (const u of allUsers) ins.run(campaignId, u.id, u.id === req.user.id ? 'gm' : 'player');
+  // Only add the creator as GM — players join via invite code
+  db.prepare('INSERT OR IGNORE INTO campaign_members (campaign_id, user_id, role) VALUES (?,?,?)').run(campaignId, req.user.id, 'gm');
 
   const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(campaignId);
   res.status(201).json({ campaign });

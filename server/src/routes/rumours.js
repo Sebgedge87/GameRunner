@@ -8,28 +8,18 @@ const router = express.Router();
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
   const campId = getCampaignId(req);
-  const campClause = campId ? 'AND (r.campaign_id = ? OR r.campaign_id IS NULL)' : '';
+  if (!campId) return res.json({ rumours: [] });
   if (req.user.isGm) {
-    const rumours = campId
-      ? db.prepare(`SELECT * FROM rumours r WHERE 1=1 ${campClause} ORDER BY created_at DESC`).all(campId)
-      : db.prepare('SELECT * FROM rumours ORDER BY created_at DESC').all();
+    const rumours = db.prepare('SELECT * FROM rumours r WHERE r.campaign_id = ? ORDER BY created_at DESC').all(campId);
     return res.json({ rumours });
   }
-  const rumours = campId
-    ? db.prepare(`
-        SELECT r.*, re.exposed_at
-        FROM rumours r
-        JOIN rumour_exposure re ON re.rumour_id = r.id
-        WHERE re.user_id = ? ${campClause}
-        ORDER BY re.exposed_at DESC
-      `).all(req.user.id, campId)
-    : db.prepare(`
-        SELECT r.*, re.exposed_at
-        FROM rumours r
-        JOIN rumour_exposure re ON re.rumour_id = r.id
-        WHERE re.user_id = ?
-        ORDER BY re.exposed_at DESC
-      `).all(req.user.id);
+  const rumours = db.prepare(`
+      SELECT r.*, re.exposed_at
+      FROM rumours r
+      JOIN rumour_exposure re ON re.rumour_id = r.id
+      WHERE re.user_id = ? AND r.campaign_id = ?
+      ORDER BY re.exposed_at DESC
+    `).all(req.user.id, campId);
   // Never expose is_true to players
   const safe = rumours.map(({ is_true, ...r }) => r);
   res.json({ rumours: safe });
@@ -37,11 +27,12 @@ router.get('/', requireAuth, (req, res) => {
 
 // POST /api/rumours — GM creates rumour
 router.post('/', requireGm, (req, res) => {
-  const { text, is_true = false, source_npc, source_location, campaign_id } = req.body;
+  const { text, is_true = false, source_npc, source_location } = req.body;
   if (!text) return res.status(400).json({ error: 'text is required' });
   const db = getDb();
+  const campId = getCampaignId(req);
   const result = db.prepare('INSERT INTO rumours (campaign_id, text, is_true, source_npc, source_location) VALUES (?, ?, ?, ?, ?)')
-    .run(campaign_id || null, text, is_true ? 1 : 0, source_npc || null, source_location || null);
+    .run(campId || null, text, is_true ? 1 : 0, source_npc || null, source_location || null);
   const rumour = db.prepare('SELECT * FROM rumours WHERE id = ?').get(result.lastInsertRowid);
   res.status(201).json({ rumour });
 });

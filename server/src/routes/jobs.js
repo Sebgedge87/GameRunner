@@ -9,22 +9,22 @@ router.get('/', requireAuth, (req, res) => {
   const db = getDb();
   const campId = getCampaignId(req);
   const hiddenClause = req.user.isGm ? '' : 'AND (hidden IS NULL OR hidden = 0)';
-  const jobs = campId
-    ? db.prepare(`SELECT * FROM jobs WHERE (campaign_id = ? OR campaign_id IS NULL) ${hiddenClause} ORDER BY CASE status WHEN 'open' THEN 0 ELSE 1 END, created_at DESC`).all(campId)
-    : db.prepare(`SELECT * FROM jobs WHERE 1=1 ${hiddenClause} ORDER BY CASE status WHEN 'open' THEN 0 ELSE 1 END, created_at DESC`).all();
+  if (!campId) return res.json({ jobs: [] });
+  const jobs = db.prepare(`SELECT * FROM jobs WHERE campaign_id = ? ${hiddenClause} ORDER BY CASE status WHEN 'open' THEN 0 ELSE 1 END, created_at DESC`).all(campId);
   res.json({ jobs });
 });
 
 makeHiddenToggle(router, 'jobs');
 
 router.post('/', requireGm, (req, res) => {
-  const { title, description, reward, difficulty = 'medium', posted_by, location, expires_at, campaign_id, requires_contact = false } = req.body;
+  const { title, description, reward, difficulty = 'medium', posted_by, location, expires_at, requires_contact = false } = req.body;
   if (!title) return res.status(400).json({ error: 'title is required' });
   const db = getDb();
+  const campId = getCampaignId(req);
   const result = db.prepare(`
     INSERT INTO jobs (campaign_id, title, description, reward, difficulty, posted_by, location, expires_at, requires_contact)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(campaign_id || null, title, description || null, reward || null, difficulty, posted_by || null, location || null, expires_at || null, requires_contact ? 1 : 0);
+  `).run(campId || null, title, description || null, reward || null, difficulty, posted_by || null, location || null, expires_at || null, requires_contact ? 1 : 0);
   const job = db.prepare('SELECT * FROM jobs WHERE id = ?').get(result.lastInsertRowid);
   res.status(201).json({ job });
 });

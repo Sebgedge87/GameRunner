@@ -612,16 +612,28 @@ select.form-input{cursor:pointer;}
 .wizard-nav{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
 /* ── Audio ───────────────────────────────────────────────────────────────────── */
 #audio-player{display:none;}
+/* ── Theme transition ────────────────────────────────────────────────────────── */
+html{transition:background-color var(--anim-speed) ease,color var(--anim-speed) ease;}
 /* ── Mobile ──────────────────────────────────────────────────────────────────── */
-.hamburger{display:none;background:none;border:1px solid var(--border);color:var(--text2);padding:6px 10px;border-radius:4px;font-size:16px;}
+.hamburger{display:none;background:none;border:1px solid var(--border);color:var(--text2);padding:6px 10px;border-radius:4px;font-size:16px;cursor:pointer;transition:color .2s,border-color .2s;}
+.hamburger:hover{color:var(--text);border-color:var(--border2);}
+/* Sidebar overlay for mobile */
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99;backdrop-filter:blur(2px);}
+.sidebar-overlay.open{display:block;}
+@media (max-width:900px) {
+  .gm-grid{grid-template-columns:1fr;}
+  .camp-create-body{grid-template-columns:1fr;}
+  .camp-create-left{border-right:none;border-bottom:1px solid var(--border);}
+}
 @media (max-width:768px) {
   :root{--sidebar-w:0px;}
-  #sidebar{transform:translateX(-230px);width:230px;}
+  #sidebar{transform:translateX(-230px);width:240px;box-shadow:4px 0 24px rgba(0,0,0,0.6);}
   #sidebar.mobile-open{transform:translateX(0);}
-  #topbar{left:0;}
+  #topbar{left:0;padding:0 14px;gap:10px;}
   #main{margin-left:0;}
-  .hamburger{display:flex;}
-  .page{padding:18px 16px;}
+  .hamburger{display:flex;align-items:center;}
+  .page{padding:16px 14px;}
+  .page-title{font-size:18px;}
   .notes-layout{grid-template-columns:1fr;}
   .combat-layout{grid-template-columns:1fr;}
   .sheet-grid{grid-template-columns:1fr;}
@@ -629,6 +641,35 @@ select.form-input{cursor:pointer;}
   .gm-grid{grid-template-columns:1fr;}
   .theory-wrap{grid-template-columns:1fr;height:auto;}
   #theory-svg{height:400px;}
+  .camp-lobby-grid{grid-template-columns:1fr;}
+  .card-grid{grid-template-columns:1fr;}
+  .map-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));}
+  .dash-grid{grid-template-columns:repeat(2,1fr);}
+  .topbar-search-wrap{max-width:none;flex:1;}
+  .topbar-search-kbd{display:none;}
+  .camp-switcher-btn{max-width:120px;font-size:11px;}
+  .flyout{width:100vw;}
+  .modal{width:96%;padding:18px;}
+  .field-row{grid-template-columns:1fr;}
+  .sys-grid{grid-template-columns:repeat(2,1fr);}
+  .sched-item{flex-direction:column;align-items:flex-start;gap:8px;}
+  .inv-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .player-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .campaign-banner{flex-direction:column;align-items:flex-start;gap:10px;}
+  .combat-layout > *:last-child{order:-1;}
+  .filter-tabs{gap:4px;}
+  .filter-tab{padding:4px 10px;font-size:10px;}
+}
+@media (max-width:480px) {
+  .dash-grid{grid-template-columns:repeat(2,1fr);}
+  .stat-grid{grid-template-columns:repeat(3,1fr);}
+  .page{padding:12px 10px;}
+  .login-box{width:calc(100vw - 32px);padding:28px 22px;}
+  .card{padding:14px;}
+  #toast-container{bottom:16px;right:12px;left:12px;}
+  .toast{min-width:0;width:100%;}
+  .theme-swatches{gap:6px;}
+  .theme-swatch{min-width:70px;padding:8px 10px;}
 }
 /* ── Print Styles ────────────────────────────────────────────────────────────── */
 @media print {
@@ -644,6 +685,7 @@ select.form-input{cursor:pointer;}
 <body>
 <!-- Scanline overlay for Alien theme -->
 <div class="scanline-overlay"></div>
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
 
 <!-- ── Login ──────────────────────────────────────────────────────────────────── -->
 <div id="login-screen">
@@ -1324,13 +1366,14 @@ const AMBIENT_TRACKS = {
 function applyTheme(system){
   const theme = SYSTEM_THEME_MAP[system]||'dnd5e';
   document.documentElement.setAttribute('data-theme',theme);
-  document.getElementById('theme-select').value=system;
+  const sel = document.getElementById('theme-select');
+  if(sel) sel.value=system;
   localStorage.setItem('chronicle_theme',system);
 }
 function detectThemeFromCampaign(){
+  // Campaign system always wins — it defines the aesthetic of the game world
   if(activeCampaign&&activeCampaign.system){
-    const saved=localStorage.getItem('chronicle_theme');
-    if(!saved) applyTheme(activeCampaign.system);
+    applyTheme(activeCampaign.system);
   }
 }
 
@@ -1395,7 +1438,8 @@ async function doLogin(){
 document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 
 async function restoreSession(){
-  // Load saved theme
+  // Apply a temporary theme from localStorage while the campaign loads so the
+  // screen is styled immediately; it will be overridden by detectThemeFromCampaign.
   const savedTheme = localStorage.getItem('chronicle_theme');
   if(savedTheme) applyTheme(savedTheme);
   if(!token)return;
@@ -1489,8 +1533,14 @@ function navigate(page){
   if(fab&&isGm&&gmPages.includes(page)){fab.classList.add('show');fab.dataset.ctx=page;}
   else if(fab)fab.classList.remove('show');
 }
-function toggleSidebar(){document.getElementById('sidebar').classList.toggle('mobile-open');}
-function closeSidebar(){document.getElementById('sidebar').classList.remove('mobile-open');}
+function toggleSidebar(){
+  const open=document.getElementById('sidebar').classList.toggle('mobile-open');
+  document.getElementById('sidebar-overlay').classList.toggle('open',open);
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('mobile-open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+}
 
 // ── Load All ──────────────────────────────────────────────────────────────────
 async function loadAll(){

@@ -9,22 +9,22 @@ router.get('/', requireAuth, (req, res) => {
   const db = getDb();
   const campId = getCampaignId(req);
   const hiddenClause = req.user.isGm ? '' : 'AND (hidden IS NULL OR hidden = 0)';
-  const maps = campId
-    ? db.prepare(`SELECT * FROM maps WHERE (campaign_id = ? OR campaign_id IS NULL) ${hiddenClause} ORDER BY created_at DESC`).all(campId)
-    : db.prepare(`SELECT * FROM maps WHERE 1=1 ${hiddenClause} ORDER BY created_at DESC`).all();
+  if (!campId) return res.json({ maps: [] });
+  const maps = db.prepare(`SELECT * FROM maps WHERE campaign_id = ? ${hiddenClause} ORDER BY created_at DESC`).all(campId);
   res.json({ maps });
 });
 
 makeHiddenToggle(router, 'maps');
 
 router.post('/', requireGm, (req, res) => {
-  const { title, description, image_path, map_type = 'world', campaign_id } = req.body;
+  const { title, description, image_path, map_type = 'world' } = req.body;
   if (!title || !image_path) return res.status(400).json({ error: 'title and image_path are required' });
   const db = getDb();
+  const campId = getCampaignId(req);
   const result = db.prepare(`
     INSERT INTO maps (campaign_id, title, description, image_path, map_type)
     VALUES (?, ?, ?, ?, ?)
-  `).run(campaign_id || null, title, description || null, image_path, map_type);
+  `).run(campId || null, title, description || null, image_path, map_type);
   const map = db.prepare('SELECT * FROM maps WHERE id = ?').get(result.lastInsertRowid);
   res.status(201).json({ map });
 });
