@@ -58,7 +58,7 @@ router.post('/join', requireAuth, (req, res) => {
 
 // POST /api/campaigns — any authenticated user can create; becomes GM
 router.post('/', requireAuth, (req, res) => {
-  const { name, system = 'dnd5e', subtitle, description, theme, max_players, invite_code } = req.body;
+  const { name, system = 'dnd5e', subtitle, description, theme, max_players, invite_code, cover_image } = req.body;
   if (!name) return res.status(400).json({ error: 'name is required' });
 
   // Auto-generate invite code if not provided
@@ -72,10 +72,10 @@ router.post('/', requireAuth, (req, res) => {
   if (taken) return res.status(409).json({ error: 'Invite code already in use, choose another' });
 
   const result = db.prepare(`
-    INSERT INTO campaigns (name, system, subtitle, description, theme, max_players, invite_code, active)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+    INSERT INTO campaigns (name, system, subtitle, description, theme, max_players, invite_code, cover_image, active)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
   `).run(name, system, subtitle || null, description || null, theme || system,
-         max_players ? parseInt(max_players) : 4, code);
+         max_players ? parseInt(max_players) : 4, code, cover_image || null);
 
   const campaignId = result.lastInsertRowid;
   // Add all existing users as players; creator as gm
@@ -91,7 +91,7 @@ router.post('/', requireAuth, (req, res) => {
 router.put('/:id', requireGm, (req, res) => {
   const db = getDb();
   const { name, system, subtitle, description, theme, current_scene, current_weather, current_time,
-          music_url: rawMusicUrl, music_label, session_count, max_players, invite_code } = req.body;
+          music_url: rawMusicUrl, music_label, session_count, max_players, invite_code, cover_image } = req.body;
   const music_url = rawMusicUrl == null ? null : (/^https?:\/\//i.test(rawMusicUrl) ? rawMusicUrl : null);
   const code = invite_code != null ? invite_code.trim().toUpperCase() || null : undefined;
   db.prepare(`
@@ -109,11 +109,12 @@ router.put('/:id', requireGm, (req, res) => {
       session_count = COALESCE(?, session_count),
       max_players = COALESCE(?, max_players),
       invite_code = COALESCE(?, invite_code),
+      cover_image = COALESCE(?, cover_image),
       updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
   `).run(name, system, subtitle, description, theme, current_scene, current_weather, current_time,
          music_url, music_label, session_count, max_players ? parseInt(max_players) : null,
-         code, req.params.id);
+         code, cover_image || null, req.params.id);
   const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(req.params.id);
   res.json({ campaign });
 });
