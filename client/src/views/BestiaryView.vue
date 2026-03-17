@@ -26,15 +26,15 @@
         :class="{ hidden: creature.hidden }"
         @click="ui.openDetail('bestiary', creature)"
       >
-        <div v-if="creature.image" class="card-image">
-          <img :src="creature.image" :alt="creature.name" style="width:100%;height:120px;object-fit:cover;border-radius:4px 4px 0 0" />
+        <div v-if="creature.image_path" class="card-image">
+          <img :src="creature.image_path" :alt="creature.name" style="width:100%;height:120px;object-fit:cover;border-radius:4px 4px 0 0" />
         </div>
         <div class="card-body">
           <div class="card-title">{{ creature.name }}</div>
           <div class="card-meta" style="flex-wrap:wrap;gap:4px">
-            <span v-if="creature.cr != null" class="tag">CR {{ creature.cr }}</span>
-            <span v-if="creature.ac != null" class="tag">AC {{ creature.ac }}</span>
-            <span v-if="creature.hp != null" class="tag">HP {{ creature.hp }}</span>
+            <span v-if="creature.stats?.cr != null" class="tag">CR {{ creature.stats.cr }}</span>
+            <span v-if="creature.stats?.ac != null" class="tag">AC {{ creature.stats.ac }}</span>
+            <span v-if="creature.stats?.hp != null" class="tag">HP {{ creature.stats.hp }}</span>
           </div>
           <div v-if="creature.description" style="font-size:0.82em;opacity:0.7;margin-top:6px;line-height:1.4">
             {{ creature.description }}
