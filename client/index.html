@@ -297,7 +297,40 @@ body.reduce-motion *{animation:none!important;transition:none!important;}
 body.no-effects::before,body.no-effects::after{display:none!important;}
 body.no-effects *::before,body.no-effects *::after{animation:none!important;}
 body[data-font-size="small"]{font-size:13px;}
-body[data-font-size="large"]{font-size:16px;}
+body[data-font-size="medium"]{font-size:16px;}
+body[data-font-size="large"]{font-size:19px;}
+body[data-font-size="large"] .nav-item{font-size:14px;}
+body[data-font-size="large"] .card-body,.card-meta{font-size:14px;}
+body[data-font-size="large"] .settings-label{font-size:15px;}
+body[data-font-size="large"] .detail-body{font-size:15px;}
+body[data-font-size="small"] .nav-item{font-size:12px;}
+/* ── Collapsible nav sections ───────────────────────────────────────────────── */
+.nav-section{cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between;}
+.nav-section::after{content:'▾';font-size:9px;margin-right:12px;transition:transform .2s;color:var(--text3);opacity:.7;}
+.nav-section.collapsed::after{transform:rotate(-90deg);}
+.nav-group{overflow:hidden;}
+.nav-group.collapsed{display:none;}
+/* ── Custom Theme ────────────────────────────────────────────────────────────── */
+[data-theme="custom"]{
+  --bg:var(--custom-bg,#0d0d0f);--bg2:var(--custom-bg2,#111116);--bg3:var(--custom-bg3,#16161d);
+  --surface:var(--custom-surface,#1a1a24);--surface2:var(--custom-surface2,#20202e);
+  --border:var(--custom-border,#2a2a3a);--border2:var(--custom-border2,#333348);
+  --accent:var(--custom-accent,#c9a84c);--accent2:var(--custom-accent2,#e8c96a);
+  --accent-dim:var(--custom-accent-dim,#7a6230);
+  --text:var(--custom-text,#e8e4d9);--text2:var(--custom-text2,#a09890);--text3:var(--custom-text3,#6a6460);
+}
+.custom-theme-row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-top:8px;}
+.custom-color-group{display:flex;flex-direction:column;gap:4px;align-items:center;}
+.custom-color-group label{font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace;letter-spacing:.5px;text-transform:uppercase;}
+.custom-color-group input[type=color]{width:36px;height:28px;border:1px solid var(--border);border-radius:4px;background:none;cursor:pointer;padding:2px;}
+/* ── Background Image ────────────────────────────────────────────────────────── */
+#main.has-bg-image{background-size:cover;background-attachment:fixed;background-position:center;}
+.bg-preview{width:100%;height:80px;border-radius:4px;background:var(--bg3) center/cover no-repeat;border:1px solid var(--border);margin-top:6px;}
+/* ── Playlist Player ─────────────────────────────────────────────────────────── */
+.playlist-wrap{margin-top:14px;border-radius:8px;overflow:hidden;}
+.playlist-wrap iframe{width:100%;border:none;border-radius:8px;}
+.playlist-link-bar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;font-size:12px;}
+.playlist-link-bar a{color:var(--accent);font-family:'JetBrains Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
 #slash-menu{position:fixed;z-index:2000;background:var(--surface);border:1px solid var(--border2);border-radius:6px;box-shadow:0 8px 20px rgba(0,0,0,.5);min-width:200px;overflow:hidden;display:none;}
 .slash-item{display:flex;align-items:center;gap:10px;padding:7px 12px;cursor:pointer;font-size:13px;color:var(--text2);transition:background .1s;}
 .slash-item:hover,.slash-item.active{background:var(--accent-dim);color:var(--text);}
@@ -756,6 +789,7 @@ html{transition:background-color var(--anim-speed) ease,color var(--anim-speed) 
       <option value="coriolis">Coriolis</option>
       <option value="dune">Dune</option>
       <option value="achtung">Achtung! Cthulhu</option>
+      <option value="custom">Custom</option>
     </select>
     <button class="audio-btn" id="audio-toggle-btn" onclick="toggleAudio()" title="Ambient Audio">♪</button>
     <button class="topbar-icon-btn" onclick="openFlyout('msgs')" title="Messages">
@@ -774,33 +808,45 @@ html{transition:background-color var(--anim-speed) ease,color var(--anim-speed) 
     </div>
     <div class="sidebar-nav">
       <div class="nav-item active" data-page="home" onclick="navigate('home')"><span class="nav-icon">⌂</span>Home</div>
-      <div class="nav-section">Campaign</div>
-      <div class="nav-item" data-page="dashboard" onclick="navigate('dashboard')"><span class="nav-icon">⚔</span>Dashboard</div>
-      <div class="nav-item" data-page="quests" onclick="navigate('quests')"><span class="nav-icon">📜</span>Quests</div>
-      <div class="nav-item" data-page="jobs" onclick="navigate('jobs')"><span class="nav-icon">📌</span>Job Board</div>
-      <div class="nav-section">World</div>
-      <div class="nav-item" data-page="npcs" onclick="navigate('npcs')"><span class="nav-icon">👤</span>NPCs</div>
-      <div class="nav-item" data-page="locations" onclick="navigate('locations')"><span class="nav-icon">🗺</span>Locations</div>
-      <div class="nav-item" data-page="hooks" onclick="navigate('hooks')"><span class="nav-icon">🪝</span>Hooks</div>
-      <div class="nav-item" data-page="factions" onclick="navigate('factions')"><span class="nav-icon">⚑</span>Factions</div>
-      <div class="nav-item" data-page="timeline" onclick="navigate('timeline')"><span class="nav-icon">⏳</span>Timeline</div>
-      <div class="nav-item" data-page="maps" onclick="navigate('maps')"><span class="nav-icon">🗾</span>Maps</div>
-      <div class="nav-item" data-page="mindmap" onclick="navigate('mindmap')"><span class="nav-icon">🕸</span>Mindmap</div>
-      <div class="nav-section">Players</div>
-      <div class="nav-item" data-page="handouts" onclick="navigate('handouts')"><span class="nav-icon">📄</span>Handouts<span class="nav-badge" id="handout-badge" style="display:none"></span></div>
-      <div class="nav-item" data-page="inventory" onclick="navigate('inventory')"><span class="nav-icon">🎒</span>Inventory</div>
-      <div class="nav-item" data-page="bestiary" onclick="navigate('bestiary')"><span class="nav-icon">🐉</span>Bestiary</div>
-      <div class="nav-item" data-page="rumours" onclick="navigate('rumours')"><span class="nav-icon">💬</span>Rumours</div>
-      <div class="nav-item" data-page="sessions" onclick="navigate('sessions')"><span class="nav-icon">🎲</span>Sessions</div>
-      <div class="nav-section">Character</div>
-      <div class="nav-item" data-page="character-sheet" onclick="navigate('character-sheet')"><span class="nav-icon">🧙</span>Sheet</div>
-      <div class="nav-item" data-page="notes" onclick="navigate('notes')"><span class="nav-icon">📝</span>Notes</div>
-      <div class="nav-item" data-page="theory-board" onclick="navigate('theory-board')"><span class="nav-icon">🔍</span>Theory Board</div>
-      <div class="nav-section gm-only" style="display:none">GM</div>
-      <div class="nav-item gm-only" style="display:none" data-page="gm-dashboard" onclick="navigate('gm-dashboard')"><span class="nav-icon">👁</span>GM Dashboard</div>
-      <div class="nav-item gm-only" style="display:none" data-page="combat" onclick="navigate('combat')"><span class="nav-icon">⚔</span>Combat</div>
-      <div class="nav-section">Preferences</div>
-      <div class="nav-item" data-page="settings" onclick="navigate('settings')"><span class="nav-icon">⚙</span>Settings</div>
+      <div class="nav-section" onclick="toggleNavSection(this)">Campaign</div>
+      <div class="nav-group">
+        <div class="nav-item" data-page="dashboard" onclick="navigate('dashboard')"><span class="nav-icon">⚔</span>Dashboard</div>
+        <div class="nav-item" data-page="quests" onclick="navigate('quests')"><span class="nav-icon">📜</span>Quests</div>
+        <div class="nav-item" data-page="jobs" onclick="navigate('jobs')"><span class="nav-icon">📌</span>Job Board</div>
+      </div>
+      <div class="nav-section" onclick="toggleNavSection(this)">World</div>
+      <div class="nav-group">
+        <div class="nav-item" data-page="npcs" onclick="navigate('npcs')"><span class="nav-icon">👤</span>NPCs</div>
+        <div class="nav-item" data-page="locations" onclick="navigate('locations')"><span class="nav-icon">🗺</span>Locations</div>
+        <div class="nav-item" data-page="hooks" onclick="navigate('hooks')"><span class="nav-icon">🪝</span>Hooks</div>
+        <div class="nav-item" data-page="factions" onclick="navigate('factions')"><span class="nav-icon">⚑</span>Factions</div>
+        <div class="nav-item" data-page="timeline" onclick="navigate('timeline')"><span class="nav-icon">⏳</span>Timeline</div>
+        <div class="nav-item" data-page="maps" onclick="navigate('maps')"><span class="nav-icon">🗾</span>Maps</div>
+        <div class="nav-item" data-page="mindmap" onclick="navigate('mindmap')"><span class="nav-icon">🕸</span>Mindmap</div>
+      </div>
+      <div class="nav-section" onclick="toggleNavSection(this)">Players</div>
+      <div class="nav-group">
+        <div class="nav-item" data-page="handouts" onclick="navigate('handouts')"><span class="nav-icon">📄</span>Handouts<span class="nav-badge" id="handout-badge" style="display:none"></span></div>
+        <div class="nav-item" data-page="inventory" onclick="navigate('inventory')"><span class="nav-icon">🎒</span>Inventory</div>
+        <div class="nav-item" data-page="bestiary" onclick="navigate('bestiary')"><span class="nav-icon">🐉</span>Bestiary</div>
+        <div class="nav-item" data-page="rumours" onclick="navigate('rumours')"><span class="nav-icon">💬</span>Rumours</div>
+        <div class="nav-item" data-page="sessions" onclick="navigate('sessions')"><span class="nav-icon">🎲</span>Sessions</div>
+      </div>
+      <div class="nav-section" onclick="toggleNavSection(this)">Character</div>
+      <div class="nav-group">
+        <div class="nav-item" data-page="character-sheet" onclick="navigate('character-sheet')"><span class="nav-icon">🧙</span>Sheet</div>
+        <div class="nav-item" data-page="notes" onclick="navigate('notes')"><span class="nav-icon">📝</span>Notes</div>
+        <div class="nav-item" data-page="theory-board" onclick="navigate('theory-board')"><span class="nav-icon">🔍</span>Theory Board</div>
+      </div>
+      <div class="nav-section gm-only" style="display:none" onclick="toggleNavSection(this)">GM</div>
+      <div class="nav-group gm-only" style="display:none">
+        <div class="nav-item gm-only" style="display:none" data-page="gm-dashboard" onclick="navigate('gm-dashboard')"><span class="nav-icon">👁</span>GM Dashboard</div>
+        <div class="nav-item gm-only" style="display:none" data-page="combat" onclick="navigate('combat')"><span class="nav-icon">⚔</span>Combat</div>
+      </div>
+      <div class="nav-section" onclick="toggleNavSection(this)">Preferences</div>
+      <div class="nav-group">
+        <div class="nav-item" data-page="settings" onclick="navigate('settings')"><span class="nav-icon">⚙</span>Settings</div>
+      </div>
     </div>
     <div class="sidebar-footer">
       <button class="logout-btn" onclick="doLogout()">SIGN OUT</button>
@@ -826,6 +872,7 @@ html{transition:background-color var(--anim-speed) ease,color var(--anim-speed) 
     <section class="page" id="page-dashboard">
       <div class="page-header"><div class="page-title">Dashboard</div></div>
       <div id="campaign-banner" style="display:none" class="campaign-banner"></div>
+      <div id="playlist-player-wrap"></div>
       <div id="agenda-wrap" style="margin-bottom:18px"></div>
       <div id="stress-wrap" style="margin-bottom:18px"></div>
       <div id="pins-wrap" style="margin-bottom:18px"></div>
@@ -1055,6 +1102,34 @@ html{transition:background-color var(--anim-speed) ease,color var(--anim-speed) 
         <h3 class="settings-section-title">Theme</h3>
         <p class="muted" style="margin-bottom:1rem;font-size:13px">Choose the visual theme for your campaign system. Each theme changes colours, fonts, and atmospheric effects.</p>
         <div id="theme-swatches" class="theme-swatches"></div>
+        <div id="custom-theme-controls" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+          <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:8px;letter-spacing:.5px">CUSTOM COLOURS</div>
+          <div class="custom-theme-row">
+            <div class="custom-color-group"><label>Background</label><input type="color" id="ct-bg" oninput="applyCustomTheme()"></div>
+            <div class="custom-color-group"><label>Surface</label><input type="color" id="ct-surface" oninput="applyCustomTheme()"></div>
+            <div class="custom-color-group"><label>Accent</label><input type="color" id="ct-accent" oninput="applyCustomTheme()"></div>
+            <div class="custom-color-group"><label>Text</label><input type="color" id="ct-text" oninput="applyCustomTheme()"></div>
+            <div class="custom-color-group"><label>Border</label><input type="color" id="ct-border" oninput="applyCustomTheme()"></div>
+          </div>
+          <button class="btn btn-sm" style="margin-top:10px" onclick="resetCustomTheme()">Reset to Defaults</button>
+        </div>
+      </div>
+
+      <!-- Background Image -->
+      <div class="card" style="margin-bottom:1rem">
+        <h3 class="settings-section-title">Background Image</h3>
+        <p class="muted" style="margin-bottom:1rem;font-size:13px">Set a custom background image for the app. Stored locally in your browser.</p>
+        <div class="settings-row" style="border-bottom:none;padding:0">
+          <div class="field-row" style="grid-template-columns:1fr auto;gap:8px;width:100%">
+            <input id="settings-bg-url" class="form-input" placeholder="https://… or leave blank to remove" oninput="previewSettingsBg()">
+            <div style="display:flex;gap:6px">
+              <button class="btn" onclick="document.getElementById('settings-bg-file').click()">Upload</button>
+              <button class="btn btn-danger" onclick="clearBgImage()">Clear</button>
+            </div>
+          </div>
+          <input type="file" id="settings-bg-file" accept="image/*" style="display:none" onchange="uploadBgImage(this)">
+        </div>
+        <div id="settings-bg-preview" class="bg-preview" style="display:none"></div>
       </div>
 
       <!-- Accessibility -->
@@ -1267,6 +1342,22 @@ html{transition:background-color var(--anim-speed) ease,color var(--anim-speed) 
             </div>
           </div>
         </div>
+        <div class="form-group">
+          <label>Playlist URL <span style="color:var(--text3);font-size:10px">(Spotify or YouTube)</span></label>
+          <input id="cc-playlist" class="form-input" placeholder="https://open.spotify.com/playlist/…">
+        </div>
+        <div class="form-group">
+          <label>Background Image</label>
+          <div id="cc-bg-zone" class="cc-cover-zone" style="height:80px" onclick="document.getElementById('cc-bg-file').click()">
+            <img id="cc-bg-preview" src="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:4px;">
+            <div id="cc-bg-placeholder" class="cc-cover-placeholder">
+              <div style="font-size:20px">🖼</div>
+              <div style="font-size:11px;color:var(--text3)">Click to upload background</div>
+            </div>
+          </div>
+          <input type="file" id="cc-bg-file" accept="image/*" style="display:none" onchange="previewBgImage(this)">
+          <input type="hidden" id="cc-bg-url" value="">
+        </div>
       </div>
       <!-- Right column: description editor -->
       <div class="camp-create-right">
@@ -1310,6 +1401,7 @@ html{transition:background-color var(--anim-speed) ease,color var(--anim-speed) 
           <option value="dnd5e">D&D 5e</option><option value="coc">Call of Cthulhu</option>
           <option value="alien">Alien</option><option value="coriolis">Coriolis</option>
           <option value="dune">Dune</option><option value="achtung">Achtung! Cthulhu</option>
+          <option value="custom">Custom</option>
         </select>
       </div>
     </div>
@@ -1359,7 +1451,7 @@ function apiFetch(path,opts={}){
 function skel(n=3){return Array(n).fill('<div class="skel-card skeleton"></div>').join('');}
 
 // ── Themes ────────────────────────────────────────────────────────────────────
-const SYSTEM_THEME_MAP = {dnd5e:'dnd5e',coc:'coc',alien:'alien',coriolis:'coriolis',dune:'dune',achtung:'achtung'};
+const SYSTEM_THEME_MAP = {dnd5e:'dnd5e',coc:'coc',alien:'alien',coriolis:'coriolis',dune:'dune',achtung:'achtung',custom:'custom'};
 const AMBIENT_TRACKS = {
   dnd5e:null, coc:null, alien:null, coriolis:null, dune:null, achtung:null
 };
@@ -1369,12 +1461,102 @@ function applyTheme(system){
   const sel = document.getElementById('theme-select');
   if(sel) sel.value=system;
   localStorage.setItem('chronicle_theme',system);
+  const customCtrl = document.getElementById('custom-theme-controls');
+  if(customCtrl) customCtrl.style.display = theme==='custom' ? '' : 'none';
+  if(theme==='custom') applyCustomTheme();
 }
 function detectThemeFromCampaign(){
   // Campaign system always wins — it defines the aesthetic of the game world
   if(activeCampaign&&activeCampaign.system){
     applyTheme(activeCampaign.system);
   }
+}
+// ── Custom Theme ──────────────────────────────────────────────────────────────
+function applyCustomTheme(){
+  const saved = JSON.parse(localStorage.getItem('chronicle_custom_theme')||'{}');
+  const bg = document.getElementById('ct-bg')?.value || saved.bg || '#0d0d0f';
+  const surface = document.getElementById('ct-surface')?.value || saved.surface || '#1a1a24';
+  const accent = document.getElementById('ct-accent')?.value || saved.accent || '#c9a84c';
+  const text = document.getElementById('ct-text')?.value || saved.text || '#e8e4d9';
+  const border = document.getElementById('ct-border')?.value || saved.border || '#2a2a3a';
+  // Derive darker variants
+  const bg2 = darkenHex(bg, 5); const bg3 = darkenHex(bg, 10);
+  const surface2 = lightenHex(surface, 4);
+  const border2 = lightenHex(border, 10);
+  const accent2 = lightenHex(accent, 15);
+  const accentDim = darkenHex(accent, 25);
+  const text2 = darkenHex(text, 25); const text3 = darkenHex(text, 45);
+  const r = document.documentElement;
+  r.style.setProperty('--custom-bg', bg);
+  r.style.setProperty('--custom-bg2', bg2);
+  r.style.setProperty('--custom-bg3', bg3);
+  r.style.setProperty('--custom-surface', surface);
+  r.style.setProperty('--custom-surface2', surface2);
+  r.style.setProperty('--custom-border', border);
+  r.style.setProperty('--custom-border2', border2);
+  r.style.setProperty('--custom-accent', accent);
+  r.style.setProperty('--custom-accent2', accent2);
+  r.style.setProperty('--custom-accent-dim', accentDim);
+  r.style.setProperty('--custom-text', text);
+  r.style.setProperty('--custom-text2', text2);
+  r.style.setProperty('--custom-text3', text3);
+  // Save
+  localStorage.setItem('chronicle_custom_theme', JSON.stringify({bg,surface,accent,text,border}));
+}
+function resetCustomTheme(){
+  localStorage.removeItem('chronicle_custom_theme');
+  const defaults = {bg:'#0d0d0f',surface:'#1a1a24',accent:'#c9a84c',text:'#e8e4d9',border:'#2a2a3a'};
+  ['bg','surface','accent','text','border'].forEach(k=>{const el=document.getElementById('ct-'+k);if(el)el.value=defaults[k];});
+  applyCustomTheme();
+}
+function loadCustomThemeInputs(){
+  const saved = JSON.parse(localStorage.getItem('chronicle_custom_theme')||'{}');
+  const defaults = {bg:'#0d0d0f',surface:'#1a1a24',accent:'#c9a84c',text:'#e8e4d9',border:'#2a2a3a'};
+  ['bg','surface','accent','text','border'].forEach(k=>{const el=document.getElementById('ct-'+k);if(el)el.value=saved[k]||defaults[k];});
+}
+function darkenHex(hex, pct){
+  const c=hexToRgb(hex);if(!c)return hex;
+  return rgbToHex(Math.max(0,c.r-Math.round(255*pct/100)),Math.max(0,c.g-Math.round(255*pct/100)),Math.max(0,c.b-Math.round(255*pct/100)));
+}
+function lightenHex(hex, pct){
+  const c=hexToRgb(hex);if(!c)return hex;
+  return rgbToHex(Math.min(255,c.r+Math.round(255*pct/100)),Math.min(255,c.g+Math.round(255*pct/100)),Math.min(255,c.b+Math.round(255*pct/100)));
+}
+function hexToRgb(hex){const r=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);return r?{r:parseInt(r[1],16),g:parseInt(r[2],16),b:parseInt(r[3],16)}:null;}
+function rgbToHex(r,g,b){return'#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');}
+// ── Background Image ──────────────────────────────────────────────────────────
+function applyBgImage(url){
+  const main = document.getElementById('main');
+  if(!main)return;
+  if(url){main.style.backgroundImage=`url(${JSON.stringify(url)})`;main.classList.add('has-bg-image');}
+  else{main.style.backgroundImage='';main.classList.remove('has-bg-image');}
+}
+function previewSettingsBg(){
+  const url = document.getElementById('settings-bg-url')?.value.trim();
+  const preview = document.getElementById('settings-bg-preview');
+  if(url){preview.style.backgroundImage=`url(${JSON.stringify(url)})`;preview.style.display='';}
+  else{preview.style.backgroundImage='';preview.style.display='none';}
+}
+async function uploadBgImage(input){
+  const file = input.files[0]; if(!file)return;
+  const fd=new FormData();fd.append('file',file);
+  const r=await fetch(`${API}/api/uploads`,{method:'POST',headers:{Authorization:`Bearer ${token}`},body:fd});
+  if(r.ok){
+    const d=await r.json();
+    const url=d.url;
+    document.getElementById('settings-bg-url').value=url;
+    localStorage.setItem('chronicle_bg_image',url);
+    applyBgImage(url);
+    previewSettingsBg();
+    showToast('Background set','success');
+  }else showToast('Upload failed','error');
+}
+function clearBgImage(){
+  document.getElementById('settings-bg-url').value='';
+  document.getElementById('settings-bg-preview').style.display='none';
+  localStorage.removeItem('chronicle_bg_image');
+  applyBgImage(null);
+  showToast('Background cleared','info');
 }
 
 // ── Audio ─────────────────────────────────────────────────────────────────────
@@ -1475,6 +1657,7 @@ function showApp(){
   document.getElementById('app').style.display='flex';
   const u=currentUser;
   document.getElementById('sidebar-user').textContent=(u.character_name||u.username)+(u.character_class?` · ${u.character_class}`:'');
+  restoreNavSections();
   connectSSE();
   loadAll().then(() => navigate('home'));
   checkOnboarding();
@@ -1610,7 +1793,7 @@ document.addEventListener('click',e=>{
 });
 function renderCampaignBanner(){
   const el=document.getElementById('campaign-banner');
-  if(!activeCampaign){el.style.display='none';return;}
+  if(!activeCampaign){el.style.display='none';renderPlaylistPlayer(null);return;}
   const c=activeCampaign;
   el.style.display='';
   el.innerHTML=`<div><div class="campaign-name">${esc(c.name)}</div>${c.subtitle?`<div style="font-size:12px;color:var(--text3);margin-top:2px">${esc(c.subtitle)}</div>`:''}</div>
@@ -1620,6 +1803,46 @@ function renderCampaignBanner(){
       ${c.current_time?`<div class="campaign-meta-item"><span>Time </span><b>${esc(c.current_time)}</b></div>`:''}
       ${c.music_label?`<div class="campaign-meta-item">${c.music_url?`<a href="${esc(c.music_url)}" target="_blank" style="color:var(--accent)">♪ ${esc(c.music_label)}</a>`:`<span>♪ </span><b>${esc(c.music_label)}</b>`}</div>`:''}
     </div>`;
+  // Apply campaign background image if set
+  if(c.bg_image) applyBgImage(c.bg_image);
+  else { const localBg=localStorage.getItem('chronicle_bg_image'); applyBgImage(localBg||null); }
+  // Render playlist player
+  renderPlaylistPlayer(c.playlist_url||c.music_url||null);
+}
+function renderPlaylistPlayer(url){
+  const wrap=document.getElementById('playlist-player-wrap');
+  if(!wrap)return;
+  if(!url){wrap.innerHTML='';return;}
+  const embed=getPlaylistEmbed(url);
+  if(!embed){wrap.innerHTML='';return;}
+  if(embed.type==='spotify'){
+    wrap.innerHTML=`<div class="playlist-wrap" style="margin-bottom:14px"><iframe src="${esc(embed.embedUrl)}" height="80" allow="autoplay;clipboard-write;encrypted-media;fullscreen;picture-in-picture" loading="lazy"></iframe></div>`;
+  }else if(embed.type==='youtube'){
+    wrap.innerHTML=`<div class="playlist-wrap" style="margin-bottom:14px"><iframe src="${esc(embed.embedUrl)}" height="200" allow="autoplay;encrypted-media" allowfullscreen loading="lazy"></iframe></div>`;
+  }else if(embed.type==='youtube-music'||embed.type==='link'){
+    wrap.innerHTML=`<div class="playlist-link-bar" style="margin-bottom:14px">♪ <a href="${esc(url)}" target="_blank" rel="noopener">Open Playlist ↗</a><span style="color:var(--text3);font-size:10px">${embed.type==='youtube-music'?'(YouTube Music — opens in new tab)':'(opens in new tab)'}</span></div>`;
+  }else wrap.innerHTML='';
+}
+function getPlaylistEmbed(url){
+  if(!url)return null;
+  try{
+    const u=new URL(url);
+    if(u.hostname==='open.spotify.com'){
+      const parts=u.pathname.split('/').filter(Boolean);
+      if(parts.length>=2)return{type:'spotify',embedUrl:`https://open.spotify.com/embed/${parts[0]}/${parts[1]}?utm_source=generator`};
+    }
+    if(u.hostname==='www.youtube.com'||u.hostname==='youtube.com'){
+      const list=u.searchParams.get('list');
+      if(list)return{type:'youtube',embedUrl:`https://www.youtube.com/embed/videoseries?list=${encodeURIComponent(list)}`};
+      const v=u.searchParams.get('v');
+      if(v)return{type:'youtube',embedUrl:`https://www.youtube.com/embed/${v}`};
+    }
+    if(u.hostname==='youtu.be'){
+      return{type:'youtube',embedUrl:`https://www.youtube.com/embed/${u.pathname.slice(1)}`};
+    }
+    if(u.hostname==='music.youtube.com')return{type:'youtube-music',embedUrl:null};
+    return{type:'link',embedUrl:null};
+  }catch{return null;}
 }
 
 // ── Users ─────────────────────────────────────────────────────────────────────
@@ -2664,7 +2887,15 @@ async function loadGmDashboard(){
       ${['dnd5e','coc','alien','coriolis','dune','achtung'].map(s=>`<option value="${s}"${activeCamp.system===s?' selected':''}>${s}</option>`).join('')}
     </select></div>
     <div class="form-group"><label>Description</label><textarea id="gm-camp-desc" class="form-input" rows="3">${esc(activeCamp.description||'')}</textarea></div>
-    <div class="form-group"><label>Background Music URL</label><input id="gm-camp-music" class="form-input" value="${esc(activeCamp.music_url||'')}"></div>
+    <div class="form-group"><label>Playlist URL <span style="color:var(--text3);font-size:10px">(Spotify or YouTube — shown on dashboard)</span></label><input id="gm-camp-playlist" class="form-input" value="${esc(activeCamp.playlist_url||activeCamp.music_url||'')}" placeholder="https://open.spotify.com/playlist/… or YouTube"></div>
+    <div class="form-group"><label>Background Image URL</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="gm-camp-bg" class="form-input" style="flex:1" value="${esc(activeCamp.bg_image||'')}" placeholder="https://… or upload">
+        <button class="btn" onclick="document.getElementById('gm-camp-bg-file').click()">Upload</button>
+      </div>
+      <input type="file" id="gm-camp-bg-file" accept="image/*" style="display:none" onchange="uploadGmBgImage(this,${activeCamp.id})">
+      ${activeCamp.bg_image?`<div style="margin-top:6px;height:60px;border-radius:4px;background:url(${JSON.stringify(esc(activeCamp.bg_image))}) center/cover;border:1px solid var(--border)"></div>`:''}
+    </div>
     <button class="btn btn-primary" onclick="saveCampaignControls(${activeCamp.id})">Save Changes</button>
   </div>`:'<p class="muted">No active campaign.</p>'}
   <div class="card" style="margin-top:1rem">
@@ -2704,9 +2935,27 @@ async function saveCampaignControls(id){
   const name=document.getElementById('gm-camp-name').value.trim();
   const system=document.getElementById('gm-camp-system').value;
   const description=document.getElementById('gm-camp-desc').value.trim();
-  const music_url=document.getElementById('gm-camp-music').value.trim();
-  const r=await apiFetch(`/api/campaigns/${id}`,{method:'PUT',body:JSON.stringify({name,system,description,music_url})});
-  if(r.ok){showToast('Campaign updated','success');applyTheme(system);}else showToast('Save failed','error');
+  const playlist_url=document.getElementById('gm-camp-playlist')?.value.trim()||null;
+  const bg_image=document.getElementById('gm-camp-bg')?.value.trim()||null;
+  const r=await apiFetch(`/api/campaigns/${id}`,{method:'PUT',body:JSON.stringify({name,system,description,playlist_url,bg_image})});
+  if(r.ok){
+    showToast('Campaign updated','success');
+    applyTheme(system);
+    // Refresh campaign data so banner/player updates
+    await loadCampaign();
+    if(currentPage==='dashboard')renderCampaignBanner();
+  }else showToast('Save failed','error');
+}
+async function uploadGmBgImage(input,campaignId){
+  const file=input.files[0];if(!file)return;
+  const fd=new FormData();fd.append('file',file);
+  const r=await fetch(`${API}/api/uploads`,{method:'POST',headers:{Authorization:`Bearer ${token}`},body:fd});
+  if(r.ok){
+    const d=await r.json();
+    const bgInput=document.getElementById('gm-camp-bg');
+    if(bgInput)bgInput.value=d.url;
+    showToast('Image uploaded — click Save Changes to apply','success');
+  }else showToast('Upload failed','error');
 }
 async function downloadBackup(){
   const token=localStorage.getItem('chronicle_token');
@@ -3252,6 +3501,7 @@ const SYSTEM_META = {
   coriolis:{ label:'Coriolis', icon:'🌌', color:'#4a9fd4' },
   dune:  { label:'Dune',       icon:'🏜', color:'#d4821a' },
   achtung:{ label:'Achtung!',  icon:'☠', color:'#9e9e9e' },
+  custom:{ label:'Custom',     icon:'🎨', color:'#c9a84c' },
 };
 
 function loadHome() {
@@ -3317,16 +3567,6 @@ async function joinCampaign() {
 // ── Campaign Create Modal ─────────────────────────────────────────────────────
 let ccMdPreview = false;
 
-function previewCoverImage(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const preview = document.getElementById('cc-cover-preview');
-  const placeholder = document.getElementById('cc-cover-placeholder');
-  preview.src = URL.createObjectURL(file);
-  preview.style.display = '';
-  placeholder.style.display = 'none';
-}
-
 function openCampCreate() {
   document.getElementById('cc-name').value = '';
   document.getElementById('cc-subtitle').value = '';
@@ -3339,12 +3579,38 @@ function openCampCreate() {
   document.getElementById('cc-invite').value = '';
   document.getElementById('cc-desc').value = '';
   document.getElementById('cc-desc-preview').innerHTML = '';
+  document.getElementById('cc-playlist').value = '';
+  document.getElementById('cc-bg-url').value = '';
+  document.getElementById('cc-bg-file').value = '';
+  const bgPrev = document.getElementById('cc-bg-preview');
+  bgPrev.style.display = 'none'; bgPrev.src = '';
+  document.getElementById('cc-bg-placeholder').style.display = '';
   ccMdPreview = false;
   document.getElementById('cc-desc').style.display = '';
   document.getElementById('cc-desc-preview').style.display = 'none';
   document.getElementById('md-preview-btn').classList.remove('active');
   buildSysGrid('dnd5e');
   document.getElementById('camp-create-modal').style.display = 'flex';
+}
+function previewCoverImage(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const prev=document.getElementById('cc-cover-preview');
+    prev.src=e.target.result;prev.style.display='';
+    document.getElementById('cc-cover-placeholder').style.display='none';
+  };
+  reader.readAsDataURL(file);
+}
+function previewBgImage(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const prev=document.getElementById('cc-bg-preview');
+    prev.src=e.target.result;prev.style.display='';
+    document.getElementById('cc-bg-placeholder').style.display='none';
+  };
+  reader.readAsDataURL(file);
 }
 
 function closeCampCreate() {
@@ -3461,6 +3727,16 @@ async function saveCampCreate() {
     if (ur.ok) { const ud = await ur.json(); cover_image = ud.url; }
   }
 
+  // Upload background image if selected
+  let bg_image = null;
+  const bgFile = document.getElementById('cc-bg-file').files[0];
+  if (bgFile) {
+    const fd = new FormData();
+    fd.append('file', bgFile);
+    const ur = await fetch(`${API}/api/uploads`, { method:'POST', headers:{'Authorization':`Bearer ${token}`}, body: fd });
+    if (ur.ok) { const ud = await ur.json(); bg_image = ud.url; }
+  }
+
   const body = {
     name,
     subtitle: document.getElementById('cc-subtitle').value.trim() || null,
@@ -3469,6 +3745,8 @@ async function saveCampCreate() {
     invite_code: document.getElementById('cc-invite').value.trim().toUpperCase() || null,
     description: document.getElementById('cc-desc').value.trim() || null,
     cover_image,
+    bg_image,
+    playlist_url: document.getElementById('cc-playlist').value.trim() || null,
   };
   const r = await apiFetch('/api/campaigns', { method:'POST', body: JSON.stringify(body) });
   const d = await r.json();
@@ -3488,6 +3766,7 @@ const THEME_META={
   coriolis:{name:'Coriolis',color:'#6a8ad4',bg:'#080810'},
   dune:{name:'Dune',color:'#d4a040',bg:'#0e0a06'},
   achtung:{name:'Achtung!',color:'#8a9e40',bg:'#080a06'},
+  custom:{name:'Custom',color:'#c9a84c',bg:'#0d0d0f'},
 };
 function loadSettings(){
   const saved=localStorage.getItem('chronicle_a11y')?JSON.parse(localStorage.getItem('chronicle_a11y')):{};
@@ -3512,15 +3791,27 @@ function loadSettings(){
   }
   // build theme swatches
   buildThemeSwatches();
+  // load custom theme inputs
+  loadCustomThemeInputs();
+  // restore background image
+  const bgUrl=localStorage.getItem('chronicle_bg_image')||'';
+  const bgInput=document.getElementById('settings-bg-url');
+  const bgPreview=document.getElementById('settings-bg-preview');
+  if(bgInput)bgInput.value=bgUrl;
+  if(bgPreview){if(bgUrl){bgPreview.style.backgroundImage=`url(${JSON.stringify(bgUrl)})`;bgPreview.style.display='';}else bgPreview.style.display='none';}
 }
 function buildThemeSwatches(){
   const wrap=document.getElementById('theme-swatches');if(!wrap)return;
   const cur=document.documentElement.getAttribute('data-theme')||'dnd5e';
-  wrap.innerHTML=Object.entries(THEME_META).map(([k,v])=>`
-    <div class="theme-swatch${k===cur?' active':''}" onclick="applyTheme('${k}');buildThemeSwatches()">
-      <div class="theme-swatch-dot" style="background:${v.color};box-shadow:0 0 8px ${v.color}66"></div>
+  wrap.innerHTML=Object.entries(THEME_META).map(([k,v])=>{
+    const dotStyle=k==='custom'
+      ?'background:linear-gradient(135deg,#c9a84c,#4caf7d,#4c7ac9);'
+      :`background:${v.color};box-shadow:0 0 8px ${v.color}66;`;
+    return`<div class="theme-swatch${k===cur?' active':''}" onclick="applyTheme('${k}');buildThemeSwatches()">
+      <div class="theme-swatch-dot" style="${dotStyle}"></div>
       <div class="theme-swatch-name">${v.name}</div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 function setFontSize(sz){
   document.body.setAttribute('data-font-size',sz);
@@ -3554,6 +3845,33 @@ function applyA11yOnBoot(){
   document.body.classList.toggle('no-effects',!!s.effects);
   const sz=localStorage.getItem('chronicle_font_size')||'medium';
   document.body.setAttribute('data-font-size',sz);
+  // restore bg image
+  const bgUrl=localStorage.getItem('chronicle_bg_image');
+  if(bgUrl)applyBgImage(bgUrl);
+  // restore custom theme vars if custom is active
+  if(document.documentElement.getAttribute('data-theme')==='custom') applyCustomTheme();
+}
+// ── Collapsible Sidebar Sections ──────────────────────────────────────────────
+function toggleNavSection(el){
+  const group=el.nextElementSibling;
+  if(!group||!group.classList.contains('nav-group'))return;
+  const collapsed=el.classList.toggle('collapsed');
+  group.classList.toggle('collapsed',collapsed);
+  const key=el.textContent.trim().replace(/[▾▸]/g,'').trim();
+  const state=JSON.parse(localStorage.getItem('nav_collapsed')||'{}');
+  state[key]=collapsed;
+  localStorage.setItem('nav_collapsed',JSON.stringify(state));
+}
+function restoreNavSections(){
+  const state=JSON.parse(localStorage.getItem('nav_collapsed')||'{}');
+  document.querySelectorAll('.nav-section').forEach(el=>{
+    const key=el.textContent.trim().replace(/[▾▸]/g,'').trim();
+    if(state[key]){
+      el.classList.add('collapsed');
+      const group=el.nextElementSibling;
+      if(group?.classList.contains('nav-group'))group.classList.add('collapsed');
+    }
+  });
 }
 
 // ── Slash Commands ────────────────────────────────────────────────────────────
