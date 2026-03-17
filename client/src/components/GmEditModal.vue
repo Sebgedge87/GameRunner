@@ -1,6 +1,6 @@
 <template>
   <div v-if="ui.gmEditModal" class="modal-overlay open" @click.self="ui.closeGmEdit()">
-    <div class="modal" style="max-width:520px">
+    <div class="modal" :style="{ maxWidth: type === 'bestiary' ? '680px' : '520px' }">
       <div class="modal-title">{{ title }}</div>
       <div class="gm-modal-body">
         <!-- Quest -->
@@ -128,14 +128,63 @@
 
         <!-- Bestiary -->
         <template v-else-if="type === 'bestiary'">
-          <div class="form-group"><label>Name</label><input v-model="f.name" class="form-input" /></div>
-          <div class="form-group"><label>Description</label><textarea v-model="f.description" class="form-input" rows="3"></textarea></div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
-            <div class="form-group"><label>CR</label><input v-model.number="f.cr" class="form-input" type="number" step="0.25" min="0" /></div>
-            <div class="form-group"><label>AC</label><input v-model.number="f.ac" class="form-input" type="number" /></div>
-            <div class="form-group"><label>HP</label><input v-model.number="f.hp" class="form-input" type="number" /></div>
+          <!-- ── Header: Portrait + Creature Name ── -->
+          <div class="bst-header">
+            <div class="bst-portrait-col">
+              <div class="bst-avatar" :style="portraitPreview ? `background-image:url(${portraitPreview})` : ''">
+                <span v-if="!portraitPreview" class="bst-avatar-icon">🐉</span>
+              </div>
+              <label class="btn btn-sm bst-upload-btn">
+                Upload Portrait
+                <input type="file" ref="imgInput" accept="image/*" style="display:none" @change="onPortraitChange" />
+              </label>
+            </div>
+            <div class="bst-name-col">
+              <label class="bst-label">Creature Name</label>
+              <input v-model="f.name" class="form-input bst-name-input" placeholder="e.g. Ancient Red Dragon…" />
+            </div>
           </div>
-          <div class="form-group"><label>Image</label><input type="file" ref="imgInput" class="form-input" accept="image/*" /></div>
+
+          <!-- ── Main Body: Stat Block + Description ── -->
+          <div class="bst-body">
+            <div class="bst-stat-block">
+              <div class="bst-stat-title">Stat Block</div>
+              <div class="form-group">
+                <label class="bst-label">CR</label>
+                <input v-model.number="f.cr" class="form-input bst-stat-input" type="number" step="0.25" min="0" placeholder="—" />
+              </div>
+              <div class="form-group">
+                <label class="bst-label">AC</label>
+                <input v-model.number="f.ac" class="form-input bst-stat-input" type="number" min="0" placeholder="—" />
+              </div>
+              <div class="form-group">
+                <label class="bst-label">HP</label>
+                <input v-model.number="f.hp" class="form-input bst-stat-input" type="number" min="0" placeholder="—" />
+              </div>
+            </div>
+            <div class="bst-desc-col">
+              <label class="bst-label">Description</label>
+              <textarea v-model="f.description" class="form-input bst-desc-area" rows="7"
+                placeholder="Describe this creature's appearance, behaviour, and lore…"></textarea>
+            </div>
+          </div>
+
+          <!-- ── Player Notes ── -->
+          <div class="form-group bst-player-notes">
+            <label class="bst-label">Player Notes</label>
+            <textarea v-model="f.player_notes" class="form-input" rows="3"
+              placeholder="Notes visible to all players in the campaign…"></textarea>
+          </div>
+
+          <!-- ── DM Private Notes (GM only) ── -->
+          <div class="bst-gm-notes">
+            <div class="bst-gm-notes-hdr">
+              <span class="bst-gm-badge">🔒 GM Only</span>
+              <span class="bst-gm-notes-title">Private Notes</span>
+            </div>
+            <textarea v-model="f.gm_notes" class="form-input bst-gm-textarea" rows="3"
+              placeholder="Secret information, hidden motivations, encounter tactics… not visible to players."></textarea>
+          </div>
         </template>
 
         <!-- Rumour -->
@@ -222,10 +271,16 @@ const data = useDataStore()
 const imgInput = ref(null)
 const saving = ref(false)
 const saveError = ref('')
+const portraitPreview = ref('')
+
+function onPortraitChange(e) {
+  const file = e.target.files?.[0]
+  if (file) portraitPreview.value = URL.createObjectURL(file)
+}
 
 const f = reactive({
   title: '', name: '', description: '', status: 'active', quest_type: 'main',
-  role: '', gm_notes: '', goals: '', known_members: '', date: '', in_world_date: '',
+  role: '', gm_notes: '', player_notes: '', goals: '', known_members: '', date: '', in_world_date: '',
   linked_quest: '', quantity: 1, holder: 'party', significance: '', reward: '',
   difficulty: 'medium', posted_by: '', location: '', text: '', source_npc: '',
   source_location: '', is_true: true, cr: null, ac: null, hp: null, map_type: 'world',
@@ -272,6 +327,7 @@ watch(() => ui.gmEditModal, (modal) => {
     else if (typeof f[k] === 'boolean') f[k] = false
     else f[k] = ''
   })
+  portraitPreview.value = ''
   f.status = 'active'; f.quest_type = 'main'; f.difficulty = 'medium'
   f.quantity = 1; f.holder = 'party'; f.map_type = 'world'; f.is_true = true
   f.results_public = 0
@@ -303,6 +359,8 @@ watch(() => ui.gmEditModal, (modal) => {
   f.cr = d.stats?.cr ?? null
   f.ac = d.stats?.ac ?? null
   f.hp = d.stats?.hp ?? null
+  f.player_notes = d.player_notes || ''
+  if (d.image_url && modal.type === 'bestiary') portraitPreview.value = d.image_url
   f.map_type = d.map_type || 'world'
   f.content = d.body || d.content || ''
   f.subject = d.subject || ''
@@ -363,7 +421,7 @@ async function save() {
       case 'job':
         body = { title: f.title, description: f.description, reward: f.reward, difficulty: f.difficulty || 'medium', posted_by: f.posted_by, location: f.location }; break
       case 'bestiary':
-        body = { name: f.name, description: f.description, stats: { cr: f.cr, ac: f.ac, hp: f.hp }, image_url: imageUrl }; break
+        body = { name: f.name, description: f.description, stats: { cr: f.cr, ac: f.ac, hp: f.hp }, player_notes: f.player_notes, gm_notes: f.gm_notes, image_url: imageUrl }; break
       case 'rumour':
         body = { text: f.text, source_npc: f.source_npc, source_location: f.source_location, is_true: f.is_true }; break
       case 'agenda':
@@ -402,3 +460,172 @@ async function save() {
 }
 </script>
 
+<style scoped>
+/* ── Bestiary Form ───────────────────────────────────────────────────────── */
+.bst-label {
+  display: block;
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text3);
+  margin-bottom: 5px;
+}
+
+/* Header row: portrait left, name right */
+.bst-header {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 18px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.bst-portrait-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.bst-avatar {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 2px solid var(--border2);
+  background: var(--bg3) center/cover no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color .2s;
+}
+.bst-avatar:hover { border-color: var(--gold); }
+.bst-avatar-icon { font-size: 34px; opacity: .5; }
+
+.bst-upload-btn {
+  font-size: 10px;
+  letter-spacing: .04em;
+  padding: 4px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  color: var(--text2);
+  transition: border-color .15s, color .15s;
+}
+.bst-upload-btn:hover { border-color: var(--gold); color: var(--gold2); }
+
+.bst-name-col { display: flex; flex-direction: column; justify-content: center; }
+
+.bst-name-input {
+  font-family: 'Cinzel', serif !important;
+  font-size: 20px !important;
+  font-weight: 600;
+  color: var(--text) !important;
+  letter-spacing: .03em;
+  height: 52px;
+  padding: 0 14px;
+}
+.bst-name-input:focus { border-color: var(--gold) !important; box-shadow: 0 0 0 2px rgba(201,168,76,.18); }
+
+/* Main body: stat block left, description right */
+.bst-body {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 18px;
+  margin-bottom: 14px;
+}
+
+.bst-stat-block {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bst-stat-title {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  color: var(--gold);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+}
+
+.bst-stat-input {
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 16px !important;
+  font-weight: 700;
+  color: var(--gold2) !important;
+  padding: 6px 8px;
+  height: auto;
+}
+.bst-stat-input:focus { border-color: var(--gold) !important; }
+
+.bst-desc-col { display: flex; flex-direction: column; }
+
+.bst-desc-area {
+  flex: 1;
+  resize: vertical;
+  min-height: 160px;
+  line-height: 1.65;
+}
+
+/* Player notes */
+.bst-player-notes { margin-bottom: 4px; }
+
+/* DM Private Notes */
+.bst-gm-notes {
+  background: rgba(180, 40, 40, .07);
+  border: 1px solid rgba(201, 76, 76, .35);
+  border-radius: 6px;
+  padding: 14px;
+  margin-top: 8px;
+}
+
+.bst-gm-notes-hdr {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.bst-gm-badge {
+  font-size: 9px;
+  font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--red);
+  background: rgba(201, 76, 76, .14);
+  border: 1px solid rgba(201, 76, 76, .35);
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+
+.bst-gm-notes-title {
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  color: var(--red);
+  letter-spacing: .05em;
+}
+
+.bst-gm-textarea { resize: vertical; }
+.bst-gm-textarea:focus { border-color: var(--red) !important; box-shadow: 0 0 0 2px rgba(201, 76, 76, .15); }
+
+/* Tablet/mobile: stack header and body vertically */
+@media (max-width: 560px) {
+  .bst-header { grid-template-columns: 1fr; }
+  .bst-portrait-col { flex-direction: row; gap: 12px; align-items: center; }
+  .bst-body { grid-template-columns: 1fr; }
+  .bst-stat-block { flex-direction: row; flex-wrap: wrap; gap: 12px; }
+  .bst-stat-block .form-group { flex: 1; min-width: 60px; }
+}
+</style>
