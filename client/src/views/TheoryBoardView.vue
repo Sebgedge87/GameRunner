@@ -74,7 +74,7 @@ async function loadBoard() {
     if (r.ok) {
       const d = await r.json()
       boardData.nodes = d.nodes || []
-      boardData.links = d.links || []
+      boardData.links = d.edges || []
       renderBoard()
     }
   } catch (e) { console.error('[loadBoard]', e) }
@@ -158,7 +158,7 @@ function renderBoard() {
     .on('click', async (_, d) => {
       if (linkMode.value && selectedNode.value && selectedNode.value.id !== d.id) {
         // Create link
-        await data.apif('/api/theory/links', {
+        await data.apif('/api/theory/edges', {
           method: 'POST',
           body: JSON.stringify({ source_id: selectedNode.value.id, target_id: d.id }),
         })

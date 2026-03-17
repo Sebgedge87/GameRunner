@@ -36,6 +36,8 @@
     <GmFab />
     <!-- Share modal -->
     <ShareModal />
+    <!-- Onboarding wizard -->
+    <OnboardingWizard />
   </div>
 </template>
 
@@ -57,6 +59,7 @@ import MessageModal from './MessageModal.vue'
 import HandoutModal from './HandoutModal.vue'
 import GmFab from './GmFab.vue'
 import ShareModal from './ShareModal.vue'
+import OnboardingWizard from './OnboardingWizard.vue'
 
 const auth = useAuthStore()
 const campaign = useCampaignStore()

@@ -1,6 +1,6 @@
 <template>
   <div v-if="ui.detailModal" class="modal-overlay open" @click.self="ui.closeDetail()">
-    <div class="modal">
+    <div class="modal" @click="handleModalClick">
       <div v-html="renderedContent"></div>
       <div class="modal-actions">
         <button class="modal-close" @click="ui.closeDetail()">CLOSE</button>
@@ -48,6 +48,17 @@ function df(label, value) {
   return `<div class="detail-field"><div class="detail-field-label">${label}</div><div class="detail-field-value">${esc(String(value))}</div></div>`
 }
 
+// Renders a field whose values are clickable links that open related detail views
+function dfLinks(label, values, type) {
+  if (!values) return ''
+  const items = Array.isArray(values) ? values : [values]
+  if (!items.length) return ''
+  const chips = items.map(v =>
+    `<span class="tag link-chip" data-item-name="${esc(String(v))}" data-item-type="${esc(type)}" style="cursor:pointer;text-decoration:underline dotted">${esc(String(v))}</span>`
+  ).join(' ')
+  return `<div class="detail-field"><div class="detail-field-label">${label}</div><div class="detail-field-value" style="display:flex;flex-wrap:wrap;gap:4px">${chips}</div></div>`
+}
+
 function img(d) {
   if (d.image_path) return `<img class="detail-img" src="${d.image_path}" onerror="this.style.display='none'" alt=""/>`
   if (d.image_url) return `<img class="detail-img" src="${d.image_url}" onerror="this.style.display='none'" alt=""/>`
@@ -66,23 +77,23 @@ const renderedContent = computed(() => {
         <div class="detail-meta"><span class="tag tag-${esc(d.type||'side')}">${esc(d.type||'side')}</span><span class="tag tag-${esc(d.status||'active')}">${esc(d.status||'active')}</span></div>
         ${d.progress!=null?`<div style="margin-bottom:10px"><div class="progress-bar" style="height:6px"><div class="progress-fill" style="width:${d.progress}%"></div></div><div style="font-size:10px;color:var(--text3);margin-top:2px">${d.progress}% complete</div></div>`:''}
         ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}
-        ${df('Location',d.location)}${df('Connected To',Array.isArray(d.connected_to)?d.connected_to.join(', '):d.connected_to)}`
+        ${dfLinks('Location', d.location, 'location')}${dfLinks('Connected To', d.connected_to, 'quest')}`
     case 'npc':
       return `${img(d)}<div class="detail-title">${esc(title)}</div>
         <div class="detail-meta">${d.role?`<span class="tag">${esc(d.role)}</span>`:''}<span class="tag tag-${esc(d.disposition||'neutral')}">${esc(d.disposition||'neutral')}</span>${d.faction?`<span class="tag">${esc(d.faction)}</span>`:''}</div>
         ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}
-        ${df('Location',d.location)}
+        ${dfLinks('Location', d.location, 'location')}
         ${isGm&&d.gm_notes?`<div class="detail-gm-box"><div class="detail-gm-label">GM NOTES</div><div class="detail-body" style="margin:0">${esc(d.gm_notes)}</div></div>`:''}`
     case 'location':
       return `${img(d)}<div class="detail-title">${esc(title)}</div>
         <div class="detail-meta"><span class="tag tag-${esc(d.status||'unvisited')}">${esc(d.status||'unvisited')}</span>${d.danger?`<span class="tag tag-${esc(d.danger)}">${esc(d.danger)}</span>`:''}</div>
         ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}
-        ${df('Connected To',Array.isArray(d.connected_to)?d.connected_to.join(', '):d.connected_to)}${df('Visited Session',d.visited_session)}`
+        ${dfLinks('Connected To', d.connected_to, 'location')}${df('Visited Session', d.visited_session)}`
     case 'hook':
       return `<div class="detail-title">${esc(title)}</div>
         <div class="detail-meta"><span class="tag tag-${esc(d.type||'clue')}">${esc(d.type||'clue')}</span><span class="tag tag-${esc(d.status||'active')}">${esc(d.status||'active')}</span></div>
         ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}
-        ${df('Connected To',Array.isArray(d.connected_to)?d.connected_to.join(', '):d.connected_to)}`
+        ${dfLinks('Connected To', d.connected_to, 'quest')}`
     case 'faction':
       return `${img(d)}<div class="detail-title">${esc(title)}</div>
         ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}
@@ -122,6 +133,34 @@ const renderedContent = computed(() => {
       return `<div class="detail-title">${esc(title)}</div><div class="detail-body">${esc(d.description||d.summary||'')}</div>`
   }
 })
+
+function handleModalClick(e) {
+  const chip = e.target.closest('.link-chip')
+  if (!chip) return
+  const name = chip.dataset.itemName
+  const type = chip.dataset.itemType
+  if (!name || !type) return
+  openDetailByName(name, type)
+}
+
+const SEARCH_COLLECTIONS = {
+  location: () => data.locations,
+  quest: () => data.quests,
+  npc: () => data.npcs,
+  faction: () => data.factions,
+}
+
+function openDetailByName(name, type) {
+  const coll = SEARCH_COLLECTIONS[type]?.()
+  if (!coll) return
+  const lname = name.toLowerCase()
+  const found = coll.find(item =>
+    (item.name || item.title || '').toLowerCase() === lname
+  )
+  if (found) {
+    ui.openDetail(type, found)
+  }
+}
 
 function editItem() {
   const { type, item } = ui.detailModal
