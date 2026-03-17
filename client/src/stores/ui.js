@@ -48,6 +48,28 @@ export const useUiStore = defineStore('ui', () => {
   function openFlyout(name) { activeFlyout.value = name }
   function closeFlyout() { activeFlyout.value = null }
 
+  // Message viewer
+  const viewingMessage = ref(null)
+  function openMessage(msg) {
+    viewingMessage.value = msg
+    openFlyout('msg-view')
+  }
+  function closeMessage() {
+    viewingMessage.value = null
+    if (activeFlyout.value === 'msg-view') closeFlyout()
+  }
+
+  // Handout viewer
+  const viewingHandout = ref(null)
+  function openHandout(handout) {
+    viewingHandout.value = handout
+    openFlyout('handout')
+  }
+  function closeHandout() {
+    viewingHandout.value = null
+    if (activeFlyout.value === 'handout') closeFlyout()
+  }
+
   // Detail modal
   const detailModal = ref(null) // { type, item }
   function openDetail(type, item) { detailModal.value = { type, item } }
@@ -92,6 +114,8 @@ export const useUiStore = defineStore('ui', () => {
     messages, unreadMsgCount, setMessages,
     unreadHandoutCount,
     activeFlyout, openFlyout, closeFlyout,
+    viewingMessage, openMessage, closeMessage,
+    viewingHandout, openHandout, closeHandout,
     detailModal, openDetail, closeDetail,
     gmEditModal, openGmEdit, closeGmEdit,
     shareModal, openShare, closeShare,

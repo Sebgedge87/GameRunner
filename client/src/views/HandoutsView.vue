@@ -35,7 +35,7 @@
         :key="handout.id"
         class="card"
         :class="{ hidden: handout.hidden }"
-        @click="ui.openDetail('handout', handout)"
+        @click="ui.openHandout(handout)"
       >
         <div v-if="handout.image_url" class="card-img">
           <img :src="handout.image_url" :alt="handout.title" style="width:100%;height:120px;object-fit:cover;border-radius:4px 4px 0 0" />

@@ -181,7 +181,7 @@ const PIN_ROUTES = {
   quest: '/quests', npc: '/npcs', location: '/locations', hook: '/hooks',
   faction: '/factions', job: '/jobs', bestiary: '/bestiary', handout: '/handouts',
   inventory: '/inventory', 'key-item': '/inventory', rumour: '/rumours',
-  timeline: '/timeline', map: '/maps',
+  timeline: '/timeline', map: '/maps', note: '/notes', session: '/sessions',
 }
 
 const activeQuests = computed(() => data.quests.filter(q => q.status === 'active'))
@@ -219,8 +219,7 @@ function fmtTime(ts) {
 }
 
 function openMessage(m) {
-  ui._viewingMessage = m
-  ui.openFlyout('msg-view')
+  ui.openMessage(m)
 }
 
 onMounted(async () => {

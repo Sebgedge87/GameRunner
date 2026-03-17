@@ -51,7 +51,7 @@
       <div class="settings-section-title">Background Image</div>
       <div class="field-group">
         <label>Image URL</label>
-        <input v-model="bgUrl" class="form-input" placeholder="https://…" @input="previewBg" />
+        <input v-model="bgUrl" class="form-input" placeholder="https://…" />
       </div>
       <div v-if="bgUrl" id="settings-bg-preview" style="width:100%;height:120px;background-size:cover;background-position:center;border-radius:4px;margin-bottom:8px;border:1px solid var(--border)" :style="`background-image:url(${JSON.stringify(bgUrl)})`"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -185,8 +185,6 @@ async function saveProfile() {
     profileOk.value = false
   }
 }
-
-function previewBg() {}
 
 async function uploadBg(e) {
   const file = e.target.files[0]

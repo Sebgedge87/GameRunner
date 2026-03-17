@@ -34,7 +34,7 @@ const ui = useUiStore()
 const campaign = useCampaignStore()
 const data = useDataStore()
 
-const msg = computed(() => ui._viewingMessage || null)
+const msg = computed(() => ui.viewingMessage || null)
 const parentMsg = computed(() => {
   if (!msg.value?.reply_to_id) return null
   return ui.messages.find(m => m.id === msg.value.reply_to_id) || null
@@ -49,8 +49,7 @@ function fmt(ts) {
 }
 
 function close() {
-  ui._viewingMessage = null
-  if (ui.activeFlyout === 'msg-view') ui.closeFlyout()
+  ui.closeMessage()
 }
 
 async function ack() {

@@ -179,7 +179,7 @@ function conditionClass(c) {
 async function loadSheet() {
   loading.value = true
   try {
-    const uid = campaign.isGm && selectedUserId.value ? selectedUserId.value : auth.user?.id
+    const uid = campaign.isGm && selectedUserId.value ? selectedUserId.value : auth.currentUser?.id
     if (!uid) return
     const r = await data.apif(`/api/character-sheet?user_id=${uid}`)
     const d = await r.json()

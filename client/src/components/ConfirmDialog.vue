@@ -7,7 +7,7 @@
 
         <!-- Prompt input -->
         <input
-          v-if="ui.confirmDialog.isPrompt"
+          v-if="ui.confirmDialog?.isPrompt"
           ref="inputEl"
           v-model="ui.confirmDialog.inputValue"
           class="form-input confirm-input"

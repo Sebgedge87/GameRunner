@@ -148,6 +148,13 @@ const SEARCH_COLLECTIONS = {
   quest: () => data.quests,
   npc: () => data.npcs,
   faction: () => data.factions,
+  hook: () => data.hooks,
+  job: () => data.jobs,
+  bestiary: () => data.bestiary,
+  rumour: () => data.rumours,
+  inventory: () => data.inventory,
+  'key-item': () => data.keyItems,
+  timeline: () => data.timeline,
 }
 
 function openDetailByName(name, type) {

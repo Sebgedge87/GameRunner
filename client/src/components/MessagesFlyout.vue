@@ -108,9 +108,6 @@ async function sendMessage() {
 }
 
 function openMsg(m) {
-  ui.closeFlyout()
-  ui.openFlyout('msg-view')
-  // Store in ui for the modal to pick up
-  ui._viewingMessage = m
+  ui.openMessage(m)
 }
 </script>

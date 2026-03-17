@@ -160,6 +160,6 @@ function toggle(section) {
 
 function logout() {
   auth.logout()
-  router.push('/home')
+  router.push('/login')
 }
 </script>
