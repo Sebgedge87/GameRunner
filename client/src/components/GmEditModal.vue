@@ -421,7 +421,7 @@ async function save() {
       case 'job':
         body = { title: f.title, description: f.description, reward: f.reward, difficulty: f.difficulty || 'medium', posted_by: f.posted_by, location: f.location }; break
       case 'bestiary':
-        body = { name: f.name, description: f.description, stats: { cr: f.cr, ac: f.ac, hp: f.hp }, player_notes: f.player_notes, gm_notes: f.gm_notes, image_url: imageUrl }; break
+        body = { name: f.name, description: f.description, stats: { cr: f.cr, ac: f.ac, hp: f.hp }, player_notes: f.player_notes, gm_notes: f.gm_notes, image_path: imageUrl }; break
       case 'rumour':
         body = { text: f.text, source_npc: f.source_npc, source_location: f.source_location, is_true: f.is_true }; break
       case 'agenda':

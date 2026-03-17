@@ -498,6 +498,10 @@ function runMigrations() {
     awarded_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 
+  // Bestiary gm_notes and player_notes columns (added with bestiary redesign)
+  try { db.exec('ALTER TABLE bestiary ADD COLUMN gm_notes TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE bestiary ADD COLUMN player_notes TEXT'); } catch (_) {}
+
   console.log('✅ Migrations complete.');
 }
 
