@@ -42,7 +42,9 @@ export const useDataStore = defineStore('data', () => {
   async function loadAll() {
     await Promise.all([
       loadQuests(), loadNpcs(), loadLocations(), loadHooks(),
-      loadMessages(), loadNotes(), loadHandouts(), loadUsers(),
+      loadFactions(), loadTimeline(), loadInventory(), loadMaps(),
+      loadBestiary(), loadRumours(), loadJobs(), loadSessions(),
+      loadNotes(), loadHandouts(), loadUsers(),
       loadAgenda(), loadStress(), loadPins(),
     ])
   }
