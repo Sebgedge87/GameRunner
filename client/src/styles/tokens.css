@@ -1,11 +1,44 @@
-/* ── Design Tokens ─────────────────────────────────────────────────────────── */
+/* ── Design Tokens — fallback defaults (overridden by theme) ──────────────── */
 :root {
-  --bg:#0d0d0f; --bg2:#111116; --bg3:#16161d; --surface:#1a1a24; --surface2:#20202e;
-  --border:#2a2a3a; --border2:#333348;
-  --gold:#c9a84c; --gold2:#e8c96a; --gold-dim:#7a6230;
-  --red:#c94c4c; --green:#4caf7d; --blue:#4c7ac9; --purple:#8b4cc9;
-  --text:#e8e4d9; --text2:#a09890; --text3:#6a6460;
-  --sidebar-w:230px; --topbar-h:52px;
-  --accent:var(--gold); --accent2:var(--gold2); --accent-dim:var(--gold-dim);
-  --anim-speed:0.3s;
+  /* Layout */
+  --sidebar-w: 220px;
+  --topbar-h: 52px;
+
+  /* Fallback palette (dnd5e-like) */
+  --bg: #0f0d0a;
+  --bg2: #151109;
+  --bg3: #1c1610;
+  --surface: #221b12;
+  --surface2: #2c2418;
+  --border: #2a241e;
+  --border2: #3d3228;
+  --accent: #c5a059;
+  --accent2: #e8c97a;
+  --accent-dim: rgba(197, 160, 89, 0.14);
+  --text: #f0e8d0;
+  --text2: #b0a080;
+  --text3: #706040;
+
+  /* Fixed semantic colours */
+  --red: #c94c4c;
+  --green: #4caf7d;
+  --blue: #4c7ac9;
+  --purple: #8b4cc9;
+  --gold: #c9a84c;
+  --gold2: #e8c96a;
+  --gold-dim: rgba(201, 168, 76, 0.15);
+
+  /* Theme-overridable */
+  --icon-tint: #a69980;
+  --card-inner: #c5a059;
+  --card-outer: #2a241e;
+  --hover-glow: inset 0 0 15px rgba(197, 160, 89, 0.18);
+  --input-bg: rgba(0, 0, 0, 0.4);
+  --font-header: 'Cinzel', Georgia, serif;
+  --font-body: 'Crimson Pro', Georgia, serif;
+  --radius: 4px;
+  --h-spacing: 0.15em;
+
+  /* Aliases */
+  --anim-speed: 0.25s;
 }
