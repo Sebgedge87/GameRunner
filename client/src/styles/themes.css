@@ -1,0 +1,52 @@
+/* ── System Themes ─────────────────────────────────────────────────────────── */
+[data-theme="dnd5e"] {
+  --bg:#0d0b08; --bg2:#110f0b; --bg3:#181410; --surface:#1e1a14; --surface2:#252018;
+  --border:#2e2818; --border2:#3a3020;
+  --accent:#c9a84c; --accent2:#e8c96a; --accent-dim:#7a6230;
+  --text:#f0e8d0; --text2:#b0a080; --text3:#706040;
+}
+[data-theme="coc"] {
+  --bg:#0c0b09; --bg2:#111008; --bg3:#16140e; --surface:#1c1a12; --surface2:#22201a;
+  --border:#2a2818; --border2:#35321e;
+  --accent:#b8a060; --accent2:#d4bc78; --accent-dim:#6a5c30;
+  --text:#e8e0c8; --text2:#a89870; --text3:#686050;
+}
+[data-theme="alien"] {
+  --bg:#080c08; --bg2:#0a100a; --bg3:#0e160e; --surface:#121c12; --surface2:#162216;
+  --border:#1a2e1a; --border2:#203820;
+  --accent:#4caf7d; --accent2:#6cd99a; --accent-dim:#2a6040;
+  --text:#c8e8c8; --text2:#80a880; --text3:#486848;
+}
+[data-theme="coriolis"] {
+  --bg:#080810; --bg2:#0a0a18; --bg3:#0e0e20; --surface:#121228; --surface2:#161630;
+  --border:#1e1e38; --border2:#282848;
+  --accent:#6a8ad4; --accent2:#8aaaf0; --accent-dim:#3a5090;
+  --text:#d8d8f0; --text2:#9090b8; --text3:#585878;
+}
+[data-theme="dune"] {
+  --bg:#0e0a06; --bg2:#140e08; --bg3:#1c1208; --surface:#22180c; --surface2:#2a1e10;
+  --border:#382a14; --border2:#463418;
+  --accent:#d4a040; --accent2:#ecc060; --accent-dim:#806020;
+  --text:#f0e0b8; --text2:#c0a060; --text3:#806840;
+}
+[data-theme="achtung"] {
+  --bg:#080a06; --bg2:#0c0e08; --bg3:#10120c; --surface:#14180e; --surface2:#181e12;
+  --border:#202a16; --border2:#28341e;
+  --accent:#8a9e40; --accent2:#aac050; --accent-dim:#506020;
+  --text:#e0e8c8; --text2:#9aaa78; --text3:#607040;
+}
+[data-theme="custom"] {
+  --bg:var(--custom-bg,#0d0d0f);
+  --bg2:var(--custom-bg2,#111116);
+  --bg3:var(--custom-bg3,#16161d);
+  --surface:var(--custom-surface,#1a1a24);
+  --surface2:var(--custom-surface2,#20202e);
+  --border:var(--custom-border,#2a2a3a);
+  --border2:var(--custom-border2,#333348);
+  --accent:var(--custom-accent,#c9a84c);
+  --accent2:var(--custom-accent2,#e8c96a);
+  --accent-dim:var(--custom-accent-dim,#7a6230);
+  --text:var(--custom-text,#e8e4d9);
+  --text2:var(--custom-text2,#a09890);
+  --text3:var(--custom-text3,#6a6460);
+}

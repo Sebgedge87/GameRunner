@@ -1,14 +1,26 @@
+# ── Stage 1: Build Vue client ─────────────────────────────────────────────────
+FROM node:22-alpine AS client-build
+
+WORKDIR /build/client
+COPY client/package*.json ./
+RUN npm ci
+COPY client/ ./
+RUN npm run build
+
+# ── Stage 2: Production image ─────────────────────────────────────────────────
 FROM node:22-alpine
 
 WORKDIR /app
 
-# Install dependencies
+# Install server dependencies (prod only)
 COPY server/package*.json ./server/
 RUN npm ci --omit=dev --prefix server
 
-# Copy source
+# Copy server source
 COPY server/ ./server/
-COPY client/ ./client/
+
+# Copy built client assets
+COPY --from=client-build /build/client/dist ./client/dist
 
 # Create persistent data dirs
 RUN mkdir -p /data/uploads /data/vault
