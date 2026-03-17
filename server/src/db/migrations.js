@@ -450,6 +450,9 @@ function runMigrations() {
 
   // Add cover_image to campaigns
   try { db.exec('ALTER TABLE campaigns ADD COLUMN cover_image TEXT'); } catch (_) {}
+  // Add bg_image and playlist_url to campaigns
+  try { db.exec('ALTER TABLE campaigns ADD COLUMN bg_image TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE campaigns ADD COLUMN playlist_url TEXT'); } catch (_) {}
   // Add campaign_id column to vault_files if not already present
   try { db.exec('ALTER TABLE vault_files ADD COLUMN campaign_id INTEGER REFERENCES campaigns(id)'); } catch (_) {}
   // Add max_players and invite_code to campaigns

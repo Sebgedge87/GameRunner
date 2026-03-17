@@ -17,16 +17,12 @@ router.get('/', requireAuth, (req, res) => {
   const db = getDb();
   const campId = getCampaignId(req);
   let rows;
+  if (!campId) return res.json({ hooks: [] });
   if (req.user.isGm) {
-    const campClause = campId ? 'AND (campaign_id = ? OR campaign_id IS NULL)' : '';
-    rows = campId
-      ? db.prepare(`SELECT * FROM vault_files WHERE type = 'hook' ${campClause} ORDER BY synced_at DESC`).all(campId)
-      : db.prepare(`SELECT * FROM vault_files WHERE type = 'hook' ORDER BY synced_at DESC`).all();
+    rows = db.prepare(`SELECT * FROM vault_files WHERE type = 'hook' AND campaign_id = ? ORDER BY synced_at DESC`).all(campId);
   } else {
     const visClause = `AND (hidden IS NULL OR hidden = 0 OR EXISTS (SELECT 1 FROM item_shares WHERE item_type='hook' AND item_id=vault_files.id AND user_id=?))`;
-    rows = campId
-      ? db.prepare(`SELECT * FROM vault_files WHERE type = 'hook' ${visClause} AND (campaign_id = ? OR campaign_id IS NULL) ORDER BY synced_at DESC`).all(req.user.id, campId)
-      : db.prepare(`SELECT * FROM vault_files WHERE type = 'hook' ${visClause} ORDER BY synced_at DESC`).all(req.user.id);
+    rows = db.prepare(`SELECT * FROM vault_files WHERE type = 'hook' ${visClause} AND campaign_id = ? ORDER BY synced_at DESC`).all(req.user.id, campId);
   }
   const hooks = rows.map((r) => ({ id: r.id, path: r.path, title: r.title, hidden: r.hidden || 0, ...JSON.parse(r.frontmatter || '{}') }));
   res.json({ hooks });

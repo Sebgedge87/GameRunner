@@ -9,22 +9,22 @@ router.get('/', requireAuth, (req, res) => {
   const db = getDb();
   const campId = getCampaignId(req);
   const hiddenClause = req.user.isGm ? '' : 'AND (hidden IS NULL OR hidden = 0)';
-  const items = campId
-    ? db.prepare(`SELECT * FROM inventory WHERE (campaign_id = ? OR campaign_id IS NULL) ${hiddenClause} ORDER BY holder, name`).all(campId)
-    : db.prepare(`SELECT * FROM inventory WHERE 1=1 ${hiddenClause} ORDER BY holder, name`).all();
+  if (!campId) return res.json({ inventory: [] });
+  const items = db.prepare(`SELECT * FROM inventory WHERE campaign_id = ? ${hiddenClause} ORDER BY holder, name`).all(campId);
   res.json({ inventory: items });
 });
 
 makeHiddenToggle(router, 'inventory');
 
 router.post('/', requireGm, (req, res) => {
-  const { name, description, quantity = 1, holder = 'party', image_path, campaign_id } = req.body;
+  const { name, description, quantity = 1, holder = 'party', image_path } = req.body;
   if (!name) return res.status(400).json({ error: 'name is required' });
   const db = getDb();
+  const campId = getCampaignId(req);
   const result = db.prepare(`
     INSERT INTO inventory (campaign_id, name, description, quantity, holder, image_path)
     VALUES (?, ?, ?, ?, ?, ?)
-  `).run(campaign_id || null, name, description || null, quantity, holder, image_path || null);
+  `).run(campId || null, name, description || null, quantity, holder, image_path || null);
   const item = db.prepare('SELECT * FROM inventory WHERE id = ?').get(result.lastInsertRowid);
   res.status(201).json({ item });
 });

@@ -8,20 +8,21 @@ const router = express.Router();
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
   const campId = getCampaignId(req);
-  const campClause = campId ? 'AND (campaign_id = ? OR campaign_id IS NULL)' : '';
+  if (!campId) return res.json({ bestiary: [] });
   const rows = req.user.isGm
-    ? (campId ? db.prepare(`SELECT * FROM bestiary WHERE 1=1 ${campClause} ORDER BY name`).all(campId) : db.prepare('SELECT * FROM bestiary ORDER BY name').all())
-    : (campId ? db.prepare(`SELECT * FROM bestiary WHERE revealed = 1 ${campClause} ORDER BY name`).all(campId) : db.prepare('SELECT * FROM bestiary WHERE revealed = 1 ORDER BY name').all());
+    ? db.prepare('SELECT * FROM bestiary WHERE campaign_id = ? ORDER BY name').all(campId)
+    : db.prepare('SELECT * FROM bestiary WHERE revealed = 1 AND campaign_id = ? ORDER BY name').all(campId);
   const parsed = rows.map(r => ({ ...r, stats: tryParse(r.stats) }));
   res.json({ bestiary: parsed });
 });
 
 router.post('/', requireGm, (req, res) => {
-  const { name, description, stats = {}, image_path, campaign_id } = req.body;
+  const { name, description, stats = {}, image_path } = req.body;
   if (!name) return res.status(400).json({ error: 'name is required' });
   const db = getDb();
+  const campId = getCampaignId(req);
   const result = db.prepare('INSERT INTO bestiary (campaign_id, name, description, stats, image_path) VALUES (?, ?, ?, ?, ?)')
-    .run(campaign_id || null, name, description || null, JSON.stringify(stats), image_path || null);
+    .run(campId || null, name, description || null, JSON.stringify(stats), image_path || null);
   const creature = db.prepare('SELECT * FROM bestiary WHERE id = ?').get(result.lastInsertRowid);
   res.status(201).json({ creature: { ...creature, stats: tryParse(creature.stats) } });
 });

@@ -58,8 +58,12 @@ router.post('/join', requireAuth, (req, res) => {
 
 // POST /api/campaigns — any authenticated user can create; becomes GM
 router.post('/', requireAuth, (req, res) => {
-  const { name, system = 'dnd5e', subtitle, description, theme, max_players, invite_code, cover_image } = req.body;
+  const { name, system = 'dnd5e', subtitle, description, theme, max_players, invite_code, cover_image,
+          bg_image: rawBgImage, playlist_url: rawPlaylistUrl } = req.body;
   if (!name) return res.status(400).json({ error: 'name is required' });
+
+  const bg_image = rawBgImage == null ? null : (/^https?:\/\//i.test(rawBgImage) ? rawBgImage : (rawBgImage.startsWith('/') ? rawBgImage : null));
+  const playlist_url = rawPlaylistUrl == null ? null : (/^https?:\/\//i.test(rawPlaylistUrl) ? rawPlaylistUrl : null);
 
   // Auto-generate invite code if not provided
   const code = invite_code
@@ -72,16 +76,14 @@ router.post('/', requireAuth, (req, res) => {
   if (taken) return res.status(409).json({ error: 'Invite code already in use, choose another' });
 
   const result = db.prepare(`
-    INSERT INTO campaigns (name, system, subtitle, description, theme, max_players, invite_code, cover_image, active)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
+    INSERT INTO campaigns (name, system, subtitle, description, theme, max_players, invite_code, cover_image, bg_image, playlist_url, active)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
   `).run(name, system, subtitle || null, description || null, theme || system,
-         max_players ? parseInt(max_players) : 4, code, cover_image || null);
+         max_players ? parseInt(max_players) : 4, code, cover_image || null, bg_image || null, playlist_url || null);
 
   const campaignId = result.lastInsertRowid;
-  // Add all existing users as players; creator as gm
-  const allUsers = db.prepare('SELECT id FROM users').all();
-  const ins = db.prepare('INSERT OR IGNORE INTO campaign_members (campaign_id, user_id, role) VALUES (?,?,?)');
-  for (const u of allUsers) ins.run(campaignId, u.id, u.id === req.user.id ? 'gm' : 'player');
+  // Only add the creator as GM — players join via invite code
+  db.prepare('INSERT OR IGNORE INTO campaign_members (campaign_id, user_id, role) VALUES (?,?,?)').run(campaignId, req.user.id, 'gm');
 
   const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(campaignId);
   res.status(201).json({ campaign });
@@ -91,8 +93,11 @@ router.post('/', requireAuth, (req, res) => {
 router.put('/:id', requireGm, (req, res) => {
   const db = getDb();
   const { name, system, subtitle, description, theme, current_scene, current_weather, current_time,
-          music_url: rawMusicUrl, music_label, session_count, max_players, invite_code, cover_image } = req.body;
+          music_url: rawMusicUrl, music_label, session_count, max_players, invite_code, cover_image,
+          bg_image: rawBgImage, playlist_url: rawPlaylistUrl } = req.body;
   const music_url = rawMusicUrl == null ? null : (/^https?:\/\//i.test(rawMusicUrl) ? rawMusicUrl : null);
+  const bg_image = rawBgImage == null ? null : (/^https?:\/\//i.test(rawBgImage) ? rawBgImage : (rawBgImage.startsWith('/') ? rawBgImage : null));
+  const playlist_url = rawPlaylistUrl == null ? null : (/^https?:\/\//i.test(rawPlaylistUrl) ? rawPlaylistUrl : null);
   const code = invite_code != null ? invite_code.trim().toUpperCase() || null : null;
   db.prepare(`
     UPDATE campaigns SET
@@ -110,13 +115,15 @@ router.put('/:id', requireGm, (req, res) => {
       max_players = COALESCE(?, max_players),
       invite_code = COALESCE(?, invite_code),
       cover_image = COALESCE(?, cover_image),
+      bg_image = COALESCE(?, bg_image),
+      playlist_url = COALESCE(?, playlist_url),
       updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
   `).run(name ?? null, system ?? null, subtitle ?? null, description ?? null, theme ?? null,
          current_scene ?? null, current_weather ?? null, current_time ?? null,
          music_url ?? null, music_label ?? null, session_count ?? null,
          max_players ? parseInt(max_players) : null,
-         code, cover_image ?? null, req.params.id);
+         code, cover_image ?? null, bg_image ?? null, playlist_url ?? null, req.params.id);
   const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(req.params.id);
   res.json({ campaign });
 });

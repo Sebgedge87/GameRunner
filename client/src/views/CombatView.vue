@@ -1,0 +1,295 @@
+<template>
+  <div class="page-content">
+    <div class="page-header">
+      <div class="page-title">Combat Tracker</div>
+      <div class="page-sub">Initiative &amp; encounter management</div>
+    </div>
+
+    <!-- Encounter Controls -->
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:180px">
+          <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:6px">ENCOUNTER</div>
+          <input v-model="encounterName" class="form-input" placeholder="Encounter name…" style="width:100%" />
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-end;padding-top:20px">
+          <button class="btn btn-sm" @click="startEncounter" :disabled="combatants.length === 0">
+            {{ active ? '&#9646;&#9646; Pause' : '&#9654; Start' }}
+          </button>
+          <button class="btn btn-sm" @click="nextTurn" :disabled="!active">Next Turn</button>
+          <button class="btn btn-sm btn-danger" @click="clearEncounter">Clear</button>
+        </div>
+        <div v-if="active" style="padding-top:20px;font-size:0.85em;opacity:0.7">
+          Round {{ round }} &mdash; Turn {{ currentTurn + 1 }} / {{ combatants.length }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Combatant -->
+    <div class="card" style="margin-bottom:16px">
+      <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:10px">ADD COMBATANT</div>
+      <div style="display:grid;grid-template-columns:1fr 80px 80px 80px auto;gap:8px;align-items:end">
+        <div class="field-group" style="margin:0">
+          <label>Name</label>
+          <input v-model="newCombatant.name" class="form-input" placeholder="Name…" @keyup.enter="addCombatant" />
+        </div>
+        <div class="field-group" style="margin:0">
+          <label>Init</label>
+          <input v-model.number="newCombatant.initiative" class="form-input" type="number" placeholder="0" />
+        </div>
+        <div class="field-group" style="margin:0">
+          <label>HP</label>
+          <input v-model.number="newCombatant.hp_max" class="form-input" type="number" placeholder="10" />
+        </div>
+        <div class="field-group" style="margin:0">
+          <label>AC</label>
+          <input v-model.number="newCombatant.ac" class="form-input" type="number" placeholder="10" />
+        </div>
+        <div style="display:flex;gap:6px;padding-bottom:1px">
+          <select v-model="newCombatant.type" class="form-input" style="width:90px">
+            <option value="player">Player</option>
+            <option value="enemy">Enemy</option>
+            <option value="ally">Ally</option>
+            <option value="neutral">Neutral</option>
+          </select>
+          <button class="btn" @click="addCombatant" :disabled="!newCombatant.name">+ Add</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Initiative Order -->
+    <div v-if="combatants.length === 0" class="empty-state">
+      No combatants yet. Add some above.
+    </div>
+
+    <div v-else>
+      <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:10px">INITIATIVE ORDER</div>
+      <div
+        v-for="(c, idx) in sorted"
+        :key="c.id"
+        class="card"
+        :class="{
+          'combatant-active': active && idx === currentTurn,
+          'combatant-dead': c.hp_current <= 0,
+        }"
+        style="margin-bottom:8px"
+      >
+        <div class="card-body" style="display:flex;align-items:center;gap:12px">
+          <!-- Turn indicator -->
+          <div style="width:28px;text-align:center;font-size:1.1em">
+            <span v-if="active && idx === currentTurn">&#9654;</span>
+            <span v-else style="opacity:0.3">{{ idx + 1 }}</span>
+          </div>
+
+          <!-- Init badge -->
+          <div style="width:36px;text-align:center">
+            <div style="font-size:0.65em;opacity:0.5;margin-bottom:2px">INIT</div>
+            <div style="font-weight:700;font-size:1.1em;color:var(--accent)">{{ c.initiative }}</div>
+          </div>
+
+          <!-- Name + type -->
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:0.95em;display:flex;align-items:center;gap:6px">
+              <span>{{ c.name }}</span>
+              <span class="tag" :class="typeClass(c.type)" style="font-size:0.65em">{{ c.type }}</span>
+              <span v-if="c.conditions?.length" v-for="cond in c.conditions" :key="cond" class="tag tag-inactive" style="font-size:0.65em">{{ cond }}</span>
+            </div>
+            <!-- HP bar -->
+            <div v-if="c.hp_max" style="margin-top:6px">
+              <div style="display:flex;justify-content:space-between;font-size:0.72em;opacity:0.6;margin-bottom:3px">
+                <span>HP</span>
+                <span>{{ c.hp_current }} / {{ c.hp_max }}</span>
+              </div>
+              <div class="progress-bar">
+                <div
+                  class="progress-fill"
+                  :style="`width:${hpPercent(c)}%;background:${hpColor(c)}`"
+                ></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- AC -->
+          <div v-if="c.ac" style="text-align:center;min-width:40px">
+            <div style="font-size:0.65em;opacity:0.5;margin-bottom:2px">AC</div>
+            <div style="font-weight:600">{{ c.ac }}</div>
+          </div>
+
+          <!-- Controls -->
+          <div style="display:flex;gap:4px;flex-shrink:0" @click.stop>
+            <button class="btn btn-sm" title="Damage" @click="applyDamage(c)" style="min-width:32px">-HP</button>
+            <button class="btn btn-sm" title="Heal" @click="applyHeal(c)" style="min-width:32px">+HP</button>
+            <button class="btn btn-sm" title="Add Condition" @click="addCondition(c)">&#129352;</button>
+            <button class="btn btn-sm btn-danger" title="Remove" @click="removeCombatant(c.id)">&#128465;</button>
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div v-if="c.notes" style="padding:4px 12px 8px 76px;font-size:0.8em;opacity:0.6">{{ c.notes }}</div>
+      </div>
+    </div>
+
+    <!-- Damage/Heal Modal -->
+    <div v-if="hpDialog.open" class="modal-backdrop" @click.self="hpDialog.open = false">
+      <div class="modal-box" style="max-width:320px">
+        <div style="font-weight:600;margin-bottom:12px">{{ hpDialog.mode === 'damage' ? 'Apply Damage' : 'Apply Healing' }} — {{ hpDialog.target?.name }}</div>
+        <input
+          v-model.number="hpDialog.amount"
+          class="form-input"
+          type="number"
+          min="0"
+          placeholder="Amount"
+          style="width:100%"
+          @keyup.enter="confirmHp"
+          ref="hpInput"
+        />
+        <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+          <button class="btn" @click="hpDialog.open = false">Cancel</button>
+          <button class="btn" :class="hpDialog.mode === 'damage' ? 'btn-danger' : ''" @click="confirmHp">Apply</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, nextTick } from 'vue'
+
+let idCounter = 0
+
+const encounterName = ref('')
+const active = ref(false)
+const round = ref(1)
+const currentTurn = ref(0)
+const combatants = ref([])
+
+const newCombatant = ref({ name: '', initiative: 0, hp_max: null, ac: null, type: 'enemy' })
+
+const hpDialog = ref({ open: false, target: null, mode: 'damage', amount: 0 })
+const hpInput = ref(null)
+
+const sorted = computed(() =>
+  [...combatants.value].sort((a, b) => b.initiative - a.initiative)
+)
+
+function addCombatant() {
+  if (!newCombatant.value.name) return
+  combatants.value.push({
+    id: ++idCounter,
+    name: newCombatant.value.name,
+    initiative: newCombatant.value.initiative ?? 0,
+    hp_max: newCombatant.value.hp_max || null,
+    hp_current: newCombatant.value.hp_max || null,
+    ac: newCombatant.value.ac || null,
+    type: newCombatant.value.type,
+    conditions: [],
+    notes: '',
+  })
+  newCombatant.value = { name: '', initiative: 0, hp_max: null, ac: null, type: 'enemy' }
+}
+
+function removeCombatant(id) {
+  combatants.value = combatants.value.filter(c => c.id !== id)
+  if (currentTurn.value >= sorted.value.length) currentTurn.value = 0
+}
+
+function startEncounter() {
+  active.value = !active.value
+  if (active.value) {
+    round.value = 1
+    currentTurn.value = 0
+  }
+}
+
+function nextTurn() {
+  if (!active.value || combatants.value.length === 0) return
+  currentTurn.value++
+  if (currentTurn.value >= sorted.value.length) {
+    currentTurn.value = 0
+    round.value++
+  }
+}
+
+function clearEncounter() {
+  if (!confirm('Clear all combatants?')) return
+  combatants.value = []
+  active.value = false
+  round.value = 1
+  currentTurn.value = 0
+}
+
+function applyDamage(c) {
+  hpDialog.value = { open: true, target: c, mode: 'damage', amount: 0 }
+  nextTick(() => hpInput.value?.focus())
+}
+
+function applyHeal(c) {
+  hpDialog.value = { open: true, target: c, mode: 'heal', amount: 0 }
+  nextTick(() => hpInput.value?.focus())
+}
+
+function confirmHp() {
+  const c = hpDialog.value.target
+  const amt = hpDialog.value.amount || 0
+  const target = combatants.value.find(x => x.id === c.id)
+  if (!target) return
+  if (hpDialog.value.mode === 'damage') {
+    target.hp_current = Math.max(0, (target.hp_current ?? target.hp_max ?? 0) - amt)
+  } else {
+    target.hp_current = Math.min(target.hp_max ?? Infinity, (target.hp_current ?? 0) + amt)
+  }
+  hpDialog.value.open = false
+}
+
+function addCondition(c) {
+  const cond = prompt('Condition (e.g. Stunned, Poisoned):')
+  if (!cond) return
+  const target = combatants.value.find(x => x.id === c.id)
+  if (target) target.conditions = [...(target.conditions || []), cond]
+}
+
+function hpPercent(c) {
+  if (!c.hp_max) return 100
+  return Math.round(((c.hp_current ?? c.hp_max) / c.hp_max) * 100)
+}
+
+function hpColor(c) {
+  const pct = hpPercent(c)
+  if (pct > 60) return 'var(--green, #4caf7d)'
+  if (pct > 25) return 'var(--gold, #c9a84c)'
+  return 'var(--red, #c94c4c)'
+}
+
+function typeClass(type) {
+  if (type === 'player') return 'tag-active'
+  if (type === 'enemy') return 'tag-inactive'
+  if (type === 'ally') return 'tag-completed'
+  return ''
+}
+</script>
+
+<style scoped>
+.combatant-active {
+  border-color: var(--accent, #c9a84c) !important;
+  box-shadow: 0 0 0 1px var(--accent, #c9a84c);
+}
+.combatant-dead {
+  opacity: 0.45;
+}
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal-box {
+  background: var(--surface, #1a1a24);
+  border: 1px solid var(--border, #2a2a3a);
+  border-radius: 10px;
+  padding: 20px;
+  width: 90%;
+}
+</style>

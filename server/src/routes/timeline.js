@@ -9,22 +9,22 @@ router.get('/', requireAuth, (req, res) => {
   const db = getDb();
   const campId = getCampaignId(req);
   const hiddenClause = req.user.isGm ? '' : 'AND (hidden IS NULL OR hidden = 0)';
-  const events = campId
-    ? db.prepare(`SELECT * FROM timeline_events WHERE (campaign_id = ? OR campaign_id IS NULL) ${hiddenClause} ORDER BY in_world_date ASC, created_at ASC`).all(campId)
-    : db.prepare(`SELECT * FROM timeline_events WHERE 1=1 ${hiddenClause} ORDER BY in_world_date ASC, created_at ASC`).all();
+  if (!campId) return res.json({ events: [] });
+  const events = db.prepare(`SELECT * FROM timeline_events WHERE campaign_id = ? ${hiddenClause} ORDER BY in_world_date ASC, created_at ASC`).all(campId);
   res.json({ events });
 });
 
 makeHiddenToggle(router, 'timeline_events');
 
 router.post('/', requireGm, (req, res) => {
-  const { campaign_id, title, description, in_world_date, session_number, linked_type, linked_id } = req.body;
+  const { title, description, in_world_date, session_number, linked_type, linked_id } = req.body;
   if (!title) return res.status(400).json({ error: 'title is required' });
   const db = getDb();
+  const campId = getCampaignId(req);
   const result = db.prepare(`
     INSERT INTO timeline_events (campaign_id, title, description, in_world_date, session_number, linked_type, linked_id)
     VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(campaign_id || null, title, description || null, in_world_date || null, session_number || null, linked_type || null, linked_id || null);
+  `).run(campId || null, title, description || null, in_world_date || null, session_number || null, linked_type || null, linked_id || null);
   const event = db.prepare('SELECT * FROM timeline_events WHERE id = ?').get(result.lastInsertRowid);
   res.status(201).json({ event });
 });
