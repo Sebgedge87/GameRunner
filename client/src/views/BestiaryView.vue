@@ -44,7 +44,12 @@
           <template v-if="campaign.isGm">
             <button
               class="btn btn-sm"
-              :title="creature.hidden ? 'Reveal to players' : 'Hide from players'"
+              :title="creature.revealed ? 'Hide from players' : 'Reveal to players'"
+              @click="revealCreature(creature.id, !creature.revealed)"
+            >{{ creature.revealed ? '&#128065;' : '&#9733;' }}</button>
+            <button
+              class="btn btn-sm"
+              :title="creature.hidden ? 'Unhide' : 'Hide (vault)'"
               @click="toggleHidden('bestiary', creature.id)"
             >{{ creature.hidden ? '&#128065;' : '&#128584;' }}</button>
             <button class="btn btn-sm" title="Edit" @click="ui.openGmEdit('bestiary', creature.id, creature)">&#9999;&#65039;</button>
@@ -80,6 +85,12 @@ const filteredBestiary = computed(() => {
     c.description?.toLowerCase().includes(q)
   )
 })
+
+async function revealCreature(id, val) {
+  await data.apif(`/api/bestiary/${id}/reveal`, { method: 'PUT', body: JSON.stringify({ revealed: val }) })
+  ui.showToast(val ? 'Creature revealed to players' : 'Creature hidden', '', val ? '⭐' : '👁')
+  await data.loadBestiary()
+}
 
 async function toggleHidden(type, id) {
   await data.toggleHidden(type, id)

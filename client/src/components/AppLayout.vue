@@ -34,6 +34,8 @@
     <HandoutModal />
     <!-- GM FAB -->
     <GmFab />
+    <!-- Share modal -->
+    <ShareModal />
   </div>
 </template>
 
@@ -54,6 +56,7 @@ import GmEditModal from './GmEditModal.vue'
 import MessageModal from './MessageModal.vue'
 import HandoutModal from './HandoutModal.vue'
 import GmFab from './GmFab.vue'
+import ShareModal from './ShareModal.vue'
 
 const auth = useAuthStore()
 const campaign = useCampaignStore()

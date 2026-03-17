@@ -53,6 +53,7 @@
               :title="quest.hidden ? 'Reveal' : 'Hide'"
               @click="toggleHidden('quest', quest.id)"
             >{{ quest.hidden ? '&#128065;' : '&#128584;' }}</button>
+            <button class="btn btn-sm" title="Share" @click="ui.openShare('quest', quest.id, quest.title)">&#128279;</button>
             <button class="btn btn-sm" title="Edit" @click="ui.openGmEdit('quest', quest.id, quest)">&#9999;&#65039;</button>
             <button class="btn btn-sm btn-danger" title="Delete" @click="deleteItem('quest', quest.id)">&#128465;</button>
           </template>

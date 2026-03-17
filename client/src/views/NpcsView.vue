@@ -53,6 +53,7 @@
               :title="npc.hidden ? 'Reveal' : 'Hide'"
               @click="toggleHidden('npc', npc.id)"
             >{{ npc.hidden ? '&#128065;' : '&#128584;' }}</button>
+            <button class="btn btn-sm" title="Share" @click="ui.openShare('npc', npc.id, npc.name)">&#128279;</button>
             <button class="btn btn-sm" title="Edit" @click="ui.openGmEdit('npc', npc.id, npc)">&#9999;&#65039;</button>
             <button class="btn btn-sm btn-danger" title="Delete" @click="deleteItem('npc', npc.id)">&#128465;</button>
           </template>

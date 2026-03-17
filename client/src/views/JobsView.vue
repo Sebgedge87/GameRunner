@@ -58,6 +58,12 @@
               :title="job.hidden ? 'Reveal' : 'Hide'"
               @click="toggleHidden(job.id)"
             >{{ job.hidden ? '&#128065;' : '&#128584;' }}</button>
+            <button
+              v-if="!job.promoted_quest_id"
+              class="btn btn-sm"
+              title="Promote to Quest"
+              @click="promoteToQuest(job.id)"
+            >&#8594; Quest</button>
             <button class="btn btn-sm" title="Edit" @click="ui.openGmEdit('job', job.id, job)">&#9999;&#65039;</button>
             <button class="btn btn-sm btn-danger" title="Delete" @click="deleteItem(job.id)">&#128465;</button>
           </template>
@@ -102,6 +108,20 @@ function statusClass(status) {
   if (s === 'completed') return 'tag-completed'
   if (s === 'failed' || s === 'expired') return 'tag-inactive'
   return ''
+}
+
+async function promoteToQuest(jobId) {
+  const r = await data.apif(`/api/jobs/${jobId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ status: 'taken', promoted_quest_id: -1 }),
+  })
+  if (r.ok) {
+    ui.showToast('Job promoted to quest', '', '✓')
+    await data.loadJobs()
+    await data.loadQuests()
+  } else {
+    ui.showToast('Promote failed', '', '✕')
+  }
 }
 
 async function toggleHidden(id) {

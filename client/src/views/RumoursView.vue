@@ -40,6 +40,7 @@
               :title="rumour.hidden ? 'Reveal' : 'Hide'"
               @click="toggleHidden('rumour', rumour.id)"
             >{{ rumour.hidden ? '&#128065;' : '&#128584;' }}</button>
+            <button class="btn btn-sm" title="Expose to players" @click="exposeRumour(rumour.id)">&#128226;</button>
             <button class="btn btn-sm" title="Edit" @click="ui.openGmEdit('rumour', rumour.id, rumour)">&#9999;&#65039;</button>
             <button class="btn btn-sm btn-danger" title="Delete" @click="deleteItem('rumour', rumour.id)">&#128465;</button>
           </template>
@@ -62,6 +63,12 @@ import { useUiStore } from '@/stores/ui'
 const data = useDataStore()
 const campaign = useCampaignStore()
 const ui = useUiStore()
+
+async function exposeRumour(id) {
+  const r = await data.apif(`/api/rumours/${id}/expose`, { method: 'POST', body: JSON.stringify({ user_ids: [] }) })
+  if (r.ok) { ui.showToast('Rumour exposed to players', '', '📢'); await data.loadRumours() }
+  else ui.showToast('Expose failed', '', '✕')
+}
 
 async function toggleHidden(type, id) {
   await data.toggleHidden(type, id)

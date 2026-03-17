@@ -27,7 +27,10 @@
         <div class="note-composer">
           <div class="composer-title">NEW NOTE</div>
           <div class="field-group"><label>Title</label><input v-model="form.title" type="text" placeholder="Session notes…" /></div>
-          <div class="field-group"><label>Body</label><textarea v-model="form.body"></textarea></div>
+          <div class="field-group">
+            <label>Body</label>
+            <MarkdownEditor v-model="form.body" min-height="160px" />
+          </div>
           <div class="field-group"><label>Category</label>
             <select v-model="form.category">
               <option>Notes</option><option>Clues</option><option>Plans</option><option>Lore</option>
@@ -54,6 +57,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useUiStore } from '@/stores/ui'
+import MarkdownEditor from '@/components/MarkdownEditor.vue'
 
 const data = useDataStore()
 const ui = useUiStore()

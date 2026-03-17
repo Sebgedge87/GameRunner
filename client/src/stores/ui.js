@@ -58,6 +58,11 @@ export const useUiStore = defineStore('ui', () => {
   function openGmEdit(type, id, data = null) { gmEditModal.value = { type, id, data } }
   function closeGmEdit() { gmEditModal.value = null }
 
+  // Share modal
+  const shareModal = ref(null) // { itemType, itemId, title }
+  function openShare(itemType, itemId, title) { shareModal.value = { itemType, itemId, title } }
+  function closeShare() { shareModal.value = null }
+
   return {
     toasts, showToast, dismissToast,
     sidebarOpen, toggleSidebar, closeSidebar,
@@ -67,5 +72,6 @@ export const useUiStore = defineStore('ui', () => {
     activeFlyout, openFlyout, closeFlyout,
     detailModal, openDetail, closeDetail,
     gmEditModal, openGmEdit, closeGmEdit,
+    shareModal, openShare, closeShare,
   }
 })

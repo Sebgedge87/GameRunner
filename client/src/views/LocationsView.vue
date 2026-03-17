@@ -41,6 +41,7 @@
               :title="loc.hidden ? 'Reveal' : 'Hide'"
               @click="toggleHidden('location', loc.id)"
             >{{ loc.hidden ? '&#128065;' : '&#128584;' }}</button>
+            <button class="btn btn-sm" title="Share" @click="ui.openShare('location', loc.id, loc.name)">&#128279;</button>
             <button class="btn btn-sm" title="Edit" @click="ui.openGmEdit('location', loc.id, loc)">&#9999;&#65039;</button>
             <button class="btn btn-sm btn-danger" title="Delete" @click="deleteItem('location', loc.id)">&#128465;</button>
           </template>
