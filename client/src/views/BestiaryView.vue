@@ -8,7 +8,7 @@
       <input
         v-model="search"
         class="form-input"
-        placeholder="Search creatures&#8230;"
+        placeholder="Search creatures…"
         style="max-width:320px"
       />
     </div>
@@ -26,7 +26,7 @@
         :class="{ hidden: creature.hidden }"
         @click="ui.openDetail('bestiary', creature)"
       >
-        <div v-if="creature.image_path" class="card-image">
+        <div v-if="creature.image_path" class="card-img">
           <img :src="creature.image_path" :alt="creature.name" style="width:100%;height:120px;object-fit:cover;border-radius:4px 4px 0 0" />
         </div>
         <div class="card-body">
@@ -41,19 +41,21 @@
           </div>
         </div>
         <div class="card-actions" @click.stop>
+          <button class="btn btn-sm" title="Pin" @click="data.addPin('bestiary', creature.id, creature.name)">📌</button>
           <template v-if="campaign.isGm">
             <button
               class="btn btn-sm"
               :title="creature.revealed ? 'Hide from players' : 'Reveal to players'"
               @click="revealCreature(creature.id, !creature.revealed)"
-            >{{ creature.revealed ? '&#128065;' : '&#9733;' }}</button>
+            >{{ creature.revealed ? '👁' : '⭐' }}</button>
             <button
               class="btn btn-sm"
               :title="creature.hidden ? 'Unhide' : 'Hide (vault)'"
               @click="toggleHidden('bestiary', creature.id)"
-            >{{ creature.hidden ? '&#128065;' : '&#128584;' }}</button>
-            <button class="btn btn-sm" title="Edit" @click="ui.openGmEdit('bestiary', creature.id, creature)">&#9999;&#65039;</button>
-            <button class="btn btn-sm btn-danger" title="Delete" @click="deleteItem('bestiary', creature.id)">&#128465;</button>
+            >{{ creature.hidden ? '👁' : '🙈' }}</button>
+            <button class="btn btn-sm" title="Share" @click="ui.openShare('bestiary', creature.id, creature.name)">🔗</button>
+            <button class="btn btn-sm" title="Edit" @click="ui.openGmEdit('bestiary', creature.id, creature)">✏️</button>
+            <button class="btn btn-sm btn-danger" title="Delete" @click="deleteItem('bestiary', creature.id)">🗑</button>
           </template>
         </div>
       </div>

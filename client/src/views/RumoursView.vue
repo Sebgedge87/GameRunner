@@ -4,6 +4,25 @@
       <div class="page-title">Rumours</div>
     </div>
 
+    <div class="search-row" style="margin-bottom:12px">
+      <input
+        v-model="search"
+        class="form-input"
+        placeholder="Search rumours…"
+        style="max-width:320px"
+      />
+    </div>
+
+    <div class="filter-tabs">
+      <button
+        v-for="tab in tabs"
+        :key="tab.value"
+        class="filter-tab"
+        :class="{ active: activeTab === tab.value }"
+        @click="activeTab = tab.value"
+      >{{ tab.label }}</button>
+    </div>
+
     <div class="card-grid">
       <div v-if="campaign.isGm" class="add-tile" @click="ui.openGmEdit('rumour', null, {})">
         <div class="add-tile-icon">+</div>
@@ -11,7 +30,7 @@
       </div>
 
       <div
-        v-for="rumour in data.rumours"
+        v-for="rumour in filteredRumours"
         :key="rumour.id"
         class="card"
         :class="{ hidden: rumour.hidden }"
@@ -22,8 +41,8 @@
             &#8220;{{ rumour.text }}&#8221;
           </div>
           <div class="card-meta">
-            <span v-if="rumour.source_npc" class="tag">&#128100; {{ rumour.source_npc }}</span>
-            <span v-if="rumour.source_location" class="tag">&#128205; {{ rumour.source_location }}</span>
+            <span v-if="rumour.source_npc" class="tag">👤 {{ rumour.source_npc }}</span>
+            <span v-if="rumour.source_location" class="tag">📍 {{ rumour.source_location }}</span>
             <template v-if="campaign.isGm">
               <span
                 class="tag"
@@ -34,28 +53,30 @@
           </div>
         </div>
         <div class="card-actions" @click.stop>
+          <button class="btn btn-sm" title="Pin" @click="data.addPin('rumour', rumour.id, rumour.text?.slice(0,40))">📌</button>
           <template v-if="campaign.isGm">
             <button
               class="btn btn-sm"
               :title="rumour.hidden ? 'Reveal' : 'Hide'"
               @click="toggleHidden('rumour', rumour.id)"
-            >{{ rumour.hidden ? '&#128065;' : '&#128584;' }}</button>
-            <button class="btn btn-sm" title="Expose to players" @click="exposeRumour(rumour.id)">&#128226;</button>
-            <button class="btn btn-sm" title="Edit" @click="ui.openGmEdit('rumour', rumour.id, rumour)">&#9999;&#65039;</button>
-            <button class="btn btn-sm btn-danger" title="Delete" @click="deleteItem('rumour', rumour.id)">&#128465;</button>
+            >{{ rumour.hidden ? '👁' : '🙈' }}</button>
+            <button class="btn btn-sm" title="Expose to players" @click="exposeRumour(rumour.id)">📢</button>
+            <button class="btn btn-sm" title="Share" @click="ui.openShare('rumour', rumour.id, rumour.text?.slice(0,40))">🔗</button>
+            <button class="btn btn-sm" title="Edit" @click="ui.openGmEdit('rumour', rumour.id, rumour)">✏️</button>
+            <button class="btn btn-sm btn-danger" title="Delete" @click="deleteItem('rumour', rumour.id)">🗑</button>
           </template>
         </div>
       </div>
     </div>
 
-    <div v-if="data.rumours.length === 0" class="empty-state">
+    <div v-if="filteredRumours.length === 0" class="empty-state">
       No rumours found.
     </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
@@ -63,6 +84,32 @@ import { useUiStore } from '@/stores/ui'
 const data = useDataStore()
 const campaign = useCampaignStore()
 const ui = useUiStore()
+
+const search = ref('')
+const activeTab = ref('all')
+
+const tabs = [
+  { value: 'all', label: 'All' },
+  { value: 'true', label: 'True' },
+  { value: 'false', label: 'False' },
+  { value: 'exposed', label: 'Exposed' },
+]
+
+const filteredRumours = computed(() => {
+  let list = data.rumours
+  if (activeTab.value === 'true') list = list.filter(r => r.is_true)
+  else if (activeTab.value === 'false') list = list.filter(r => !r.is_true)
+  else if (activeTab.value === 'exposed') list = list.filter(r => r.exposed)
+  if (search.value.trim()) {
+    const q = search.value.toLowerCase()
+    list = list.filter(r =>
+      r.text?.toLowerCase().includes(q) ||
+      r.source_npc?.toLowerCase().includes(q) ||
+      r.source_location?.toLowerCase().includes(q)
+    )
+  }
+  return list
+})
 
 async function exposeRumour(id) {
   const r = await data.apif(`/api/rumours/${id}/expose`, { method: 'POST', body: JSON.stringify({ user_ids: [] }) })

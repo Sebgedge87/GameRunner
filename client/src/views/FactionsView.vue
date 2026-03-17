@@ -4,6 +4,15 @@
       <div class="page-title">Factions</div>
     </div>
 
+    <div class="search-row" style="margin-bottom:16px">
+      <input
+        v-model="search"
+        class="form-input"
+        placeholder="Search factions…"
+        style="max-width:320px"
+      />
+    </div>
+
     <div class="card-grid">
       <div v-if="campaign.isGm" class="add-tile" @click="ui.openGmEdit('faction', null, {})">
         <div class="add-tile-icon">+</div>
@@ -11,7 +20,7 @@
       </div>
 
       <div
-        v-for="faction in data.factions"
+        v-for="faction in filteredFactions"
         :key="faction.id"
         class="card"
         :class="{ hidden: faction.hidden }"
@@ -40,27 +49,29 @@
           </div>
         </div>
         <div class="card-actions" @click.stop>
+          <button class="btn btn-sm" title="Pin" @click="data.addPin('faction', faction.id, faction.name)">📌</button>
           <template v-if="campaign.isGm">
             <button
               class="btn btn-sm"
               :title="faction.hidden ? 'Reveal' : 'Hide'"
               @click="toggleHidden('faction', faction.id)"
-            >{{ faction.hidden ? '&#128065;' : '&#128584;' }}</button>
-            <button class="btn btn-sm" title="Edit" @click="ui.openGmEdit('faction', faction.id, faction)">&#9999;&#65039;</button>
-            <button class="btn btn-sm btn-danger" title="Delete" @click="deleteItem('faction', faction.id)">&#128465;</button>
+            >{{ faction.hidden ? '👁' : '🙈' }}</button>
+            <button class="btn btn-sm" title="Share" @click="ui.openShare('faction', faction.id, faction.name)">🔗</button>
+            <button class="btn btn-sm" title="Edit" @click="ui.openGmEdit('faction', faction.id, faction)">✏️</button>
+            <button class="btn btn-sm btn-danger" title="Delete" @click="deleteItem('faction', faction.id)">🗑</button>
           </template>
         </div>
       </div>
     </div>
 
-    <div v-if="data.factions.length === 0" class="empty-state">
+    <div v-if="filteredFactions.length === 0" class="empty-state">
       No factions found.
     </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
@@ -69,7 +80,18 @@ const data = useDataStore()
 const campaign = useCampaignStore()
 const ui = useUiStore()
 
-// reputation range: -3 (Hostile) to +3 (Allied)
+const search = ref('')
+
+const filteredFactions = computed(() => {
+  if (!search.value.trim()) return data.factions
+  const q = search.value.toLowerCase()
+  return data.factions.filter(f =>
+    f.name?.toLowerCase().includes(q) ||
+    f.description?.toLowerCase().includes(q) ||
+    f.goals?.toLowerCase().includes(q)
+  )
+})
+
 function reputationLabel(rep) {
   if (rep <= -3) return 'Hostile'
   if (rep <= -1) return 'Unfriendly'
@@ -79,7 +101,6 @@ function reputationLabel(rep) {
 }
 
 function reputationPercent(rep) {
-  // map -3..+3 to 0..100
   return ((rep + 3) / 6) * 100
 }
 

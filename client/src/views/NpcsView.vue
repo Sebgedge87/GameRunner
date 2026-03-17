@@ -4,13 +4,23 @@
       <div class="page-title">NPCs</div>
     </div>
 
-    <div class="search-row" style="margin-bottom:16px">
+    <div class="search-row" style="margin-bottom:12px">
       <input
         v-model="search"
         class="form-input"
-        placeholder="Search NPCs&#8230;"
+        placeholder="Search NPCs…"
         style="max-width:320px"
       />
+    </div>
+
+    <div class="filter-tabs">
+      <button
+        v-for="tab in tabs"
+        :key="tab.value"
+        class="filter-tab"
+        :class="{ active: activeTab === tab.value }"
+        @click="activeTab = tab.value"
+      >{{ tab.label }}</button>
     </div>
 
     <div class="card-grid">
@@ -26,7 +36,7 @@
         :class="{ hidden: npc.hidden }"
         @click="ui.openDetail('npc', npc)"
       >
-        <div v-if="npc.image" class="card-image">
+        <div v-if="npc.image" class="card-img">
           <img :src="npc.image" :alt="npc.name" style="width:100%;height:120px;object-fit:cover;border-radius:4px 4px 0 0" />
         </div>
         <div class="card-body">
@@ -36,26 +46,31 @@
             <span v-if="npc.disposition" class="tag" :class="dispositionClass(npc.disposition)">{{ npc.disposition }}</span>
           </div>
           <div v-if="npc.faction" class="card-meta">
-            <span style="opacity:0.6;font-size:0.8em">&#9876;&#65039; {{ npc.faction }}</span>
+            <span style="opacity:0.6;font-size:0.8em">⚔️ {{ npc.faction }}</span>
           </div>
           <div v-if="npc.location" class="card-meta">
-            <span style="opacity:0.6;font-size:0.8em">&#128205; {{ npc.location }}</span>
+            <span style="opacity:0.6;font-size:0.8em">📍 {{ npc.location }}</span>
           </div>
           <div v-if="npc.connected_to?.length" class="card-meta" style="margin-top:4px">
             <span style="opacity:0.5;font-size:0.75em">Linked: {{ npc.connected_to.join(', ') }}</span>
           </div>
         </div>
         <div class="card-actions" @click.stop>
-          <button class="btn btn-sm" title="Pin" @click="data.addPin('npc', npc.id, npc.name)">&#128204;</button>
+          <button class="btn btn-sm" title="Pin" @click="data.addPin('npc', npc.id, npc.name)">📌</button>
           <template v-if="campaign.isGm">
+            <button
+              class="btn btn-sm"
+              :title="npc.revealed ? 'Hide from players' : 'Reveal to players'"
+              @click="revealNpc(npc.id, !npc.revealed)"
+            >{{ npc.revealed ? '👁' : '⭐' }}</button>
             <button
               class="btn btn-sm"
               :title="npc.hidden ? 'Reveal' : 'Hide'"
               @click="toggleHidden('npc', npc.id)"
-            >{{ npc.hidden ? '&#128065;' : '&#128584;' }}</button>
-            <button class="btn btn-sm" title="Share" @click="ui.openShare('npc', npc.id, npc.name)">&#128279;</button>
-            <button class="btn btn-sm" title="Edit" @click="ui.openGmEdit('npc', npc.id, npc)">&#9999;&#65039;</button>
-            <button class="btn btn-sm btn-danger" title="Delete" @click="deleteItem('npc', npc.id)">&#128465;</button>
+            >{{ npc.hidden ? '👁' : '🙈' }}</button>
+            <button class="btn btn-sm" title="Share" @click="ui.openShare('npc', npc.id, npc.name)">🔗</button>
+            <button class="btn btn-sm" title="Edit" @click="ui.openGmEdit('npc', npc.id, npc)">✏️</button>
+            <button class="btn btn-sm btn-danger" title="Delete" @click="deleteItem('npc', npc.id)">🗑</button>
           </template>
         </div>
       </div>
@@ -78,16 +93,28 @@ const campaign = useCampaignStore()
 const ui = useUiStore()
 
 const search = ref('')
+const activeTab = ref('all')
+
+const tabs = [
+  { value: 'all', label: 'All' },
+  { value: 'friendly', label: 'Friendly' },
+  { value: 'neutral', label: 'Neutral' },
+  { value: 'hostile', label: 'Hostile' },
+]
 
 const filteredNpcs = computed(() => {
-  if (!search.value.trim()) return data.npcs
-  const q = search.value.toLowerCase()
-  return data.npcs.filter(n =>
-    n.name?.toLowerCase().includes(q) ||
-    n.role?.toLowerCase().includes(q) ||
-    n.faction?.toLowerCase().includes(q) ||
-    n.location?.toLowerCase().includes(q)
-  )
+  let list = data.npcs
+  if (activeTab.value !== 'all') list = list.filter(n => n.disposition?.toLowerCase() === activeTab.value)
+  if (search.value.trim()) {
+    const q = search.value.toLowerCase()
+    list = list.filter(n =>
+      n.name?.toLowerCase().includes(q) ||
+      n.role?.toLowerCase().includes(q) ||
+      n.faction?.toLowerCase().includes(q) ||
+      n.location?.toLowerCase().includes(q)
+    )
+  }
+  return list
 })
 
 function dispositionClass(disposition) {
@@ -95,6 +122,12 @@ function dispositionClass(disposition) {
   if (d === 'friendly' || d === 'allied') return 'tag-active'
   if (d === 'hostile' || d === 'unfriendly') return 'tag-inactive'
   return ''
+}
+
+async function revealNpc(id, val) {
+  await data.apif(`/api/npcs/${id}/reveal`, { method: 'PUT', body: JSON.stringify({ revealed: val }) })
+  ui.showToast(val ? 'NPC revealed to players' : 'NPC hidden', '', val ? '⭐' : '👁')
+  await data.loadNpcs()
 }
 
 async function toggleHidden(type, id) {

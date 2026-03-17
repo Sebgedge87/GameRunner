@@ -4,6 +4,25 @@
       <div class="page-title">Plot Hooks</div>
     </div>
 
+    <div class="search-row" style="margin-bottom:12px">
+      <input
+        v-model="search"
+        class="form-input"
+        placeholder="Search hooks…"
+        style="max-width:320px"
+      />
+    </div>
+
+    <div class="filter-tabs">
+      <button
+        v-for="tab in tabs"
+        :key="tab.value"
+        class="filter-tab"
+        :class="{ active: activeTab === tab.value }"
+        @click="activeTab = tab.value"
+      >{{ tab.label }}</button>
+    </div>
+
     <div class="card-grid">
       <div v-if="campaign.isGm" class="add-tile" @click="ui.openGmEdit('hook', null, {})">
         <div class="add-tile-icon">+</div>
@@ -11,7 +30,7 @@
       </div>
 
       <div
-        v-for="hook in data.hooks"
+        v-for="hook in filteredHooks"
         :key="hook.id"
         class="card"
         :class="{ hidden: hook.hidden }"
@@ -31,27 +50,29 @@
           </div>
         </div>
         <div class="card-actions" @click.stop>
+          <button class="btn btn-sm" title="Pin" @click="data.addPin('hook', hook.id, hook.title)">📌</button>
           <template v-if="campaign.isGm">
             <button
               class="btn btn-sm"
               :title="hook.hidden ? 'Reveal' : 'Hide'"
               @click="toggleHidden('hook', hook.id)"
-            >{{ hook.hidden ? '&#128065;' : '&#128584;' }}</button>
-            <button class="btn btn-sm" title="Edit" @click="ui.openGmEdit('hook', hook.id, hook)">&#9999;&#65039;</button>
-            <button class="btn btn-sm btn-danger" title="Delete" @click="deleteItem('hook', hook.id)">&#128465;</button>
+            >{{ hook.hidden ? '👁' : '🙈' }}</button>
+            <button class="btn btn-sm" title="Share" @click="ui.openShare('hook', hook.id, hook.title)">🔗</button>
+            <button class="btn btn-sm" title="Edit" @click="ui.openGmEdit('hook', hook.id, hook)">✏️</button>
+            <button class="btn btn-sm btn-danger" title="Delete" @click="deleteItem('hook', hook.id)">🗑</button>
           </template>
         </div>
       </div>
     </div>
 
-    <div v-if="data.hooks.length === 0" class="empty-state">
+    <div v-if="filteredHooks.length === 0" class="empty-state">
       No hooks found.
     </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
@@ -59,6 +80,31 @@ import { useUiStore } from '@/stores/ui'
 const data = useDataStore()
 const campaign = useCampaignStore()
 const ui = useUiStore()
+
+const search = ref('')
+const activeTab = ref('all')
+
+const tabs = [
+  { value: 'all', label: 'All' },
+  { value: 'active', label: 'Active' },
+  { value: 'delivered', label: 'Delivered' },
+  { value: 'missed', label: 'Missed' },
+  { value: 'expired', label: 'Expired' },
+]
+
+const filteredHooks = computed(() => {
+  let list = data.hooks
+  if (activeTab.value !== 'all') list = list.filter(h => h.status?.toLowerCase() === activeTab.value)
+  if (search.value.trim()) {
+    const q = search.value.toLowerCase()
+    list = list.filter(h =>
+      h.title?.toLowerCase().includes(q) ||
+      h.type?.toLowerCase().includes(q) ||
+      h.description?.toLowerCase().includes(q)
+    )
+  }
+  return list
+})
 
 function statusClass(status) {
   const s = status?.toLowerCase()
