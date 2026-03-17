@@ -184,13 +184,13 @@ async function saveNoteEdit(sessionId) {
 }
 
 async function deleteSessionNote(sessionId, noteId) {
-  if (!confirm('Delete this note?')) return
+  if (!await ui.confirm('Delete this note?')) return
   const r = await data.apif(`/api/sessions/${sessionId}/notes/${noteId}`, { method: 'DELETE' })
   if (r.ok) { await data.loadSessions(); ui.showToast('Note deleted', '', '✓') }
 }
 
 async function deleteSession(id) {
-  if (!confirm('Delete this session?')) return
+  if (!await ui.confirm('Delete this session?')) return
   await data.deleteItem('session', id)
   await data.loadSessions()
 }
@@ -211,7 +211,7 @@ async function closePoll(id) {
 }
 
 async function deletePoll(id) {
-  if (!confirm('Delete this poll?')) return
+  if (!await ui.confirm('Delete this poll?')) return
   await data.deleteItem('poll', id)
   await data.loadSessions()
 }

@@ -147,7 +147,7 @@ async function saveNote() {
 }
 
 async function deleteNote(id) {
-  if (!confirm('Delete?')) return
+  if (!await ui.confirm('Delete?')) return
   if (selectedNote.value?.id === id) clearForm()
   const r = await data.apif(`/api/notes/${id}`, { method: 'DELETE' })
   if (r.ok) await data.loadNotes()

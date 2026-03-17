@@ -170,7 +170,7 @@ function editItem() {
 
 async function deleteItem() {
   const { type, item } = ui.detailModal
-  if (!confirm(`Delete this ${type}?`)) return
+  if (!await ui.confirm(`Delete this ${type}?`)) return
   try {
     await data.deleteItem(type, item.id)
     ui.showToast('Deleted', '', '✓')

@@ -123,7 +123,7 @@ async function toggleHidden(type, id) {
 }
 
 async function deleteItem(type, id) {
-  if (!confirm('Delete this rumour?')) return
+  if (!await ui.confirm('Delete this rumour?')) return
   await data.deleteItem(type, id)
   await data.loadRumours()
 }

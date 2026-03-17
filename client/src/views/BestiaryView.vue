@@ -100,7 +100,7 @@ async function toggleHidden(type, id) {
 }
 
 async function deleteItem(type, id) {
-  if (!confirm('Delete this creature?')) return
+  if (!await ui.confirm('Delete this creature?')) return
   await data.deleteItem(type, id)
   await data.loadBestiary()
 }

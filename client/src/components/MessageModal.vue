@@ -66,7 +66,8 @@ function reply() {
 }
 
 async function del() {
-  if (!msg.value || !confirm('Delete this message?')) return
+  if (!msg.value) return
+  if (!await ui.confirm('Delete this message?')) return
   const r = await data.apif(`/api/messages/${msg.value.id}`, { method: 'DELETE' })
   if (r.ok) {
     ui.showToast('Deleted', '', '✓')

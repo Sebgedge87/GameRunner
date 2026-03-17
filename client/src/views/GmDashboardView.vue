@@ -301,7 +301,7 @@ function msgPlayer(u) {
 }
 
 async function resetPassword(u) {
-  const newPwd = prompt(`New password for ${u.username}:`)
+  const newPwd = await ui.prompt(`New password for ${u.username}:`)
   if (!newPwd) return
   const r = await data.apif(`/api/users/${u.id}/password`, {
     method: 'PUT',
@@ -312,7 +312,7 @@ async function resetPassword(u) {
 }
 
 async function deleteUser(u) {
-  if (!confirm(`Delete user "${u.username}"? This cannot be undone.`)) return
+  if (!await ui.confirm(`Delete user "${u.username}"? This cannot be undone.`)) return
   const r = await data.apif(`/api/users/${u.id}`, { method: 'DELETE' })
   if (r.ok) {
     ui.showToast('User deleted', '', '✓')

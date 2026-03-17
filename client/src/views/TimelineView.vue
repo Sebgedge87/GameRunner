@@ -104,7 +104,7 @@ async function toggleHidden(type, id) {
 }
 
 async function deleteItem(type, id) {
-  if (!confirm('Delete this event?')) return
+  if (!await ui.confirm('Delete this event?')) return
   await data.deleteItem(type, id)
   await data.loadTimeline()
 }

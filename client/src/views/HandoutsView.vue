@@ -115,7 +115,7 @@ async function toggleHidden(id) {
 }
 
 async function deleteItem(id) {
-  if (!confirm('Delete this handout?')) return
+  if (!await ui.confirm('Delete this handout?')) return
   await data.deleteItem('handout', id)
   await data.loadHandouts()
 }

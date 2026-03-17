@@ -38,6 +38,10 @@
     <ShareModal />
     <!-- Onboarding wizard -->
     <OnboardingWizard />
+    <!-- Confirm dialog -->
+    <ConfirmDialog />
+    <!-- Toast container -->
+    <ToastContainer />
   </div>
 </template>
 
@@ -60,6 +64,8 @@ import HandoutModal from './HandoutModal.vue'
 import GmFab from './GmFab.vue'
 import ShareModal from './ShareModal.vue'
 import OnboardingWizard from './OnboardingWizard.vue'
+import ConfirmDialog from './ConfirmDialog.vue'
+import ToastContainer from './ToastContainer.vue'
 
 const auth = useAuthStore()
 const campaign = useCampaignStore()

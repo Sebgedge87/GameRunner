@@ -136,7 +136,7 @@ async function toggleHidden(type, id) {
 }
 
 async function deleteItem(type, id) {
-  if (!confirm('Delete this NPC?')) return
+  if (!await ui.confirm('Delete this NPC?')) return
   await data.deleteItem(type, id)
   await data.loadNpcs()
 }

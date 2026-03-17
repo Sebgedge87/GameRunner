@@ -127,7 +127,7 @@ async function toggleHidden(type, id) {
 }
 
 async function deleteItem(type, id) {
-  if (!confirm('Delete this map?')) return
+  if (!await ui.confirm('Delete this map?')) return
   await data.deleteItem(type, id)
   await data.loadMaps()
 }

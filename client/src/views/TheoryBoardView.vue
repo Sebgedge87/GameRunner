@@ -108,7 +108,8 @@ async function saveNode() {
 }
 
 async function deleteNode() {
-  if (!selectedNode.value || !confirm('Delete node?')) return
+  if (!selectedNode.value) return
+  if (!await ui.confirm('Delete node?')) return
   const r = await data.apif(`/api/theory/nodes/${selectedNode.value.id}`, { method: 'DELETE' })
   if (r.ok) { selectedNode.value = null; await loadBoard() }
 }

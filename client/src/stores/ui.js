@@ -63,6 +63,28 @@ export const useUiStore = defineStore('ui', () => {
   function openShare(itemType, itemId, title) { shareModal.value = { itemType, itemId, title } }
   function closeShare() { shareModal.value = null }
 
+  // Confirm / Prompt dialog
+  const confirmDialog = ref(null) // { message, resolve, prompt?, inputValue? }
+
+  function confirm(message) {
+    return new Promise(resolve => {
+      confirmDialog.value = { message, resolve, isPrompt: false }
+    })
+  }
+
+  function prompt(message, defaultValue = '') {
+    return new Promise(resolve => {
+      confirmDialog.value = { message, resolve, isPrompt: true, inputValue: defaultValue }
+    })
+  }
+
+  function resolveConfirm(result) {
+    if (confirmDialog.value) {
+      confirmDialog.value.resolve(result)
+      confirmDialog.value = null
+    }
+  }
+
   return {
     toasts, showToast, dismissToast,
     sidebarOpen, toggleSidebar, closeSidebar,
@@ -73,5 +95,6 @@ export const useUiStore = defineStore('ui', () => {
     detailModal, openDetail, closeDetail,
     gmEditModal, openGmEdit, closeGmEdit,
     shareModal, openShare, closeShare,
+    confirmDialog, confirm, prompt, resolveConfirm,
   }
 })

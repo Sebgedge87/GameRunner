@@ -178,8 +178,10 @@
 <script setup>
 import { ref, computed, nextTick, onMounted } from 'vue'
 import { useDataStore } from '@/stores/data'
+import { useUiStore } from '@/stores/ui'
 
 const data = useDataStore()
+const ui = useUiStore()
 
 let idCounter = 0
 
@@ -261,8 +263,8 @@ function nextTurn() {
   }
 }
 
-function clearEncounter() {
-  if (!confirm('Clear all combatants?')) return
+async function clearEncounter() {
+  if (!await ui.confirm('Clear all combatants?')) return
   combatants.value = []
   active.value = false
   round.value = 1
@@ -292,8 +294,8 @@ function confirmHp() {
   hpDialog.value.open = false
 }
 
-function addCondition(c) {
-  const cond = prompt('Condition (e.g. Stunned, Poisoned):')
+async function addCondition(c) {
+  const cond = await ui.prompt('Condition (e.g. Stunned, Poisoned):')
   if (!cond) return
   const target = combatants.value.find(x => x.id === c.id)
   if (target) target.conditions = [...(target.conditions || []), cond.trim()]
