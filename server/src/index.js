@@ -46,6 +46,7 @@ const xpRoutes = require('./routes/xp');
 const sharesRoutes = require('./routes/shares');
 
 const app = express();
+app.set('trust proxy', 1);
 
 // ── Rate limiting ─────────────────────────────────────────────────────────────
 app.use('/api/auth', rateLimit({
