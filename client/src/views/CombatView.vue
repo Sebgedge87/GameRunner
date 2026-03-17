@@ -14,7 +14,7 @@
         </div>
         <div style="display:flex;gap:8px;align-items:flex-end;padding-top:20px">
           <button class="btn btn-sm" @click="startEncounter" :disabled="combatants.length === 0">
-            {{ active ? '&#9646;&#9646; Pause' : '&#9654; Start' }}
+            {{ active ? '⏸ Pause' : '▶ Start' }}
           </button>
           <button class="btn btn-sm" @click="nextTurn" :disabled="!active">Next Turn</button>
           <button class="btn btn-sm btn-danger" @click="clearEncounter">Clear</button>
@@ -55,6 +55,19 @@
           <button class="btn" @click="addCombatant" :disabled="!newCombatant.name">+ Add</button>
         </div>
       </div>
+
+      <!-- Import from Bestiary -->
+      <div v-if="data.bestiary.length" style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
+        <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:8px">IMPORT FROM BESTIARY</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select v-model="selectedCreature" class="form-input" style="max-width:220px">
+            <option value="">— Select creature —</option>
+            <option v-for="c in data.bestiary" :key="c.id" :value="c">{{ c.name }}</option>
+          </select>
+          <input v-model.number="importCount" class="form-input" type="number" min="1" max="20" style="width:60px" title="Count" />
+          <button class="btn btn-sm" :disabled="!selectedCreature" @click="importFromBestiary">Import ×{{ importCount }}</button>
+        </div>
+      </div>
     </div>
 
     <!-- Initiative Order -->
@@ -77,7 +90,7 @@
         <div class="card-body" style="display:flex;align-items:center;gap:12px">
           <!-- Turn indicator -->
           <div style="width:28px;text-align:center;font-size:1.1em">
-            <span v-if="active && idx === currentTurn">&#9654;</span>
+            <span v-if="active && idx === currentTurn">▶</span>
             <span v-else style="opacity:0.3">{{ idx + 1 }}</span>
           </div>
 
@@ -87,12 +100,19 @@
             <div style="font-weight:700;font-size:1.1em;color:var(--accent)">{{ c.initiative }}</div>
           </div>
 
-          <!-- Name + type -->
+          <!-- Name + type + conditions -->
           <div style="flex:1;min-width:0">
-            <div style="font-weight:600;font-size:0.95em;display:flex;align-items:center;gap:6px">
+            <div style="font-weight:600;font-size:0.95em;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
               <span>{{ c.name }}</span>
               <span class="tag" :class="typeClass(c.type)" style="font-size:0.65em">{{ c.type }}</span>
-              <span v-if="c.conditions?.length" v-for="cond in c.conditions" :key="cond" class="tag tag-inactive" style="font-size:0.65em">{{ cond }}</span>
+              <span
+                v-for="cond in (c.conditions || [])"
+                :key="cond"
+                class="tag tag-inactive"
+                style="font-size:0.65em;cursor:pointer"
+                :title="`Click to remove ${cond}`"
+                @click="removeCondition(c, cond)"
+              >{{ cond }} ✕</span>
             </div>
             <!-- HP bar -->
             <div v-if="c.hp_max" style="margin-top:6px">
@@ -107,6 +127,11 @@
                 ></div>
               </div>
             </div>
+            <!-- Inline notes -->
+            <div v-if="editingNotesId === c.id" style="margin-top:6px;display:flex;gap:6px">
+              <input v-model="c.notes" class="form-input" style="flex:1;font-size:12px;padding:3px 8px" placeholder="Notes…" @blur="editingNotesId = null" @keyup.enter="editingNotesId = null" />
+            </div>
+            <div v-else-if="c.notes" style="padding-top:4px;font-size:0.8em;opacity:0.6;cursor:pointer" @click="editingNotesId = c.id">{{ c.notes }}</div>
           </div>
 
           <!-- AC -->
@@ -119,13 +144,11 @@
           <div style="display:flex;gap:4px;flex-shrink:0" @click.stop>
             <button class="btn btn-sm" title="Damage" @click="applyDamage(c)" style="min-width:32px">-HP</button>
             <button class="btn btn-sm" title="Heal" @click="applyHeal(c)" style="min-width:32px">+HP</button>
-            <button class="btn btn-sm" title="Add Condition" @click="addCondition(c)">&#129352;</button>
-            <button class="btn btn-sm btn-danger" title="Remove" @click="removeCombatant(c.id)">&#128465;</button>
+            <button class="btn btn-sm" title="Add Condition" @click="addCondition(c)">🎲</button>
+            <button class="btn btn-sm" title="Notes" @click="editingNotesId = c.id">📝</button>
+            <button class="btn btn-sm btn-danger" title="Remove" @click="removeCombatant(c.id)">🗑</button>
           </div>
         </div>
-
-        <!-- Notes -->
-        <div v-if="c.notes" style="padding:4px 12px 8px 76px;font-size:0.8em;opacity:0.6">{{ c.notes }}</div>
       </div>
     </div>
 
@@ -153,7 +176,10 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, onMounted } from 'vue'
+import { useDataStore } from '@/stores/data'
+
+const data = useDataStore()
 
 let idCounter = 0
 
@@ -162,8 +188,11 @@ const active = ref(false)
 const round = ref(1)
 const currentTurn = ref(0)
 const combatants = ref([])
+const editingNotesId = ref(null)
 
 const newCombatant = ref({ name: '', initiative: 0, hp_max: null, ac: null, type: 'enemy' })
+const selectedCreature = ref('')
+const importCount = ref(1)
 
 const hpDialog = ref({ open: false, target: null, mode: 'damage', amount: 0 })
 const hpInput = ref(null)
@@ -186,6 +215,28 @@ function addCombatant() {
     notes: '',
   })
   newCombatant.value = { name: '', initiative: 0, hp_max: null, ac: null, type: 'enemy' }
+}
+
+function importFromBestiary() {
+  if (!selectedCreature.value) return
+  const c = selectedCreature.value
+  const count = Math.max(1, importCount.value || 1)
+  for (let i = 0; i < count; i++) {
+    const suffix = count > 1 ? ` ${i + 1}` : ''
+    combatants.value.push({
+      id: ++idCounter,
+      name: c.name + suffix,
+      initiative: Math.floor(Math.random() * 20) + 1,
+      hp_max: c.stats?.hp || null,
+      hp_current: c.stats?.hp || null,
+      ac: c.stats?.ac || null,
+      type: 'enemy',
+      conditions: [],
+      notes: '',
+    })
+  }
+  selectedCreature.value = ''
+  importCount.value = 1
 }
 
 function removeCombatant(id) {
@@ -245,7 +296,12 @@ function addCondition(c) {
   const cond = prompt('Condition (e.g. Stunned, Poisoned):')
   if (!cond) return
   const target = combatants.value.find(x => x.id === c.id)
-  if (target) target.conditions = [...(target.conditions || []), cond]
+  if (target) target.conditions = [...(target.conditions || []), cond.trim()]
+}
+
+function removeCondition(c, cond) {
+  const target = combatants.value.find(x => x.id === c.id)
+  if (target) target.conditions = target.conditions.filter(x => x !== cond)
 }
 
 function hpPercent(c) {
@@ -266,6 +322,10 @@ function typeClass(type) {
   if (type === 'ally') return 'tag-completed'
   return ''
 }
+
+onMounted(() => {
+  if (!data.bestiary.length) data.loadBestiary()
+})
 </script>
 
 <style scoped>
