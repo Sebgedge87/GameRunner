@@ -5,6 +5,15 @@
       <div class="page-sub">Contracts &amp; bounties</div>
     </div>
 
+    <div class="search-row" style="margin-bottom:12px">
+      <input
+        v-model="search"
+        class="form-input"
+        placeholder="Search jobs…"
+        style="max-width:320px"
+      />
+    </div>
+
     <div class="filter-tabs">
       <button
         v-for="tab in tabs"
@@ -38,10 +47,10 @@
             <span v-if="job.danger" class="tag tag-inactive">{{ job.danger }}</span>
           </div>
           <div v-if="job.reward" class="card-meta" style="font-size:0.85em;opacity:0.75;margin-top:6px">
-            &#127873; {{ job.reward }}
+            🎁 {{ job.reward }}
           </div>
           <div v-if="job.location" class="card-meta" style="font-size:0.8em;opacity:0.6;margin-top:4px">
-            &#128205; {{ job.location }}
+            📍 {{ job.location }}
           </div>
           <div v-if="job.employer" class="card-meta" style="font-size:0.8em;opacity:0.6;margin-top:4px">
             Employer: {{ job.employer }}
@@ -51,21 +60,22 @@
           </div>
         </div>
         <div class="card-actions" @click.stop>
-          <button class="btn btn-sm" title="Pin" @click="data.addPin('job', job.id, job.title)">&#128204;</button>
+          <button class="btn btn-sm" title="Pin" @click="data.addPin('job', job.id, job.title)">📌</button>
           <template v-if="campaign.isGm">
             <button
               class="btn btn-sm"
               :title="job.hidden ? 'Reveal' : 'Hide'"
               @click="toggleHidden(job.id)"
-            >{{ job.hidden ? '&#128065;' : '&#128584;' }}</button>
+            >{{ job.hidden ? '👁' : '🙈' }}</button>
             <button
               v-if="!job.promoted_quest_id"
               class="btn btn-sm"
               title="Promote to Quest"
               @click="promoteToQuest(job.id)"
-            >&#8594; Quest</button>
-            <button class="btn btn-sm" title="Edit" @click="ui.openGmEdit('job', job.id, job)">&#9999;&#65039;</button>
-            <button class="btn btn-sm btn-danger" title="Delete" @click="deleteItem(job.id)">&#128465;</button>
+            >→ Quest</button>
+            <button class="btn btn-sm" title="Share" @click="ui.openShare('job', job.id, job.title)">🔗</button>
+            <button class="btn btn-sm" title="Edit" @click="ui.openGmEdit('job', job.id, job)">✏️</button>
+            <button class="btn btn-sm btn-danger" title="Delete" @click="deleteItem(job.id)">🗑</button>
           </template>
         </div>
       </div>
@@ -87,6 +97,7 @@ const data = useDataStore()
 const campaign = useCampaignStore()
 const ui = useUiStore()
 
+const search = ref('')
 const activeTab = ref('all')
 
 const tabs = [
@@ -97,8 +108,18 @@ const tabs = [
 ]
 
 const filteredJobs = computed(() => {
-  if (activeTab.value === 'all') return data.jobs
-  return data.jobs.filter(j => j.status?.toLowerCase() === activeTab.value)
+  let list = data.jobs
+  if (activeTab.value !== 'all') list = list.filter(j => j.status?.toLowerCase() === activeTab.value)
+  if (search.value.trim()) {
+    const q = search.value.toLowerCase()
+    list = list.filter(j =>
+      j.title?.toLowerCase().includes(q) ||
+      j.type?.toLowerCase().includes(q) ||
+      j.location?.toLowerCase().includes(q) ||
+      j.employer?.toLowerCase().includes(q)
+    )
+  }
+  return list
 })
 
 function statusClass(status) {

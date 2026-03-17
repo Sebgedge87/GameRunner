@@ -4,6 +4,15 @@
       <div class="page-title">Quests</div>
     </div>
 
+    <div class="search-row" style="margin-bottom:12px">
+      <input
+        v-model="search"
+        class="form-input"
+        placeholder="Search quests…"
+        style="max-width:320px"
+      />
+    </div>
+
     <div class="filter-tabs">
       <button
         v-for="tab in tabs"
@@ -36,7 +45,7 @@
             <span class="tag" :class="statusClass(quest.status)">{{ quest.status }}</span>
           </div>
           <div v-if="quest.location" class="card-meta">
-            <span style="opacity:0.6;font-size:0.8em">&#128205; {{ quest.location }}</span>
+            <span style="opacity:0.6;font-size:0.8em">📍 {{ quest.location }}</span>
           </div>
           <div v-if="quest.progress != null" class="progress-bar" style="margin-top:6px">
             <div class="progress-fill" :style="`width:${quest.progress}%`"></div>
@@ -46,16 +55,16 @@
           </div>
         </div>
         <div class="card-actions" @click.stop>
-          <button class="btn btn-sm" title="Pin" @click="data.addPin('quest', quest.id, quest.title)">&#128204;</button>
+          <button class="btn btn-sm" title="Pin" @click="data.addPin('quest', quest.id, quest.title)">📌</button>
           <template v-if="campaign.isGm">
             <button
               class="btn btn-sm"
               :title="quest.hidden ? 'Reveal' : 'Hide'"
               @click="toggleHidden('quest', quest.id)"
-            >{{ quest.hidden ? '&#128065;' : '&#128584;' }}</button>
-            <button class="btn btn-sm" title="Share" @click="ui.openShare('quest', quest.id, quest.title)">&#128279;</button>
-            <button class="btn btn-sm" title="Edit" @click="ui.openGmEdit('quest', quest.id, quest)">&#9999;&#65039;</button>
-            <button class="btn btn-sm btn-danger" title="Delete" @click="deleteItem('quest', quest.id)">&#128465;</button>
+            >{{ quest.hidden ? '👁' : '🙈' }}</button>
+            <button class="btn btn-sm" title="Share" @click="ui.openShare('quest', quest.id, quest.title)">🔗</button>
+            <button class="btn btn-sm" title="Edit" @click="ui.openGmEdit('quest', quest.id, quest)">✏️</button>
+            <button class="btn btn-sm btn-danger" title="Delete" @click="deleteItem('quest', quest.id)">🗑</button>
           </template>
         </div>
       </div>
@@ -77,6 +86,7 @@ const data = useDataStore()
 const campaign = useCampaignStore()
 const ui = useUiStore()
 
+const search = ref('')
 const activeTab = ref('all')
 
 const tabs = [
@@ -87,8 +97,17 @@ const tabs = [
 ]
 
 const filteredQuests = computed(() => {
-  if (activeTab.value === 'all') return data.quests
-  return data.quests.filter(q => q.status?.toLowerCase() === activeTab.value)
+  let list = data.quests
+  if (activeTab.value !== 'all') list = list.filter(q => q.status?.toLowerCase() === activeTab.value)
+  if (search.value.trim()) {
+    const q = search.value.toLowerCase()
+    list = list.filter(quest =>
+      quest.title?.toLowerCase().includes(q) ||
+      quest.type?.toLowerCase().includes(q) ||
+      quest.location?.toLowerCase().includes(q)
+    )
+  }
+  return list
 })
 
 function statusClass(status) {
