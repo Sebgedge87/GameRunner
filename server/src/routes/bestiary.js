@@ -17,28 +17,29 @@ router.get('/', requireAuth, (req, res) => {
 });
 
 router.post('/', requireGm, (req, res) => {
-  const { name, description, stats = {}, image_path } = req.body;
+  const { name, description, stats = {}, image_path, gm_notes, player_notes } = req.body;
   if (!name) return res.status(400).json({ error: 'name is required' });
   const db = getDb();
   const campId = getCampaignId(req);
-  const result = db.prepare('INSERT INTO bestiary (campaign_id, name, description, stats, image_path) VALUES (?, ?, ?, ?, ?)')
-    .run(campId || null, name, description || null, JSON.stringify(stats), image_path || null);
+  const result = db.prepare('INSERT INTO bestiary (campaign_id, name, description, stats, image_path, gm_notes, player_notes) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    .run(campId || null, name, description || null, JSON.stringify(stats), image_path || null, gm_notes || null, player_notes || null);
   const creature = db.prepare('SELECT * FROM bestiary WHERE id = ?').get(result.lastInsertRowid);
   res.status(201).json({ creature: { ...creature, stats: tryParse(creature.stats) } });
 });
 
 router.put('/:id', requireGm, (req, res) => {
-  const { name, description, stats, image_path } = req.body;
+  const { name, description, stats, image_path, gm_notes, player_notes } = req.body;
   const db = getDb();
-  db.prepare('UPDATE bestiary SET name=COALESCE(?,name), description=COALESCE(?,description), stats=COALESCE(?,stats), image_path=COALESCE(?,image_path) WHERE id=?')
-    .run(name, description, stats !== undefined ? JSON.stringify(stats) : null, image_path, req.params.id);
+  db.prepare('UPDATE bestiary SET name=COALESCE(?,name), description=COALESCE(?,description), stats=COALESCE(?,stats), image_path=COALESCE(?,image_path), gm_notes=COALESCE(?,gm_notes), player_notes=COALESCE(?,player_notes) WHERE id=?')
+    .run(name, description, stats !== undefined ? JSON.stringify(stats) : null, image_path, gm_notes, player_notes, req.params.id);
   const creature = db.prepare('SELECT * FROM bestiary WHERE id = ?').get(req.params.id);
   res.json({ creature: { ...creature, stats: tryParse(creature.stats) } });
 });
 
 router.put('/:id/reveal', requireGm, (req, res) => {
   const db = getDb();
-  db.prepare('UPDATE bestiary SET revealed = 1 WHERE id = ?').run(req.params.id);
+  const revealed = req.body.revealed !== undefined ? (req.body.revealed ? 1 : 0) : 1;
+  db.prepare('UPDATE bestiary SET revealed = ? WHERE id = ?').run(revealed, req.params.id);
   res.json({ success: true });
 });
 

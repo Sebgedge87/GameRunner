@@ -46,6 +46,7 @@ const xpRoutes = require('./routes/xp');
 const sharesRoutes = require('./routes/shares');
 
 const app = express();
+app.set('trust proxy', 1);
 
 // ── Rate limiting ─────────────────────────────────────────────────────────────
 app.use('/api/auth', rateLimit({
@@ -79,7 +80,7 @@ app.use(cors({
 app.use(express.json({ limit: '1mb' }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // Serve the single-file client portal from /client (works standalone without Caddy)
-const clientPath = path.join(__dirname, '../../client');
+const clientPath = path.join(__dirname, '../../client/dist');
 app.use(express.static(clientPath));
 
 // ── Request logger (dev) ───────────────────────────────────────────────────────
