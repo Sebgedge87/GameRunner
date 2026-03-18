@@ -29,6 +29,7 @@
               >{{ q.title }}</option>
             </select>
           </div>
+
           <div class="form-section-label">Urgency &amp; Deadline</div>
           <div class="form-row">
             <div class="form-group" style="flex:1"><label>Urgency</label>
@@ -42,16 +43,63 @@
               <input v-model="f.deadline" class="form-input" placeholder="e.g. 3 sessions / Day 14" />
             </div>
           </div>
+
           <div class="form-section-label">Rewards</div>
           <div class="form-row">
             <div class="form-group" style="flex:1"><label>💰 Gold (GP)</label><input v-model="f.reward_gold" class="form-input" placeholder="e.g. 100" /></div>
             <div class="form-group" style="flex:1"><label>🎖️ XP</label><input v-model="f.reward_xp" class="form-input" placeholder="e.g. 250" /></div>
           </div>
           <div class="form-group"><label>⚔️ Item Rewards</label><input v-model="f.reward_items" class="form-input" placeholder="Silver dagger, potion of healing…" /></div>
+
           <div class="form-section-label">Entity Connections</div>
-          <div class="form-group"><label>📍 Connected Location</label><input v-model="f.connected_location" class="form-input" placeholder="Location name" /></div>
-          <div class="form-group"><label>🧑 Involved NPCs</label><input v-model="f.connected_npcs" class="form-input" placeholder="NPC names, comma-separated" /></div>
-          <div class="form-group"><label>🔒 GM Notes (private)</label><textarea v-model="f.gm_notes" class="form-input" rows="2" placeholder="Private GM notes…"></textarea></div>
+          <div class="form-group">
+            <label>📍 Locations</label>
+            <div v-if="data.locations.length" class="multi-pick">
+              <label v-for="loc in data.locations" :key="loc.id" class="multi-pick-item">
+                <input type="checkbox" :value="loc.title || loc.name" v-model="f.connected_locations_arr" />
+                <span>{{ loc.title || loc.name }}</span>
+              </label>
+            </div>
+            <div v-else class="multi-pick-empty">No locations yet.</div>
+          </div>
+          <div class="form-group">
+            <label>🏰 Factions</label>
+            <div v-if="data.factions.length" class="multi-pick">
+              <label v-for="fac in data.factions" :key="fac.id" class="multi-pick-item">
+                <input type="checkbox" :value="fac.name" v-model="f.connected_factions_arr" />
+                <span>{{ fac.name }}</span>
+              </label>
+            </div>
+            <div v-else class="multi-pick-empty">No factions yet.</div>
+          </div>
+          <div class="form-group">
+            <label>🧑 NPCs</label>
+            <div v-if="data.npcs.length" class="multi-pick">
+              <label v-for="npc in data.npcs" :key="npc.id" class="multi-pick-item">
+                <input type="checkbox" :value="npc.title || npc.name" v-model="f.connected_npcs_arr" />
+                <span>{{ npc.title || npc.name }}</span>
+              </label>
+            </div>
+            <div v-else class="multi-pick-empty">No NPCs yet.</div>
+          </div>
+
+          <div class="form-section-label">Image</div>
+          <div class="form-group">
+            <label>Banner Image</label>
+            <div v-if="f.image_url" class="quest-img-preview">
+              <img :src="f.image_url" alt="Current banner" />
+              <button type="button" class="btn btn-xs" style="margin-top:4px" @click="f.image_url = ''">Remove</button>
+            </div>
+            <input type="file" ref="questImgInput" class="form-input" accept="image/*" />
+          </div>
+
+          <template v-if="campaign.isGm">
+            <div class="form-section-label gm-section-label">🔒 GM Only</div>
+            <div class="form-group gm-notes-group">
+              <label>GM Notes (private)</label>
+              <textarea v-model="f.gm_notes" class="form-input" rows="3" placeholder="Secret information, tactics, hidden motivations…"></textarea>
+            </div>
+          </template>
         </template>
 
         <!-- NPC -->
@@ -299,11 +347,14 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { useUiStore } from '@/stores/ui'
 import { useDataStore } from '@/stores/data'
+import { useCampaignStore } from '@/stores/campaign'
 
 const ui = useUiStore()
 const data = useDataStore()
+const campaign = useCampaignStore()
 
 const imgInput = ref(null)
+const questImgInput = ref(null)
 const saving = ref(false)
 const saveError = ref('')
 const portraitPreview = ref('')
@@ -325,6 +376,11 @@ const f = reactive({
   reward_gold: '', reward_xp: '', reward_items: '',
   urgency: 'none', deadline: '', connected_location: '', connected_npcs: '',
   parent_quest_id: null,
+  // Quest multi-pick arrays (serialised to comma strings on save)
+  connected_locations_arr: [],
+  connected_factions_arr: [],
+  connected_npcs_arr: [],
+  image_url: '',
 })
 
 const type = computed(() => ui.gmEditModal?.type || '')
@@ -406,6 +462,13 @@ watch(() => ui.gmEditModal, (modal) => {
   f.connected_location = d.connected_location || ''
   f.connected_npcs = d.connected_npcs || ''
   f.parent_quest_id = d.parent_quest_id || null
+  // Prefill multi-pick arrays — support both old singular and new plural fields
+  const splitC = (s) => s ? s.split(',').map(x => x.trim()).filter(Boolean) : []
+  const locNames = splitC(d.connected_locations || d.connected_location || '')
+  f.connected_locations_arr = locNames
+  f.connected_factions_arr = splitC(d.connected_factions || '')
+  f.connected_npcs_arr = splitC(d.connected_npcs || '')
+  f.image_url = d.image_url || ''
   f.cr = d.stats?.cr ?? null
   f.ac = d.stats?.ac ?? null
   f.hp = d.stats?.hp ?? null
@@ -418,6 +481,17 @@ watch(() => ui.gmEditModal, (modal) => {
     f.date = d.played_at ? d.played_at.slice(0, 10) : ''
   }
 }, { immediate: true })
+
+async function uploadQuestImage() {
+  const input = questImgInput.value
+  if (!input || !input.files || !input.files[0]) return null
+  const fd = new FormData()
+  fd.append('file', input.files[0])
+  const token = localStorage.getItem('chronicle_token')
+  const r = await fetch('/api/uploads', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd })
+  if (r.ok) { const d = await r.json(); return d.url || d.path || null }
+  return null
+}
 
 async function uploadImage() {
   const input = imgInput.value
@@ -443,14 +517,21 @@ async function save() {
 
     let body = {}
     switch (t) {
-      case 'quest':
+      case 'quest': {
+        const questImgUrl = questImgInput.value?.files?.[0]
+          ? await uploadQuestImage()
+          : (f.image_url || null)
         body = {
           title: f.title, description: f.description, status: f.status, quest_type: f.quest_type,
           parent_quest_id: f.parent_quest_id || null,
           reward_gold: f.reward_gold || null, reward_xp: f.reward_xp || null, reward_items: f.reward_items || null,
           urgency: f.urgency || 'none', deadline: f.deadline || null, gm_notes: f.gm_notes || null,
-          connected_location: f.connected_location || null, connected_npcs: f.connected_npcs || null,
+          connected_locations: f.connected_locations_arr.join(',') || null,
+          connected_factions: f.connected_factions_arr.join(',') || null,
+          connected_npcs: f.connected_npcs_arr.join(',') || null,
+          image_url: questImgUrl,
         }; break
+      }
       case 'npc':
         body = { name: f.name, role: f.role, description: f.description, gm_notes: f.gm_notes }
         if (imageUrl) body.image_url = imageUrl
@@ -521,6 +602,58 @@ async function save() {
 </script>
 
 <style scoped>
+/* ── Multi-pick (quest connections) ─────────────────────────────────────── */
+.multi-pick {
+  max-height: 130px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg2);
+  padding: 4px 2px;
+}
+.multi-pick-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px;
+  font-size: 13px;
+  color: var(--text2);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.multi-pick-item:hover { background: var(--bg3); }
+.multi-pick-item input[type="checkbox"] { accent-color: var(--gold); cursor: pointer; }
+.multi-pick-empty { font-size: 12px; color: var(--text3); font-style: italic; padding: 4px 0; }
+
+/* ── Quest banner image preview ─────────────────────────────────────────── */
+.quest-img-preview {
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.quest-img-preview img {
+  width: 100%;
+  max-height: 120px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+/* ── GM-only section label ───────────────────────────────────────────────── */
+.gm-section-label {
+  color: var(--red, #c94c4c) !important;
+  border-bottom-color: rgba(201, 76, 76, 0.3) !important;
+}
+.gm-notes-group {
+  background: rgba(180, 40, 40, 0.05);
+  border: 1px solid rgba(201, 76, 76, 0.22);
+  border-radius: 4px;
+  padding: 10px;
+}
+.gm-notes-group label { color: var(--red, #c94c4c); }
+
 /* ── Bestiary Form ───────────────────────────────────────────────────────── */
 .bst-label {
   display: block;
