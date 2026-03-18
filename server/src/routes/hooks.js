@@ -32,7 +32,7 @@ router.post('/', requireGm, (req, res) => {
   const { title, description = '', status = 'active' } = req.body;
   if (!title) return res.status(400).json({ error: 'title is required' });
   const filename = `${slug(title)}-${Date.now()}.md`;
-  const content = matter.stringify(description, { title, status });
+  const content = matter.stringify(description, { title, description, status });
   const camp = getDb().prepare('SELECT id, name FROM campaigns WHERE active = 1 LIMIT 1').get();
   const campSlug = camp ? slug(camp.name) : null;
   const targetDir = campSlug ? path.join(vaultPath, campSlug, 'Hooks') : VAULT_DIR;
@@ -51,7 +51,7 @@ router.put('/:id', requireGm, (req, res) => {
   if (!row) return res.status(404).json({ error: 'Not found' });
   const existing = JSON.parse(row.frontmatter || '{}');
   const { title, description, status } = { ...existing, ...req.body };
-  const content = matter.stringify(description || '', { title, status });
+  const content = matter.stringify(description || '', { title, description: description || '', status });
   fs.writeFileSync(path.join(vaultPath, row.path), content, 'utf8');
   res.json({ success: true });
 });
