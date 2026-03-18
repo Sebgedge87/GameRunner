@@ -44,6 +44,7 @@
             <span v-if="quest.type" class="tag">{{ quest.type }}</span>
             <span class="tag" :class="statusClass(quest.status)">{{ quest.status }}</span>
           </div>
+          <div v-if="quest.description" class="card-overview">{{ quest.description }}</div>
           <div v-if="quest.location" class="card-meta">
             <span style="opacity:0.6;font-size:0.8em">📍 {{ quest.location }}</span>
           </div>

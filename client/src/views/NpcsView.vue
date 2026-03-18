@@ -45,6 +45,7 @@
             <span v-if="npc.role" class="tag">{{ npc.role }}</span>
             <span v-if="npc.disposition" class="tag" :class="dispositionClass(npc.disposition)">{{ npc.disposition }}</span>
           </div>
+          <div v-if="npc.description" class="card-overview">{{ npc.description }}</div>
           <div v-if="npc.faction" class="card-meta">
             <span style="opacity:0.6;font-size:0.8em">⚔️ {{ npc.faction }}</span>
           </div>

@@ -44,9 +44,7 @@
           <div v-if="item.quantity != null" class="card-meta" style="font-size:0.85em;opacity:0.7;margin-top:4px">
             Qty: {{ item.quantity }}
           </div>
-          <div v-if="item.description" class="card-meta" style="font-size:0.82em;opacity:0.65;margin-top:4px">
-            {{ item.description }}
-          </div>
+          <div v-if="item.description" class="card-overview">{{ item.description }}</div>
           <div v-if="item.weight != null" class="card-meta" style="font-size:0.8em;opacity:0.55;margin-top:4px">
             Weight: {{ item.weight }}
           </div>
@@ -95,9 +93,7 @@
           <div class="card-meta">
             <span v-if="item.type" class="tag">{{ item.type }}</span>
           </div>
-          <div v-if="item.description" class="card-meta" style="font-size:0.82em;opacity:0.65;margin-top:4px">
-            {{ item.description }}
-          </div>
+          <div v-if="item.description" class="card-overview">{{ item.description }}</div>
           <div v-if="item.connected_to?.length" class="card-meta" style="font-size:0.75em;opacity:0.5;margin-top:4px">
             Linked: {{ item.connected_to.join(', ') }}
           </div>

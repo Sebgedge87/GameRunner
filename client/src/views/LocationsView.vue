@@ -45,6 +45,7 @@
             <span v-if="loc.status" class="tag" :class="statusClass(loc.status)">{{ loc.status }}</span>
             <span v-if="loc.danger" class="tag tag-inactive">⚠️ {{ loc.danger }}</span>
           </div>
+          <div v-if="loc.description" class="card-overview">{{ loc.description }}</div>
           <div v-if="loc.visited_session" class="card-meta">
             <span style="opacity:0.6;font-size:0.8em">Session {{ loc.visited_session }}</span>
           </div>
