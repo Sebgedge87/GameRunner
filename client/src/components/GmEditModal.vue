@@ -316,6 +316,8 @@ const TYPE_RELOAD = {
   rumour: () => data.loadRumours(), map: () => data.loadMaps(),
   handout: () => data.loadHandouts(), session: () => data.loadSessions(),
   poll: () => data.loadSessions(), schedule: () => data.loadSessions(),
+  agenda: () => data.loadAgenda(), message: () => data.loadMessages(),
+  notes: () => data.loadNotes(),
 }
 
 // Prefill form when editing
@@ -360,7 +362,7 @@ watch(() => ui.gmEditModal, (modal) => {
   f.ac = d.stats?.ac ?? null
   f.hp = d.stats?.hp ?? null
   f.player_notes = d.player_notes || ''
-  if (d.image_url && modal.type === 'bestiary') portraitPreview.value = d.image_url
+  if (modal.type === 'bestiary') portraitPreview.value = d.image_path || d.image_url || ''
   f.map_type = d.map_type || 'world'
   f.content = d.body || d.content || ''
   f.subject = d.subject || ''
@@ -396,9 +398,13 @@ async function save() {
       case 'quest':
         body = { title: f.title, description: f.description, status: f.status, quest_type: f.quest_type }; break
       case 'npc':
-        body = { name: f.name, role: f.role, description: f.description, gm_notes: f.gm_notes, image_url: imageUrl }; break
+        body = { name: f.name, role: f.role, description: f.description, gm_notes: f.gm_notes }
+        if (imageUrl) body.image_url = imageUrl
+        break
       case 'location':
-        body = { name: f.name, description: f.description, image_url: imageUrl }; break
+        body = { name: f.name, description: f.description }
+        if (imageUrl) body.image_url = imageUrl
+        break
       case 'hook':
         body = { title: f.title, description: f.description, status: f.status }; break
       case 'handout':
@@ -417,7 +423,7 @@ async function save() {
       case 'inventory':
         body = { name: f.name, quantity: f.quantity || 1, holder: f.holder || 'party', description: f.description }; break
       case 'key-item':
-        body = { name: f.name, description: f.description, significance: f.significance, linked_quest: f.linked_quest || null, image_url: imageUrl }; break
+        body = { name: f.name, description: f.description, significance: f.significance, linked_quest: f.linked_quest || null, image_path: imageUrl }; break
       case 'job':
         body = { title: f.title, description: f.description, reward: f.reward, difficulty: f.difficulty || 'medium', posted_by: f.posted_by, location: f.location }; break
       case 'bestiary':

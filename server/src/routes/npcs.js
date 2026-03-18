@@ -85,6 +85,16 @@ router.delete('/:id', requireGm, (req, res) => {
   res.json({ success: true });
 });
 
+// PUT /api/npcs/:id/reveal — toggle NPC visibility to players (hidden=0 = revealed, hidden=1 = hidden)
+router.put('/:id/reveal', requireGm, (req, res) => {
+  const db = getDb();
+  const revealed = req.body.revealed !== undefined ? Boolean(req.body.revealed) : true;
+  // hidden is inverse of revealed for vault_files
+  db.prepare('UPDATE vault_files SET hidden = ? WHERE id = ?').run(revealed ? 0 : 1, req.params.id);
+  auditLog(req, 'update', 'npc', Number(req.params.id), `reveal=${revealed}`);
+  res.json({ success: true });
+});
+
 // ── NPC Relationships ──────────────────────────────────────────────────────────
 
 // GET /api/npcs/:id/relationships
