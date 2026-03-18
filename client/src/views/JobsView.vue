@@ -46,6 +46,7 @@
             <span v-if="job.status" class="tag" :class="statusClass(job.status)">{{ job.status }}</span>
             <span v-if="job.danger" class="tag tag-inactive">{{ job.danger }}</span>
           </div>
+          <div v-if="job.description" class="card-overview">{{ job.description }}</div>
           <div v-if="job.reward" class="card-meta" style="font-size:0.85em;opacity:0.75;margin-top:6px">
             🎁 {{ job.reward }}
           </div>

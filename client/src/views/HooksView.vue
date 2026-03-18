@@ -42,6 +42,7 @@
             <span v-if="hook.type" class="tag">{{ hook.type }}</span>
             <span v-if="hook.status" class="tag" :class="statusClass(hook.status)">{{ hook.status }}</span>
           </div>
+          <div v-if="hook.description" class="card-overview">{{ hook.description }}</div>
           <div v-if="hook.session_delivered" class="card-meta">
             <span style="opacity:0.6;font-size:0.8em">Delivered: Session {{ hook.session_delivered }}</span>
           </div>

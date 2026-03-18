@@ -36,9 +36,7 @@
             <span v-if="creature.stats?.ac != null" class="tag">AC {{ creature.stats.ac }}</span>
             <span v-if="creature.stats?.hp != null" class="tag">HP {{ creature.stats.hp }}</span>
           </div>
-          <div v-if="creature.description" style="font-size:0.82em;opacity:0.7;margin-top:6px;line-height:1.4">
-            {{ creature.description }}
-          </div>
+          <div v-if="creature.description" class="card-overview">{{ creature.description }}</div>
         </div>
         <div class="card-actions" @click.stop>
           <button class="btn btn-sm" title="Pin" @click="data.addPin('bestiary', creature.id, creature.name)">📌</button>

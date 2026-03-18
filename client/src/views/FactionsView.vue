@@ -28,9 +28,7 @@
       >
         <div class="card-body">
           <div class="card-title">{{ faction.name }}</div>
-          <div v-if="faction.description" class="card-meta" style="font-size:0.85em;opacity:0.8;margin-top:4px">
-            {{ faction.description }}
-          </div>
+          <div v-if="faction.description" class="card-overview">{{ faction.description }}</div>
           <div v-if="faction.goals" class="card-meta" style="font-size:0.8em;opacity:0.65;margin-top:4px">
             Goals: {{ faction.goals }}
           </div>
