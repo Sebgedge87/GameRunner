@@ -498,6 +498,30 @@ function runMigrations() {
     awarded_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 
+  // Death saves columns on combat_combatants
+  try { db.exec('ALTER TABLE combat_combatants ADD COLUMN death_saves_success INTEGER DEFAULT 0'); } catch (_) {}
+  try { db.exec('ALTER TABLE combat_combatants ADD COLUMN death_saves_failure INTEGER DEFAULT 0'); } catch (_) {}
+  try { db.exec('ALTER TABLE combat_combatants ADD COLUMN is_stable INTEGER DEFAULT 0'); } catch (_) {}
+
+  // NPC relationships table
+  db.exec(`CREATE TABLE IF NOT EXISTS npc_relationships (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    npc_id INTEGER NOT NULL REFERENCES vault_files(id) ON DELETE CASCADE,
+    related_npc_id INTEGER NOT NULL REFERENCES vault_files(id) ON DELETE CASCADE,
+    relationship_type TEXT DEFAULT 'associated',
+    notes TEXT,
+    campaign_id INTEGER REFERENCES campaigns(id),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(npc_id, related_npc_id)
+  )`);
+
+  // TOTP secret column on users
+  try { db.exec('ALTER TABLE users ADD COLUMN totp_secret TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE users ADD COLUMN totp_enabled INTEGER DEFAULT 0'); } catch (_) {}
+
+  // Quest chain: parent_quest_id on vault_files
+  try { db.exec('ALTER TABLE vault_files ADD COLUMN parent_quest_id INTEGER REFERENCES vault_files(id)'); } catch (_) {}
+
   // Bestiary gm_notes and player_notes columns (added with bestiary redesign)
   try { db.exec('ALTER TABLE bestiary ADD COLUMN gm_notes TEXT'); } catch (_) {}
   try { db.exec('ALTER TABLE bestiary ADD COLUMN player_notes TEXT'); } catch (_) {}

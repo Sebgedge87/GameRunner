@@ -1,6 +1,7 @@
 const express = require('express');
 const { getDb, getCampaignId } = require('../db/database');
 const { requireAuth } = require('../auth/authMiddleware');
+const { createNotification } = require('../services/notifications');
 
 const router = express.Router();
 
@@ -47,10 +48,21 @@ router.put('/nodes/:id', requireAuth, (req, res) => {
   const node = db.prepare('SELECT * FROM theory_nodes WHERE id = ?').get(req.params.id);
   if (!node) return res.status(404).json({ error: 'Not found' });
   if (node.user_id !== req.user.id && !req.user.isGm) return res.status(403).json({ error: 'Not authorised' });
-  const { label, node_type, vault_ref, notes, x, y } = req.body;
-  db.prepare('UPDATE theory_nodes SET label=COALESCE(?,label), node_type=COALESCE(?,node_type), vault_ref=COALESCE(?,vault_ref), notes=COALESCE(?,notes), x=COALESCE(?,x), y=COALESCE(?,y) WHERE id=?')
-    .run(label ?? null, node_type ?? null, vault_ref ?? null, notes ?? null, x ?? null, y ?? null, req.params.id);
+  const { label, node_type, vault_ref, notes, x, y, shared_with_gm } = req.body;
+  const wasShared = node.shared_with_gm;
+  db.prepare('UPDATE theory_nodes SET label=COALESCE(?,label), node_type=COALESCE(?,node_type), vault_ref=COALESCE(?,vault_ref), notes=COALESCE(?,notes), x=COALESCE(?,x), y=COALESCE(?,y), shared_with_gm=COALESCE(?,shared_with_gm) WHERE id=?')
+    .run(label ?? null, node_type ?? null, vault_ref ?? null, notes ?? null, x ?? null, y ?? null, shared_with_gm !== undefined ? (shared_with_gm ? 1 : 0) : null, req.params.id);
   const updated = db.prepare('SELECT * FROM theory_nodes WHERE id = ?').get(req.params.id);
+  // Notify GM when a node is newly shared with them
+  if (shared_with_gm && !wasShared) {
+    try {
+      const gmUser = db.prepare("SELECT id FROM users WHERE role = 'gm' LIMIT 1").get();
+      if (gmUser && gmUser.id !== req.user.id) {
+        const sender = req.user.character_name || req.user.username;
+        createNotification(db, gmUser.id, 'theory', `${sender} shared a theory node: "${updated.label}"`, updated.notes || '', '');
+      }
+    } catch (_) {}
+  }
   res.json({ node: updated });
 });
 

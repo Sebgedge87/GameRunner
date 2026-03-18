@@ -16,16 +16,22 @@ const router = express.Router();
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
   const campId = getCampaignId(req);
+  const limit = Math.min(parseInt(req.query.limit) || 200, 500);
+  const offset = parseInt(req.query.offset) || 0;
   let rows;
-  if (!campId) return res.json({ locations: [] });
+  if (!campId) return res.json({ locations: [], total: 0 });
   if (req.user.isGm) {
-    rows = db.prepare(`SELECT * FROM vault_files WHERE type = 'location' AND campaign_id = ? ORDER BY title ASC`).all(campId);
+    rows = db.prepare(`SELECT * FROM vault_files WHERE type = 'location' AND campaign_id = ? ORDER BY title ASC LIMIT ? OFFSET ?`).all(campId, limit, offset);
   } else {
     const visClause = `AND (hidden IS NULL OR hidden = 0 OR EXISTS (SELECT 1 FROM item_shares WHERE item_type='location' AND item_id=vault_files.id AND user_id=?))`;
-    rows = db.prepare(`SELECT * FROM vault_files WHERE type = 'location' ${visClause} AND campaign_id = ? ORDER BY title ASC`).all(req.user.id, campId);
+    rows = db.prepare(`SELECT * FROM vault_files WHERE type = 'location' ${visClause} AND campaign_id = ? ORDER BY title ASC LIMIT ? OFFSET ?`).all(req.user.id, campId, limit, offset);
   }
-  const locations = rows.map((r) => ({ id: r.id, path: r.path, title: r.title, hidden: r.hidden || 0, ...JSON.parse(r.frontmatter || '{}') }));
-  res.json({ locations });
+  const locations = rows.map((r) => {
+    let fm = {};
+    try { fm = JSON.parse(r.frontmatter || '{}'); } catch (e) { console.warn(`[locations] Bad frontmatter for ${r.path}:`, e.message); }
+    return { id: r.id, path: r.path, title: r.title, hidden: r.hidden || 0, ...fm };
+  });
+  res.json({ locations, limit, offset });
 });
 
 router.post('/', requireGm, (req, res) => {

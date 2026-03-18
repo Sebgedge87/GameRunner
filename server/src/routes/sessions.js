@@ -2,6 +2,9 @@ const express = require('express');
 const { getDb, getCampaignId } = require('../db/database');
 const { requireAuth, requireGm } = require('../auth/authMiddleware');
 
+const { auditLog } = require('../utils/auditLog');
+const { broadcastSSE } = require('../services/notifications');
+
 const router = express.Router();
 
 // GET /api/sessions
@@ -30,6 +33,7 @@ router.post('/', requireGm, (req, res) => {
     VALUES (?, ?, ?, ?, ?, ?)
   `).run(campId || null, number || null, title, summary || null, played_at || null, in_world_date || null);
   const session = db.prepare('SELECT * FROM sessions WHERE id = ?').get(result.lastInsertRowid);
+  auditLog(req, 'create', 'session', session.id, title);
   res.status(201).json({ session });
 });
 
@@ -135,6 +139,10 @@ router.post('/scheduling/:id/respond', requireAuth, (req, res) => {
 router.put('/scheduling/:id/confirm', requireGm, (req, res) => {
   const db = getDb();
   db.prepare('UPDATE session_scheduling SET confirmed = 1 WHERE id = ?').run(req.params.id);
+  const sched = db.prepare('SELECT * FROM session_scheduling WHERE id = ?').get(req.params.id);
+  // Notify all players that a session has been confirmed
+  broadcastSSE('all', { type: 'session_confirmed', scheduling_id: Number(req.params.id), proposed_date: sched?.proposed_date, title: sched?.title });
+  auditLog(req, 'confirm', 'session_scheduling', Number(req.params.id));
   res.json({ success: true });
 });
 
