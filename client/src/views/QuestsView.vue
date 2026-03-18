@@ -28,140 +28,139 @@
         class="card quest-card"
         :class="{
           hidden: quest.hidden,
-          'edit-mode': editingId === quest.id,
+          expanded: expandedId === quest.id,
           [`urgency-${quest.urgency}`]: quest.urgency && quest.urgency !== 'none',
         }"
       >
-        <!-- ── Header ─────────────────────────────── -->
-        <div class="quest-card-header" @click="editingId !== quest.id && ui.openDetail('quest', quest)">
-          <div class="quest-title-wrap">
-            <span class="card-title">{{ quest.title }}</span>
-            <div class="quest-badges">
-              <span class="tag" :class="statusClass(quest.status)">{{ quest.status }}</span>
-              <span v-if="quest.quest_type" class="tag">{{ quest.quest_type }}</span>
-              <span
-                v-if="quest.urgency && quest.urgency !== 'none'"
-                class="doom-clock"
-                :class="`doom-${quest.urgency}`"
-                :title="quest.deadline ? `Deadline: ${quest.deadline}` : 'Time-sensitive'"
-              >⏳{{ quest.deadline ? ' ' + quest.deadline : '' }}</span>
+        <!-- ── HEADER (always visible, click to expand) ── -->
+        <div class="qc-header" @click="toggleExpand(quest.id)">
+          <div class="qc-title-row">
+            <span class="qc-icon">⚔️</span>
+            <span class="qc-title">{{ quest.title }}</span>
+            <button
+              v-if="campaign.isGm"
+              class="btn btn-xs qc-edit-btn"
+              title="Edit"
+              @click.stop="ui.openGmEdit('quest', quest.id, quest)"
+            >✏️</button>
+          </div>
+          <div class="qc-badge-row">
+            <span class="tag qc-type-tag">{{ quest.quest_type || 'main' }}</span>
+            <span class="tag" :class="statusClass(quest.status)">{{ quest.status || 'active' }}</span>
+            <span
+              v-if="quest.urgency && quest.urgency !== 'none'"
+              class="doom-clock"
+              :class="`doom-${quest.urgency}`"
+            >⏳ URGENT</span>
+          </div>
+        </div>
+
+        <!-- ── EXPANDED BODY ── -->
+        <template v-if="expandedId === quest.id">
+
+          <!-- Image banner -->
+          <img
+            v-if="quest.image_url"
+            :src="quest.image_url"
+            class="qc-image"
+            alt="Quest banner"
+          />
+
+          <!-- Description -->
+          <div v-if="quest.description" class="qc-section qc-description">
+            <div class="qc-section-text">{{ quest.description }}</div>
+          </div>
+
+          <!-- Connections: Locations / Factions / NPCs -->
+          <div
+            v-if="allLocations(quest).length || allFactions(quest).length || allNpcs(quest).length"
+            class="qc-section qc-connections"
+          >
+            <div v-if="allLocations(quest).length" class="qc-conn-group">
+              <span class="qc-conn-label">📍 Locations</span>
+              <div class="qc-conn-badges">
+                <button
+                  v-for="name in allLocations(quest)"
+                  :key="name"
+                  class="conn-badge"
+                  @click.stop="openEntityDetail('location', name)"
+                >{{ name }}</button>
+              </div>
+            </div>
+            <div v-if="allFactions(quest).length" class="qc-conn-group">
+              <span class="qc-conn-label">🏰 Factions</span>
+              <div class="qc-conn-badges">
+                <button
+                  v-for="name in allFactions(quest)"
+                  :key="name"
+                  class="conn-badge"
+                  @click.stop="openEntityDetail('faction', name)"
+                >{{ name }}</button>
+              </div>
+            </div>
+            <div v-if="allNpcs(quest).length" class="qc-conn-group">
+              <span class="qc-conn-label">🧑 NPCs</span>
+              <div class="qc-conn-badges">
+                <button
+                  v-for="name in allNpcs(quest)"
+                  :key="name"
+                  class="conn-badge"
+                  @click.stop="openEntityDetail('npc', name)"
+                >{{ name }}</button>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- ── Description ───────────────────────── -->
-        <div class="quest-description" @click.stop>
-          <textarea
-            v-if="editingId === quest.id"
-            v-model="editDraft.description"
-            class="inline-field"
-            rows="3"
-            placeholder="Quest description…"
-          ></textarea>
-          <div v-else class="card-overview" @click="editingId !== quest.id && ui.openDetail('quest', quest)">
-            {{ quest.description || 'No description.' }}
+          <!-- Deadline -->
+          <div v-if="quest.deadline" class="qc-section qc-deadline">
+            <span class="qc-deadline-icon">⏳</span>
+            <span>{{ quest.deadline }}</span>
           </div>
-        </div>
 
-        <!-- ── Urgency/Deadline (edit mode only) ─── -->
-        <div v-if="editingId === quest.id" class="quest-inline-row" @click.stop>
-          <div class="inline-field-group">
-            <label class="inline-label">Urgency</label>
-            <select v-model="editDraft.urgency" class="inline-select">
-              <option value="none">None</option>
-              <option value="low">Low (amber)</option>
-              <option value="high">High — urgent (red)</option>
-            </select>
+          <!-- Loot Tray -->
+          <div class="qc-section qc-loot">
+            <div class="qc-loot-header">
+              <span>💰 Loot Tray</span>
+              <button
+                v-if="campaign.isGm"
+                class="qc-add-reward"
+                @click.stop="ui.openGmEdit('quest', quest.id, quest)"
+              >+ Add Reward</button>
+            </div>
+            <div v-if="hasReward(quest)" class="qc-loot-pills">
+              <span v-if="quest.reward_gold" class="reward-pill">{{ quest.reward_gold }} GP</span>
+              <template v-if="quest.reward_items">
+                <span v-for="item in splitComma(quest.reward_items)" :key="item" class="reward-pill">{{ item }}</span>
+              </template>
+              <span v-if="quest.reward_xp" class="reward-pill">{{ quest.reward_xp }} XP</span>
+            </div>
+            <div v-else class="qc-loot-empty">No rewards set.</div>
           </div>
-          <div class="inline-field-group">
-            <label class="inline-label">Deadline</label>
-            <input v-model="editDraft.deadline" class="inline-input" placeholder="e.g. 3 sessions / Day 14" />
+
+          <!-- GM Notes (GM only) -->
+          <div v-if="campaign.isGm && quest.gm_notes" class="qc-section qc-gm-notes">
+            <div class="qc-gm-header">
+              <span class="gm-note-label">🔒 GM Note</span>
+            </div>
+            <div class="qc-gm-text">{{ quest.gm_notes }}</div>
           </div>
-        </div>
 
-        <!-- ── Entity Connections ─────────────────── -->
-        <div
-          v-if="editingId === quest.id || quest.connected_location || parseNpcs(quest.connected_npcs).length"
-          class="quest-connections"
-          @click.stop
-        >
-          <span class="conn-label">Involved</span>
-          <template v-if="editingId === quest.id">
-            <input v-model="editDraft.connected_location" class="inline-input" placeholder="📍 Location name" style="flex:1;min-width:120px" />
-            <input v-model="editDraft.connected_npcs" class="inline-input" placeholder="🧑 NPC names, comma-separated" style="flex:2;min-width:160px" />
-          </template>
-          <template v-else>
-            <button
-              v-if="quest.connected_location"
-              class="conn-badge"
-              @click.stop="openEntityDetail('location', quest.connected_location)"
-            >📍 {{ quest.connected_location }}</button>
-            <button
-              v-for="npc in parseNpcs(quest.connected_npcs)"
-              :key="npc"
-              class="conn-badge"
-              @click.stop="openEntityDetail('npc', npc)"
-            >🧑 {{ npc }}</button>
-            <button
-              v-if="quest.connected_location || parseNpcs(quest.connected_npcs).length"
-              class="conn-badge conn-mindmap"
-              @click.stop="$router.push('/mindmap')"
-            >🧠 Mindmap</button>
-          </template>
-        </div>
-
-        <!-- ── Reward Ribbon ──────────────────────── -->
-        <div class="reward-ribbon" :class="{ 'has-reward': hasReward(quest), 'edit-mode': editingId === quest.id }" @click.stop>
-          <template v-if="editingId === quest.id">
-            <span class="reward-icon">💰</span>
-            <input v-model="editDraft.reward_gold" class="reward-input" placeholder="Gold GP" />
-            <span class="reward-icon">🎖️</span>
-            <input v-model="editDraft.reward_xp" class="reward-input" placeholder="XP" />
-            <span class="reward-icon">⚔️</span>
-            <input v-model="editDraft.reward_items" class="reward-input" placeholder="Items (comma-sep)" style="flex:2" />
-          </template>
-          <template v-else-if="hasReward(quest)">
-            <span v-if="quest.reward_gold" class="reward-pill">💰 {{ quest.reward_gold }} GP</span>
-            <span v-if="quest.reward_xp" class="reward-pill">🎖️ +{{ quest.reward_xp }} XP</span>
-            <span v-if="quest.reward_items" class="reward-pill">⚔️ {{ quest.reward_items }}</span>
-          </template>
-          <button v-else-if="campaign.isGm" class="reward-add" @click.stop="startEdit(quest)">
-            + Add Reward
-          </button>
-          <span v-else class="reward-empty">No reward set</span>
-        </div>
-
-        <!-- ── GM Private Note (edit mode) ───────── -->
-        <div v-if="editingId === quest.id" class="quest-gm-note" @click.stop>
-          <span class="gm-note-label">🔒 GM Note</span>
-          <textarea v-model="editDraft.gm_notes" class="inline-field" rows="2" placeholder="Private GM notes…"></textarea>
-        </div>
-        <div v-else-if="campaign.isGm && quest.gm_notes" class="quest-gm-note-preview" @click.stop>
-          <span class="gm-note-label">🔒</span> {{ quest.gm_notes }}
-        </div>
-
-        <!-- ── Card Actions ───────────────────────── -->
-        <div class="card-actions" @click.stop>
-          <template v-if="editingId === quest.id">
-            <button class="btn btn-sm btn-gold" :disabled="saving" @click.stop="saveInline">
-              {{ saving ? '…' : '💾 Save' }}
-            </button>
-            <button class="btn btn-sm" @click.stop="cancelEdit">✕ Cancel</button>
-            <span v-if="saveError" class="inline-error">{{ saveError }}</span>
-          </template>
-          <template v-else>
-            <button class="btn btn-sm" title="Pin" @click="data.addPin('quest', quest.id, quest.title)">📌</button>
+          <!-- Action bar -->
+          <div class="qc-actions">
+            <button class="btn btn-sm" title="Pin" @click.stop="data.addPin('quest', quest.id, quest.title)">📌 Pin</button>
+            <button class="btn btn-sm" title="Mindmap" @click.stop="$router.push('/mindmap')">🧠 Mindmap</button>
             <template v-if="campaign.isGm">
-              <button class="btn btn-sm" title="Quick Edit" @click="startEdit(quest)">✏️</button>
-              <button class="btn btn-sm" :title="quest.hidden ? 'Reveal' : 'Hide'" @click="toggleHidden('quest', quest.id)">
-                {{ quest.hidden ? '👁' : '🙈' }}
-              </button>
-              <button class="btn btn-sm" title="Share" @click="ui.openShare('quest', quest.id, quest.title)">🔗</button>
-              <button class="btn btn-sm" title="Full Edit" @click="ui.openGmEdit('quest', quest.id, quest)">⚙️</button>
-              <button class="btn btn-sm btn-danger" title="Delete" @click="deleteItem('quest', quest.id)">🗑</button>
+              <button
+                class="btn btn-sm"
+                :title="quest.hidden ? 'Reveal' : 'Hide'"
+                @click.stop="toggleHidden('quest', quest.id)"
+              >{{ quest.hidden ? '👁 Reveal' : '🙈 Hide' }}</button>
+              <button class="btn btn-sm" title="Edit" @click.stop="ui.openGmEdit('quest', quest.id, quest)">✏️ Edit</button>
+              <button class="btn btn-sm btn-danger" title="Delete" @click.stop="deleteItem('quest', quest.id)">🗑 Delete</button>
             </template>
-          </template>
-        </div>
+          </div>
+
+        </template>
       </div>
     </div>
 
@@ -170,7 +169,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'
@@ -183,15 +182,7 @@ const router = useRouter()
 
 const search = ref('')
 const activeTab = ref('all')
-const editingId = ref(null)
-const saving = ref(false)
-const saveError = ref('')
-const editDraft = reactive({
-  description: '', status: 'active', quest_type: 'main',
-  reward_gold: '', reward_xp: '', reward_items: '',
-  urgency: 'none', deadline: '', gm_notes: '',
-  connected_location: '', connected_npcs: '',
-})
+const expandedId = ref(null)
 
 const tabs = [
   { value: 'all', label: 'All' },
@@ -208,12 +199,15 @@ const filteredQuests = computed(() => {
     list = list.filter(quest =>
       quest.title?.toLowerCase().includes(q) ||
       quest.quest_type?.toLowerCase().includes(q) ||
-      quest.location?.toLowerCase().includes(q) ||
       quest.description?.toLowerCase().includes(q)
     )
   }
   return list
 })
+
+function toggleExpand(id) {
+  expandedId.value = expandedId.value === id ? null : id
+}
 
 function statusClass(status) {
   const s = status?.toLowerCase()
@@ -227,66 +221,31 @@ function hasReward(quest) {
   return quest.reward_gold || quest.reward_xp || quest.reward_items
 }
 
-function parseNpcs(str) {
+function splitComma(str) {
   if (!str) return []
   return str.split(',').map(s => s.trim()).filter(Boolean)
 }
 
-function startEdit(quest) {
-  editDraft.description = quest.description || ''
-  editDraft.status = quest.status || 'active'
-  editDraft.quest_type = quest.quest_type || 'main'
-  editDraft.reward_gold = quest.reward_gold || ''
-  editDraft.reward_xp = quest.reward_xp || ''
-  editDraft.reward_items = quest.reward_items || ''
-  editDraft.urgency = quest.urgency || 'none'
-  editDraft.deadline = quest.deadline || ''
-  editDraft.gm_notes = quest.gm_notes || ''
-  editDraft.connected_location = quest.connected_location || ''
-  editDraft.connected_npcs = quest.connected_npcs || ''
-  editingId.value = quest.id
-  saveError.value = ''
+// Support both connected_locations (new plural) and connected_location (legacy singular)
+function allLocations(quest) {
+  const multi = splitComma(quest.connected_locations)
+  const single = quest.connected_location ? [quest.connected_location.trim()] : []
+  return [...new Set([...multi, ...single])].filter(Boolean)
 }
 
-function cancelEdit() {
-  editingId.value = null
-  saveError.value = ''
+function allFactions(quest) {
+  return splitComma(quest.connected_factions)
 }
 
-async function saveInline() {
-  saving.value = true
-  saveError.value = ''
-  try {
-    const r = await data.apif(`/api/quests/${editingId.value}`, {
-      method: 'PUT',
-      body: JSON.stringify({
-        description: editDraft.description,
-        reward_gold: editDraft.reward_gold || null,
-        reward_xp: editDraft.reward_xp || null,
-        reward_items: editDraft.reward_items || null,
-        urgency: editDraft.urgency || 'none',
-        deadline: editDraft.deadline || null,
-        gm_notes: editDraft.gm_notes || null,
-        connected_location: editDraft.connected_location || null,
-        connected_npcs: editDraft.connected_npcs || null,
-      }),
-    })
-    if (!r.ok) {
-      const d = await r.json().catch(() => ({}))
-      throw new Error(d.error || 'Save failed')
-    }
-    await data.loadQuests()
-    editingId.value = null
-    ui.showToast('Quest updated', '', '✏️')
-  } catch (e) {
-    saveError.value = e.message
-  } finally {
-    saving.value = false
-  }
+function allNpcs(quest) {
+  return splitComma(quest.connected_npcs)
 }
 
 function openEntityDetail(type, name) {
-  const store = type === 'location' ? data.locations : data.npcs
+  let store
+  if (type === 'location') store = data.locations
+  else if (type === 'faction') store = data.factions
+  else store = data.npcs
   const entity = store?.find(e => (e.title || e.name)?.toLowerCase() === name?.toLowerCase())
   if (entity) ui.openDetail(type, entity)
   else ui.showToast(`${name} not found`, '', '🔍')
@@ -305,5 +264,142 @@ async function deleteItem(type, id) {
 
 onMounted(() => {
   if (!data.quests.length) data.loadQuests()
+  if (!data.locations.length) data.loadLocations()
+  if (!data.factions.length) data.loadFactions()
+  if (!data.npcs.length) data.loadNpcs()
 })
 </script>
+
+<style scoped>
+/* Quest card — no padding on root, sections handle their own */
+.quest-card { padding: 0; overflow: hidden; cursor: pointer; }
+
+/* ── Header ── */
+.qc-header {
+  padding: 12px 16px 10px;
+  user-select: none;
+}
+.qc-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.qc-icon { font-size: 14px; flex-shrink: 0; }
+.qc-title {
+  font-family: var(--font-header, 'Cinzel', serif);
+  font-size: 13px;
+  color: var(--text);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  flex: 1;
+  line-height: 1.3;
+}
+.qc-edit-btn {
+  opacity: 0.45;
+  padding: 2px 6px;
+  font-size: 11px;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+.qc-edit-btn:hover { opacity: 1; }
+.qc-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.qc-type-tag { text-transform: capitalize; }
+
+/* ── Shared section padding ── */
+.qc-section {
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Image banner ── */
+.qc-image {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  display: block;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Description ── */
+.qc-section-text {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.65;
+  font-style: italic;
+}
+
+/* ── Connections ── */
+.qc-connections { display: flex; flex-direction: column; gap: 8px; }
+.qc-conn-group { display: flex; align-items: flex-start; gap: 8px; flex-wrap: wrap; }
+.qc-conn-label {
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text3);
+  white-space: nowrap;
+  padding-top: 3px;
+  min-width: 78px;
+}
+.qc-conn-badges { display: flex; gap: 4px; flex-wrap: wrap; }
+
+/* ── Deadline ── */
+.qc-deadline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text2);
+}
+.qc-deadline-icon { font-size: 14px; }
+
+/* ── Loot Tray ── */
+.qc-loot-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 7px;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text3);
+}
+.qc-add-reward {
+  background: none;
+  border: 1px dashed var(--border2);
+  color: var(--text3);
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.qc-add-reward:hover { border-color: var(--gold); color: var(--gold); }
+.qc-loot-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+.qc-loot-empty { font-size: 12px; color: var(--text3); font-style: italic; }
+
+/* ── GM Notes ── */
+.qc-gm-notes {
+  background: rgba(180, 40, 40, 0.06);
+  border-top: 1px solid rgba(201, 76, 76, 0.22) !important;
+}
+.qc-gm-header { margin-bottom: 5px; }
+.qc-gm-text { font-size: 13px; color: var(--text2); line-height: 1.55; }
+
+/* ── Action bar ── */
+.qc-actions {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  padding: 8px 16px 10px;
+  border-top: 1px solid var(--border);
+}
+.qc-actions .btn { font-size: 11px; padding: 3px 8px; }
+</style>

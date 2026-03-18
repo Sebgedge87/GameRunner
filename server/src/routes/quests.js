@@ -41,7 +41,7 @@ router.post('/', requireGm, (req, res) => {
   const {
     title, description = '', status = 'active', quest_type = 'main', parent_quest_id,
     reward_gold, reward_xp, reward_items, urgency, deadline, gm_notes,
-    connected_location, connected_npcs,
+    connected_location, connected_locations, connected_npcs, connected_factions, image_url,
   } = req.body;
   if (!title) return res.status(400).json({ error: 'title is required' });
   const filename = `${slug(title)}-${Date.now()}.md`;
@@ -53,8 +53,11 @@ router.post('/', requireGm, (req, res) => {
   if (urgency !== undefined) fm.urgency = urgency;
   if (deadline !== undefined) fm.deadline = deadline;
   if (gm_notes !== undefined) fm.gm_notes = gm_notes;
-  if (connected_location !== undefined) fm.connected_location = connected_location;
+  if (connected_locations !== undefined) fm.connected_locations = connected_locations;
+  else if (connected_location !== undefined) fm.connected_location = connected_location;
+  if (connected_factions !== undefined) fm.connected_factions = connected_factions;
   if (connected_npcs !== undefined) fm.connected_npcs = connected_npcs;
+  if (image_url !== undefined) fm.image_url = image_url;
   const content = matter.stringify(description, fm);
   const camp = getDb().prepare('SELECT id, name FROM campaigns WHERE active = 1 LIMIT 1').get();
   const campSlug = camp ? slug(camp.name) : null;
@@ -92,7 +95,7 @@ router.put('/:id', requireGm, (req, res) => {
   const {
     title, description, status, quest_type, parent_quest_id,
     reward_gold, reward_xp, reward_items, urgency, deadline, gm_notes,
-    connected_location, connected_npcs,
+    connected_location, connected_locations, connected_npcs, connected_factions, image_url,
   } = merged;
   const fm = { title, description: description || '', status, quest_type };
   if (parent_quest_id !== undefined) fm.parent_quest_id = parent_quest_id || null;
@@ -102,8 +105,11 @@ router.put('/:id', requireGm, (req, res) => {
   if (urgency !== undefined) fm.urgency = urgency;
   if (deadline !== undefined) fm.deadline = deadline;
   if (gm_notes !== undefined) fm.gm_notes = gm_notes;
-  if (connected_location !== undefined) fm.connected_location = connected_location;
+  if (connected_locations !== undefined) fm.connected_locations = connected_locations;
+  else if (connected_location !== undefined) fm.connected_location = connected_location;
+  if (connected_factions !== undefined) fm.connected_factions = connected_factions;
   if (connected_npcs !== undefined) fm.connected_npcs = connected_npcs;
+  if (image_url !== undefined) fm.image_url = image_url;
   const content = matter.stringify(description || '', fm);
   fs.writeFileSync(fullPath, content, 'utf8');
   if (parent_quest_id !== undefined) {
