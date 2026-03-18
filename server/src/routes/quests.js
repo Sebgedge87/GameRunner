@@ -53,8 +53,26 @@ router.put('/:id', requireGm, (req, res) => {
   const row = getDb().prepare(`SELECT * FROM vault_files WHERE id = ?`).get(req.params.id);
   if (!row) return res.status(404).json({ error: 'Not found' });
   const existing = JSON.parse(row.frontmatter || '{}');
-  const { title, description, status, quest_type } = { ...existing, ...req.body };
-  const content = matter.stringify(description || '', { title, description: description || '', status, quest_type });
+  // Merge all fields so new optional fields (rewards, urgency, etc.) are preserved
+  const merged = { ...existing, ...req.body };
+  const { title, description, status, quest_type, location, connected_to, connected_npcs,
+          reward_gold, reward_xp, reward_items, urgency, expires_in, progress } = merged;
+  const fm = {
+    title: title || existing.title,
+    description: description || '',
+    status: status || 'active',
+    quest_type: quest_type || 'main',
+  };
+  if (location) fm.location = location;
+  if (Array.isArray(connected_to) && connected_to.length) fm.connected_to = connected_to;
+  if (Array.isArray(connected_npcs) && connected_npcs.length) fm.connected_npcs = connected_npcs;
+  if (reward_gold != null) fm.reward_gold = reward_gold;
+  if (reward_xp != null) fm.reward_xp = reward_xp;
+  if (reward_items) fm.reward_items = reward_items;
+  if (urgency) fm.urgency = urgency;
+  if (expires_in) fm.expires_in = expires_in;
+  if (progress != null) fm.progress = progress;
+  const content = matter.stringify(fm.description, fm);
   fs.writeFileSync(path.join(vaultPath, row.path), content, 'utf8');
   res.json({ success: true });
 });

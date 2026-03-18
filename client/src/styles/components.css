@@ -49,6 +49,53 @@
 .card-body{font-size:13px;color:var(--text2);line-height:1.65;font-family:var(--font-body,'Crimson Pro',serif);}
 .card-overview{font-size:12px;color:var(--text2);line-height:1.55;font-family:var(--font-body,'Crimson Pro',serif);margin-top:6px;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;opacity:0.75;}
 .card-actions{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;}
+
+/* ── Quest Card — Inline GM Edit HUD ─────────────────────────────────────── */
+.quest-card{display:flex;flex-direction:column;overflow:hidden;transition:box-shadow 0.25s,border-color 0.25s;}
+.quest-editing{border-color:var(--accent)!important;box-shadow:0 0 0 1px var(--accent),0 0 28px rgba(201,168,76,0.22),inset 0 0 24px rgba(201,168,76,0.06)!important;}
+.quest-header-row{margin-bottom:6px;}
+.edit-field-title{width:100%;background:transparent;border:none;border-bottom:1px solid var(--accent);color:var(--text);font-family:var(--font-header,'Cinzel',serif);font-size:14px;letter-spacing:0.04em;padding:2px 0 4px;outline:none;}
+.quest-badges-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px;}
+.edit-badge-select{background:var(--bg3);border:1px solid var(--border2);color:var(--text2);font-size:10px;font-family:'JetBrains Mono',monospace;padding:2px 6px;border-radius:3px;outline:none;cursor:pointer;}
+.edit-badge-select:focus{border-color:var(--accent);}
+.edit-urgency-select{color:var(--accent);}
+.edit-field-sm{width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text2);font-size:12px;font-family:var(--font-body,'Crimson Pro',serif);padding:3px 0;outline:none;}
+.edit-field-sm:focus{border-bottom-color:var(--accent);}
+.edit-field-sm::placeholder{color:var(--text3);}
+.quest-desc-block{margin-bottom:6px;}
+.edit-field-textarea{width:100%;background:rgba(0,0,0,0.25);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:var(--font-body,'Crimson Pro',serif);line-height:1.6;padding:6px 8px;border-radius:3px;outline:none;resize:vertical;box-sizing:border-box;}
+.edit-field-textarea:focus{border-color:var(--accent);}
+
+/* ── Connections ─────────────────────────────────────────────────────────── */
+.quest-connections{margin-top:8px;}
+.connections-edit-label{font-size:9px;font-family:'JetBrains Mono',monospace;color:var(--text3);letter-spacing:.1em;margin-bottom:6px;text-transform:uppercase;}
+.connection-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;}
+.connection-chip{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:3px;font-size:11px;font-family:'JetBrains Mono',monospace;background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.2);color:var(--text2);cursor:pointer;transition:background 0.15s,border-color 0.15s;}
+.connection-chip:hover{background:rgba(201,168,76,0.18);border-color:var(--accent);color:var(--accent2);}
+.connection-chip-muted{background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.08);color:var(--text3);}
+.connection-chip-muted:hover{background:rgba(255,255,255,0.08);border-color:var(--border2);color:var(--text2);}
+
+/* ── Reward Ribbon ────────────────────────────────────────────────────────── */
+.quest-reward-ribbon{border-top:1px solid var(--border);background:rgba(0,0,0,0.18);padding:8px 14px;margin-top:auto;}
+.reward-display{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+.reward-chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--accent2);background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.25);padding:2px 8px;border-radius:3px;}
+.reward-empty{font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text3);border:1px dashed var(--border);border-radius:3px;padding:4px 10px;cursor:pointer;transition:border-color 0.15s,color 0.15s;display:inline-block;}
+.reward-empty:hover{border-color:var(--accent);color:var(--accent);}
+.reward-empty-hint{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;opacity:0.5;}
+.reward-edit-row{display:flex;gap:8px;align-items:center;}
+.reward-edit-item{display:flex;align-items:center;gap:4px;flex:1;}
+.reward-icon{font-size:13px;flex-shrink:0;}
+.reward-input{flex:1;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text2);font-size:12px;font-family:'JetBrains Mono',monospace;padding:2px 0;outline:none;width:0;}
+.reward-input:focus{border-bottom-color:var(--accent);}
+.reward-input::placeholder{color:var(--text3);}
+.reward-input[type=number]::-webkit-inner-spin-button{opacity:0.3;}
+
+/* ── Doom Clock ───────────────────────────────────────────────────────────── */
+.doom-clock{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-family:'JetBrains Mono',monospace;padding:2px 7px;border-radius:3px;border:1px solid;cursor:default;}
+.doom-low{color:var(--accent2);border-color:rgba(201,168,76,0.3);background:rgba(201,168,76,0.06);}
+.doom-medium{color:#e0a840;border-color:rgba(224,168,64,0.4);background:rgba(224,168,64,0.1);}
+.doom-high{color:#e05050;border-color:rgba(224,80,80,0.45);background:rgba(224,80,80,0.1);animation:doom-pulse 1.6s ease-in-out infinite;}
+@keyframes doom-pulse{0%,100%{box-shadow:0 0 0 0 rgba(224,80,80,0);}50%{box-shadow:0 0 6px 2px rgba(224,80,80,0.35);}}
 .pin-btn{position:absolute;top:10px;right:10px;background:none;border:none;color:var(--text3);font-size:14px;padding:2px;transition:color .2s;}
 .pin-btn:hover,.pin-btn.pinned{color:var(--accent);}
 .updated-badge{position:absolute;top:10px;right:32px;font-size:9px;background:var(--accent-dim);color:var(--accent2);padding:1px 5px;border-radius:3px;font-family:'JetBrains Mono',monospace;}
