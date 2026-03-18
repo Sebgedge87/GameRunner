@@ -151,7 +151,7 @@ async function toggleHidden(id) {
 }
 
 async function deleteItem(id) {
-  if (!confirm('Delete this job?')) return
+  if (!await ui.confirm('Delete this job?')) return
   await data.deleteItem('job', id)
   await data.loadJobs()
 }

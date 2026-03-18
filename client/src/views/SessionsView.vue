@@ -5,7 +5,7 @@
     <!-- Sessions list -->
     <div id="session-list">
       <div v-if="!data.sessions.length" class="empty-state">No sessions recorded.</div>
-      <div v-for="s in data.sessions" :key="s.id" class="session-item">
+      <div v-for="s in sortedSessions" :key="s.id" class="session-item">
         <div class="session-header" @click="toggleSession(s.id)">
           <div>
             <div class="session-num">SESSION {{ s.number || '?' }}</div>
@@ -13,6 +13,7 @@
           </div>
           <div style="display:flex;align-items:center;gap:8px">
             <div class="session-date">{{ fmt(s.played_at) }}</div>
+            <span style="font-size:11px;color:var(--text3)">{{ openSessions.has(s.id) ? '▲' : '▼' }}</span>
             <template v-if="campaign.isGm">
               <button class="btn btn-sm" @click.stop="ui.openGmEdit('session', s.id, s)">Edit</button>
               <button class="btn btn-sm btn-danger" @click.stop="deleteSession(s.id)">Del</button>
@@ -79,6 +80,7 @@
       <div v-if="campaign.isGm" style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
         <button v-if="!p.results_public" class="btn btn-sm" @click="revealPoll(p.id)">Reveal Results</button>
         <button v-if="!p.closed" class="btn btn-sm" @click="closePoll(p.id)">Close Poll</button>
+        <button class="btn btn-sm btn-danger" @click="deletePoll(p.id)">Delete</button>
       </div>
     </div>
 
@@ -91,7 +93,7 @@
     <div v-for="d in data.scheduling" :key="d.id" class="sched-item">
       <div class="sched-date">
         {{ formatSchedDate(d.proposed_date) }}{{ d.title ? ` — ${d.title}` : '' }}
-        <span v-if="d.confirmed" class="tag tag-quest-active" style="margin-left:8px;font-size:9px">CONFIRMED</span>
+        <span v-if="d.confirmed" class="tag tag-active" style="margin-left:8px;font-size:9px">CONFIRMED</span>
       </div>
       <div class="sched-responses">
         <span
@@ -122,7 +124,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
@@ -136,6 +138,11 @@ const data = useDataStore()
 const openSessions = ref(new Set())
 const newNotes = reactive({})
 const editingNote = ref(null)
+
+// Sort sessions newest first
+const sortedSessions = computed(() =>
+  [...data.sessions].sort((a, b) => (b.number ?? 0) - (a.number ?? 0))
+)
 
 function fmt(ts) {
   if (!ts) return ''
@@ -177,13 +184,13 @@ async function saveNoteEdit(sessionId) {
 }
 
 async function deleteSessionNote(sessionId, noteId) {
-  if (!confirm('Delete this note?')) return
+  if (!await ui.confirm('Delete this note?')) return
   const r = await data.apif(`/api/sessions/${sessionId}/notes/${noteId}`, { method: 'DELETE' })
   if (r.ok) { await data.loadSessions(); ui.showToast('Note deleted', '', '✓') }
 }
 
 async function deleteSession(id) {
-  if (!confirm('Delete this session?')) return
+  if (!await ui.confirm('Delete this session?')) return
   await data.deleteItem('session', id)
   await data.loadSessions()
 }
@@ -203,6 +210,12 @@ async function closePoll(id) {
   if (r.ok) await data.loadSessions()
 }
 
+async function deletePoll(id) {
+  if (!await ui.confirm('Delete this poll?')) return
+  await data.deleteItem('poll', id)
+  await data.loadSessions()
+}
+
 async function respondSched(id, availability) {
   const r = await data.apif(`/api/sessions/scheduling/${id}/respond`, { method: 'POST', body: JSON.stringify({ availability }) })
   if (r.ok) await data.loadSessions()
@@ -215,5 +228,10 @@ async function confirmSched(id) {
 
 onMounted(async () => {
   await data.loadSessions()
+  // Auto-open the most recent session
+  if (data.sessions.length) {
+    const latest = [...data.sessions].sort((a, b) => (b.number ?? 0) - (a.number ?? 0))[0]
+    if (latest) openSessions.value.add(latest.id)
+  }
 })
 </script>

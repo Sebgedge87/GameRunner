@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useCampaignStore } from '@/stores/campaign'
 
 const routes = [
   { path: '/', redirect: '/home' },
@@ -36,6 +37,10 @@ router.beforeEach((to) => {
   if (to.meta.auth) {
     const auth = useAuthStore()
     if (!auth.token) return '/login'
+    if (to.meta.gm) {
+      const campaign = useCampaignStore()
+      if (!campaign.isGm) return '/home'
+    }
   }
 })
 

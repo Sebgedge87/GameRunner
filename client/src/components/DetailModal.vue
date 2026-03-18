@@ -148,6 +148,13 @@ const SEARCH_COLLECTIONS = {
   quest: () => data.quests,
   npc: () => data.npcs,
   faction: () => data.factions,
+  hook: () => data.hooks,
+  job: () => data.jobs,
+  bestiary: () => data.bestiary,
+  rumour: () => data.rumours,
+  inventory: () => data.inventory,
+  'key-item': () => data.keyItems,
+  timeline: () => data.timeline,
 }
 
 function openDetailByName(name, type) {
@@ -170,7 +177,7 @@ function editItem() {
 
 async function deleteItem() {
   const { type, item } = ui.detailModal
-  if (!confirm(`Delete this ${type}?`)) return
+  if (!await ui.confirm(`Delete this ${type}?`)) return
   try {
     await data.deleteItem(type, item.id)
     ui.showToast('Deleted', '', '✓')

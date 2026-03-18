@@ -71,7 +71,7 @@
           v-for="p in data.pins"
           :key="p.id"
           class="pin-chip"
-          @click="router.push('/' + (p.item_type + 's'))"
+          @click="router.push(PIN_ROUTES[p.item_type] || '/' + p.item_type)"
         >
           <div class="type-dot" :style="`background:${TYPE_COLORS[p.item_type] || '#888'}`"></div>
           {{ p.item_title || p.item_type + ' #' + p.item_id }}
@@ -80,16 +80,31 @@
       </div>
     </div>
 
-    <!-- Stats row -->
+    <!-- Stats row — clickable -->
     <div class="dash-grid">
-      <div class="stat-card"><div class="stat-value">{{ data.quests.length }}</div><div class="stat-label">Quests</div></div>
-      <div class="stat-card"><div class="stat-value">{{ activeQuests.length }}</div><div class="stat-label">Active</div></div>
-      <div class="stat-card"><div class="stat-value">{{ data.npcs.length }}</div><div class="stat-label">NPCs</div></div>
-      <div class="stat-card"><div class="stat-value">{{ openHooks }}</div><div class="stat-label">Open Hooks</div></div>
+      <div class="stat-card" style="cursor:pointer" @click="router.push('/quests')">
+        <div class="stat-num">{{ data.quests.length }}</div>
+        <div class="stat-label">Quests</div>
+      </div>
+      <div class="stat-card" style="cursor:pointer" @click="router.push('/quests')">
+        <div class="stat-num">{{ activeQuests.length }}</div>
+        <div class="stat-label">Active</div>
+      </div>
+      <div class="stat-card" style="cursor:pointer" @click="router.push('/npcs')">
+        <div class="stat-num">{{ data.npcs.length }}</div>
+        <div class="stat-label">NPCs</div>
+      </div>
+      <div class="stat-card" style="cursor:pointer" @click="router.push('/hooks')">
+        <div class="stat-num">{{ openHooks }}</div>
+        <div class="stat-label">Open Hooks</div>
+      </div>
     </div>
 
     <!-- Active quests list -->
-    <div class="dash-section" style="margin-top:4px">Active Quests</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px">
+      <div class="dash-section" style="margin:0;flex:1">Active Quests</div>
+      <router-link to="/quests" style="font-size:11px;color:var(--accent);font-family:'JetBrains Mono',monospace;margin-bottom:10px">View all →</router-link>
+    </div>
     <div class="card-grid">
       <div
         v-for="q in activeQuests.slice(0, 6)"
@@ -106,10 +121,13 @@
           <div class="progress-fill" :style="`width:${q.progress}%`"></div>
         </div>
       </div>
+      <div v-if="activeQuests.length === 0" class="empty-state" style="padding:12px 0">No active quests.</div>
     </div>
 
     <!-- Recent messages -->
-    <div class="dash-section" style="margin-top:18px">Recent Messages</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px">
+      <div class="dash-section" style="margin:0;flex:1">Recent Messages</div>
+    </div>
     <div>
       <div v-if="!ui.messages.length" class="empty-state" style="padding:12px">No messages.</div>
       <div
@@ -128,7 +146,10 @@
     </div>
 
     <!-- Next session -->
-    <div class="dash-section" style="margin-top:18px">Next Session</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px">
+      <div class="dash-section" style="margin:0;flex:1">Next Session</div>
+      <router-link to="/sessions" style="font-size:11px;color:var(--accent);font-family:'JetBrains Mono',monospace;margin-bottom:10px">View all →</router-link>
+    </div>
     <div v-if="nextSession" class="card">
       <div class="card-title">{{ nextSession.title || 'Proposed date' }}</div>
       <div class="card-meta" style="color:var(--text3)">{{ fmtTime(nextSession.proposed_date) }}</div>
@@ -152,7 +173,15 @@ const router = useRouter()
 
 const TYPE_COLORS = {
   quest: '#c9a84c', npc: '#4c7ac9', location: '#4caf7d', hook: '#8b4cc9',
-  job: '#a09890', 'key-item': '#c9a84c',
+  job: '#a09890', 'key-item': '#c9a84c', bestiary: '#c94c4c', faction: '#4caf7d',
+  handout: '#6a8ad4', rumour: '#a09890', inventory: '#4caf7d',
+}
+
+const PIN_ROUTES = {
+  quest: '/quests', npc: '/npcs', location: '/locations', hook: '/hooks',
+  faction: '/factions', job: '/jobs', bestiary: '/bestiary', handout: '/handouts',
+  inventory: '/inventory', 'key-item': '/inventory', rumour: '/rumours',
+  timeline: '/timeline', map: '/maps', note: '/notes', session: '/sessions',
 }
 
 const activeQuests = computed(() => data.quests.filter(q => q.status === 'active'))
@@ -190,8 +219,7 @@ function fmtTime(ts) {
 }
 
 function openMessage(m) {
-  ui._viewingMessage = m
-  ui.openFlyout('msg-view')
+  ui.openMessage(m)
 }
 
 onMounted(async () => {

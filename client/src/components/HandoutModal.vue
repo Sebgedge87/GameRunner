@@ -28,7 +28,7 @@ import { useDataStore } from '@/stores/data'
 const ui = useUiStore()
 const data = useDataStore()
 
-const handout = computed(() => ui._viewingHandout || null)
+const handout = computed(() => ui.viewingHandout || null)
 
 function fmt(ts) {
   if (!ts) return ''
@@ -36,8 +36,7 @@ function fmt(ts) {
 }
 
 function close() {
-  ui._viewingHandout = null
-  ui.closeFlyout()
+  ui.closeHandout()
 }
 
 async function ack() {

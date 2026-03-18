@@ -28,6 +28,10 @@
               <option value="custom">Custom</option>
             </select>
           </div>
+          <div class="field-group">
+            <label>Subtitle</label>
+            <input v-model="campForm.subtitle" class="form-input" placeholder="Optional tagline…" />
+          </div>
           <div class="field-group" style="grid-column:1/-1">
             <label>Description</label>
             <textarea v-model="campForm.description" class="form-input" style="min-height:60px;resize:vertical"></textarea>
@@ -78,20 +82,18 @@
               <td style="padding:8px">
                 <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
                   <input
-                    :id="`st-s-${u.id}`"
+                    v-model.number="stressEdits[u.id].stress"
                     type="number"
                     class="form-input"
                     style="width:55px;padding:2px 4px;font-size:12px"
                     placeholder="str"
-                    :value="stressMap[u.id]?.stress ?? ''"
                   />
                   <input
-                    :id="`st-sn-${u.id}`"
+                    v-model.number="stressEdits[u.id].sanity"
                     type="number"
                     class="form-input"
                     style="width:55px;padding:2px 4px;font-size:12px"
                     placeholder="san"
-                    :value="stressMap[u.id]?.sanity ?? ''"
                   />
                   <button class="btn btn-sm" @click="saveStress(u.id)">Set</button>
                 </div>
@@ -196,7 +198,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
@@ -209,10 +211,11 @@ const loading = ref(false)
 const agendaCards = ref([])
 const unreadMessages = ref([])
 const stressMap = ref({})
+const stressEdits = reactive({})
 const xpMap = ref({})
 
 // Campaign form
-const campForm = ref({ name: '', system: '', description: '', playlist_url: '', bg_image: '' })
+const campForm = ref({ name: '', subtitle: '', system: '', description: '', playlist_url: '', bg_image: '' })
 const campSaving = ref(false)
 const campStatus = ref('')
 const campOk = ref(false)
@@ -240,6 +243,7 @@ async function saveCampaign() {
       method: 'PUT',
       body: JSON.stringify({
         name: campForm.value.name,
+        subtitle: campForm.value.subtitle || null,
         system: campForm.value.system,
         description: campForm.value.description,
         playlist_url: campForm.value.playlist_url || null,
@@ -260,11 +264,10 @@ async function saveCampaign() {
 }
 
 async function saveStress(userId) {
-  const sEl = document.getElementById(`st-s-${userId}`)
-  const snEl = document.getElementById(`st-sn-${userId}`)
+  const edits = stressEdits[userId] || {}
   const body = {}
-  if (sEl?.value !== '') body.stress = Number(sEl.value)
-  if (snEl?.value !== '') body.sanity = Number(snEl.value)
+  if (edits.stress != null && edits.stress !== '') body.stress = Number(edits.stress)
+  if (edits.sanity != null && edits.sanity !== '') body.sanity = Number(edits.sanity)
   if (!Object.keys(body).length) return
   const r = await data.apif(`/api/stress/${userId}`, { method: 'PUT', body: JSON.stringify(body) })
   if (r.ok) ui.showToast('Stress updated', '', '✓')
@@ -298,7 +301,7 @@ function msgPlayer(u) {
 }
 
 async function resetPassword(u) {
-  const newPwd = prompt(`New password for ${u.username}:`)
+  const newPwd = await ui.prompt(`New password for ${u.username}:`)
   if (!newPwd) return
   const r = await data.apif(`/api/users/${u.id}/password`, {
     method: 'PUT',
@@ -309,7 +312,7 @@ async function resetPassword(u) {
 }
 
 async function deleteUser(u) {
-  if (!confirm(`Delete user "${u.username}"? This cannot be undone.`)) return
+  if (!await ui.confirm(`Delete user "${u.username}"? This cannot be undone.`)) return
   const r = await data.apif(`/api/users/${u.id}`, { method: 'DELETE' })
   if (r.ok) {
     ui.showToast('User deleted', '', '✓')
@@ -360,6 +363,10 @@ async function loadDash() {
     const smap = {}
     stressRows.forEach(s => { smap[s.user_id] = s })
     stressMap.value = smap
+    // Populate editable stress values
+    stressRows.forEach(s => { stressEdits[s.user_id] = { stress: s.stress ?? '', sanity: s.sanity ?? '' } })
+    // Ensure every user has an entry
+    data.users.forEach(u => { if (!stressEdits[u.id]) stressEdits[u.id] = { stress: '', sanity: '' } })
   } catch (e) {
     console.error('[GmDashboard]', e)
   } finally {
@@ -372,6 +379,7 @@ onMounted(async () => {
   if (ac) {
     campForm.value = {
       name: ac.name || '',
+      subtitle: ac.subtitle || '',
       system: ac.system || 'dnd5e',
       description: ac.description || '',
       playlist_url: ac.playlist_url || '',
@@ -384,5 +392,7 @@ onMounted(async () => {
     loadXp(),
     loadDash(),
   ])
+  // Ensure stressEdits has entries for all users
+  data.users.forEach(u => { if (!stressEdits[u.id]) stressEdits[u.id] = { stress: '', sanity: '' } })
 })
 </script>

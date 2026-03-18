@@ -38,11 +38,15 @@
     <ShareModal />
     <!-- Onboarding wizard -->
     <OnboardingWizard />
+    <!-- Confirm dialog -->
+    <ConfirmDialog />
+    <!-- Toast container -->
+    <ToastContainer />
   </div>
 </template>
 
 <script setup>
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useCampaignStore } from '@/stores/campaign'
@@ -60,6 +64,8 @@ import HandoutModal from './HandoutModal.vue'
 import GmFab from './GmFab.vue'
 import ShareModal from './ShareModal.vue'
 import OnboardingWizard from './OnboardingWizard.vue'
+import ConfirmDialog from './ConfirmDialog.vue'
+import ToastContainer from './ToastContainer.vue'
 
 const auth = useAuthStore()
 const campaign = useCampaignStore()
@@ -109,13 +115,16 @@ async function refreshNotifications() {
 
 const { connect, disconnect } = useSse(handleSseEvent)
 
+watch(() => auth.token, (token) => {
+  if (!token) disconnect()
+})
+
 onMounted(async () => {
   connect()
   await campaign.loadCampaigns()
   await data.loadAll()
   await refreshMessages()
   await refreshNotifications()
-  router.push('/home')
 })
 
 onUnmounted(() => {

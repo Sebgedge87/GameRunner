@@ -124,7 +124,7 @@ async function toggleHidden(type, id) {
 }
 
 async function deleteItem(type, id) {
-  if (!confirm('Delete this quest?')) return
+  if (!await ui.confirm('Delete this quest?')) return
   await data.deleteItem(type, id)
   await data.loadQuests()
 }

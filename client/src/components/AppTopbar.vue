@@ -71,7 +71,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useCampaignStore } from '@/stores/campaign'
@@ -130,9 +130,11 @@ function searchNav(result) {
   router.push(`/${page}`)
 }
 
-// Close camp drop on outside click
-document.addEventListener('click', (e) => {
+function handleOutsideClick(e) {
   if (!e.target.closest('#camp-switcher')) campDropOpen.value = false
   if (!e.target.closest('#topbar-search-wrap')) searchDropOpen.value = false
-})
+}
+
+onMounted(() => document.addEventListener('click', handleOutsideClick))
+onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
 </script>
