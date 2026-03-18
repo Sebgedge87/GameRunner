@@ -7,16 +7,41 @@
         <template v-if="type === 'quest'">
           <div class="form-group"><label>Title</label><input v-model="f.title" class="form-input" /></div>
           <div class="form-group"><label>Description</label><textarea v-model="f.description" class="form-input" rows="4"></textarea></div>
-          <div class="form-group"><label>Status</label>
-            <select v-model="f.status" class="form-input">
-              <option>active</option><option>completed</option><option>failed</option><option>hidden</option>
-            </select>
+          <div class="form-row">
+            <div class="form-group" style="flex:1"><label>Status</label>
+              <select v-model="f.status" class="form-input">
+                <option>active</option><option>completed</option><option>failed</option><option>hidden</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex:1"><label>Type</label>
+              <select v-model="f.quest_type" class="form-input">
+                <option>main</option><option>side</option><option>personal</option>
+              </select>
+            </div>
           </div>
-          <div class="form-group"><label>Type</label>
-            <select v-model="f.quest_type" class="form-input">
-              <option>main</option><option>side</option><option>personal</option>
-            </select>
+          <div class="form-section-label">Urgency &amp; Deadline</div>
+          <div class="form-row">
+            <div class="form-group" style="flex:1"><label>Urgency</label>
+              <select v-model="f.urgency" class="form-input">
+                <option value="none">None</option>
+                <option value="low">Low (amber)</option>
+                <option value="high">High — urgent (red)</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex:1"><label>Deadline</label>
+              <input v-model="f.deadline" class="form-input" placeholder="e.g. 3 sessions / Day 14" />
+            </div>
           </div>
+          <div class="form-section-label">Rewards</div>
+          <div class="form-row">
+            <div class="form-group" style="flex:1"><label>💰 Gold (GP)</label><input v-model="f.reward_gold" class="form-input" placeholder="e.g. 100" /></div>
+            <div class="form-group" style="flex:1"><label>🎖️ XP</label><input v-model="f.reward_xp" class="form-input" placeholder="e.g. 250" /></div>
+          </div>
+          <div class="form-group"><label>⚔️ Item Rewards</label><input v-model="f.reward_items" class="form-input" placeholder="Silver dagger, potion of healing…" /></div>
+          <div class="form-section-label">Entity Connections</div>
+          <div class="form-group"><label>📍 Connected Location</label><input v-model="f.connected_location" class="form-input" placeholder="Location name" /></div>
+          <div class="form-group"><label>🧑 Involved NPCs</label><input v-model="f.connected_npcs" class="form-input" placeholder="NPC names, comma-separated" /></div>
+          <div class="form-group"><label>🔒 GM Notes (private)</label><textarea v-model="f.gm_notes" class="form-input" rows="2" placeholder="Private GM notes…"></textarea></div>
         </template>
 
         <!-- NPC -->
@@ -286,6 +311,9 @@ const f = reactive({
   source_location: '', is_true: true, cr: null, ac: null, hp: null, map_type: 'world',
   content: '', user_id: '', subject: '', question: '', options_text: '',
   results_public: 0, proposed_date: '', subtitle: '',
+  // Quest-specific new fields
+  reward_gold: '', reward_xp: '', reward_items: '',
+  urgency: 'none', deadline: '', connected_location: '', connected_npcs: '',
 })
 
 const type = computed(() => ui.gmEditModal?.type || '')
@@ -316,6 +344,8 @@ const TYPE_RELOAD = {
   rumour: () => data.loadRumours(), map: () => data.loadMaps(),
   handout: () => data.loadHandouts(), session: () => data.loadSessions(),
   poll: () => data.loadSessions(), schedule: () => data.loadSessions(),
+  agenda: () => data.loadAgenda(), message: () => data.loadMessages(),
+  notes: () => data.loadNotes(),
 }
 
 // Prefill form when editing
@@ -356,11 +386,19 @@ watch(() => ui.gmEditModal, (modal) => {
   f.source_npc = d.source_npc || ''
   f.source_location = d.source_location || ''
   f.is_true = d.is_true !== undefined ? d.is_true : true
+  // Quest new fields
+  f.reward_gold = d.reward_gold || ''
+  f.reward_xp = d.reward_xp || ''
+  f.reward_items = d.reward_items || ''
+  f.urgency = d.urgency || 'none'
+  f.deadline = d.deadline || ''
+  f.connected_location = d.connected_location || ''
+  f.connected_npcs = d.connected_npcs || ''
   f.cr = d.stats?.cr ?? null
   f.ac = d.stats?.ac ?? null
   f.hp = d.stats?.hp ?? null
   f.player_notes = d.player_notes || ''
-  if (d.image_url && modal.type === 'bestiary') portraitPreview.value = d.image_url
+  if (modal.type === 'bestiary') portraitPreview.value = d.image_path || d.image_url || ''
   f.map_type = d.map_type || 'world'
   f.content = d.body || d.content || ''
   f.subject = d.subject || ''
@@ -394,11 +432,20 @@ async function save() {
     let body = {}
     switch (t) {
       case 'quest':
-        body = { title: f.title, description: f.description, status: f.status, quest_type: f.quest_type }; break
+        body = {
+          title: f.title, description: f.description, status: f.status, quest_type: f.quest_type,
+          reward_gold: f.reward_gold || null, reward_xp: f.reward_xp || null, reward_items: f.reward_items || null,
+          urgency: f.urgency || 'none', deadline: f.deadline || null, gm_notes: f.gm_notes || null,
+          connected_location: f.connected_location || null, connected_npcs: f.connected_npcs || null,
+        }; break
       case 'npc':
-        body = { name: f.name, role: f.role, description: f.description, gm_notes: f.gm_notes, image_url: imageUrl }; break
+        body = { name: f.name, role: f.role, description: f.description, gm_notes: f.gm_notes }
+        if (imageUrl) body.image_url = imageUrl
+        break
       case 'location':
-        body = { name: f.name, description: f.description, image_url: imageUrl }; break
+        body = { name: f.name, description: f.description }
+        if (imageUrl) body.image_url = imageUrl
+        break
       case 'hook':
         body = { title: f.title, description: f.description, status: f.status }; break
       case 'handout':
@@ -417,7 +464,7 @@ async function save() {
       case 'inventory':
         body = { name: f.name, quantity: f.quantity || 1, holder: f.holder || 'party', description: f.description }; break
       case 'key-item':
-        body = { name: f.name, description: f.description, significance: f.significance, linked_quest: f.linked_quest || null, image_url: imageUrl }; break
+        body = { name: f.name, description: f.description, significance: f.significance, linked_quest: f.linked_quest || null, image_path: imageUrl }; break
       case 'job':
         body = { title: f.title, description: f.description, reward: f.reward, difficulty: f.difficulty || 'medium', posted_by: f.posted_by, location: f.location }; break
       case 'bestiary':

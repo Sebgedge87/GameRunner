@@ -38,11 +38,23 @@ router.get('/', requireAuth, (req, res) => {
 
 // POST /api/quests
 router.post('/', requireGm, (req, res) => {
-  const { title, description = '', status = 'active', quest_type = 'main', parent_quest_id } = req.body;
+  const {
+    title, description = '', status = 'active', quest_type = 'main', parent_quest_id,
+    reward_gold, reward_xp, reward_items, urgency, deadline, gm_notes,
+    connected_location, connected_npcs,
+  } = req.body;
   if (!title) return res.status(400).json({ error: 'title is required' });
   const filename = `${slug(title)}-${Date.now()}.md`;
   const fm = { title, description, status, quest_type };
   if (parent_quest_id) fm.parent_quest_id = parent_quest_id;
+  if (reward_gold !== undefined) fm.reward_gold = reward_gold;
+  if (reward_xp !== undefined) fm.reward_xp = reward_xp;
+  if (reward_items !== undefined) fm.reward_items = reward_items;
+  if (urgency !== undefined) fm.urgency = urgency;
+  if (deadline !== undefined) fm.deadline = deadline;
+  if (gm_notes !== undefined) fm.gm_notes = gm_notes;
+  if (connected_location !== undefined) fm.connected_location = connected_location;
+  if (connected_npcs !== undefined) fm.connected_npcs = connected_npcs;
   const content = matter.stringify(description, fm);
   const camp = getDb().prepare('SELECT id, name FROM campaigns WHERE active = 1 LIMIT 1').get();
   const campSlug = camp ? slug(camp.name) : null;
@@ -76,9 +88,22 @@ router.put('/:id', requireGm, (req, res) => {
     }
   }
   const existing = JSON.parse(row.frontmatter || '{}');
-  const { title, description, status, quest_type, parent_quest_id } = { ...existing, ...req.body };
+  const merged = { ...existing, ...req.body };
+  const {
+    title, description, status, quest_type, parent_quest_id,
+    reward_gold, reward_xp, reward_items, urgency, deadline, gm_notes,
+    connected_location, connected_npcs,
+  } = merged;
   const fm = { title, description: description || '', status, quest_type };
-  if (parent_quest_id) fm.parent_quest_id = parent_quest_id;
+  if (parent_quest_id !== undefined) fm.parent_quest_id = parent_quest_id || null;
+  if (reward_gold !== undefined) fm.reward_gold = reward_gold;
+  if (reward_xp !== undefined) fm.reward_xp = reward_xp;
+  if (reward_items !== undefined) fm.reward_items = reward_items;
+  if (urgency !== undefined) fm.urgency = urgency;
+  if (deadline !== undefined) fm.deadline = deadline;
+  if (gm_notes !== undefined) fm.gm_notes = gm_notes;
+  if (connected_location !== undefined) fm.connected_location = connected_location;
+  if (connected_npcs !== undefined) fm.connected_npcs = connected_npcs;
   const content = matter.stringify(description || '', fm);
   fs.writeFileSync(fullPath, content, 'utf8');
   if (parent_quest_id !== undefined) {
