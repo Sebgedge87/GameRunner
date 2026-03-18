@@ -19,6 +19,16 @@
               </select>
             </div>
           </div>
+          <div class="form-group"><label>Parent Quest (Chain)</label>
+            <select v-model="f.parent_quest_id" class="form-input">
+              <option :value="null">— None —</option>
+              <option
+                v-for="q in data.quests.filter(q => q.id !== ui.gmEditModal?.id)"
+                :key="q.id"
+                :value="q.id"
+              >{{ q.title }}</option>
+            </select>
+          </div>
           <div class="form-section-label">Urgency &amp; Deadline</div>
           <div class="form-row">
             <div class="form-group" style="flex:1"><label>Urgency</label>
@@ -314,6 +324,7 @@ const f = reactive({
   // Quest-specific new fields
   reward_gold: '', reward_xp: '', reward_items: '',
   urgency: 'none', deadline: '', connected_location: '', connected_npcs: '',
+  parent_quest_id: null,
 })
 
 const type = computed(() => ui.gmEditModal?.type || '')
@@ -394,6 +405,7 @@ watch(() => ui.gmEditModal, (modal) => {
   f.deadline = d.deadline || ''
   f.connected_location = d.connected_location || ''
   f.connected_npcs = d.connected_npcs || ''
+  f.parent_quest_id = d.parent_quest_id || null
   f.cr = d.stats?.cr ?? null
   f.ac = d.stats?.ac ?? null
   f.hp = d.stats?.hp ?? null
@@ -434,6 +446,7 @@ async function save() {
       case 'quest':
         body = {
           title: f.title, description: f.description, status: f.status, quest_type: f.quest_type,
+          parent_quest_id: f.parent_quest_id || null,
           reward_gold: f.reward_gold || null, reward_xp: f.reward_xp || null, reward_items: f.reward_items || null,
           urgency: f.urgency || 'none', deadline: f.deadline || null, gm_notes: f.gm_notes || null,
           connected_location: f.connected_location || null, connected_npcs: f.connected_npcs || null,
