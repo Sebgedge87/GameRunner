@@ -619,8 +619,22 @@ select.form-input{cursor:pointer;}
 .filter-tab{padding:5px 14px;background:none;border:1px solid var(--border);color:var(--text3);border-radius:4px;font-family:'Cinzel',serif;font-size:11px;letter-spacing:1px;transition:all .2s;}
 .filter-tab:hover{border-color:var(--border2);color:var(--text);}
 .filter-tab.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent2);}
+.card-overview{font-size:12px;color:var(--text2);line-height:1.45;margin:5px 0 4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+/* ── Themed Confirm/Prompt Dialog ─────────────────────────────────────────── */
+.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9000;display:flex;align-items:center;justify-content:center;animation:fade-in .15s ease;}
+.confirm-box{background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:28px 32px;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.7);text-align:center;animation:slide-in-right .15s ease;}
+.confirm-icon{font-size:26px;margin-bottom:12px;color:var(--accent);}
+.confirm-msg{font-family:'Crimson Pro',serif;font-size:16px;color:var(--text);line-height:1.5;margin-bottom:20px;white-space:pre-wrap;}
+.confirm-input-wrap{margin-bottom:18px;text-align:left;}
+.confirm-input-wrap input{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:4px;font-size:14px;font-family:'Crimson Pro',serif;}
+.confirm-actions{display:flex;gap:10px;justify-content:center;}
+.confirm-cancel{padding:8px 22px;font-family:'Cinzel',serif;font-size:11px;letter-spacing:1px;background:var(--bg3);border:1px solid var(--border2);color:var(--text2);border-radius:4px;cursor:pointer;}
+.confirm-ok{padding:8px 22px;font-family:'Cinzel',serif;font-size:11px;letter-spacing:1px;background:none;border:1px solid #601a1a;color:#c94c4c;border-radius:4px;cursor:pointer;transition:background .15s;}
+.confirm-ok:hover{background:#1a0f0f;}
+.confirm-ok.prompt{border-color:var(--accent);color:var(--accent2);}
+.confirm-ok.prompt:hover{background:var(--accent-dim);}
 /* ── Search bar ──────────────────────────────────────────────────────────────── */
-.search-bar{margin-bottom:16px;}
+.search-row{margin-bottom:16px;}.search-bar{margin-bottom:16px;}
 .search-bar input{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:8px 13px;border-radius:4px;font-size:13px;outline:none;transition:border-color .2s;width:100%;max-width:340px;}
 .search-bar input:focus{border-color:var(--accent-dim);}
 /* ── Misc ────────────────────────────────────────────────────────────────────── */
@@ -889,6 +903,7 @@ html{transition:background-color var(--anim-speed) ease,color var(--anim-speed) 
     <!-- Quests -->
     <section class="page" id="page-quests">
       <div class="page-header"><div class="page-title">Quests</div><div class="page-sub">Active threads &amp; objectives</div></div>
+      <div class="search-row" style="margin-bottom:12px"><input type="text" id="quest-search" class="form-input" placeholder="Search quests…" style="max-width:320px" oninput="renderFilteredQuests()"/></div>
       <div class="filter-tabs">
         <button class="filter-tab active" onclick="filterQuests('all',this)">All</button>
         <button class="filter-tab" onclick="filterQuests('active',this)">Active</button>
@@ -901,19 +916,40 @@ html{transition:background-color var(--anim-speed) ease,color var(--anim-speed) 
     <!-- NPCs -->
     <section class="page" id="page-npcs">
       <div class="page-header"><div class="page-title">NPCs</div><div class="page-sub">People of note</div></div>
-      <div class="search-bar"><input type="text" id="npc-search" placeholder="Search NPCs..." oninput="renderNpcs()"/></div>
+      <div class="search-row" style="margin-bottom:12px"><input type="text" id="npc-search" class="form-input" placeholder="Search NPCs…" style="max-width:320px" oninput="renderNpcs()"/></div>
+      <div class="filter-tabs">
+        <button class="filter-tab active" data-npc-tab="all" onclick="filterNpcs('all',this)">All</button>
+        <button class="filter-tab" data-npc-tab="friendly" onclick="filterNpcs('friendly',this)">Friendly</button>
+        <button class="filter-tab" data-npc-tab="neutral" onclick="filterNpcs('neutral',this)">Neutral</button>
+        <button class="filter-tab" data-npc-tab="hostile" onclick="filterNpcs('hostile',this)">Hostile</button>
+      </div>
       <div class="card-grid" id="npc-list"><div class="loading">Loading...</div></div>
     </section>
 
     <!-- Locations -->
     <section class="page" id="page-locations">
       <div class="page-header"><div class="page-title">Locations</div><div class="page-sub">Places discovered and unexplored</div></div>
+      <div class="search-row" style="margin-bottom:12px"><input type="text" id="location-search" class="form-input" placeholder="Search locations…" style="max-width:320px" oninput="renderLocations()"/></div>
+      <div class="filter-tabs">
+        <button class="filter-tab active" data-loc-tab="all" onclick="filterLocations('all',this)">All</button>
+        <button class="filter-tab" data-loc-tab="safe" onclick="filterLocations('safe',this)">Safe</button>
+        <button class="filter-tab" data-loc-tab="dangerous" onclick="filterLocations('dangerous',this)">Dangerous</button>
+        <button class="filter-tab" data-loc-tab="unexplored" onclick="filterLocations('unexplored',this)">Unexplored</button>
+      </div>
       <div class="card-grid" id="location-list"><div class="loading">Loading...</div></div>
     </section>
 
     <!-- Hooks -->
     <section class="page" id="page-hooks">
       <div class="page-header"><div class="page-title">Story Hooks</div><div class="page-sub">Clues, mysteries, and threads</div></div>
+      <div class="search-row" style="margin-bottom:12px"><input type="text" id="hook-search" class="form-input" placeholder="Search hooks…" style="max-width:320px" oninput="renderHooks()"/></div>
+      <div class="filter-tabs">
+        <button class="filter-tab active" data-hook-tab="all" onclick="filterHooks('all',this)">All</button>
+        <button class="filter-tab" data-hook-tab="active" onclick="filterHooks('active',this)">Active</button>
+        <button class="filter-tab" data-hook-tab="delivered" onclick="filterHooks('delivered',this)">Delivered</button>
+        <button class="filter-tab" data-hook-tab="missed" onclick="filterHooks('missed',this)">Missed</button>
+        <button class="filter-tab" data-hook-tab="expired" onclick="filterHooks('expired',this)">Expired</button>
+      </div>
       <div class="card-grid" id="hook-list"><div class="loading">Loading...</div></div>
     </section>
 
@@ -960,6 +996,14 @@ html{transition:background-color var(--anim-speed) ease,color var(--anim-speed) 
     <!-- Handouts -->
     <section class="page" id="page-handouts">
       <div class="page-header"><div class="page-title">Handouts</div><div class="page-sub">Documents &amp; artefacts</div></div>
+      <div class="search-row" style="margin-bottom:12px"><input type="text" id="handout-search" class="form-input" placeholder="Search handouts…" style="max-width:320px" oninput="renderHandouts()"/></div>
+      <div class="filter-tabs">
+        <button class="filter-tab active" data-handout-tab="all" onclick="filterHandouts('all',this)">All</button>
+        <button class="filter-tab" data-handout-tab="text" onclick="filterHandouts('text',this)">Text</button>
+        <button class="filter-tab" data-handout-tab="image" onclick="filterHandouts('image',this)">Image</button>
+        <button class="filter-tab" data-handout-tab="map" onclick="filterHandouts('map',this)">Map</button>
+        <button class="filter-tab" data-handout-tab="letter" onclick="filterHandouts('letter',this)">Letter</button>
+      </div>
       <div class="card-grid" id="handout-list"><div class="loading">Loading...</div></div>
     </section>
 
@@ -976,6 +1020,7 @@ html{transition:background-color var(--anim-speed) ease,color var(--anim-speed) 
     <!-- Factions -->
     <section class="page" id="page-factions">
       <div class="page-header"><div class="page-title">Factions</div><div class="page-sub">Powers &amp; allegiances</div></div>
+      <div class="search-row" style="margin-bottom:16px"><input type="text" id="faction-search" class="form-input" placeholder="Search factions…" style="max-width:320px" oninput="renderFactions()"/></div>
       <div class="card-grid" id="faction-list"><div class="loading">Loading...</div></div>
     </section>
 
@@ -1009,12 +1054,26 @@ html{transition:background-color var(--anim-speed) ease,color var(--anim-speed) 
     <!-- Rumours -->
     <section class="page" id="page-rumours">
       <div class="page-header"><div class="page-title">Rumours</div><div class="page-sub">Whispers &amp; hearsay</div></div>
+      <div class="search-row" style="margin-bottom:12px"><input type="text" id="rumour-search" class="form-input" placeholder="Search rumours…" style="max-width:320px" oninput="renderRumours()"/></div>
+      <div class="filter-tabs">
+        <button class="filter-tab active" data-rumour-tab="all" onclick="filterRumours('all',this)">All</button>
+        <button class="filter-tab" data-rumour-tab="true" onclick="filterRumours('true',this)">True</button>
+        <button class="filter-tab" data-rumour-tab="false" onclick="filterRumours('false',this)">False</button>
+        <button class="filter-tab" data-rumour-tab="exposed" onclick="filterRumours('exposed',this)">Exposed</button>
+      </div>
       <div class="card-grid" id="rumour-list"><div class="loading">Loading...</div></div>
     </section>
 
     <!-- Jobs -->
     <section class="page" id="page-jobs">
       <div class="page-header"><div class="page-title">Job Board</div><div class="page-sub">Contracts &amp; bounties</div></div>
+      <div class="search-row" style="margin-bottom:12px"><input type="text" id="job-search" class="form-input" placeholder="Search jobs…" style="max-width:320px" oninput="renderJobs()"/></div>
+      <div class="filter-tabs">
+        <button class="filter-tab active" data-job-tab="all" onclick="filterJobs('all',this)">All</button>
+        <button class="filter-tab" data-job-tab="open" onclick="filterJobs('open',this)">Open</button>
+        <button class="filter-tab" data-job-tab="active" onclick="filterJobs('active',this)">Active</button>
+        <button class="filter-tab" data-job-tab="completed" onclick="filterJobs('completed',this)">Completed</button>
+      </div>
       <div class="card-grid" id="job-list"><div class="loading">Loading...</div></div>
     </section>
 
@@ -2267,6 +2326,7 @@ async function loadQuests(){
   renderQuests(questData,'quest-list');
 }
 function eyeBtn(type,id,hidden){return`<button class="btn btn-sm" title="${hidden?'Show to players':'Hide from players'}" onclick="event.stopPropagation();toggleHidden('${type}',${id})">${hidden?'👁 Show':'🚫 Hide'}</button>`;}
+async function toggleHiddenItem(type,id,reloadFn){await toggleHidden(type,id);reloadFn&&reloadFn();}
 async function toggleHidden(type,id){
   // vault-backed types use /api/vault/:id/hidden; DB-backed types use their own endpoint
   const vaultTypes=new Set(['quest','npc','location','hook']);
@@ -2275,39 +2335,51 @@ async function toggleHidden(type,id){
   if(r.ok){const d=await r.json();showToast(d.hidden?'Hidden from players':'Visible to players','success');TYPE_RELOAD[type]?.();}
   else showToast('Failed','error');
 }
+let _questTab='all';
 function questCard(q){
   const p=q.progress??0;
-  const gmBtns=isGm?`${eyeBtn('quest',q.id,q.hidden)}<button class="btn btn-sm" onclick="event.stopPropagation();openShareDialog('quest',${q.id},'${esc(q.title)}')">Share</button><button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('quest',${q.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('quest',${q.id},loadQuests)">Del</button>`:'';
+  const gmBtns=isGm?`${eyeBtn('quest',q.id,q.hidden)}<button class="btn btn-sm" onclick="event.stopPropagation();openShareDialog('quest',${q.id},'${esc(q.title)}')">🔗</button><button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('quest',${q.id})">✏️</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('quest',${q.id},loadQuests)">🗑</button>`:'';
   const hiddenMark=isGm&&q.hidden?`<span class="tag" style="background:#333;color:#888;font-size:10px">hidden</span>`:'';
   return `<div class="card" style="${isGm&&q.hidden?'opacity:0.6':''}cursor:pointer" onclick="openDetail('quest',${q.id})">
     <div class="card-title">${esc(q.title)} ${hiddenMark}</div>
     <div class="card-meta"><span class="tag tag-${esc(q.type||'side')}">${esc(q.type||'side')}</span><span class="tag tag-${esc(q.status||'active')}">${esc(q.status||'active')}</span>${q.location?`<span>📍 ${esc(q.location)}</span>`:''}</div>
+    ${q.description?`<div class="card-overview">${esc(q.description)}</div>`:''}
     ${q.progress!=null?`<div class="progress-bar"><div class="progress-fill" style="width:${p}%"></div></div><div style="font-size:10px;color:var(--text3);margin-top:2px;font-family:'JetBrains Mono',monospace">${p}% complete</div>`:''}
     ${q.connected_to?`<div style="font-size:11px;color:var(--text3);margin-top:6px">🔗 ${esc(Array.isArray(q.connected_to)?q.connected_to.join(', '):q.connected_to)}</div>`:''}
-    <div class="card-actions"><button class="delete-btn" onclick="event.stopPropagation();pin('quest',${q.id},'${esc(q.title)}')">📌 Pin</button>${gmBtns}</div>
+    <div class="card-actions"><button class="btn btn-sm" onclick="event.stopPropagation();pin('quest',${q.id},'${esc(q.title)}')">📌</button>${gmBtns}</div>
   </div>`;
 }
+function renderFilteredQuests(){
+  const q=(document.getElementById('quest-search')?.value||'').toLowerCase();
+  let list=_questTab==='all'?questData:questData.filter(x=>x.status===_questTab);
+  if(q)list=list.filter(x=>(x.title||'').toLowerCase().includes(q)||(x.type||'').toLowerCase().includes(q)||(x.location||'').toLowerCase().includes(q));
+  renderQuests(list,'quest-list');
+}
 function renderQuests(quests,targetId){const el=document.getElementById(targetId);const tile=gmAddTile('quest','Quest');if(!quests.length){el.innerHTML=tile||'<div class="empty-state">No quests found.</div>';return;}el.innerHTML=tile+quests.map(questCard).join('');}
-function filterQuests(status,btn){document.querySelectorAll('.filter-tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');const f=status==='all'?questData:questData.filter(q=>q.status===status);renderQuests(f,'quest-list');}
+function filterQuests(status,btn){document.querySelectorAll('#page-quests .filter-tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');_questTab=status;renderFilteredQuests();}
 
 // ── NPCs ──────────────────────────────────────────────────────────────────────
-let npcData=[];
+let npcData=[];let _npcTab='all';
 async function loadNpcs(){const r=await apiFetch('/api/npcs');npcData=(await r.json()).npcs||[];renderNpcs();}
+function filterNpcs(tab,btn){document.querySelectorAll('#page-npcs .filter-tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');_npcTab=tab;renderNpcs();}
 function renderNpcs(){
   const q=document.getElementById('npc-search')?.value?.toLowerCase()||'';
-  const list=q?npcData.filter(n=>(n.title||'').toLowerCase().includes(q)||(n.role||'').toLowerCase().includes(q)):npcData;
+  let list=_npcTab==='all'?npcData:npcData.filter(n=>(n.disposition||'').toLowerCase()===_npcTab);
+  if(q)list=list.filter(n=>(n.title||'').toLowerCase().includes(q)||(n.role||'').toLowerCase().includes(q)||(n.faction||'').toLowerCase().includes(q)||(n.location||'').toLowerCase().includes(q));
   const el=document.getElementById('npc-list');
   const tile=gmAddTile('npc','NPC');
   if(!list.length){el.innerHTML=tile||'<div class="empty-state">No NPCs found.</div>';return;}
-  el.innerHTML=list.map(n=>`<div class="card" style="cursor:pointer" onclick="openDetail('npc',${n.id})">
-    ${n.image_path?`<img class="card-img" src="${API}${n.image_path}" alt="${esc(n.title)}" onerror="this.style.display='none'">`:''}
+  el.innerHTML=tile+list.map(n=>`<div class="card" style="cursor:pointer" onclick="openDetail('npc',${n.id})">
+    ${n.image_path?`<div class="card-img"><img src="${API}${n.image_path}" alt="${esc(n.title)}" style="width:100%;height:120px;object-fit:cover;border-radius:4px 4px 0 0" onerror="this.parentElement.style.display='none'"></div>`:''}
+    <div class="card-body">
     <div class="card-title">${esc(n.title)}</div>
-    <div class="card-meta">${n.role?`<span style="color:var(--text2)">${esc(n.role)}</span>`:''}<span class="tag tag-${esc(n.disposition||'neutral')}">${esc(n.disposition||'unknown')}</span>${n.faction?`<span>${esc(n.faction)}</span>`:''}</div>
-    ${n.location?`<div style="font-size:11px;color:var(--text3);margin-bottom:5px">📍 ${esc(n.location)}</div>`:''}
-    ${n.connected_to?`<div style="font-size:11px;color:var(--text3)">🔗 ${esc(Array.isArray(n.connected_to)?n.connected_to.join(', '):n.connected_to)}</div>`:''}
-    <div class="card-actions"><button class="delete-btn" onclick="event.stopPropagation();pin('npc',${n.id},'${esc(n.title)}')">📌</button>${isGm?`${eyeBtn('npc',n.id,n.hidden)}<button class="btn btn-sm" onclick="event.stopPropagation();openShareDialog('npc',${n.id},'${esc(n.title)}')">Share</button><button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('npc',${n.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('npc',${n.id},loadNpcs)">Del</button>`:''}</div>
+    <div class="card-meta">${n.role?`<span class="tag">${esc(n.role)}</span>`:''}<span class="tag tag-${esc(n.disposition||'neutral')}">${esc(n.disposition||'unknown')}</span>${n.faction?`<span class="tag">⚔️ ${esc(n.faction)}</span>`:''}</div>
+    ${n.description?`<div class="card-overview">${esc(n.description)}</div>`:''}
+    ${n.location?`<div style="font-size:11px;color:var(--text3);margin-top:4px">📍 ${esc(n.location)}</div>`:''}
+    ${n.connected_to?`<div style="font-size:11px;color:var(--text3);margin-top:3px">🔗 ${esc(Array.isArray(n.connected_to)?n.connected_to.join(', '):n.connected_to)}</div>`:''}
+    </div>
+    <div class="card-actions"><button class="btn btn-sm" onclick="event.stopPropagation();pin('npc',${n.id},'${esc(n.title)}')">📌</button>${isGm?`<button class="btn btn-sm" title="${n.hidden?'Reveal':'Hide'}" onclick="event.stopPropagation();toggleHiddenItem('npc',${n.id},loadNpcs)">${n.hidden?'👁':'🙈'}</button><button class="btn btn-sm" onclick="event.stopPropagation();openShareDialog('npc',${n.id},'${esc(n.title)}')">🔗</button><button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('npc',${n.id})">✏️</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('npc',${n.id},loadNpcs)">🗑</button>`:''}</div>
   </div>`).join('');
-  el.innerHTML=tile+el.innerHTML;
 }
 
 async function addNpcRel(npcId){
@@ -2319,41 +2391,53 @@ async function addNpcRel(npcId){
   else{const d=await r.json();showToast(d.error||'Failed','error');}
 }
 async function deleteNpcRel(npcId,relId){
-  if(!confirm('Remove relationship?'))return;
+  if(!await themedConfirm('Remove this relationship?'))return;
   const r=await apiFetch(`/api/npcs/${npcId}/relationships/${relId}`,{method:'DELETE'});
   if(r.ok){showToast('Removed','success');openDetail('npc',npcId);}
   else showToast('Failed','error');
 }
 // ── Locations ─────────────────────────────────────────────────────────────────
-let locationData=[];
+let locationData=[];let _locTab='all';
 async function loadLocations(){const r=await apiFetch('/api/locations');locationData=(await r.json()).locations||[];renderLocations();}
+function filterLocations(tab,btn){document.querySelectorAll('#page-locations .filter-tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');_locTab=tab;renderLocations();}
 function renderLocations(){
+  const q=(document.getElementById('location-search')?.value||'').toLowerCase();
+  let list=_locTab==='all'?locationData:locationData.filter(l=>(l.status||'').toLowerCase()===_locTab);
+  if(q)list=list.filter(l=>(l.title||'').toLowerCase().includes(q)||(l.status||'').toLowerCase().includes(q)||(l.description||'').toLowerCase().includes(q));
   const el=document.getElementById('location-list');
   const tile=gmAddTile('location','Location');
-  if(!locationData.length){el.innerHTML=tile||'<div class="empty-state">No locations found.</div>';return;}
-  el.innerHTML=locationData.map(l=>`<div class="card" style="cursor:pointer" onclick="openDetail('location',${l.id})">
-    ${l.image_path?`<img class="card-img" src="${API}${l.image_path}" alt="${esc(l.title)}" onerror="this.style.display='none'">`:''}
+  if(!list.length){el.innerHTML=tile||'<div class="empty-state">No locations found.</div>';return;}
+  el.innerHTML=tile+list.map(l=>`<div class="card" style="cursor:pointer" onclick="openDetail('location',${l.id})">
+    ${l.image_path?`<div class="card-img"><img src="${API}${l.image_path}" alt="${esc(l.title)}" style="width:100%;height:120px;object-fit:cover;border-radius:4px 4px 0 0" onerror="this.parentElement.style.display='none'"></div>`:''}
+    <div class="card-body">
     <div class="card-title">${esc(l.title)}</div>
-    <div class="card-meta"><span class="tag tag-${esc(l.status||'unvisited')}">${esc(l.status||'unvisited')}</span>${l.danger?`<span class="tag tag-${esc(l.danger)}">${esc(l.danger)}</span>`:''}${l.visited_session?`<span>Session ${l.visited_session}</span>`:''}</div>
-    ${l.connected_to?`<div style="font-size:11px;color:var(--text3)">🔗 ${esc(Array.isArray(l.connected_to)?l.connected_to.join(', '):l.connected_to)}</div>`:''}
-    <div class="card-actions"><button class="delete-btn" onclick="event.stopPropagation();pin('location',${l.id},'${esc(l.title)}')">📌</button>${isGm?`${eyeBtn('location',l.id,l.hidden)}<button class="btn btn-sm" onclick="event.stopPropagation();openShareDialog('location',${l.id},'${esc(l.title)}')">Share</button><button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('location',${l.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('location',${l.id},loadLocations)">Del</button>`:''}</div>
+    <div class="card-meta"><span class="tag tag-${esc(l.status||'unvisited')}">${esc(l.status||'unvisited')}</span>${l.danger?`<span class="tag tag-inactive">⚠️ ${esc(l.danger)}</span>`:''}${l.visited_session?`<span>Session ${l.visited_session}</span>`:''}</div>
+    ${l.description?`<div class="card-overview">${esc(l.description)}</div>`:''}
+    ${l.connected_to?`<div style="font-size:11px;color:var(--text3);margin-top:4px">🔗 ${esc(Array.isArray(l.connected_to)?l.connected_to.join(', '):l.connected_to)}</div>`:''}
+    </div>
+    <div class="card-actions"><button class="btn btn-sm" onclick="event.stopPropagation();pin('location',${l.id},'${esc(l.title)}')">📌</button>${isGm?`<button class="btn btn-sm" onclick="event.stopPropagation();toggleHiddenItem('location',${l.id},loadLocations)">${l.hidden?'👁':'🙈'}</button><button class="btn btn-sm" onclick="event.stopPropagation();openShareDialog('location',${l.id},'${esc(l.title)}')">🔗</button><button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('location',${l.id})">✏️</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('location',${l.id},loadLocations)">🗑</button>`:''}</div>
   </div>`).join('');
-  el.innerHTML=tile+el.innerHTML;
 }
 
 // ── Hooks ─────────────────────────────────────────────────────────────────────
-let hookData=[];
+let hookData=[];let _hookTab='all';
 async function loadHooks(){const r=await apiFetch('/api/hooks');hookData=(await r.json()).hooks||[];renderHooks();}
+function filterHooks(tab,btn){document.querySelectorAll('#page-hooks .filter-tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');_hookTab=tab;renderHooks();}
 function renderHooks(){
+  const q=(document.getElementById('hook-search')?.value||'').toLowerCase();
+  let list=_hookTab==='all'?hookData:hookData.filter(h=>(h.status||'').toLowerCase()===_hookTab);
+  if(q)list=list.filter(h=>(h.title||'').toLowerCase().includes(q)||(h.type||'').toLowerCase().includes(q)||(h.description||'').toLowerCase().includes(q));
   const el=document.getElementById('hook-list');
-  const tile=gmAddTile('hook','Hook');if(!hookData.length){el.innerHTML=tile||'<div class="empty-state">No hooks.</div>';return;}
-  el.innerHTML=hookData.map(h=>`<div class="card" style="cursor:pointer" onclick="openDetail('hook',${h.id})">
+  const tile=gmAddTile('hook','Hook');if(!list.length){el.innerHTML=tile||'<div class="empty-state">No hooks found.</div>';return;}
+  el.innerHTML=tile+list.map(h=>`<div class="card" style="cursor:pointer" onclick="openDetail('hook',${h.id})">
+    <div class="card-body">
     <div class="card-title">${esc(h.title)}</div>
     <div class="card-meta"><span class="tag tag-${esc(h.type||'clue')}">${esc(h.type||'clue')}</span><span class="tag tag-${esc(h.status||'active')}">${esc(h.status||'active')}</span>${h.session_delivered?`<span>Session ${h.session_delivered}</span>`:''}</div>
-    ${h.connected_to?`<div style="font-size:11px;color:var(--text3);margin-top:5px">🔗 ${esc(Array.isArray(h.connected_to)?h.connected_to.join(', '):h.connected_to)}</div>`:''}
-    ${isGm?`<div class="card-actions">${eyeBtn('hook',h.id,h.hidden)}<button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('hook',${h.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('hook',${h.id},loadHooks)">Del</button></div>`:''}
+    ${h.description?`<div class="card-overview">${esc(h.description)}</div>`:''}
+    ${h.connected_to?`<div style="font-size:11px;color:var(--text3);margin-top:4px">🔗 ${esc(Array.isArray(h.connected_to)?h.connected_to.join(', '):h.connected_to)}</div>`:''}
+    </div>
+    <div class="card-actions"><button class="btn btn-sm" onclick="event.stopPropagation();pin('hook',${h.id},'${esc(h.title)}')">📌</button>${isGm?`<button class="btn btn-sm" onclick="event.stopPropagation();toggleHiddenItem('hook',${h.id},loadHooks)">${h.hidden?'👁':'🙈'}</button><button class="btn btn-sm" onclick="event.stopPropagation();openShareDialog('hook',${h.id},'${esc(h.title)}')">🔗</button><button class="btn btn-sm" onclick="event.stopPropagation();openGmEdit('hook',${h.id})">✏️</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();gmDelete('hook',${h.id},loadHooks)">🗑</button>`:''}</div>
   </div>`).join('');
-  el.innerHTML=tile+el.innerHTML;
 }
 
 // ── Messages ──────────────────────────────────────────────────────────────────
@@ -2397,7 +2481,7 @@ async function ackMessage(){
   document.getElementById('modal-ack-btn').style.display='none';
 }
 async function deleteMessage(){
-  if(!currentMsgId||!confirm('Delete this message?'))return;
+  if(!currentMsgId||!await themedConfirm('Delete this message?'))return;
   const r=await apiFetch(`/api/messages/${currentMsgId}`,{method:'DELETE'});
   if(r.ok){closeModal('msg-modal');allMessages=allMessages.filter(x=>x.id!==currentMsgId);renderFlyoutMessages();updateMsgBadge();showToast('Deleted','success');}
   else showToast('Delete failed','error');
@@ -2444,24 +2528,33 @@ async function createNote(){
   if(r.ok){s.className='status-msg status-ok';s.textContent='Saved.';document.getElementById('note-title').value='';document.getElementById('note-body').value='';loadNotes();}
   else{const d=await r.json();s.className='status-msg status-err';s.textContent=d.error||'Failed.';}
 }
-async function deleteNote(id){if(!confirm('Delete?'))return;const r=await apiFetch(`/api/notes/${id}`,{method:'DELETE'});if(r.ok)loadNotes();}
+async function deleteNote(id){if(!await themedConfirm('Delete this note?'))return;const r=await apiFetch(`/api/notes/${id}`,{method:'DELETE'});if(r.ok)loadNotes();}
 
 // ── Handouts ──────────────────────────────────────────────────────────────────
-let handoutData=[];let currentHandoutId=null;
+let handoutData=[];let currentHandoutId=null;let _handoutTab='all';
 async function loadHandouts(){const r=await apiFetch('/api/handouts');handoutData=(await r.json()).handouts||[];renderHandouts();updateHandoutBadge();}
 function updateHandoutBadge(){
   const u=handoutData.filter(h=>h.requires_ack&&!h.acked_at).length;
   const b=document.getElementById('handout-badge');if(u>0){b.textContent=u;b.style.display='';}else b.style.display='none';
 }
+function filterHandouts(tab,btn){document.querySelectorAll('#page-handouts .filter-tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');_handoutTab=tab;renderHandouts();}
 function renderHandouts(){
+  const q=(document.getElementById('handout-search')?.value||'').toLowerCase();
+  let list=_handoutTab==='all'?handoutData:handoutData.filter(h=>(h.file_type||'').toLowerCase()===_handoutTab);
+  if(q)list=list.filter(h=>(h.title||'').toLowerCase().includes(q)||(h.description||'').toLowerCase().includes(q)||(h.file_type||'').toLowerCase().includes(q));
+  const tile=isGm?`<div class="add-tile" onclick="openGmCreate('handout')"><div class="add-tile-icon">+</div><div class="add-tile-label">Add Handout</div></div>`:'';
   const el=document.getElementById('handout-list');
-  if(!handoutData.length){el.innerHTML='<div class="empty-state">No handouts yet.</div>';return;}
-  el.innerHTML=handoutData.map(h=>`<div class="card" style="cursor:pointer" onclick="openHandout(${h.id})">
+  if(!list.length){el.innerHTML=tile||'<div class="empty-state">No handouts yet.</div>';return;}
+  el.innerHTML=tile+list.map(h=>`<div class="card" style="cursor:pointer" onclick="openHandout(${h.id})">
+    ${h.image_url?`<div class="card-img"><img src="${esc(h.image_url)}" alt="${esc(h.title)}" style="width:100%;height:120px;object-fit:cover;border-radius:4px 4px 0 0" onerror="this.parentElement.style.display='none'"></div>`:''}
+    <div class="card-body">
     <div class="card-title">${esc(h.title)}${h.requires_ack&&!h.acked_at?' <span style="color:var(--accent);font-size:10px">● NEW</span>':''}</div>
     <div class="card-meta"><span class="tag tag-${esc(h.file_type||'text')}">${esc(h.file_type||'text')}</span>${h.shared_at?`<span>${fmt(h.shared_at)}</span>`:''}${h.acked_at?'<span style="color:var(--green)">✓</span>':''}</div>
-    ${h.description?`<div class="card-body">${esc(h.description)}</div>`:''}
+    ${h.description?`<div class="card-overview">${esc(h.description)}</div>`:''}
+    </div>
     <div class="card-actions" onclick="event.stopPropagation()">
-      ${isGm?`<button class="btn btn-sm" onclick="openGmEdit('handout',${h.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="gmDelete('handout',${h.id},loadHandouts)">Del</button>`:''}
+      <button class="btn btn-sm" onclick="pin('handout',${h.id},'${esc(h.title)}')">📌</button>
+      ${isGm?`<button class="btn btn-sm" onclick="toggleHiddenItem('handout',${h.id},loadHandouts)">${h.hidden?'👁':'🙈'}</button><button class="btn btn-sm" onclick="openShareDialog('handout',${h.id},'${esc(h.title)}')">🔗</button><button class="btn btn-sm" onclick="openGmEdit('handout',${h.id})">✏️</button><button class="btn btn-sm btn-danger" onclick="gmDelete('handout',${h.id},loadHandouts)">🗑</button>`:''}
       ${(!isGm&&h.can_reshare)?`<button class="btn btn-sm" onclick="openHandoutReshare(${h.id})">Reshare</button>`:''}
     </div>
   </div>`).join('');
@@ -2486,7 +2579,7 @@ async function openHandoutReshare(handoutId){
   const players=allUsers.filter(u=>u.role!=='gm');
   if(!players.length){showToast('No players to share with','error');return;}
   const opts=players.map(u=>`${u.id}: ${u.username} (${u.character_name||'no character'})`).join('\n');
-  const input=prompt(`Share handout with player (enter username):\n${players.map(u=>u.username).join(', ')}`);
+  const input=await themedPrompt(`Share handout with player (enter username):\n${players.map(u=>u.username).join(', ')}`);
   if(!input)return;
   const target=players.find(u=>u.username.toLowerCase()===input.trim().toLowerCase());
   if(!target){showToast('Player not found','error');return;}
@@ -2552,7 +2645,7 @@ async function editSessionNote(sessionId,noteId){
   input.after(saveBtn);
 }
 async function deleteSessionNote(sessionId,noteId){
-  if(!confirm('Delete this note?'))return;
+  if(!await themedConfirm('Delete this note?'))return;
   const r=await apiFetch(`/api/sessions/${sessionId}/notes/${noteId}`,{method:'DELETE'});
   if(r.ok){showToast('Note deleted','success');loadSessions();}else showToast('Delete failed','error');
 }
@@ -2608,21 +2701,27 @@ async function respondSched(id,availability){const r=await apiFetch(`/api/sessio
 // ── Factions ──────────────────────────────────────────────────────────────────
 let factionData=[];
 async function loadFactions(){
-  const r=await apiFetch('/api/factions');factionData=(await r.json()).factions||[];
+  const r=await apiFetch('/api/factions');factionData=(await r.json()).factions||[];renderFactions();
+}
+function renderFactions(){
+  const q=(document.getElementById('faction-search')?.value||'').toLowerCase();
+  let list=q?factionData.filter(f=>(f.name||'').toLowerCase().includes(q)||(f.description||'').toLowerCase().includes(q)||(f.goals||'').toLowerCase().includes(q)):factionData;
   const el=document.getElementById('faction-list');
   const tile=gmAddTile('faction','Faction');
-  if(!factionData.length){el.innerHTML=tile||'<div class="empty-state">No factions known.</div>';return;}
-  el.innerHTML=tile+factionData.map(f=>{
+  if(!list.length){el.innerHTML=tile||'<div class="empty-state">No factions known.</div>';return;}
+  el.innerHTML=tile+list.map(f=>{
     const rep=f.reputation||0;const pct=((rep+3)/6)*100;
     const color=rep<0?'var(--red)':rep>0?'var(--green)':'var(--text3)';
     const label=rep<=-3?'Hostile':rep<=-1?'Unfriendly':rep===0?'Neutral':rep<=2?'Friendly':'Allied';
     return `<div class="card" style="cursor:pointer" onclick="openDetail('faction',${f.id})">
+      <div class="card-body">
       <div class="card-title">${esc(f.name)}</div>
-      ${f.description?`<div class="card-body" style="margin-bottom:7px">${esc(f.description)}</div>`:''}
-      ${f.goals?`<div style="font-size:11px;color:var(--text3);margin-bottom:7px">Goals: ${esc(f.goals)}</div>`:''}
+      ${f.description?`<div class="card-overview">${esc(f.description)}</div>`:''}
+      ${f.goals?`<div style="font-size:11px;color:var(--text3);margin:4px 0">Goals: ${esc(f.goals)}</div>`:''}
       <div class="rep-bar-wrap"><div class="rep-label"><span>Reputation</span><span style="color:${color}">${label} (${rep>=0?'+':''}${rep})</span></div>
       <div class="rep-track"><div class="rep-fill" style="width:${pct}%;background:${color}"></div></div></div>
-      ${isGm?`<div class="card-actions" style="margin-top:8px" onclick="event.stopPropagation()">${eyeBtn('faction',f.id,f.hidden)}<button class="btn btn-sm" onclick="openGmEdit('faction',${f.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="gmDelete('faction',${f.id},loadFactions)">Del</button></div>`:''}
+      </div>
+      <div class="card-actions" onclick="event.stopPropagation()"><button class="btn btn-sm" onclick="pin('faction',${f.id},'${esc(f.name)}')">📌</button>${isGm?`<button class="btn btn-sm" onclick="toggleHiddenItem('faction',${f.id},loadFactions)">${f.hidden?'👁':'🙈'}</button><button class="btn btn-sm" onclick="openShareDialog('faction',${f.id},'${esc(f.name)}')">🔗</button><button class="btn btn-sm" onclick="openGmEdit('faction',${f.id})">✏️</button><button class="btn btn-sm btn-danger" onclick="gmDelete('faction',${f.id},loadFactions)">🗑</button>`:''}</div>
     </div>`;
   }).join('');
 }
@@ -2683,7 +2782,7 @@ async function loadMaps(){
   </div>`).join('');
 }
 async function deleteMap(id){
-  if(!confirm('Delete this map?'))return;
+  if(!await themedConfirm('Delete this map?'))return;
   const r=await apiFetch(`/api/maps/${id}`,{method:'DELETE'});
   if(r.ok){showToast('Map deleted','success');loadMaps();}else showToast('Delete failed','error');
 }
@@ -2711,17 +2810,28 @@ async function revealCreature(id,val){
 }
 
 // ── Rumours ───────────────────────────────────────────────────────────────────
-let rumourData=[];
+let rumourData=[];let _rumourTab='all';
 async function loadRumours(){
-  const r=await apiFetch('/api/rumours');rumourData=(await r.json()).rumours||[];
+  const r=await apiFetch('/api/rumours');rumourData=(await r.json()).rumours||[];renderRumours();
+}
+function filterRumours(tab,btn){document.querySelectorAll('#page-rumours .filter-tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');_rumourTab=tab;renderRumours();}
+function renderRumours(){
+  const q=(document.getElementById('rumour-search')?.value||'').toLowerCase();
+  let list=rumourData;
+  if(_rumourTab==='true')list=list.filter(r=>r.is_true);
+  else if(_rumourTab==='false')list=list.filter(r=>r.is_true===false||r.is_true===0);
+  else if(_rumourTab==='exposed')list=list.filter(r=>r.exposed);
+  if(q)list=list.filter(r=>(r.text||'').toLowerCase().includes(q)||(r.source_npc||'').toLowerCase().includes(q)||(r.source_location||'').toLowerCase().includes(q));
   const el=document.getElementById('rumour-list');
   const tile=gmAddTile('rumour','Rumour');
-  if(!rumourData.length){el.innerHTML=tile||'<div class="empty-state">No rumours heard.</div>';return;}
-  el.innerHTML=tile+rumourData.map(r=>`<div class="card" style="cursor:pointer" onclick="openDetail('rumour',${r.id})">
-    <div class="card-body" style="font-style:italic;font-size:14px;margin-bottom:8px">"${esc(r.text)}"</div>
-    <div class="card-meta">${r.source_npc?`<span>— ${esc(r.source_npc)}</span>`:''}${r.source_location?`<span>📍 ${esc(r.source_location)}</span>`:''}</div>
+  if(!list.length){el.innerHTML=tile||'<div class="empty-state">No rumours heard.</div>';return;}
+  el.innerHTML=tile+list.map(r=>`<div class="card" style="cursor:pointer" onclick="openDetail('rumour',${r.id})">
+    <div class="card-body">
+    <div style="font-style:italic;font-size:14px;line-height:1.5;margin-bottom:8px">"${esc(r.text)}"</div>
+    <div class="card-meta">${r.source_npc?`<span class="tag">👤 ${esc(r.source_npc)}</span>`:''}${r.source_location?`<span class="tag">📍 ${esc(r.source_location)}</span>`:''}</div>
     ${r.is_true!=null&&isGm?`<div style="margin-top:6px;font-size:10px;color:${r.is_true?'var(--green)':'var(--red)'}">GM: ${r.is_true?'TRUE':'FALSE'}</div>`:''}
-    ${isGm?`<div class="card-actions" style="margin-top:8px" onclick="event.stopPropagation()"><button class="btn btn-sm" onclick="openGmEdit('rumour',${r.id})">Edit</button><button class="btn btn-sm" onclick="exposeRumour(${r.id})">Expose</button><button class="btn btn-sm btn-danger" onclick="gmDelete('rumour',${r.id},loadRumours)">Del</button></div>`:''}
+    </div>
+    <div class="card-actions" onclick="event.stopPropagation()"><button class="btn btn-sm" onclick="pin('rumour',${r.id},'${esc((r.text||'').slice(0,40))}')">📌</button>${isGm?`<button class="btn btn-sm" onclick="toggleHiddenItem('rumour',${r.id},loadRumours)">${r.hidden?'👁':'🙈'}</button><button class="btn btn-sm" onclick="exposeRumour(${r.id})">📢</button><button class="btn btn-sm" onclick="openShareDialog('rumour',${r.id},'${esc((r.text||'').slice(0,40))}')">🔗</button><button class="btn btn-sm" onclick="openGmEdit('rumour',${r.id})">✏️</button><button class="btn btn-sm btn-danger" onclick="gmDelete('rumour',${r.id},loadRumours)">🗑</button>`:''}</div>
   </div>`).join('');
 }
 async function exposeRumour(id){
@@ -2730,19 +2840,26 @@ async function exposeRumour(id){
 }
 
 // ── Jobs ──────────────────────────────────────────────────────────────────────
-let jobData=[];
+let jobData=[];let _jobTab='all';
 async function loadJobs(){
-  const r=await apiFetch('/api/jobs');jobData=(await r.json()).jobs||[];
+  const r=await apiFetch('/api/jobs');jobData=(await r.json()).jobs||[];renderJobs();
+}
+function filterJobs(tab,btn){document.querySelectorAll('#page-jobs .filter-tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');_jobTab=tab;renderJobs();}
+function renderJobs(){
+  const q=(document.getElementById('job-search')?.value||'').toLowerCase();
+  let list=_jobTab==='all'?jobData:jobData.filter(j=>(j.status||'').toLowerCase()===_jobTab);
+  if(q)list=list.filter(j=>(j.title||'').toLowerCase().includes(q)||(j.description||'').toLowerCase().includes(q)||(j.location||'').toLowerCase().includes(q)||(j.posted_by||'').toLowerCase().includes(q));
   const el=document.getElementById('job-list');
   const tile=gmAddTile('job','Job');
-  if(!jobData.length){el.innerHTML=tile||'<div class="empty-state">No jobs posted.</div>';return;}
-  el.innerHTML=tile+jobData.map(j=>`<div class="card" style="cursor:pointer" onclick="openDetail('job',${j.id})">
+  if(!list.length){el.innerHTML=tile||'<div class="empty-state">No jobs posted.</div>';return;}
+  el.innerHTML=tile+list.map(j=>`<div class="card" style="cursor:pointer" onclick="openDetail('job',${j.id})">
+    <div class="card-body">
     <div class="card-title">${esc(j.title)}</div>
     <div class="card-meta"><span class="tag tag-${esc(j.status||'open')}">${esc(j.status||'open')}</span><span class="tag tag-${esc(j.difficulty||'medium')}">${esc(j.difficulty||'medium')}</span>${j.reward?`<span style="color:var(--accent)">⚜ ${esc(j.reward)}</span>`:''}</div>
-    ${j.description?`<div class="card-body" style="margin-bottom:7px">${esc(j.description)}</div>`:''}
-    <div style="font-size:11px;color:var(--text3);display:flex;gap:10px;flex-wrap:wrap">${j.posted_by?`<span>Posted by: ${esc(j.posted_by)}</span>`:''}${j.location?`<span>📍 ${esc(j.location)}</span>`:''}</div>
-    ${j.requires_contact?`<div style="margin-top:7px;font-size:12px;color:var(--accent-dim)">Speak to ${esc(j.posted_by||'the contact')} to accept.</div>`:''}
-    ${isGm?`<div class="card-actions" style="margin-top:8px" onclick="event.stopPropagation()">${eyeBtn('job',j.id,j.hidden)}<button class="btn btn-sm" onclick="openGmEdit('job',${j.id})">Edit</button>${!j.promoted_quest_id?`<button class="btn btn-sm btn-primary" onclick="promoteJobToQuest(${j.id})">→ Quest</button>`:''}<button class="btn btn-sm btn-danger" onclick="gmDelete('job',${j.id},loadJobs)">Del</button></div>`:''}
+    ${j.description?`<div class="card-overview">${esc(j.description)}</div>`:''}
+    <div style="font-size:11px;color:var(--text3);display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">${j.posted_by?`<span>Posted by: ${esc(j.posted_by)}</span>`:''}${j.location?`<span>📍 ${esc(j.location)}</span>`:''}</div>
+    </div>
+    <div class="card-actions" onclick="event.stopPropagation()"><button class="btn btn-sm" onclick="pin('job',${j.id},'${esc(j.title)}')">📌</button>${isGm?`<button class="btn btn-sm" onclick="toggleHiddenItem('job',${j.id},loadJobs)">${j.hidden?'👁':'🙈'}</button>${!j.promoted_quest_id?`<button class="btn btn-sm" onclick="promoteJobToQuest(${j.id})">→ Quest</button>`:''}<button class="btn btn-sm" onclick="openShareDialog('job',${j.id},'${esc(j.title)}')">🔗</button><button class="btn btn-sm" onclick="openGmEdit('job',${j.id})">✏️</button><button class="btn btn-sm btn-danger" onclick="gmDelete('job',${j.id},loadJobs)">🗑</button>`:''}</div>
   </div>`).join('');
 }
 
@@ -2750,7 +2867,7 @@ async function loadJobs(){
 async function promoteJobToQuest(jobId){
   const job=jobData.find(j=>j.id===jobId);
   if(!job)return;
-  if(!confirm(`Promote "${job.title}" to a Quest?`))return;
+  if(!await themedConfirm(`Promote "${job.title}" to a Quest?`))return;
   const qr=await apiFetch('/api/quests',{method:'POST',body:JSON.stringify({title:job.title,description:job.description||'',status:'active',quest_type:'side'})});
   if(!qr.ok){showToast('Failed to create quest','error');return;}
   const qd=await qr.json();
@@ -2876,7 +2993,7 @@ async function saveTheoryNode(){
   if(r.ok){const nd=theoryNodes.find(n=>n.id===selectedNodeId);if(nd){nd.label=label;nd.notes=notes;nd.shared_with_gm=shared_with_gm?1:0;}renderTheory();}
 }
 async function deleteTheoryNode(){
-  if(!selectedNodeId||!confirm('Delete node?'))return;
+  if(!selectedNodeId||!await themedConfirm('Delete this node?'))return;
   const r=await apiFetch(`/api/theory/nodes/${selectedNodeId}`,{method:'DELETE'});
   if(r.ok){theoryNodes=theoryNodes.filter(n=>n.id!==selectedNodeId);theoryEdges=theoryEdges.filter(e=>e.source_id!==selectedNodeId&&e.target_id!==selectedNodeId);selectedNodeId=null;document.getElementById('theory-edit-box').style.display='none';renderTheory();}
 }
@@ -3040,12 +3157,12 @@ async function savePlayerStress(userId){
   if(r.ok)showToast('Stress updated','success');else showToast('Update failed','error');
 }
 async function deleteUser(id,name){
-  if(!confirm(`Delete user "${name}"? This cannot be undone.`))return;
+  if(!await themedConfirm(`Delete user "${name}"? This cannot be undone.`))return;
   const r=await apiFetch(`/api/users/${id}`,{method:'DELETE'});
   if(r.ok){showToast('User deleted','success');loadGmDashboard();}else showToast('Delete failed','error');
 }
 async function resetPlayerPassword(id,name){
-  const pw=prompt(`New password for "${name}" (min 6 chars):`);
+  const pw=await themedPrompt(`New password for "${name}" (min 6 chars):`);
   if(!pw)return;
   if(pw.length<6){showToast('Password too short','error');return;}
   const r=await apiFetch(`/api/users/${id}/password`,{method:'PUT',body:JSON.stringify({password:pw})});
@@ -3062,7 +3179,7 @@ async function awardXp(){
   if(r.ok){showToast(`+${amount} XP awarded`,'success');loadGmDashboard();}else showToast('Award failed','error');
 }
 async function removeXpAward(id){
-  if(!confirm('Remove this XP award?'))return;
+  if(!await themedConfirm('Remove this XP award?'))return;
   const r=await apiFetch(`/api/xp/${id}`,{method:'DELETE'});
   if(r.ok){showToast('Award removed','success');loadGmDashboard();}else showToast('Remove failed','error');
 }
@@ -3169,7 +3286,7 @@ async function editHp(id,dir){
 }
 async function promptHp(id){
   const c=combatState.combatants.find(x=>x.id===id);if(!c)return;
-  const val=prompt(`Set HP for ${c.name} (current: ${c.hp}/${c.max_hp}):`,c.hp);
+  const val=await themedPrompt(`Set HP for ${c.name} (current: ${c.hp}/${c.max_hp}):`,String(c.hp));
   if(val===null)return;
   const hp=parseInt(val);if(isNaN(hp))return;
   await saveHp(id,Math.max(0,Math.min(c.max_hp,hp)));
@@ -3190,13 +3307,13 @@ async function addCombatant(){
   else showToast('Add failed','error');
 }
 async function createEncounter(){
-  const name=prompt('Encounter name:','Battle');if(!name)return;
+  const name=await themedPrompt('Encounter name:','Battle');if(!name)return;
   const r=await apiFetch('/api/combat',{method:'POST',body:JSON.stringify({name})});
   if(r.ok){const d=await r.json();combatState.encounter=d.encounter;combatState.combatants=[];combatState.round=1;renderCombat();}
   else showToast('Create failed','error');
 }
 async function endEncounter(){
-  if(!confirm('End encounter?'))return;
+  if(!await themedConfirm('End encounter?'))return;
   const r=await apiFetch(`/api/combat/${combatState.encounter.id}`,{method:'DELETE'});
   if(r.ok){combatState.encounter=null;combatState.combatants=[];renderCombat();}
   else showToast('End failed','error');
@@ -3409,7 +3526,7 @@ async function openGmEdit(type,id){
   if(data)prefillGmForm(type,data);
 }
 async function gmDelete(type,id,reloadFn){
-  if(!confirm(`Delete this ${type}?`))return;
+  if(!await themedConfirm(`Delete this ${type}?`))return;
   const ep=TYPE_ENDPOINT[type];
   if(!ep)return showToast('Unknown type','error');
   const r=await apiFetch(`${ep}/${id}`,{method:'DELETE'});
@@ -4062,10 +4179,57 @@ document.addEventListener('input',_slashInput);
 document.addEventListener('keydown',_slashKeydown);
 document.addEventListener('click',e=>{if(!e.target.closest('#slash-menu'))_slashClose();});
 
+// ── Themed Confirm / Prompt ───────────────────────────────────────────────────
+let _confirmResolve=null,_confirmIsPrompt=false;
+function themedConfirm(msg){
+  return new Promise(resolve=>{
+    _confirmResolve=resolve;_confirmIsPrompt=false;
+    document.getElementById('confirm-msg').textContent=msg;
+    document.getElementById('confirm-input-wrap').style.display='none';
+    const ok=document.getElementById('confirm-ok-btn');ok.textContent='Confirm';ok.className='confirm-ok';
+    document.getElementById('confirm-overlay').style.display='flex';
+  });
+}
+function themedPrompt(msg,def=''){
+  return new Promise(resolve=>{
+    _confirmResolve=resolve;_confirmIsPrompt=true;
+    document.getElementById('confirm-msg').textContent=msg;
+    const wrap=document.getElementById('confirm-input-wrap');wrap.style.display='';
+    const inp=document.getElementById('confirm-input');inp.value=def;
+    const ok=document.getElementById('confirm-ok-btn');ok.textContent='OK';ok.className='confirm-ok prompt';
+    document.getElementById('confirm-overlay').style.display='flex';
+    setTimeout(()=>{inp.focus();inp.select();},50);
+  });
+}
+function _confirmOk(){
+  const val=_confirmIsPrompt?(document.getElementById('confirm-input').value||null):true;
+  document.getElementById('confirm-overlay').style.display='none';
+  if(_confirmResolve){_confirmResolve(val);_confirmResolve=null;}
+}
+function _confirmCancel(){
+  document.getElementById('confirm-overlay').style.display='none';
+  if(_confirmResolve){_confirmResolve(_confirmIsPrompt?null:false);_confirmResolve=null;}
+}
+
 // ── Boot ──────────────────────────────────────────────────────────────────────
 applyA11yOnBoot();
 restoreSession();
 </script>
 <div id="slash-menu"></div>
+
+<!-- Themed Confirm/Prompt Dialog -->
+<div id="confirm-overlay" class="confirm-overlay" style="display:none" onclick="if(event.target===this)_confirmCancel()">
+  <div class="confirm-box">
+    <div class="confirm-icon">⚠</div>
+    <div class="confirm-msg" id="confirm-msg"></div>
+    <div class="confirm-input-wrap" id="confirm-input-wrap" style="display:none">
+      <input type="text" id="confirm-input" onkeydown="if(event.key==='Enter')_confirmOk();if(event.key==='Escape')_confirmCancel()"/>
+    </div>
+    <div class="confirm-actions">
+      <button class="confirm-cancel" onclick="_confirmCancel()">Cancel</button>
+      <button class="confirm-ok" id="confirm-ok-btn" onclick="_confirmOk()">Confirm</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
