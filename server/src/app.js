@@ -70,7 +70,7 @@ app.use(cors({
 
 app.use(express.json({ limit: '1mb' }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-const clientPath = path.join(__dirname, '../../client');
+const clientPath = path.join(__dirname, '../../client/dist');
 app.use(express.static(clientPath));
 
 app.get('/api/events', requireAuth, (req, res) => {

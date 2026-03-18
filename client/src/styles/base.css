@@ -1,0 +1,181 @@
+/* ── Base Reset ──────────────────────────────────────────────────────────── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body, 'Crimson Pro', Georgia, serif);
+  font-size: 16px;
+  height: 100%;
+  overflow: hidden;
+  transition: background 0.3s, color 0.3s;
+}
+a { color: var(--accent); text-decoration: none; }
+button { cursor: pointer; font-family: inherit; }
+input, textarea, select { font-family: var(--font-body, 'Crimson Pro', serif); }
+
+/* ── Scrollbars ─────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* ── Keyframe Animations ─────────────────────────────────────────────────── */
+@keyframes torch-flicker {
+  0%,100%{opacity:1;} 92%{opacity:1;} 93%{opacity:0.85;} 94%{opacity:1;} 97%{opacity:0.9;} 98%{opacity:1;}
+}
+@keyframes scanline {
+  0%{transform:translateY(-100%);} 100%{transform:translateY(100vh);}
+}
+@keyframes film-grain {
+  0%,100%{opacity:0.04;} 50%{opacity:0.07;}
+}
+@keyframes crt-flicker {
+  0%,100%{opacity:1;} 95%{opacity:0.98;} 96%{opacity:0.92;} 97%{opacity:0.98;}
+}
+@keyframes sand-drift {
+  0%{transform:translateX(0);} 100%{transform:translateX(20px);}
+}
+@keyframes shimmer {
+  0%{background-position:-200% center;} 100%{background-position:200% center;}
+}
+@keyframes skeleton-pulse {
+  0%,100%{opacity:0.4;} 50%{opacity:0.8;}
+}
+@keyframes toast-in {
+  from{transform:translateX(120%);opacity:0;} to{transform:translateX(0);opacity:1;}
+}
+@keyframes toast-out {
+  from{transform:translateX(0);opacity:1;} to{transform:translateX(120%);opacity:0;}
+}
+@keyframes slide-in-right {
+  from{transform:translateX(100%);} to{transform:translateX(0);}
+}
+@keyframes fade-in {
+  from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:translateY(0);}
+}
+@keyframes star-pulse {
+  0%,100%{box-shadow:0 0 6px rgba(0,210,255,0.15);} 50%{box-shadow:0 0 22px rgba(0,210,255,0.4);}
+}
+@keyframes power-on {
+  0%{opacity:0.7;} 25%{opacity:1;} 50%{opacity:0.75;} 75%{opacity:1;} 100%{opacity:1;}
+}
+
+/* ── D&D 5e — Parchment grain texture ───────────────────────────────────── */
+[data-theme="dnd5e"] #app-shell::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.042'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 200px 200px;
+}
+
+/* ── Alien — CRT scanlines ───────────────────────────────────────────────── */
+[data-theme="alien"] #app-shell::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.18) 0px,
+    rgba(0, 0, 0, 0.18) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+[data-theme="alien"] .scanline-overlay { display: block; }
+
+/* ── Coriolis — Starfield nebula glow ────────────────────────────────────── */
+[data-theme="coriolis"] #app-shell::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 60% 40% at 20% 30%, rgba(0,210,255,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 60% at 80% 70%, rgba(80,60,180,0.05) 0%, transparent 60%);
+}
+
+/* ── Dune — Sand grain texture ───────────────────────────────────────────── */
+[data-theme="dune"] #app-shell::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 180px 180px;
+}
+
+/* ── CoC — Aged paper film grain ─────────────────────────────────────────── */
+[data-theme="coc"] #app-shell::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.038'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 160px 160px;
+  animation: film-grain 0.15s steps(1) infinite;
+}
+
+/* ── Achtung — Canvas / burlap weave ─────────────────────────────────────── */
+[data-theme="achtung"] #app-shell::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.95' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 100px 100px;
+}
+
+/* ── Scanline overlay (Alien only) ───────────────────────────────────────── */
+.scanline-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: rgba(57, 255, 20, 0.06);
+  pointer-events: none;
+  z-index: 998;
+  animation: scanline 8s linear infinite;
+}
+
+/* ── Sidebar icon tinting ────────────────────────────────────────────────── */
+/* All emoji icons get desaturated and tinted by the theme's icon-tint colour */
+.nav-icon {
+  filter: grayscale(100%) sepia(60%) hue-rotate(10deg) saturate(120%) brightness(0.9);
+  opacity: 0.85;
+  transition: filter 0.2s, opacity 0.2s;
+}
+.nav-item:hover .nav-icon,
+.nav-item.active .nav-icon {
+  filter: none;
+  opacity: 1;
+}
+
+/* Alien: green monochromatic */
+[data-theme="alien"] .nav-icon {
+  filter: grayscale(100%) sepia(100%) hue-rotate(70deg) saturate(200%) brightness(0.9);
+}
+/* Coriolis: cyan tint */
+[data-theme="coriolis"] .nav-icon {
+  filter: grayscale(100%) sepia(100%) hue-rotate(155deg) saturate(180%) brightness(1.1);
+}
+/* Dune: warm orange-brown tint */
+[data-theme="dune"] .nav-icon {
+  filter: grayscale(100%) sepia(80%) hue-rotate(-10deg) saturate(150%) brightness(0.95);
+}
+/* Achtung: stencil yellow */
+[data-theme="achtung"] .nav-icon {
+  filter: grayscale(100%) sepia(70%) hue-rotate(20deg) saturate(160%) brightness(1.05);
+}

@@ -522,6 +522,10 @@ function runMigrations() {
   // Quest chain: parent_quest_id on vault_files
   try { db.exec('ALTER TABLE vault_files ADD COLUMN parent_quest_id INTEGER REFERENCES vault_files(id)'); } catch (_) {}
 
+  // Bestiary gm_notes and player_notes columns (added with bestiary redesign)
+  try { db.exec('ALTER TABLE bestiary ADD COLUMN gm_notes TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE bestiary ADD COLUMN player_notes TEXT'); } catch (_) {}
+
   console.log('✅ Migrations complete.');
 }
 

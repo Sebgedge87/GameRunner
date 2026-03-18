@@ -39,7 +39,7 @@ router.post('/', requireGm, (req, res) => {
   const title = name || req.body.title;
   if (!title) return res.status(400).json({ error: 'name is required' });
   const filename = `${slug(title)}-${Date.now()}.md`;
-  const content = matter.stringify(description, { title, image_url });
+  const content = matter.stringify(description, { title, description, image_url });
   const camp = getDb().prepare('SELECT id, name FROM campaigns WHERE active = 1 LIMIT 1').get();
   const campSlug = camp ? slug(camp.name) : null;
   const targetDir = campSlug ? path.join(vaultPath, campSlug, 'Locations') : VAULT_DIR;
@@ -59,7 +59,7 @@ router.put('/:id', requireGm, (req, res) => {
   const existing = JSON.parse(row.frontmatter || '{}');
   const { name, description, image_url } = { ...existing, ...req.body };
   const title = name || req.body.title || existing.title;
-  const content = matter.stringify(description || '', { title, image_url });
+  const content = matter.stringify(description || '', { title, description: description || '', image_url });
   fs.writeFileSync(path.join(vaultPath, row.path), content, 'utf8');
   res.json({ success: true });
 });

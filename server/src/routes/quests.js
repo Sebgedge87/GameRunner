@@ -41,7 +41,7 @@ router.post('/', requireGm, (req, res) => {
   const { title, description = '', status = 'active', quest_type = 'main', parent_quest_id } = req.body;
   if (!title) return res.status(400).json({ error: 'title is required' });
   const filename = `${slug(title)}-${Date.now()}.md`;
-  const fm = { title, status, quest_type };
+  const fm = { title, description, status, quest_type };
   if (parent_quest_id) fm.parent_quest_id = parent_quest_id;
   const content = matter.stringify(description, fm);
   const camp = getDb().prepare('SELECT id, name FROM campaigns WHERE active = 1 LIMIT 1').get();
@@ -77,7 +77,7 @@ router.put('/:id', requireGm, (req, res) => {
   }
   const existing = JSON.parse(row.frontmatter || '{}');
   const { title, description, status, quest_type, parent_quest_id } = { ...existing, ...req.body };
-  const fm = { title, status, quest_type };
+  const fm = { title, description: description || '', status, quest_type };
   if (parent_quest_id) fm.parent_quest_id = parent_quest_id;
   const content = matter.stringify(description || '', fm);
   fs.writeFileSync(fullPath, content, 'utf8');
