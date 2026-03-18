@@ -2,6 +2,7 @@ const express = require('express');
 const { getDb } = require('../db/database');
 const { requireAuth, requireGm } = require('../auth/authMiddleware');
 const { createNotification, broadcastSSE } = require('../services/notifications');
+const { auditLog } = require('../utils/auditLog');
 
 const router = express.Router();
 
@@ -58,6 +59,7 @@ router.post('/', requireGm, (req, res) => {
     }
   }
 
+  auditLog(req, 'create', 'handout', handout.id, title);
   res.status(201).json({ handout });
 });
 
@@ -109,6 +111,7 @@ router.delete('/:id', requireGm, (req, res) => {
   const db = getDb();
   db.prepare('DELETE FROM handout_permissions WHERE handout_id = ?').run(req.params.id);
   db.prepare('DELETE FROM handouts WHERE id = ?').run(req.params.id);
+  auditLog(req, 'delete', 'handout', Number(req.params.id));
   res.json({ success: true });
 });
 

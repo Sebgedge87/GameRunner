@@ -5,6 +5,23 @@ const { broadcastSSE } = require('../services/notifications');
 
 const router = express.Router();
 
+// Per-system condition lists
+const SYSTEM_CONDITIONS = {
+  dnd5e: ['blinded', 'charmed', 'deafened', 'exhaustion', 'frightened', 'grappled',
+    'incapacitated', 'invisible', 'paralyzed', 'petrified', 'poisoned',
+    'prone', 'restrained', 'stunned', 'unconscious'],
+  coc: ['shaken', 'terrified', 'panicking', 'unconscious', 'dying'],
+  alien: ['stressed', 'panicking', 'broken', 'unconscious', 'dying'],
+  coriolis: ['stressed', 'broken', 'unconscious', 'dying'],
+  dune: ['shaken', 'broken', 'unconscious', 'dying'],
+};
+
+// GET /api/combat/conditions — return system-aware condition list
+router.get('/conditions', (req, res) => {
+  const system = req.query.system || 'dnd5e';
+  res.json({ conditions: SYSTEM_CONDITIONS[system] || SYSTEM_CONDITIONS.dnd5e });
+});
+
 function getEncounterWithCombatants(db, encounterId, userId, role) {
   const encounter = db.prepare('SELECT * FROM combat_encounters WHERE id = ?').get(encounterId);
   if (!encounter) return null;
@@ -82,7 +99,7 @@ router.put('/:id/combatants/:cid', requireAuth, (req, res) => {
     return res.status(403).json({ error: 'Not authorised' });
   }
 
-  const { hp_current, hp_max, ac, initiative, conditions, is_hidden, sort_order } = req.body;
+  const { hp_current, hp_max, ac, initiative, conditions, is_hidden, sort_order, death_saves_success, death_saves_failure, is_stable } = req.body;
   db.prepare(`
     UPDATE combat_combatants SET
       hp_current = COALESCE(?, hp_current),
@@ -91,7 +108,10 @@ router.put('/:id/combatants/:cid', requireAuth, (req, res) => {
       initiative = COALESCE(?, initiative),
       conditions = COALESCE(?, conditions),
       is_hidden = COALESCE(?, is_hidden),
-      sort_order = COALESCE(?, sort_order)
+      sort_order = COALESCE(?, sort_order),
+      death_saves_success = COALESCE(?, death_saves_success),
+      death_saves_failure = COALESCE(?, death_saves_failure),
+      is_stable = COALESCE(?, is_stable)
     WHERE id = ?
   `).run(
     hp_current !== undefined ? hp_current : null,
@@ -101,6 +121,9 @@ router.put('/:id/combatants/:cid', requireAuth, (req, res) => {
     conditions !== undefined ? JSON.stringify(conditions) : null,
     is_hidden !== undefined ? (is_hidden ? 1 : 0) : null,
     sort_order !== undefined ? sort_order : null,
+    death_saves_success !== undefined ? death_saves_success : null,
+    death_saves_failure !== undefined ? death_saves_failure : null,
+    is_stable !== undefined ? (is_stable ? 1 : 0) : null,
     req.params.cid
   );
   const updated = db.prepare('SELECT * FROM combat_combatants WHERE id = ?').get(req.params.cid);

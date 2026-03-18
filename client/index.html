@@ -1183,12 +1183,46 @@ html{transition:background-color var(--anim-speed) ease,color var(--anim-speed) 
       </div>
 
       <!-- Profile -->
-      <div class="card">
+      <div class="card" style="margin-bottom:1rem">
         <h3 class="settings-section-title">Profile</h3>
         <div class="form-group"><label>Character Name</label><input id="settings-char-name" class="form-input" placeholder="Your character's name…"></div>
         <div class="form-group"><label>Character Class</label><input id="settings-char-class" class="form-input" placeholder="Fighter, Wizard…"></div>
         <button class="btn btn-primary" onclick="saveProfile()">Save Profile</button>
         <div id="settings-profile-status" class="status-msg" style="margin-top:8px"></div>
+      </div>
+
+      <!-- Two-Factor Authentication -->
+      <div class="card" style="margin-bottom:1rem" id="settings-2fa-card">
+        <h3 class="settings-section-title">Two-Factor Authentication</h3>
+        <p class="muted" style="margin-bottom:1rem;font-size:13px">Protect your account with an authenticator app (Google Authenticator, Authy, etc.).</p>
+        <div id="totp-status-wrap">
+          <div id="totp-setup-step1">
+            <button class="btn btn-primary" onclick="totpSetup()">Enable 2FA</button>
+            <div id="totp-msg" class="status-msg" style="margin-top:8px"></div>
+          </div>
+          <div id="totp-setup-step2" style="display:none">
+            <p class="muted" style="margin-bottom:8px;font-size:12px">Scan this QR code with your authenticator app, then enter the 6-digit code to confirm.</p>
+            <div id="totp-qr-wrap" style="margin-bottom:12px"></div>
+            <div class="field-group" style="max-width:180px;margin-bottom:8px"><label>Code</label><input id="totp-code-input" class="form-input" maxlength="6" placeholder="000000" inputmode="numeric"/></div>
+            <button class="btn btn-primary" onclick="totpVerify()">Confirm &amp; Enable</button>
+            <button class="btn" style="margin-left:8px" onclick="document.getElementById('totp-setup-step2').style.display='none';document.getElementById('totp-setup-step1').style.display=''">Cancel</button>
+            <div id="totp-verify-msg" class="status-msg" style="margin-top:8px"></div>
+          </div>
+          <div id="totp-enabled-wrap" style="display:none">
+            <p class="muted" style="margin-bottom:8px;font-size:12px;color:var(--green)">✓ Two-factor authentication is enabled.</p>
+            <div class="field-group" style="max-width:180px;margin-bottom:8px"><label>Enter code to disable</label><input id="totp-disable-input" class="form-input" maxlength="6" placeholder="000000" inputmode="numeric"/></div>
+            <button class="btn btn-danger" onclick="totpDisable()">Disable 2FA</button>
+            <div id="totp-disable-msg" class="status-msg" style="margin-top:8px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Backup (GM only) -->
+      <div class="card gm-only" id="settings-backup-card">
+        <h3 class="settings-section-title">Data Backup</h3>
+        <p class="muted" style="margin-bottom:1rem;font-size:13px">Download a ZIP archive of the entire campaign: database, vault files, and uploads.</p>
+        <button class="btn btn-primary" onclick="downloadBackup()">Download Backup</button>
+        <div id="settings-backup-status" class="status-msg" style="margin-top:8px"></div>
       </div>
     </section>
 
@@ -2060,7 +2094,7 @@ const TYPE_STORE_DETAIL={
   rumour:()=>rumourData,map:()=>mapsData,
 };
 let detailType=null,detailId=null;
-function openDetail(type,id){
+async function openDetail(type,id){
   const store=TYPE_STORE_DETAIL[type]?.();
   if(!store)return;
   const item=store.find(x=>x.id===id||x.id===Number(id));
@@ -2073,6 +2107,25 @@ function openDetail(type,id){
     ${isGm?`<button class="btn btn-sm" onclick="closeModal('detail-modal');openGmEdit('${type}',${id})">Edit</button>
     <button class="btn btn-sm btn-danger" onclick="closeModal('detail-modal');gmDelete('${type}',${id},${TYPE_RELOAD_STR[type]||'null'})">Delete</button>`:''}`;
   openModal('detail-modal');
+  // Async-load NPC relationships
+  if(type==='npc'){
+    try{
+      const r=await apiFetch(`/api/npcs/${id}/relationships`);
+      if(r.ok){
+        const d=await r.json();
+        const rels=[...(d.relationships||[]),...(d.reverse_relationships||[])];
+        const relWrap=document.getElementById('npc-rel-wrap');
+        if(relWrap){
+          if(rels.length){
+            relWrap.innerHTML=`<div class="detail-gm-label" style="margin-top:12px">RELATIONSHIPS</div><ul style="margin:4px 0 0 0;padding:0;list-style:none;">${rels.map(r=>`<li style="font-size:12px;color:var(--text2);padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3);font-size:10px;text-transform:uppercase;font-family:'JetBrains Mono',monospace">${esc(r.relationship_type)}</span> <span style="cursor:pointer;color:var(--accent)" onclick="openDetail('npc',${r.related_id||r.npc_id})">${esc(r.related_name)}</span>${isGm?`<button class="btn btn-sm" style="float:right;padding:1px 6px;font-size:10px" onclick="deleteNpcRel(${id},${r.id})">×</button>`:''}${r.notes?`<div style="font-size:11px;color:var(--text3)">${esc(r.notes)}</div>`:''}</li>`).join('')}</ul>
+              ${isGm?`<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><select id="npc-rel-target" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:4px;border-radius:3px;font-size:12px">${npcData.filter(n=>n.id!==Number(id)).map(n=>`<option value="${n.id}">${esc(n.title)}</option>`).join('')}</select><select id="npc-rel-type" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:4px;border-radius:3px;font-size:12px"><option>ally</option><option>enemy</option><option>associated</option><option>employer</option><option>family</option><option>rival</option><option>mentor</option></select><button class="btn btn-sm" onclick="addNpcRel(${id})">Add</button></div>`:''}`;
+          } else {
+            relWrap.innerHTML=isGm?`<div class="detail-gm-label" style="margin-top:12px">RELATIONSHIPS</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><select id="npc-rel-target" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:4px;border-radius:3px;font-size:12px">${npcData.filter(n=>n.id!==Number(id)).map(n=>`<option value="${n.id}">${esc(n.title)}</option>`).join('')}</select><select id="npc-rel-type" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:4px;border-radius:3px;font-size:12px"><option>ally</option><option>enemy</option><option>associated</option><option>employer</option><option>family</option><option>rival</option><option>mentor</option></select><button class="btn btn-sm" onclick="addNpcRel(${id})">Add</button></div>`:'';
+          }
+        }
+      }
+    }catch(_){}
+  }
 }
 const TYPE_RELOAD_STR={quest:'loadQuests',npc:'loadNpcs',location:'loadLocations',hook:'loadHooks',faction:'loadFactions',timeline:'loadTimeline',inventory:'loadInventory','key-item':'loadInventory',job:'loadJobs',bestiary:'loadBestiary',rumour:'loadRumours',map:'loadMaps'};
 function df(label,value){if(!value&&value!==0)return'';return`<div class="detail-field"><div class="detail-field-label">${label}</div><div class="detail-field-value">${esc(String(value))}</div></div>`;}
@@ -2084,19 +2137,23 @@ function renderDetailContent(type,d){
   const title=d.title||d.name||d.label||'(Untitled)';
   let body='';
   switch(type){
-    case 'quest':
+    case 'quest':{
+      const parentQuest=d.parent_quest_id?questData.find(q=>q.id===d.parent_quest_id):null;
       body=`${img}<div class="detail-title">${esc(title)}</div>
         <div class="detail-meta"><span class="tag tag-${esc(d.type||'side')}">${esc(d.type||'side')}</span><span class="tag tag-${esc(d.status||'active')}">${esc(d.status||'active')}</span></div>
         ${d.progress!=null?`<div style="margin-bottom:10px"><div class="progress-bar" style="height:6px"><div class="progress-fill" style="width:${d.progress}%"></div></div><div style="font-size:10px;color:var(--text3);margin-top:2px;font-family:'JetBrains Mono',monospace">${d.progress}% complete</div></div>`:''}
+        ${parentQuest?`<div style="font-size:11px;color:var(--text3);margin-bottom:6px">Part of: <span style="cursor:pointer;color:var(--accent)" onclick="closeModal('detail-modal');setTimeout(()=>openDetail('quest',${parentQuest.id}),80)">${esc(parentQuest.title)}</span></div>`:''}
         ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}
         ${dfLink('Location',d.location,'location')}${df('Connected To',Array.isArray(d.connected_to)?d.connected_to.join(', '):d.connected_to)}`;
-      break;
+      break;}
+
     case 'npc':
       body=`${img}<div class="detail-title">${esc(title)}</div>
         <div class="detail-meta">${d.role?`<span class="tag">${esc(d.role)}</span>`:''}<span class="tag tag-${esc(d.disposition||'neutral')}">${esc(d.disposition||'neutral')}</span>${d.faction?`<span class="tag">${esc(d.faction)}</span>`:''}</div>
         ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}
         ${dfLink('Location',d.location,'location')}${df('Connected To',Array.isArray(d.connected_to)?d.connected_to.join(', '):d.connected_to)}
-        ${isGm&&d.gm_notes?`<div class="detail-gm-box"><div class="detail-gm-label">GM NOTES</div><div class="detail-body" style="margin:0">${esc(d.gm_notes)}</div></div>`:''}`;
+        ${isGm&&d.gm_notes?`<div class="detail-gm-box"><div class="detail-gm-label">GM NOTES</div><div class="detail-body" style="margin:0">${esc(d.gm_notes)}</div></div>`:''}
+        <div id="npc-rel-wrap" style="font-size:12px;color:var(--text3)">Loading relationships…</div>`;
       break;
     case 'location':
       body=`${img}<div class="detail-title">${esc(title)}</div>
@@ -2252,6 +2309,20 @@ function renderNpcs(){
   el.innerHTML=tile+el.innerHTML;
 }
 
+async function addNpcRel(npcId){
+  const target=document.getElementById('npc-rel-target')?.value;
+  const relType=document.getElementById('npc-rel-type')?.value||'associated';
+  if(!target)return;
+  const r=await apiFetch(`/api/npcs/${npcId}/relationships`,{method:'POST',body:JSON.stringify({related_npc_id:Number(target),relationship_type:relType})});
+  if(r.ok){showToast('Relationship added','success');openDetail('npc',npcId);}
+  else{const d=await r.json();showToast(d.error||'Failed','error');}
+}
+async function deleteNpcRel(npcId,relId){
+  if(!confirm('Remove relationship?'))return;
+  const r=await apiFetch(`/api/npcs/${npcId}/relationships/${relId}`,{method:'DELETE'});
+  if(r.ok){showToast('Removed','success');openDetail('npc',npcId);}
+  else showToast('Failed','error');
+}
 // ── Locations ─────────────────────────────────────────────────────────────────
 let locationData=[];
 async function loadLocations(){const r=await apiFetch('/api/locations');locationData=(await r.json()).locations||[];renderLocations();}
@@ -2957,22 +3028,6 @@ async function uploadGmBgImage(input,campaignId){
     showToast('Image uploaded — click Save Changes to apply','success');
   }else showToast('Upload failed','error');
 }
-async function downloadBackup(){
-  const token=localStorage.getItem('chronicle_token');
-  const a=document.createElement('a');
-  a.href=`/api/backup`;
-  a.download=`chronicle-backup-${new Date().toISOString().slice(0,10)}.zip`;
-  // Use fetch to pass auth header
-  try{
-    const r=await fetch(`${API}/api/backup`,{headers:{Authorization:`Bearer ${token}`}});
-    if(!r.ok){showToast('Backup failed','error');return;}
-    const blob=await r.blob();
-    const url=URL.createObjectURL(blob);
-    a.href=url;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
-    showToast('Backup downloaded','success');
-  }catch(e){showToast('Backup error','error');}
-}
-
 async function savePlayerStress(userId){
   const stress=document.getElementById(`st-s-${userId}`)?.value.trim();
   const sanity=document.getElementById(`st-sn-${userId}`)?.value.trim();
@@ -3058,16 +3113,24 @@ function renderCombat(){
 function combatantRow(c,isActive){
   const hpPct=c.max_hp>0?Math.max(0,Math.round(c.hp/c.max_hp*100)):100;
   const hpColor=hpPct>50?'var(--accent)':hpPct>25?'#c9a84c':'#c95a5a';
-  return `<div class="card" style="margin-bottom:0.5rem;border-left:3px solid ${isActive?'var(--accent)':'transparent'}">
+  const dying=c.hp===0&&c.is_player;
+  const deathSaves=dying&&!c.is_stable?`<div style="font-size:11px;color:var(--text3);margin-top:5px;display:flex;align-items:center;gap:6px">
+    <span>Death:</span>
+    ${[0,1,2].map(i=>`<span style="cursor:pointer;font-size:16px;color:${(c.death_saves_success||0)>i?'var(--green)':'var(--border2)'}" onclick="toggleDeathSave(${c.id},'success',${i})" title="Success">●</span>`).join('')}
+    ${[0,1,2].map(i=>`<span style="cursor:pointer;font-size:16px;color:${(c.death_saves_failure||0)>i?'var(--red)':'var(--border2)'}" onclick="toggleDeathSave(${c.id},'failure',${i})" title="Failure">●</span>`).join('')}
+    ${isGm?`<button class="btn btn-sm" style="font-size:10px;padding:1px 5px" onclick="stabilizeCombatant(${c.id})">Stabilize</button>`:''}
+  </div>`:'';
+  return `<div class="card" style="margin-bottom:0.5rem;border-left:3px solid ${isActive?'var(--accent)':dying?'var(--red)':'transparent'}">
     <div style="display:flex;align-items:center;gap:0.75rem">
       <span style="font-size:1.2rem;min-width:2rem;text-align:center;font-weight:700;color:var(--accent)">${c.initiative}</span>
       <div style="flex:1">
-        <div style="font-family:var(--font-heading);font-size:0.95rem">${esc(c.name)} <span class="tag tag-npc" style="font-size:0.7rem">${c.combatant_type}</span></div>
+        <div style="font-family:var(--font-heading);font-size:0.95rem">${esc(c.name)} <span class="tag tag-npc" style="font-size:0.7rem">${c.combatant_type}</span>${c.is_stable?'<span class="tag" style="font-size:0.65rem;color:var(--green)">stable</span>':''}</div>
         <div style="margin-top:0.35rem">
           <div style="background:#1a1a2a;border-radius:2px;height:6px;overflow:hidden;width:100%">
             <div style="width:${hpPct}%;height:100%;background:${hpColor};transition:width 0.3s"></div>
           </div>
-          <div style="font-size:0.75rem;color:#888;margin-top:0.2rem">${c.hp} / ${c.max_hp} HP${c.conditions?` · <span style="color:#c9a84c">${esc(c.conditions)}</span>`:''}</div>
+          <div style="font-size:0.75rem;color:#888;margin-top:0.2rem">${c.hp} / ${c.max_hp} HP${c.conditions?` · <span style="color:#c9a84c">${esc(Array.isArray(c.conditions)?c.conditions.join(', '):c.conditions)}</span>`:''}</div>
+          ${deathSaves}
         </div>
       </div>
       ${isGm?`<div style="display:flex;gap:0.25rem">
@@ -3077,6 +3140,25 @@ function combatantRow(c,isActive){
       </div>`:''}
     </div>
   </div>`;
+}
+async function toggleDeathSave(id,type,idx){
+  const c=combatState.combatants.find(x=>x.id===id);if(!c)return;
+  const field=type==='success'?'death_saves_success':'death_saves_failure';
+  const cur=c[field]||0;
+  const newVal=cur>idx?idx:idx+1;// toggle at idx
+  const body={};body[field]=newVal;
+  const r=await apiFetch(`/api/combat/${combatState.encounter.id}/combatants/${id}`,{method:'PUT',body:JSON.stringify(body)});
+  if(r.ok){c[field]=newVal;
+    // Auto-die at 3 failures
+    if(type==='failure'&&newVal>=3){showToast(`${c.name} has died!`,'error');}
+    // Auto-stable at 3 successes
+    if(type==='success'&&newVal>=3){await apiFetch(`/api/combat/${combatState.encounter.id}/combatants/${id}`,{method:'PUT',body:JSON.stringify({is_stable:true})});c.is_stable=1;showToast(`${c.name} is stable`,'success');}
+    renderCombat();}
+}
+async function stabilizeCombatant(id){
+  const c=combatState.combatants.find(x=>x.id===id);if(!c)return;
+  const r=await apiFetch(`/api/combat/${combatState.encounter.id}/combatants/${id}`,{method:'PUT',body:JSON.stringify({is_stable:1,death_saves_success:3})});
+  if(r.ok){c.is_stable=1;c.death_saves_success=3;showToast(`${c.name} stabilized`,'success');renderCombat();}
 }
 async function editHp(id,dir){
   const amt=dir>0?5:5;// default 5 per click
@@ -3216,7 +3298,8 @@ const GM_FORMS={
   quest:`<div class="form-group"><label>Title</label><input id="gm-f-title" class="form-input" placeholder="Quest title"></div>
     <div class="form-group"><label>Description</label><textarea id="gm-f-desc" class="form-input" rows="4" placeholder="Quest description"></textarea></div>
     <div class="form-group"><label>Status</label><select id="gm-f-status" class="form-input"><option>active</option><option>completed</option><option>failed</option><option>hidden</option></select></div>
-    <div class="form-group"><label>Type</label><select id="gm-f-type" class="form-input"><option>main</option><option>side</option><option>personal</option></select></div>`,
+    <div class="form-group"><label>Type</label><select id="gm-f-type" class="form-input"><option>main</option><option>side</option><option>personal</option></select></div>
+    <div class="form-group"><label>Parent Quest (chain)</label><select id="gm-f-parent-quest" class="form-input"><option value="">— None —</option></select></div>`,
   npc:`<div class="form-group"><label>Name</label><input id="gm-f-name" class="form-input" placeholder="NPC name"></div>
     <div class="form-group"><label>Role / Occupation</label><input id="gm-f-role" class="form-input" placeholder="Innkeeper, guard..."></div>
     <div class="form-group"><label>Description</label><textarea id="gm-f-desc" class="form-input" rows="3"></textarea></div>
@@ -3347,6 +3430,8 @@ async function openGmCreate(type,extra){
   }
   // default session date to today
   if(type==='session'){const di=document.getElementById('gm-f-date');if(di&&!di.value)di.value=new Date().toISOString().slice(0,10);}
+  // populate parent quest dropdown
+  if(type==='quest'){const pq=document.getElementById('gm-f-parent-quest');if(pq&&questData.length>1){questData.forEach(q=>{const o=document.createElement('option');o.value=q.id;o.textContent=q.title;pq.appendChild(o);});}}
   modal.style.display='flex';
 }
 async function openShareDialog(itemType,itemId,itemTitle){
@@ -3383,7 +3468,7 @@ async function gmModalSave(){
   switch(type){
     case 'quest':
       endpoint='/api/quests';
-      body={title:val('gm-f-title'),description:val('gm-f-desc'),status:val('gm-f-status')||'active',quest_type:val('gm-f-type')||'main'};
+      {const pqId=val('gm-f-parent-quest');body={title:val('gm-f-title'),description:val('gm-f-desc'),status:val('gm-f-status')||'active',quest_type:val('gm-f-type')||'main'};if(pqId)body.parent_quest_id=Number(pqId);}
       break;
     case 'npc':
       endpoint='/api/npcs';
@@ -3826,11 +3911,61 @@ function setA11y(key,val){
   if(key==='motion')document.body.classList.toggle('reduce-motion',val);
   if(key==='effects')document.body.classList.toggle('no-effects',val);
 }
+// ── 2FA / TOTP ────────────────────────────────────────────────────────────────
+let totpPendingSecret=null;
+async function totpSetup(){
+  const msg=document.getElementById('totp-msg');msg.textContent='';
+  const r=await apiFetch('/api/users/me/totp/setup',{method:'POST'});
+  if(!r.ok){msg.className='status-msg status-err';msg.textContent='Setup failed.';return;}
+  const d=await r.json();totpPendingSecret=d.secret;
+  const qrWrap=document.getElementById('totp-qr-wrap');
+  qrWrap.innerHTML=`<p style="font-size:11px;color:var(--text3);word-break:break-all;font-family:'JetBrains Mono',monospace;background:var(--bg3);padding:8px;border-radius:4px">Secret: <b style="color:var(--accent)">${esc(d.secret)}</b></p>
+    <p style="font-size:11px;color:var(--text3);margin-top:6px">Enter this secret manually in your authenticator app (Google Authenticator, Authy, etc.).</p>`;
+  document.getElementById('totp-setup-step1').style.display='none';
+  document.getElementById('totp-setup-step2').style.display='';
+}
+async function totpVerify(){
+  const code=document.getElementById('totp-code-input').value.trim();
+  const msg=document.getElementById('totp-verify-msg');
+  if(!code){msg.className='status-msg status-err';msg.textContent='Enter the 6-digit code.';return;}
+  const r=await apiFetch('/api/users/me/totp/verify',{method:'POST',body:JSON.stringify({token:code})});
+  if(r.ok){
+    document.getElementById('totp-setup-step2').style.display='none';
+    document.getElementById('totp-enabled-wrap').style.display='';
+    showToast('2FA enabled','success');
+  } else {const d=await r.json();msg.className='status-msg status-err';msg.textContent=d.error||'Invalid code.';}
+}
+async function totpDisable(){
+  const code=document.getElementById('totp-disable-input').value.trim();
+  const msg=document.getElementById('totp-disable-msg');
+  if(!code){msg.className='status-msg status-err';msg.textContent='Enter your current 6-digit code.';return;}
+  const r=await apiFetch('/api/users/me/totp',{method:'DELETE',body:JSON.stringify({token:code})});
+  if(r.ok){
+    document.getElementById('totp-enabled-wrap').style.display='none';
+    document.getElementById('totp-setup-step1').style.display='';
+    document.getElementById('totp-disable-input').value='';
+    showToast('2FA disabled','success');
+  } else {const d=await r.json();msg.className='status-msg status-err';msg.textContent=d.error||'Failed.';}
+}
+async function downloadBackup(){
+  const s=document.getElementById('settings-backup-status');
+  s.textContent='Preparing backup…';s.className='status-msg';
+  try{
+    const token=localStorage.getItem('chronicle_token');
+    const r=await fetch(`${API}/api/backup`,{headers:{Authorization:`Bearer ${token}`}});
+    if(!r.ok){s.className='status-msg status-err';s.textContent='Backup failed.';return;}
+    const blob=await r.blob();
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download=r.headers.get('content-disposition')?.match(/filename="([^"]+)"/)?.[1]||'chronicle-backup.zip';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+    s.className='status-msg status-ok';s.textContent='Download started.';
+  }catch(e){s.className='status-msg status-err';s.textContent='Backup failed: '+e.message;}
+}
 async function saveProfile(){
   const name=document.getElementById('settings-char-name').value.trim();
   const cls=document.getElementById('settings-char-class').value.trim();
   const s=document.getElementById('settings-profile-status');
-  const r=await apiFetch('/api/profile',{method:'PUT',body:JSON.stringify({character_name:name,character_class:cls})});
+  const r=await apiFetch('/api/users/me',{method:'PUT',body:JSON.stringify({character_name:name,character_class:cls})});
   if(r.ok){
     if(currentUser){currentUser.character_name=name;currentUser.character_class=cls;}
     s.className='status-msg status-ok';s.textContent='Saved.';

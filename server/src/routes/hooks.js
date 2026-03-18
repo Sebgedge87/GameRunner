@@ -16,16 +16,22 @@ const router = express.Router();
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
   const campId = getCampaignId(req);
+  const limit = Math.min(parseInt(req.query.limit) || 200, 500);
+  const offset = parseInt(req.query.offset) || 0;
   let rows;
-  if (!campId) return res.json({ hooks: [] });
+  if (!campId) return res.json({ hooks: [], total: 0 });
   if (req.user.isGm) {
-    rows = db.prepare(`SELECT * FROM vault_files WHERE type = 'hook' AND campaign_id = ? ORDER BY synced_at DESC`).all(campId);
+    rows = db.prepare(`SELECT * FROM vault_files WHERE type = 'hook' AND campaign_id = ? ORDER BY synced_at DESC LIMIT ? OFFSET ?`).all(campId, limit, offset);
   } else {
     const visClause = `AND (hidden IS NULL OR hidden = 0 OR EXISTS (SELECT 1 FROM item_shares WHERE item_type='hook' AND item_id=vault_files.id AND user_id=?))`;
-    rows = db.prepare(`SELECT * FROM vault_files WHERE type = 'hook' ${visClause} AND campaign_id = ? ORDER BY synced_at DESC`).all(req.user.id, campId);
+    rows = db.prepare(`SELECT * FROM vault_files WHERE type = 'hook' ${visClause} AND campaign_id = ? ORDER BY synced_at DESC LIMIT ? OFFSET ?`).all(req.user.id, campId, limit, offset);
   }
-  const hooks = rows.map((r) => ({ id: r.id, path: r.path, title: r.title, hidden: r.hidden || 0, ...JSON.parse(r.frontmatter || '{}') }));
-  res.json({ hooks });
+  const hooks = rows.map((r) => {
+    let fm = {};
+    try { fm = JSON.parse(r.frontmatter || '{}'); } catch (e) { console.warn(`[hooks] Bad frontmatter for ${r.path}:`, e.message); }
+    return { id: r.id, path: r.path, title: r.title, hidden: r.hidden || 0, ...fm };
+  });
+  res.json({ hooks, limit, offset });
 });
 
 router.post('/', requireGm, (req, res) => {
