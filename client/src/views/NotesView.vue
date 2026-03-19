@@ -29,7 +29,7 @@
               <span v-if="n.category" class="tag">{{ n.category }}</span>
               <span v-if="n.shared_with_gm" style="font-size:10px;color:var(--text3)">shared w/GM</span>
             </div>
-            <div class="note-card-body">{{ (n.body || '').slice(0, 120) }}{{ (n.body || '').length > 120 ? '…' : '' }}</div>
+            <div class="note-card-body">{{ stripMd(n.body, 120) }}</div>
             <div class="note-card-footer">
               <span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace">{{ fmt(n.updated_at) }}</span>
               <button class="delete-btn" @click.stop="deleteNote(n.id)">DELETE</button>
@@ -74,6 +74,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { stripMd } from '@/utils/markdown'
 import { useDataStore } from '@/stores/data'
 import MarkdownEditor from '@/components/MarkdownEditor.vue'
 

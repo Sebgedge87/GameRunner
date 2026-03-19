@@ -23,7 +23,7 @@
           <span v-if="npc.disposition" class="tag" :class="dispositionClass(npc.disposition)">{{ npc.disposition }}</span>
         </template>
         <template #body>
-          <div v-if="npc.description" class="card-overview">{{ npc.description }}</div>
+          <div v-if="npc.description" class="card-overview">{{ stripMd(npc.description) }}</div>
           <div v-if="npc.faction" class="card-meta">⚔️ {{ npc.faction }}</div>
           <div v-if="npc.location" class="card-meta">📍 {{ npc.location }}</div>
           <div v-if="npc.connected_to?.length" class="card-meta">Linked: {{ npc.connected_to.join(', ') }}</div>
@@ -38,6 +38,7 @@
 </template>
 
 <script setup>
+import { stripMd } from '@/utils/markdown'
 import { ref, computed, onMounted } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'

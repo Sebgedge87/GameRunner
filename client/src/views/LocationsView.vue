@@ -39,7 +39,7 @@
             <span v-if="campaign.currentPartyLocationId === String(loc.id)" class="tag tag-active">📍 Party here</span>
           </template>
           <template #body>
-            <div v-if="loc.description" class="card-overview">{{ loc.description }}</div>
+            <div v-if="loc.description" class="card-overview">{{ stripMd(loc.description) }}</div>
             <div v-if="loc.parent_location_id" class="card-meta">↳ Sub-location</div>
           </template>
           <template #actions>
@@ -77,7 +77,7 @@
             <span class="nb-job-title">{{ job.title }}</span>
             <span class="nb-job-diff tag" :class="diffClass(job.difficulty)">{{ job.difficulty || 'medium' }}</span>
           </div>
-          <div v-if="job.description" class="nb-job-desc">{{ job.description }}</div>
+          <div v-if="job.description" class="nb-job-desc">{{ stripMd(job.description) }}</div>
           <div class="nb-job-footer">
             <span v-if="job.reward" class="nb-reward">💰 {{ job.reward }}</span>
             <span v-if="job.posted_by" class="nb-poster">by {{ job.posted_by }}</span>
@@ -93,6 +93,7 @@
 </template>
 
 <script setup>
+import { stripMd } from '@/utils/markdown'
 import { ref, computed, onMounted, watch } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'

@@ -26,7 +26,7 @@
           <span v-if="handout.session_delivered" class="tag">Session {{ handout.session_delivered }}</span>
         </template>
         <template #body>
-          <div v-if="handout.description" class="card-overview">{{ handout.description }}</div>
+          <div v-if="handout.description" class="card-overview">{{ stripMd(handout.description) }}</div>
         </template>
       </EntityCard>
     </div>
@@ -35,6 +35,7 @@
 </template>
 
 <script setup>
+import { stripMd } from '@/utils/markdown'
 import { ref, computed, onMounted } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'

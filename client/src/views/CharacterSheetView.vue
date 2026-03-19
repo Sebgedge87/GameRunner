@@ -91,8 +91,8 @@
       <!-- Notes / Backstory -->
       <div v-if="sheet.notes || sheet.backstory" class="card" style="margin-bottom:16px">
         <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">NOTES</div>
-        <div v-if="sheet.backstory" style="font-size:0.85em;opacity:0.8;margin-bottom:10px;line-height:1.6">{{ sheet.backstory }}</div>
-        <div v-if="sheet.notes" style="font-size:0.85em;opacity:0.7;line-height:1.6">{{ sheet.notes }}</div>
+        <div v-if="sheet.backstory" class="prose" style="font-size:0.85em;opacity:0.8;margin-bottom:10px;line-height:1.6" v-html="renderMd(sheet.backstory)"></div>
+        <div v-if="sheet.notes" class="prose" style="font-size:0.85em;opacity:0.7;line-height:1.6" v-html="renderMd(sheet.notes)"></div>
       </div>
 
       <!-- Ships / Vehicles (for sci-fi systems) -->
@@ -127,6 +127,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { renderMd } from '@/utils/markdown'
 import { useDataStore } from '@/stores/data'
 import { useAuthStore } from '@/stores/auth'
 import { useCampaignStore } from '@/stores/campaign'

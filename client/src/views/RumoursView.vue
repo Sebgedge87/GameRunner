@@ -23,7 +23,7 @@
           <span v-if="campaign.isGm" class="tag" :class="rumour.is_true ? 'tag-active' : 'tag-inactive'">{{ rumour.is_true ? 'True' : 'False' }}</span>
         </template>
         <template #body>
-          <div v-if="rumour.text && rumour.text.length > 60" class="card-overview">{{ rumour.text }}</div>
+          <div v-if="rumour.text && rumour.text.length > 60" class="card-overview">{{ stripMd(rumour.text) }}</div>
         </template>
         <template #actions>
           <button v-if="campaign.isGm" class="btn btn-sm" @click.stop="exposeRumour(rumour.id)">📢 Expose</button>
@@ -35,6 +35,7 @@
 </template>
 
 <script setup>
+import { stripMd } from '@/utils/markdown'
 import { ref, computed, onMounted } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'

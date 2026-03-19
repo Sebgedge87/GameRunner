@@ -16,8 +16,8 @@
       >
         <template #badges></template>
         <template #body>
-          <div v-if="faction.description" class="card-overview">{{ faction.description }}</div>
-          <div v-if="faction.goals" class="card-meta">Goals: {{ faction.goals }}</div>
+          <div v-if="faction.description" class="card-overview">{{ stripMd(faction.description) }}</div>
+          <div v-if="faction.goals" class="card-meta">Goals: {{ stripMd(faction.goals, 80) }}</div>
           <div v-if="faction.reputation != null" style="margin-top:4px">
             <div style="display:flex;justify-content:space-between;font-size:0.75em;opacity:0.6;margin-bottom:4px">
               <span>Hostile</span>
@@ -36,6 +36,7 @@
 </template>
 
 <script setup>
+import { stripMd } from '@/utils/markdown'
 import { ref, computed, onMounted } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'

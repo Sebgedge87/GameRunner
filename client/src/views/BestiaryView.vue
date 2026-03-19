@@ -21,7 +21,7 @@
           <span v-if="creature.stats?.hp != null" class="tag">HP {{ creature.stats.hp }}</span>
         </template>
         <template #body>
-          <div v-if="creature.description" class="card-overview">{{ creature.description }}</div>
+          <div v-if="creature.description" class="card-overview">{{ stripMd(creature.description) }}</div>
         </template>
         <template #actions>
           <button v-if="campaign.isGm" class="btn btn-sm" @click.stop="revealCreature(creature.id, !creature.revealed)">{{ creature.revealed ? '👁 Hide' : '⭐ Reveal' }}</button>
@@ -33,6 +33,7 @@
 </template>
 
 <script setup>
+import { stripMd } from '@/utils/markdown'
 import { ref, computed, onMounted } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'

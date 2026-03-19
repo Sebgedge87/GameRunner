@@ -22,7 +22,7 @@
           <span v-if="hook.status" class="tag" :class="statusClass(hook.status)">{{ hook.status }}</span>
         </template>
         <template #body>
-          <div v-if="hook.description" class="card-overview">{{ hook.description }}</div>
+          <div v-if="hook.description" class="card-overview">{{ stripMd(hook.description) }}</div>
           <div v-if="hook.session_delivered" class="card-meta">Delivered: Session {{ hook.session_delivered }}</div>
           <div v-if="hook.connected_to?.length" class="card-meta">Linked: {{ hook.connected_to.join(', ') }}</div>
         </template>
@@ -33,6 +33,7 @@
 </template>
 
 <script setup>
+import { stripMd } from '@/utils/markdown'
 import { ref, computed, onMounted } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'
