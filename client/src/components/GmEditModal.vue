@@ -1,6 +1,6 @@
 <template>
   <div v-if="ui.gmEditModal" class="modal-overlay open" @click.self="ui.closeGmEdit()">
-    <div class="modal" :style="{ maxWidth: ['bestiary','npc','location','faction','job','timeline'].includes(type) ? '700px' : '520px' }">
+    <div class="modal" :style="{ maxWidth: ['bestiary','npc','location','faction','job','timeline','map'].includes(type) ? '700px' : '520px' }">
       <div class="modal-title">{{ title }}</div>
       <div class="gm-modal-body">
         <!-- Quest -->
@@ -251,42 +251,65 @@
         <!-- Map -->
         <template v-else-if="type === 'map'">
           <div class="form-group"><label>Title</label><input v-model="f.title" class="form-input" /></div>
-          <div class="form-group"><label>Description</label><textarea v-model="f.description" class="form-input" rows="3"></textarea></div>
-          <div class="form-group"><label>Type</label>
-            <select v-model="f.map_type" class="form-input">
-              <option value="world">World</option><option value="region">Region</option>
-              <option value="city">City</option><option value="dungeon">Dungeon</option><option value="encounter">Encounter</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Linked Location</label>
-            <select v-model="f.map_linked_location_id" class="form-input">
-              <option :value="null">— None —</option>
-              <option v-for="loc in data.locations" :key="loc.id" :value="loc.id">{{ loc.title || loc.name }}</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Mind Map Links <span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace">(hold Ctrl/Cmd to multi-select)</span></label>
-            <select v-model="f.map_connected_to" class="form-input" multiple style="height:80px">
-              <option v-for="q in data.quests" :key="'q'+q.id" :value="q.title">{{ q.title }} (Quest)</option>
-              <option v-for="n in data.npcs" :key="'n'+n.id" :value="n.title||n.name">{{ n.title||n.name }} (NPC)</option>
-              <option v-for="l in data.locations" :key="'l'+l.id" :value="l.title||l.name">{{ l.title||l.name }} (Location)</option>
-              <option v-for="h in data.hooks" :key="'h'+h.id" :value="h.title">{{ h.title }} (Hook)</option>
-            </select>
-          </div>
-          <div class="form-group"><label>GM Notes</label><textarea v-model="f.gm_notes" class="form-input" rows="2" placeholder="Private — players never see this"></textarea></div>
-          <div class="form-group">
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px">
-              <input type="checkbox" v-model="f.map_gm_only" style="width:auto;margin:0" />
-              GM Only — hidden from players
-            </label>
-          </div>
-          <div class="form-group">
-            <label>Map Image{{ isEdit ? ' (leave blank to keep current)' : '' }}</label>
-            <input type="file" ref="imgInput" class="form-input" accept="image/*" @change="onMapImgChange" />
-            <img v-if="mapImgPreview || (isEdit && ui.gmEditModal?.data?.image_path)"
-                 :src="mapImgPreview || ('/uploads/' + ui.gmEditModal?.data?.image_path)"
-                 style="margin-top:8px;max-width:100%;max-height:140px;border-radius:4px;border:1px solid var(--border2);object-fit:contain" />
+          <div class="entity-form-grid">
+            <!-- Sidebar -->
+            <div class="efg-sidebar">
+              <div class="efg-stat-block" style="margin-top:0">
+                <div class="efg-stat-title">Details</div>
+                <div class="form-group">
+                  <label class="efg-label">Type</label>
+                  <select v-model="f.map_type" class="form-input">
+                    <option value="world">World</option>
+                    <option value="region">Region</option>
+                    <option value="city">City</option>
+                    <option value="dungeon">Dungeon</option>
+                    <option value="encounter">Encounter</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="efg-label" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                    <input type="checkbox" v-model="f.map_gm_only" style="width:auto;margin:0" />
+                    GM Only
+                  </label>
+                </div>
+              </div>
+              <div class="efg-stat-block">
+                <div class="efg-stat-title">Map Image</div>
+                <div class="form-group">
+                  <label class="btn btn-sm efg-upload-btn" style="width:100%;text-align:center;cursor:pointer">
+                    {{ isEdit ? 'Replace Image' : 'Upload Image' }}
+                    <input type="file" ref="imgInput" accept="image/*" style="display:none" @change="onMapImgChange" />
+                  </label>
+                  <img v-if="mapImgPreview || (isEdit && ui.gmEditModal?.data?.image_path)"
+                       :src="mapImgPreview || ('/uploads/' + ui.gmEditModal?.data?.image_path)"
+                       style="margin-top:8px;max-width:100%;max-height:120px;border-radius:4px;border:1px solid var(--border2);object-fit:contain" />
+                </div>
+              </div>
+            </div>
+            <!-- Body -->
+            <div class="efg-body">
+              <div class="form-group">
+                <label class="efg-label">Description</label>
+                <MarkdownEditor v-model="f.description" :minRows="5" placeholder="Describe this map's region, history, and notable features…" />
+              </div>
+              <div class="form-group">
+                <label class="efg-label">Linked Location</label>
+                <EntityLookup v-model="f.map_linked_location_id" :options="data.locations.map(x=>({id:x.id,title:x.title||x.name}))" placeholder="Search locations…" />
+              </div>
+              <div class="form-group">
+                <label class="efg-label">Mind Map Links <span style="font-size:10px;color:var(--text3)">(hold Ctrl/Cmd to multi-select)</span></label>
+                <select v-model="f.map_connected_to" class="form-input" multiple style="height:80px">
+                  <option v-for="q in data.quests" :key="'q'+q.id" :value="q.title">{{ q.title }} (Quest)</option>
+                  <option v-for="n in data.npcs" :key="'n'+n.id" :value="n.title||n.name">{{ n.title||n.name }} (NPC)</option>
+                  <option v-for="l in data.locations" :key="'l'+l.id" :value="l.title||l.name">{{ l.title||l.name }} (Location)</option>
+                  <option v-for="h in data.hooks" :key="'h'+h.id" :value="h.title">{{ h.title }} (Hook)</option>
+                </select>
+              </div>
+              <div class="efg-gm-notes">
+                <div class="efg-gm-hdr"><span class="bst-gm-badge">🔒 GM Only</span><span class="bst-gm-notes-title">Private Notes</span></div>
+                <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Private — players never see this…" />
+              </div>
+            </div>
           </div>
         </template>
 
