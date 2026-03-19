@@ -172,7 +172,8 @@ runMigrations();
 startVaultWatcher();
 
 app.listen(port, () => {
-  console.log(`\n⚔️  The Chronicle API running at http://localhost:${port}`);
-  console.log(`📖  Health: http://localhost:${port}/api/health`);
-  console.log(`📡  SSE:    http://localhost:${port}/api/events\n`);
+  const host = process.env.PUBLIC_HOST || `localhost:${port}`
+  console.log(`\n⚔️  The Chronicle API running at http://${host}`);
+  console.log(`📖  Health: http://${host}/api/health`);
+  console.log(`📡  SSE:    http://${host}/api/events\n`);
 });

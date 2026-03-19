@@ -44,14 +44,16 @@ export const useDataStore = defineStore('data', () => {
   const polls = ref([])
   const scheduling = ref([])
 
-  function apif(path, opts = {}) {
+  async function apif(path, opts = {}) {
     const headers = {
       Authorization: `Bearer ${auth.token}`,
       'Content-Type': 'application/json',
       ...(opts.headers || {}),
     }
     if (campaign.activeCampaign?.id) headers['X-Campaign-Id'] = campaign.activeCampaign.id
-    return fetch(path, { ...opts, headers })
+    const r = await fetch(path, { ...opts, headers })
+    if (r.status === 401) auth.logout()
+    return r
   }
 
   async function loadAll() {
