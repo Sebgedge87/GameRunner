@@ -897,7 +897,7 @@ async function save() {
       case 'hook':
         body = { title: f.title, description: f.description, status: f.status }; break
       case 'handout':
-        body = { title: f.title, body: f.content, file_path: imageUrl || null, file_type: imageUrl ? 'image' : 'text', share_with: f.user_id ? [Number(f.user_id)] : [] }; break
+        body = { title: f.title, body: f.content, file_path: imageUrl || null, file_type: imageUrl ? 'image' : 'markdown', share_with: f.user_id ? [Number(f.user_id)] : [] }; break
       case 'session':
         body = { title: f.title, summary: f.description, session_date: f.date }; break
       case 'map':

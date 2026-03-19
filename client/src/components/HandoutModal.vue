@@ -2,14 +2,13 @@
   <div v-if="ui.activeFlyout === 'handout'" class="modal-overlay open" style="z-index:250" @click.self="close">
     <div v-if="handout" class="modal">
       <div class="modal-title">{{ handout.title }}</div>
-      <div class="modal-from">
-        Type: {{ handout.file_type || 'text' }}{{ handout.shared_at ? ' · Shared: ' + fmt(handout.shared_at) : '' }}
-      </div>
+      <div v-if="handout.shared_at" class="modal-from">Shared: {{ fmt(handout.shared_at) }}</div>
       <img v-if="handout.file_type === 'image' && handout.file_path"
         class="modal-img"
         :src="handout.file_path"
         alt="" />
-      <div v-else class="modal-body">{{ handout.body || '' }}</div>
+      <div v-else-if="handout.body" class="modal-body prose" v-html="renderMd(handout.body)"></div>
+      <div v-else class="modal-body" style="color:var(--text3);font-style:italic">No content.</div>
       <div class="modal-actions">
         <button class="modal-close" @click="close">CLOSE</button>
         <button v-if="handout.requires_ack && !handout.acked_at" class="btn btn-primary btn-sm" @click="ack">
@@ -22,6 +21,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { marked } from 'marked'
 import { useUiStore } from '@/stores/ui'
 import { useDataStore } from '@/stores/data'
 
@@ -29,6 +29,8 @@ const ui = useUiStore()
 const data = useDataStore()
 
 const handout = computed(() => ui.viewingHandout || null)
+
+function renderMd(text) { return marked.parse(text || '', { breaks: true }) }
 
 function fmt(ts) {
   if (!ts) return ''
