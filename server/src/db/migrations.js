@@ -522,6 +522,11 @@ function runMigrations() {
     UNIQUE(npc_id, related_npc_id)
   )`);
 
+  // Profile columns on users (guard for DBs created before these were in the schema)
+  try { db.exec('ALTER TABLE users ADD COLUMN character_name TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE users ADD COLUMN character_class TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE users ADD COLUMN character_level INTEGER DEFAULT 1'); } catch (_) {}
+
   // TOTP secret column on users
   try { db.exec('ALTER TABLE users ADD COLUMN totp_secret TEXT'); } catch (_) {}
   try { db.exec('ALTER TABLE users ADD COLUMN totp_enabled INTEGER DEFAULT 0'); } catch (_) {}
