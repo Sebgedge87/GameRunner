@@ -31,7 +31,7 @@
       >
         <!-- Portrait -->
         <div class="npc-portrait">
-          <img v-if="npc.image" :src="npc.image" class="npc-portrait-img" alt="" />
+          <img v-if="npc.image_url" :src="npc.image_url" class="npc-portrait-img" alt="" />
           <div v-else class="npc-portrait-empty">👤</div>
         </div>
 

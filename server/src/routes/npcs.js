@@ -82,6 +82,7 @@ router.put('/:id', requireGm, (req, res) => {
   const title = name || req.body.title || existing.title;
   const content = matter.stringify(description || '', { title, description: description || '', role, gm_notes, image_url, status, race, disposition });
   fs.writeFileSync(fullPath, content, 'utf8');
+  syncFile(fullPath);
   db.prepare(`UPDATE vault_files SET race=COALESCE(?,race), disposition=COALESCE(?,disposition), faction_id=COALESCE(?,faction_id), home_location_id=COALESCE(?,home_location_id), gm_notes=COALESCE(?,gm_notes), player_notes=COALESCE(?,player_notes) WHERE id=?`)
     .run(race ?? null, disposition ?? null, faction_id ?? null, home_location_id ?? null, gm_notes ?? null, player_notes ?? null, req.params.id);
   auditLog(req, 'update', 'npc', Number(req.params.id), title);
