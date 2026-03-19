@@ -168,4 +168,15 @@ router.delete('/:id/members/:userId', requireGm, (req, res) => {
   res.json({ success: true });
 });
 
+// PUT /api/campaigns/:id/party-location — any member sets current party location
+// Body: { location_id: <number|"TRAVELING"> }
+router.put('/:id/party-location', requireAuth, (req, res) => {
+  const { location_id } = req.body;
+  if (location_id === undefined) return res.status(400).json({ error: 'location_id required' });
+  const value = location_id === 'TRAVELING' || location_id === null ? String(location_id ?? 'TRAVELING') : String(location_id);
+  const db = getDb();
+  db.prepare('UPDATE campaigns SET current_party_location_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(value, req.params.id);
+  res.json({ success: true, current_party_location_id: value });
+});
+
 module.exports = router;

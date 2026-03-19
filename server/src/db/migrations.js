@@ -526,6 +526,77 @@ function runMigrations() {
   try { db.exec('ALTER TABLE bestiary ADD COLUMN gm_notes TEXT'); } catch (_) {}
   try { db.exec('ALTER TABLE bestiary ADD COLUMN player_notes TEXT'); } catch (_) {}
 
+  // ── World-Engine Phase 1: Relational schema additions ──────────────────────
+
+  // vault_files: ownership + relational FK columns for npcs and locations
+  try { db.exec('ALTER TABLE vault_files ADD COLUMN created_by INTEGER REFERENCES users(id)'); } catch (_) {}
+  try { db.exec('ALTER TABLE vault_files ADD COLUMN gm_notes TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE vault_files ADD COLUMN player_notes TEXT'); } catch (_) {}
+  // NPC-specific
+  try { db.exec('ALTER TABLE vault_files ADD COLUMN race TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE vault_files ADD COLUMN disposition TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE vault_files ADD COLUMN faction_id INTEGER REFERENCES factions(id)'); } catch (_) {}
+  try { db.exec('ALTER TABLE vault_files ADD COLUMN home_location_id INTEGER REFERENCES vault_files(id)'); } catch (_) {}
+  // Location-specific
+  try { db.exec('ALTER TABLE vault_files ADD COLUMN danger_level INTEGER DEFAULT 0'); } catch (_) {}
+  try { db.exec('ALTER TABLE vault_files ADD COLUMN location_type TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE vault_files ADD COLUMN parent_location_id INTEGER REFERENCES vault_files(id)'); } catch (_) {}
+
+  // factions: relational + standing/influence
+  try { db.exec('ALTER TABLE factions ADD COLUMN standing INTEGER DEFAULT 0'); } catch (_) {}
+  try { db.exec('ALTER TABLE factions ADD COLUMN influence INTEGER DEFAULT 3'); } catch (_) {}
+  try { db.exec('ALTER TABLE factions ADD COLUMN leader_npc_id INTEGER REFERENCES vault_files(id)'); } catch (_) {}
+  try { db.exec('ALTER TABLE factions ADD COLUMN hq_location_id INTEGER REFERENCES vault_files(id)'); } catch (_) {}
+  try { db.exec('ALTER TABLE factions ADD COLUMN gm_notes TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE factions ADD COLUMN player_notes TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE factions ADD COLUMN created_by INTEGER REFERENCES users(id)'); } catch (_) {}
+
+  // faction_members junction table
+  db.exec(`CREATE TABLE IF NOT EXISTS faction_members (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    faction_id INTEGER NOT NULL REFERENCES factions(id) ON DELETE CASCADE,
+    npc_id INTEGER NOT NULL REFERENCES vault_files(id) ON DELETE CASCADE,
+    campaign_id INTEGER REFERENCES campaigns(id),
+    added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(faction_id, npc_id)
+  )`);
+
+  // jobs: source location FK + acceptance tracking
+  try { db.exec('ALTER TABLE jobs ADD COLUMN source_location_id INTEGER REFERENCES vault_files(id)'); } catch (_) {}
+  try { db.exec('ALTER TABLE jobs ADD COLUMN accepted_by_id INTEGER REFERENCES users(id)'); } catch (_) {}
+  try { db.exec('ALTER TABLE jobs ADD COLUMN accepted_at DATETIME'); } catch (_) {}
+  try { db.exec('ALTER TABLE jobs ADD COLUMN job_type TEXT DEFAULT \'bounty\''); } catch (_) {}
+  try { db.exec('ALTER TABLE jobs ADD COLUMN gm_notes TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE jobs ADD COLUMN player_notes TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE jobs ADD COLUMN created_by INTEGER REFERENCES users(id)'); } catch (_) {}
+
+  // inventory: ownership tracking
+  try { db.exec('ALTER TABLE inventory ADD COLUMN owner_id INTEGER REFERENCES users(id)'); } catch (_) {}
+  try { db.exec('ALTER TABLE inventory ADD COLUMN created_by INTEGER REFERENCES users(id)'); } catch (_) {}
+
+  // key_items: ownership
+  try { db.exec('ALTER TABLE key_items ADD COLUMN created_by INTEGER REFERENCES users(id)'); } catch (_) {}
+
+  // campaigns: party location tracking
+  try { db.exec("ALTER TABLE campaigns ADD COLUMN current_party_location_id TEXT DEFAULT NULL"); } catch (_) {}
+
+  // timeline_events: significance + notes + creator
+  try { db.exec('ALTER TABLE timeline_events ADD COLUMN significance TEXT DEFAULT \'minor\''); } catch (_) {}
+  try { db.exec('ALTER TABLE timeline_events ADD COLUMN gm_notes TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE timeline_events ADD COLUMN player_notes TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE timeline_events ADD COLUMN created_by INTEGER REFERENCES users(id)'); } catch (_) {}
+
+  // timeline_entity_links: multi-entity connections for timeline events
+  db.exec(`CREATE TABLE IF NOT EXISTS timeline_entity_links (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id INTEGER NOT NULL REFERENCES timeline_events(id) ON DELETE CASCADE,
+    entity_type TEXT NOT NULL,
+    entity_id INTEGER NOT NULL,
+    campaign_id INTEGER REFERENCES campaigns(id),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(event_id, entity_type, entity_id)
+  )`);
+
   console.log('✅ Migrations complete.');
 }
 

@@ -5,6 +5,26 @@
       <div class="page-sub">Party gear &amp; key items</div>
     </div>
 
+    <!-- Transfer modal -->
+    <div v-if="transferItem" class="modal-overlay open" @click.self="transferItem = null">
+      <div class="modal" style="max-width:360px">
+        <div class="modal-title">Give "{{ transferItem.name }}"</div>
+        <div class="gm-modal-body">
+          <div class="form-group">
+            <label>Give to</label>
+            <select v-model="transferTargetId" class="form-input">
+              <option value="">Select player…</option>
+              <option v-for="u in data.users.filter(u => u.id !== auth.user?.id)" :key="u.id" :value="u.id">{{ u.username }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="modal-close" @click="transferItem = null">CANCEL</button>
+          <button class="submit-btn" :disabled="!transferTargetId || transferring" @click="doTransfer">{{ transferring ? 'GIVING…' : 'GIVE' }}</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Party Inventory -->
     <div class="section-divider">Party Inventory</div>
 
@@ -30,11 +50,15 @@
         <template #badges>
           <span v-if="item.type" class="tag">{{ item.type }}</span>
           <span v-if="item.rarity" class="tag" :class="rarityClass(item.rarity)">{{ item.rarity }}</span>
+          <span v-if="item.holder && item.holder !== 'party'" class="tag tag-info">{{ item.holder }}</span>
         </template>
         <template #body>
           <div v-if="item.quantity != null" class="card-meta">Qty: {{ item.quantity }}</div>
           <div v-if="item.description" class="card-overview">{{ item.description }}</div>
           <div v-if="item.weight != null" class="card-meta">Weight: {{ item.weight }}</div>
+        </template>
+        <template #actions>
+          <button v-if="canGive(item)" class="btn btn-xs" @click.stop="openTransfer(item)">Give ↗</button>
         </template>
       </EntityCard>
     </div>
@@ -78,11 +102,49 @@ import { ref, computed, onMounted } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
+import { useAuthStore } from '@/stores/auth'
 import EntityCard from '@/components/EntityCard.vue'
 
 const data = useDataStore()
 const campaign = useCampaignStore()
 const ui = useUiStore()
+const auth = useAuthStore()
+
+const transferItem = ref(null)
+const transferTargetId = ref('')
+const transferring = ref(false)
+
+function canGive(item) {
+  if (campaign.isGm) return true
+  return item.owner_id === auth.user?.id
+}
+
+function openTransfer(item) {
+  transferItem.value = item
+  transferTargetId.value = ''
+}
+
+async function doTransfer() {
+  if (!transferTargetId.value || !transferItem.value) return
+  transferring.value = true
+  try {
+    const r = await data.apif(`/api/inventory/${transferItem.value.id}/transfer`, {
+      method: 'PUT',
+      body: JSON.stringify({ target_user_id: transferTargetId.value }),
+    })
+    if (r.ok) {
+      const d = await r.json()
+      ui.showToast(`Given to ${d.new_owner}`, transferItem.value.name, '↗')
+      transferItem.value = null
+      await data.loadInventory()
+    } else {
+      const d = await r.json().catch(() => ({}))
+      ui.showToast('Transfer failed', d.error || '', '✗')
+    }
+  } finally {
+    transferring.value = false
+  }
+}
 
 const invSearch = ref('')
 const invTab = ref('all')

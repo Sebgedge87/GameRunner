@@ -30,18 +30,23 @@ router.get('/', requireAuth, (req, res) => {
   const npcs = rows.map((r) => {
     let fm = {};
     try { fm = JSON.parse(r.frontmatter || '{}'); } catch (e) { console.warn(`[npcs] Bad frontmatter for ${r.path}:`, e.message); }
-    return { id: r.id, path: r.path, title: r.title, hidden: r.hidden || 0, ...fm };
+    return { id: r.id, path: r.path, title: r.title, hidden: r.hidden || 0,
+             race: r.race, disposition: r.disposition, faction_id: r.faction_id,
+             home_location_id: r.home_location_id, gm_notes: r.gm_notes,
+             player_notes: r.player_notes, ...fm };
   });
   res.json({ npcs, limit, offset });
 });
 
 router.post('/', requireGm, (req, res) => {
-  const { name, role = '', description = '', gm_notes = '', image_url = '' } = req.body;
+  const { name, role = '', description = '', gm_notes = '', player_notes = '', image_url = '',
+          race = '', disposition = '', faction_id, home_location_id } = req.body;
   const title = name || req.body.title;
   if (!title) return res.status(400).json({ error: 'name is required' });
   const filename = `${slug(title)}-${Date.now()}.md`;
-  const content = matter.stringify(description, { title, description, role, gm_notes, image_url, status: 'active' });
-  const camp = getDb().prepare('SELECT id, name FROM campaigns WHERE active = 1 LIMIT 1').get();
+  const content = matter.stringify(description, { title, description, role, gm_notes, image_url, status: 'active', race, disposition });
+  const db = getDb();
+  const camp = db.prepare('SELECT id, name FROM campaigns WHERE active = 1 LIMIT 1').get();
   const campSlug = camp ? slug(camp.name) : null;
   const targetDir = campSlug ? path.join(vaultPath, campSlug, 'NPCs') : VAULT_DIR;
   if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
@@ -49,8 +54,12 @@ router.post('/', requireGm, (req, res) => {
   const fullPath = path.join(targetDir, filename);
   fs.writeFileSync(fullPath, content, 'utf8');
   syncFile(fullPath);
-  const row = getDb().prepare(`SELECT * FROM vault_files WHERE path = ?`).get(relPath);
-  const npc = row ? { id: row.id, path: row.path, title: row.title, ...JSON.parse(row.frontmatter || '{}') } : { title, role };
+  const row = db.prepare(`SELECT * FROM vault_files WHERE path = ?`).get(relPath);
+  if (row) {
+    db.prepare(`UPDATE vault_files SET race=?, disposition=?, faction_id=?, home_location_id=?, player_notes=?, created_by=? WHERE id=?`)
+      .run(race || null, disposition || null, faction_id || null, home_location_id || null, player_notes || null, req.user?.id || null, row.id);
+  }
+  const npc = row ? { id: row.id, path: row.path, title: row.title, ...JSON.parse(row.frontmatter || '{}'), race, disposition, faction_id, home_location_id } : { title, role };
   auditLog(req, 'create', 'npc', row?.id ?? null, title);
   res.status(201).json({ npc });
 });
@@ -67,11 +76,14 @@ router.put('/:id', requireGm, (req, res) => {
       return res.status(409).json({ error: 'File was modified externally. Reload before saving.', file_mtime: new Date(fileMtime).toISOString() });
     }
   }
+  const db = getDb();
   const existing = JSON.parse(row.frontmatter || '{}');
-  const { name, role, description, gm_notes, image_url, status } = { ...existing, ...req.body };
+  const { name, role, description, gm_notes, player_notes, image_url, status, race, disposition, faction_id, home_location_id } = { ...existing, ...req.body };
   const title = name || req.body.title || existing.title;
-  const content = matter.stringify(description || '', { title, description: description || '', role, gm_notes, image_url, status });
+  const content = matter.stringify(description || '', { title, description: description || '', role, gm_notes, image_url, status, race, disposition });
   fs.writeFileSync(fullPath, content, 'utf8');
+  db.prepare(`UPDATE vault_files SET race=COALESCE(?,race), disposition=COALESCE(?,disposition), faction_id=COALESCE(?,faction_id), home_location_id=COALESCE(?,home_location_id), gm_notes=COALESCE(?,gm_notes), player_notes=COALESCE(?,player_notes) WHERE id=?`)
+    .run(race ?? null, disposition ?? null, faction_id ?? null, home_location_id ?? null, gm_notes ?? null, player_notes ?? null, req.params.id);
   auditLog(req, 'update', 'npc', Number(req.params.id), title);
   res.json({ success: true });
 });

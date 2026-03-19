@@ -33,6 +33,7 @@
           <div v-if="job.connected_to?.length" class="card-meta">Linked: {{ job.connected_to.join(', ') }}</div>
         </template>
         <template #actions>
+          <button v-if="job.status === 'open' && !campaign.isGm" class="btn btn-sm btn-primary" @click.stop="acceptJob(job)">Accept</button>
           <button v-if="campaign.isGm && !job.promoted_quest_id" class="btn btn-sm" @click.stop="promoteToQuest(job.id)">→ Quest</button>
         </template>
       </EntityCard>
@@ -86,6 +87,17 @@ function statusClass(s) {
   if (v === 'completed') return 'tag-completed'
   if (v === 'failed' || v === 'expired') return 'tag-inactive'
   return ''
+}
+
+async function acceptJob(job) {
+  const r = await data.apif(`/api/jobs/${job.id}/accept`, { method: 'PUT' })
+  if (r.ok) {
+    ui.showToast('Job accepted!', job.title, '✓')
+    await data.loadJobs()
+  } else {
+    const d = await r.json().catch(() => ({}))
+    ui.showToast('Could not accept', d.error || '', '✗')
+  }
 }
 
 async function promoteToQuest(jobId) {
