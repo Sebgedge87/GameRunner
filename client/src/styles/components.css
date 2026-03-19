@@ -414,8 +414,7 @@ body[data-font-size="small"] .nav-item{font-size:12px;}
 .modal-close:hover{color:var(--text);border-color:var(--border2);}
 .modal-secret-badge{display:inline-block;background:#140f20;border:1px solid #4a2a70;color:var(--purple);font-size:10px;padding:2px 7px;border-radius:3px;font-family:'JetBrains Mono',monospace;margin-bottom:10px;}
 /* ── Detail Modal ────────────────────────────────────────────────────────────── */
-.detail-modal-box{max-width:760px;}
-.detail-grid{display:grid;grid-template-columns:160px 1fr;gap:0 20px;align-items:start;margin-top:4px;}
+.detail-grid{display:flex;flex-direction:column;gap:16px;margin-top:4px;}
 .detail-sidebar-col{display:flex;flex-direction:column;gap:16px;}
 .detail-sidebar-section{}
 .detail-sidebar-label{font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:5px;border-bottom:1px solid var(--border);padding-bottom:3px;}
