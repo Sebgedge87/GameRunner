@@ -1,77 +1,35 @@
 <template>
   <div class="page-content">
-    <div class="page-header">
-      <div class="page-title">Locations</div>
-    </div>
-
+    <div class="page-header"><div class="page-title">Locations</div></div>
     <div class="search-row" style="margin-bottom:12px">
-      <input
-        v-model="search"
-        class="form-input"
-        placeholder="Search locations…"
-        style="max-width:320px"
-      />
+      <input v-model="search" class="form-input" placeholder="Search locations…" style="max-width:320px" />
     </div>
-
     <div class="filter-tabs">
-      <button
-        v-for="tab in tabs"
-        :key="tab.value"
-        class="filter-tab"
-        :class="{ active: activeTab === tab.value }"
-        @click="activeTab = tab.value"
-      >{{ tab.label }}</button>
+      <button v-for="tab in tabs" :key="tab.value" class="filter-tab" :class="{ active: activeTab === tab.value }" @click="activeTab = tab.value">{{ tab.label }}</button>
     </div>
-
     <div class="card-grid">
       <div v-if="campaign.isGm" class="add-tile" @click="ui.openGmEdit('location', null, {})">
-        <div class="add-tile-icon">+</div>
-        <div class="add-tile-label">Add Location</div>
+        <div class="add-tile-icon">+</div><div class="add-tile-label">Add Location</div>
       </div>
-
-      <div
-        v-for="loc in filteredLocations"
-        :key="loc.id"
-        class="card"
-        :class="{ hidden: loc.hidden }"
-        @click="ui.openDetail('location', loc)"
+      <EntityCard
+        v-for="loc in filteredLocations" :key="loc.id"
+        :entity="loc" type="location" :title="loc.name" icon="📍"
+        :image="loc.image || null"
+        :expanded="expandedId === loc.id" :reload-fn="data.loadLocations"
+        @toggle="toggleExpand(loc.id)"
       >
-        <div v-if="loc.image" class="card-img">
-          <img :src="loc.image" :alt="loc.name" style="width:100%;height:120px;object-fit:cover;border-radius:4px 4px 0 0" />
-        </div>
-        <div class="card-body">
-          <div class="card-title">{{ loc.name }}</div>
-          <div class="card-meta">
-            <span v-if="loc.status" class="tag" :class="statusClass(loc.status)">{{ loc.status }}</span>
-            <span v-if="loc.danger" class="tag tag-inactive">⚠️ {{ loc.danger }}</span>
-          </div>
+        <template #badges>
+          <span v-if="loc.status" class="tag" :class="statusClass(loc.status)">{{ loc.status }}</span>
+          <span v-if="loc.danger" class="tag tag-inactive">⚠️ {{ loc.danger }}</span>
+        </template>
+        <template #body>
           <div v-if="loc.description" class="card-overview">{{ loc.description }}</div>
-          <div v-if="loc.visited_session" class="card-meta">
-            <span style="opacity:0.6;font-size:0.8em">Session {{ loc.visited_session }}</span>
-          </div>
-          <div v-if="loc.connected_to?.length" class="card-meta" style="margin-top:4px">
-            <span style="opacity:0.5;font-size:0.75em">Linked: {{ loc.connected_to.join(', ') }}</span>
-          </div>
-        </div>
-        <div class="card-actions" @click.stop>
-          <button class="btn btn-sm" title="Pin" @click="data.addPin('location', loc.id, loc.name)">📌</button>
-          <template v-if="campaign.isGm">
-            <button
-              class="btn btn-sm"
-              :title="loc.hidden ? 'Reveal' : 'Hide'"
-              @click="toggleHidden('location', loc.id)"
-            >{{ loc.hidden ? '👁' : '🙈' }}</button>
-            <button class="btn btn-sm" title="Share" @click="ui.openShare('location', loc.id, loc.name)">🔗</button>
-            <button class="btn btn-sm" title="Edit" @click="ui.openGmEdit('location', loc.id, loc)">✏️</button>
-            <button class="btn btn-sm btn-danger" title="Delete" @click="deleteItem('location', loc.id)">🗑</button>
-          </template>
-        </div>
-      </div>
+          <div v-if="loc.visited_session" class="card-meta">Session {{ loc.visited_session }}</div>
+          <div v-if="loc.connected_to?.length" class="card-meta">Linked: {{ loc.connected_to.join(', ') }}</div>
+        </template>
+      </EntityCard>
     </div>
-
-    <div v-if="filteredLocations.length === 0" class="empty-state">
-      No locations found.
-    </div>
+    <div v-if="filteredLocations.length === 0" class="empty-state">No locations found.</div>
   </div>
 </template>
 
@@ -80,13 +38,14 @@ import { ref, computed, onMounted } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
+import EntityCard from '@/components/EntityCard.vue'
 
 const data = useDataStore()
 const campaign = useCampaignStore()
 const ui = useUiStore()
-
 const search = ref('')
 const activeTab = ref('all')
+const expandedId = ref(null)
 
 const tabs = [
   { value: 'all', label: 'All' },
@@ -109,6 +68,8 @@ const filteredLocations = computed(() => {
   return list
 })
 
+function toggleExpand(id) { expandedId.value = expandedId.value === id ? null : id }
+
 function statusClass(status) {
   const s = status?.toLowerCase()
   if (s === 'safe' || s === 'friendly') return 'tag-active'
@@ -116,18 +77,5 @@ function statusClass(status) {
   return ''
 }
 
-async function toggleHidden(type, id) {
-  await data.toggleHidden(type, id)
-  await data.loadLocations()
-}
-
-async function deleteItem(type, id) {
-  if (!await ui.confirm('Delete this location?')) return
-  await data.deleteItem(type, id)
-  await data.loadLocations()
-}
-
-onMounted(() => {
-  if (!data.locations.length) data.loadLocations()
-})
+onMounted(() => { if (!data.locations.length) data.loadLocations() })
 </script>

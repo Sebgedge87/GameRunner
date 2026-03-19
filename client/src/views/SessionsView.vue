@@ -1,55 +1,80 @@
 <template>
   <div class="page-content">
-    <div class="page-header"><div class="page-title">Sessions</div><div class="page-sub">Campaign history &amp; scheduling</div></div>
+    <div class="page-header">
+      <div class="page-title">Sessions</div>
+      <div class="page-sub">Campaign history &amp; scheduling</div>
+      <div v-if="campaign.isGm" class="page-header-actions">
+        <button class="btn btn-sm" @click="ui.openGmEdit('session', null, {})">+ New Session</button>
+      </div>
+    </div>
 
     <!-- Sessions list -->
-    <div id="session-list">
+    <div class="card-grid" style="grid-template-columns:1fr">
       <div v-if="!data.sessions.length" class="empty-state">No sessions recorded.</div>
-      <div v-for="s in sortedSessions" :key="s.id" class="session-item">
-        <div class="session-header" @click="toggleSession(s.id)">
-          <div>
-            <div class="session-num">SESSION {{ s.number || '?' }}</div>
-            <div class="session-title-text">{{ s.title }}</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <div class="session-date">{{ fmt(s.played_at) }}</div>
-            <span style="font-size:11px;color:var(--text3)">{{ openSessions.has(s.id) ? '▲' : '▼' }}</span>
-            <template v-if="campaign.isGm">
-              <button class="btn btn-sm" @click.stop="ui.openGmEdit('session', s.id, s)">Edit</button>
-              <button class="btn btn-sm btn-danger" @click.stop="deleteSession(s.id)">Del</button>
-            </template>
+      <div
+        v-for="s in sortedSessions"
+        :key="s.id"
+        class="card session-card"
+        :class="{ expanded: openSessions.has(s.id) }"
+      >
+        <!-- Header — click to expand -->
+        <div class="ec-header" style="cursor:pointer" @click="toggleSession(s.id)">
+          <div class="ec-title-row">
+            <span class="ec-icon">📖</span>
+            <div style="flex:1">
+              <span class="ec-title">Session {{ s.number || '?' }}</span>
+              <span v-if="s.title" style="font-size:12px;color:var(--text3);margin-left:8px;font-family:var(--font-body);text-transform:none;letter-spacing:0;font-style:italic">{{ s.title }}</span>
+            </div>
+            <span class="session-date">{{ fmt(s.played_at) }}</span>
+            <span style="font-size:11px;color:var(--text3);margin-left:4px">{{ openSessions.has(s.id) ? '▲' : '▼' }}</span>
           </div>
         </div>
-        <div class="session-body" :class="{ open: openSessions.has(s.id) }">
-          <div v-if="s.summary" class="session-summary">{{ s.summary }}</div>
-          <div v-else style="color:var(--text3);font-size:12px">No summary recorded.</div>
 
-          <!-- Player notes -->
-          <template v-if="s.notes && s.notes.length">
-            <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin:10px 0 6px">PLAYER NOTES</div>
-            <div v-for="n in s.notes" :key="n.id" class="session-note">
-              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-                <div><b>{{ n.character_name || 'Anon' }}</b>: {{ n.body }}</div>
-                <div v-if="canEditNote(n)" style="display:flex;gap:4px;flex-shrink:0">
-                  <button class="btn btn-sm" @click="startEditNote(s.id, n)">Edit</button>
-                  <button class="btn btn-sm btn-danger" @click="deleteSessionNote(s.id, n.id)">Del</button>
+        <!-- Expanded body -->
+        <template v-if="openSessions.has(s.id)">
+          <div class="ec-body">
+            <!-- Summary -->
+            <div v-if="s.summary" class="session-summary">{{ s.summary }}</div>
+            <div v-else style="color:var(--text3);font-size:12px;font-style:italic">No summary recorded.</div>
+
+            <!-- Player notes -->
+            <template v-if="s.notes && s.notes.length">
+              <div class="session-section-label">Player Notes</div>
+              <div v-for="n in s.notes" :key="n.id" class="session-note">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+                  <div style="font-size:13px"><b>{{ n.character_name || 'Anon' }}</b>: {{ n.body }}</div>
+                  <div v-if="canEditNote(n)" style="display:flex;gap:4px;flex-shrink:0">
+                    <button class="btn btn-sm" @click="startEditNote(s.id, n)">Edit</button>
+                    <button class="btn btn-sm btn-danger" @click="deleteSessionNote(s.id, n.id)">Del</button>
+                  </div>
+                </div>
+                <div v-if="editingNote?.noteId === n.id" style="margin-top:6px">
+                  <textarea v-model="editingNote.body" class="form-input" rows="2" style="margin-bottom:4px"></textarea>
+                  <button class="btn btn-sm" @click="saveNoteEdit(s.id)">Save</button>
+                  <button class="btn btn-sm" @click="editingNote = null" style="margin-left:4px">Cancel</button>
                 </div>
               </div>
-              <div v-if="editingNote?.noteId === n.id" style="margin-top:6px">
-                <textarea v-model="editingNote.body" class="form-input" rows="2" style="margin-bottom:4px"></textarea>
-                <button class="btn btn-sm" @click="saveNoteEdit(s.id)">Save</button>
-                <button class="btn btn-sm" @click="editingNote = null" style="margin-left:4px">Cancel</button>
-              </div>
-            </div>
-          </template>
+            </template>
 
-          <!-- Add note -->
-          <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin:10px 0 6px">ADD NOTE</div>
-          <div style="display:flex;gap:8px;align-items:flex-start">
-            <textarea v-model="newNotes[s.id]" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:7px;border-radius:4px;font-size:12px;font-family:'Crimson Pro',serif;resize:vertical;min-height:60px" placeholder="Your note..."></textarea>
-            <button class="submit-btn" @click="addSessionNote(s.id)">SAVE</button>
+            <!-- Add note -->
+            <div class="session-section-label">Add Note</div>
+            <div style="display:flex;gap:8px;align-items:flex-start">
+              <textarea
+                v-model="newNotes[s.id]"
+                class="form-input"
+                rows="2"
+                placeholder="Your note…"
+              ></textarea>
+              <button class="submit-btn" style="align-self:flex-end" @click="addSessionNote(s.id)">SAVE</button>
+            </div>
           </div>
-        </div>
+
+          <!-- Action bar -->
+          <div class="ec-actions" v-if="campaign.isGm">
+            <button class="btn btn-sm" @click="ui.openGmEdit('session', s.id, s)">✏️ Edit</button>
+            <button class="btn btn-sm btn-danger" @click="deleteSession(s.id)">🗑 Delete</button>
+          </div>
+        </template>
       </div>
     </div>
 
@@ -96,28 +121,11 @@
         <span v-if="d.confirmed" class="tag tag-active" style="margin-left:8px;font-size:9px">CONFIRMED</span>
       </div>
       <div class="sched-responses">
-        <span
-          v-for="r in (d.responses || [])"
-          :key="r.user_id"
-          class="sched-resp"
-          :class="`sched-${r.availability}`"
-        >{{ r.character_name || r.username }}: {{ r.availability }}</span>
+        <span v-for="r in (d.responses || [])" :key="r.user_id" class="sched-resp" :class="`sched-${r.availability}`">{{ r.character_name || r.username }}: {{ r.availability }}</span>
       </div>
       <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">
-        <button
-          v-for="opt in ['yes','maybe','no']"
-          :key="opt"
-          class="filter-tab"
-          :class="{ active: d.my_response === opt }"
-          style="padding:3px 8px;font-size:10px"
-          @click="respondSched(d.id, opt)"
-        >{{ opt }}</button>
-        <button
-          v-if="campaign.isGm && !d.confirmed"
-          class="btn btn-sm btn-primary"
-          style="margin-left:auto"
-          @click="confirmSched(d.id)"
-        >Confirm</button>
+        <button v-for="opt in ['yes','maybe','no']" :key="opt" class="filter-tab" :class="{ active: d.my_response === opt }" style="padding:3px 8px;font-size:10px" @click="respondSched(d.id, opt)">{{ opt }}</button>
+        <button v-if="campaign.isGm && !d.confirmed" class="btn btn-sm btn-primary" style="margin-left:auto" @click="confirmSched(d.id)">Confirm</button>
       </div>
     </div>
   </div>
@@ -130,16 +138,15 @@ import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
 import { useDataStore } from '@/stores/data'
 
-const auth = useAuthStore()
+const auth     = useAuthStore()
 const campaign = useCampaignStore()
-const ui = useUiStore()
-const data = useDataStore()
+const ui       = useUiStore()
+const data     = useDataStore()
 
 const openSessions = ref(new Set())
-const newNotes = reactive({})
-const editingNote = ref(null)
+const newNotes     = reactive({})
+const editingNote  = ref(null)
 
-// Sort sessions newest first
 const sortedSessions = computed(() =>
   [...data.sessions].sort((a, b) => (b.number ?? 0) - (a.number ?? 0))
 )
@@ -159,9 +166,7 @@ function toggleSession(id) {
   else openSessions.value.add(id)
 }
 
-function canEditNote(n) {
-  return campaign.isGm || n.player_id === auth.currentUser?.id
-}
+function canEditNote(n) { return campaign.isGm || n.player_id === auth.currentUser?.id }
 
 async function addSessionNote(sessionId) {
   const body = newNotes[sessionId]?.trim()
@@ -171,9 +176,7 @@ async function addSessionNote(sessionId) {
   else ui.showToast('Failed', '', '✕')
 }
 
-function startEditNote(sessionId, n) {
-  editingNote.value = { sessionId, noteId: n.id, body: n.body }
-}
+function startEditNote(sessionId, n) { editingNote.value = { sessionId, noteId: n.id, body: n.body } }
 
 async function saveNoteEdit(sessionId) {
   if (!editingNote.value) return
@@ -228,10 +231,45 @@ async function confirmSched(id) {
 
 onMounted(async () => {
   await data.loadSessions()
-  // Auto-open the most recent session
   if (data.sessions.length) {
     const latest = [...data.sessions].sort((a, b) => (b.number ?? 0) - (a.number ?? 0))[0]
     if (latest) openSessions.value.add(latest.id)
   }
 })
 </script>
+
+<style scoped>
+/* Reuse EntityCard header/body/actions classes via global styles */
+.session-card { padding: 0; overflow: hidden; }
+
+.session-date {
+  font-size: 11px;
+  color: var(--text3);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.session-section-label {
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text3);
+  margin: 10px 0 5px;
+}
+
+.session-summary {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.65;
+  font-style: italic;
+}
+
+.session-note {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+</style>
