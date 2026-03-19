@@ -1,6 +1,6 @@
 <template>
   <div v-if="ui.detailModal" class="modal-overlay open" @click.self="ui.closeDetail()">
-    <div class="modal" @click="handleModalClick">
+    <div :class="['modal', wideTypes.includes(ui.detailModal.type) ? 'detail-modal-box' : '']" @click="handleModalClick">
       <div v-html="renderedContent"></div>
       <div class="modal-actions">
         <button class="modal-close" @click="ui.closeDetail()">CLOSE</button>
@@ -22,6 +22,8 @@ import { useDataStore } from '@/stores/data'
 const ui = useUiStore()
 const campaign = useCampaignStore()
 const data = useDataStore()
+
+const wideTypes = ['timeline', 'npc', 'location', 'faction', 'bestiary', 'job']
 
 const TYPE_RELOAD = {
   quest: () => data.loadQuests(),
@@ -100,9 +102,18 @@ const renderedContent = computed(() => {
         ${df('Goals',d.goals)}${df('Known Members',d.known_members)}`
     case 'timeline':
       return `<div class="detail-title">${esc(title)}</div>
-        <div class="detail-meta">${d.in_world_date?`<span class="tag">${esc(d.in_world_date)}</span>`:''}</div>
-        ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}
-        ${df('Linked Quest',d.linked_quest)}`
+        <div class="detail-grid">
+          <div class="detail-sidebar-col">
+            ${d.in_world_date?`<div class="detail-sidebar-section"><div class="detail-sidebar-label">In-World Date</div><div class="detail-sidebar-value">${esc(d.in_world_date)}</div></div>`:''}
+            ${d.session_number?`<div class="detail-sidebar-section"><div class="detail-sidebar-label">Session</div><div class="detail-sidebar-value">${esc(d.session_number)}</div></div>`:''}
+            ${d.significance&&d.significance!=='minor'?`<div class="detail-sidebar-section"><div class="detail-sidebar-label">Significance</div><span class="tag">${esc(d.significance)}</span></div>`:''}
+          </div>
+          <div class="detail-body-col">
+            ${d.description?`<div class="detail-body" style="margin:0">${esc(d.description)}</div>`:`<div style="color:var(--text3);font-size:13px;font-style:italic">No description recorded.</div>`}
+            ${d.linked_quest?`<div class="detail-field"><div class="detail-field-label">LINKED QUEST</div>${dfLinks('',d.linked_quest,'quest')}</div>`:''}
+            ${isGm&&d.gm_notes?`<div class="detail-gm-box"><div class="detail-gm-label">GM NOTES</div><div class="detail-body" style="margin:0;white-space:pre-wrap">${esc(d.gm_notes)}</div></div>`:''}
+          </div>
+        </div>`
     case 'inventory':
       return `<div class="detail-title">${esc(title)}</div>
         <div class="detail-meta"><span class="tag">×${d.quantity||1}</span><span class="tag">${esc(d.holder||'party')}</span></div>
