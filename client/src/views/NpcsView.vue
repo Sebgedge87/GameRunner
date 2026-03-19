@@ -149,8 +149,8 @@ onMounted(() => { if (!data.npcs.length) data.loadNpcs() })
   align-items: start;
 }
 
-/* add-tile is a normal grid tile */
-.npc-grid .add-tile { grid-column: auto; min-height: 160px; }
+/* add-tile matches portrait card height */
+.npc-grid .add-tile { min-height: 160px; }
 
 .npc-card {
   padding: 0;
