@@ -137,22 +137,13 @@
       <div class="section-divider">Active Quests</div>
       <div class="card-grid" style="margin-top:12px;margin-bottom:24px">
         <div v-if="activeQuests.length === 0" style="opacity:0.5;font-size:0.85em;padding:12px 0">No active quests.</div>
-        <div
+        <QuestCard
           v-for="quest in activeQuests"
           :key="quest.id"
-          class="card"
-          @click="ui.openDetail('quest', quest)"
-        >
-          <div class="card-body">
-            <div class="card-title" style="font-size:0.9em">{{ quest.title }}</div>
-            <div v-if="quest.progress != null" class="progress-bar" style="margin-top:6px">
-              <div class="progress-fill" :style="`width:${quest.progress}%`"></div>
-            </div>
-            <div v-if="quest.hidden" class="card-meta" style="margin-top:4px">
-              <span class="tag tag-inactive" style="font-size:0.7em">Hidden</span>
-            </div>
-          </div>
-        </div>
+          :quest="quest"
+          :expanded="expandedId === quest.id"
+          @toggle="toggleExpand(quest.id)"
+        />
       </div>
 
       <!-- ── Agenda ────────────────────────────────────────── -->
@@ -202,10 +193,14 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
+import QuestCard from '@/components/QuestCard.vue'
 
 const data = useDataStore()
 const campaign = useCampaignStore()
 const ui = useUiStore()
+
+const expandedId = ref(null)
+function toggleExpand(id) { expandedId.value = expandedId.value === id ? null : id }
 
 const loading = ref(false)
 const agendaCards = ref([])
