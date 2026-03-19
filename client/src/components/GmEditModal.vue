@@ -231,14 +231,27 @@
         <!-- Handout -->
         <template v-else-if="type === 'handout'">
           <div class="form-group"><label>Title</label><input v-model="f.title" class="form-input" /></div>
-          <div class="form-group"><label>Content</label><textarea v-model="f.content" class="form-input" rows="5"></textarea></div>
-          <div class="form-group"><label>Target Player</label>
+          <div class="form-group">
+            <label class="efg-label">Content</label>
+            <MarkdownEditor v-model="f.content" :minRows="6" placeholder="Write the handout text your players will receive…" />
+          </div>
+          <div class="form-group">
+            <label class="efg-label">Target Player</label>
             <select v-model="f.user_id" class="form-input">
               <option value="">All Players</option>
               <option v-for="u in players" :key="u.id" :value="u.id">{{ u.username }}</option>
             </select>
           </div>
-          <div class="form-group"><label>Image</label><input type="file" ref="imgInput" class="form-input" accept="image/*" /></div>
+          <div class="form-group">
+            <label class="efg-label">Image <span style="color:var(--text3);font-size:10px">(optional)</span></label>
+            <label class="btn btn-sm efg-upload-btn" style="cursor:pointer">
+              {{ isEdit ? 'Replace Image' : 'Upload Image' }}
+              <input type="file" ref="imgInput" accept="image/*" style="display:none" @change="onHandoutImgChange" />
+            </label>
+            <img v-if="handoutImgPreview || (isEdit && ui.gmEditModal?.data?.file_path)"
+                 :src="handoutImgPreview || ('/uploads/' + ui.gmEditModal?.data?.file_path)"
+                 style="margin-top:8px;max-width:100%;max-height:140px;border-radius:4px;border:1px solid var(--border2);object-fit:contain;display:block" />
+          </div>
         </template>
 
         <!-- Session -->
@@ -643,10 +656,16 @@ const saving = ref(false)
 const saveError = ref('')
 const portraitPreview = ref('')
 const mapImgPreview = ref('')
+const handoutImgPreview = ref('')
 
 function onPortraitChange(e) {
   const file = e.target.files?.[0]
   if (file) portraitPreview.value = URL.createObjectURL(file)
+}
+
+function onHandoutImgChange(e) {
+  const file = e.target.files?.[0]
+  handoutImgPreview.value = file ? URL.createObjectURL(file) : ''
 }
 
 function onMapImgChange(e) {
@@ -728,6 +747,7 @@ watch(() => ui.gmEditModal, (modal) => {
   })
   portraitPreview.value = ''
   mapImgPreview.value = ''
+  handoutImgPreview.value = ''
   f.status = 'active'; f.quest_type = 'main'; f.difficulty = 'medium'
   f.quantity = 1; f.holder = 'party'; f.map_type = 'world'; f.is_true = true
   f.results_public = 0
