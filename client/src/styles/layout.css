@@ -398,6 +398,24 @@
   font-family: 'JetBrains Mono', monospace;
 }
 
+/* Default: clean sans-serif headings — drop wide tracking */
+[data-theme="default"] .page-title {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+[data-theme="default"] .sidebar-title {
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+[data-theme="default"] .sidebar-subtitle {
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+[data-theme="default"] .nav-section-label {
+  letter-spacing: 0.08em;
+}
+
 /* Alien: headers are orange */
 [data-theme="alien"] .page-title { color: #ff8c00; }
 [data-theme="alien"] .sidebar-title { color: #39ff14; }
