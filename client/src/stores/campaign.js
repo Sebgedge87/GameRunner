@@ -10,11 +10,12 @@ export const useCampaignStore = defineStore('campaign', () => {
   const isGm = ref(false)
 
   const SYSTEM_THEME_MAP = {
-    dnd5e: 'dnd5e', coc: 'coc', alien: 'alien',
+    default: 'default', dnd5e: 'dnd5e', coc: 'coc', alien: 'alien',
     coriolis: 'coriolis', dune: 'dune', achtung: 'achtung', custom: 'custom',
   }
 
   const SYSTEM_META = {
+    default: { label: 'Default', icon: '◈', color: '#6b8cff' },
     dnd5e: { label: 'D&D 5e', icon: '⚔', color: '#c9a84c' },
     coc: { label: 'Call of Cthulhu', icon: '🐙', color: '#b8a060' },
     alien: { label: 'Alien RPG', icon: '👾', color: '#4caf50' },
@@ -25,7 +26,7 @@ export const useCampaignStore = defineStore('campaign', () => {
   }
 
   function applyTheme(system) {
-    const theme = SYSTEM_THEME_MAP[system] || 'dnd5e'
+    const theme = SYSTEM_THEME_MAP[system] || 'default'
     document.documentElement.setAttribute('data-theme', theme)
     localStorage.setItem('chronicle_theme', system)
     if (theme === 'custom') applyCustomTheme()

@@ -18,10 +18,8 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function restoreSession() {
-    const savedTheme = localStorage.getItem('chronicle_theme')
-    if (savedTheme) {
-      document.documentElement.setAttribute('data-theme', savedTheme)
-    }
+    const savedTheme = localStorage.getItem('chronicle_theme') || 'default'
+    document.documentElement.setAttribute('data-theme', savedTheme)
     if (!token.value) return false
     try {
       const r = await fetch('/api/auth/me', {

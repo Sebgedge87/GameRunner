@@ -52,7 +52,11 @@
           </template>
         </EntityCard>
       </div>
-      <div v-if="filteredLocations.length === 0" class="empty-state">No locations found.</div>
+      <div v-if="filteredLocations.length === 0" class="empty-state">
+        <span class="empty-state-icon">📍</span>
+        <div class="empty-state-title">{{ data.locations.length ? 'No Matches' : 'No Locations Yet' }}</div>
+        <div class="empty-state-hint">{{ data.locations.length ? 'Try a different search or filter.' : 'GM: map the world — taverns, dungeons, cities and beyond.' }}</div>
+      </div>
     </template>
 
     <!-- ── Notice Board tab ── -->

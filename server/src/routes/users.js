@@ -35,6 +35,19 @@ router.put('/me', requireAuth, (req, res) => {
   res.json({ user });
 });
 
+// PUT /api/users/me/password — user changes their own password
+router.put('/me/password', requireAuth, (req, res) => {
+  const { current_password, new_password } = req.body;
+  if (!current_password || !new_password) return res.status(400).json({ error: 'current_password and new_password are required' });
+  if (new_password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  const db = getDb();
+  const user = db.prepare('SELECT id, password_hash FROM users WHERE id = ?').get(req.user.id);
+  if (!bcrypt.compareSync(current_password, user.password_hash)) return res.status(403).json({ error: 'Current password is incorrect' });
+  const password_hash = bcrypt.hashSync(new_password, SALT_ROUNDS);
+  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(password_hash, req.user.id);
+  res.json({ success: true });
+});
+
 // PUT /api/users/:id — GM updates any user (role, etc.)
 router.put('/:id', requireGm, (req, res) => {
   const { character_name, character_class, character_level, role } = req.body;

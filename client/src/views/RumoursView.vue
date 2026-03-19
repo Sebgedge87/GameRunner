@@ -30,7 +30,11 @@
         </template>
       </EntityCard>
     </div>
-    <div v-if="filteredRumours.length === 0" class="empty-state">No rumours found.</div>
+    <div v-if="filteredRumours.length === 0" class="empty-state">
+      <span class="empty-state-icon">🗣️</span>
+      <div class="empty-state-title">{{ data.rumours.length ? 'No Matches' : 'No Rumours Yet' }}</div>
+      <div class="empty-state-hint">{{ data.rumours.length ? 'Try a different search or filter.' : 'GM: plant whispers — some true, some false. Players won\'t know which.' }}</div>
+    </div>
   </div>
 </template>
 

@@ -18,7 +18,11 @@
         </div>
 
         <div class="msg-list">
-          <div v-if="!filteredNotes.length" class="empty-state">No notes yet.</div>
+          <div v-if="!filteredNotes.length" class="empty-state">
+            <span class="empty-state-icon">📝</span>
+            <div class="empty-state-title">No Notes Yet</div>
+            <div class="empty-state-hint">Click New Note to start writing. Notes can be private or shared with the GM.</div>
+          </div>
           <div v-for="n in filteredNotes" :key="n.id" class="note-card" style="cursor:pointer" @click="selectNote(n)">
             <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
               <div class="note-card-title" style="flex:1">{{ n.title }}</div>

@@ -26,7 +26,11 @@
         </template>
       </EntityCard>
     </div>
-    <div v-if="filteredMaps.length === 0" class="empty-state">No maps found.</div>
+    <div v-if="filteredMaps.length === 0" class="empty-state">
+      <span class="empty-state-icon">🗺️</span>
+      <div class="empty-state-title">{{ data.maps.length ? 'No Matches' : 'No Maps Yet' }}</div>
+      <div class="empty-state-hint">{{ data.maps.length ? 'Try a different search.' : 'GM: upload battle maps, regional maps and area layouts.' }}</div>
+    </div>
 
     <!-- Fullscreen overlay -->
     <div v-if="fullscreenMap" class="modal-overlay open" style="z-index:9999;background:rgba(0,0,0,0.92)" @click="fullscreenMap = null">

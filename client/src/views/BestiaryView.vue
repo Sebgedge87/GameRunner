@@ -28,7 +28,11 @@
         </template>
       </EntityCard>
     </div>
-    <div v-if="filteredBestiary.length === 0" class="empty-state">No creatures found.</div>
+    <div v-if="filteredBestiary.length === 0" class="empty-state">
+      <span class="empty-state-icon">🐉</span>
+      <div class="empty-state-title">{{ data.bestiary.length ? 'No Matches' : 'Bestiary Empty' }}</div>
+      <div class="empty-state-hint">{{ data.bestiary.length ? 'Try a different search or filter.' : 'GM: catalogue the creatures your party may encounter.' }}</div>
+    </div>
   </div>
 </template>
 

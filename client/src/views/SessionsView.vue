@@ -10,7 +10,11 @@
 
     <!-- Sessions list -->
     <div class="card-grid" style="grid-template-columns:1fr">
-      <div v-if="!data.sessions.length" class="empty-state">No sessions recorded.</div>
+      <div v-if="!data.sessions.length" class="empty-state">
+        <span class="empty-state-icon">📖</span>
+        <div class="empty-state-title">No Sessions Yet</div>
+        <div class="empty-state-hint">GM: record each session to build a campaign chronicle.</div>
+      </div>
       <div
         v-for="s in sortedSessions"
         :key="s.id"

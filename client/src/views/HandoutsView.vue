@@ -30,7 +30,11 @@
         </template>
       </EntityCard>
     </div>
-    <div v-if="filteredHandouts.length === 0" class="empty-state">No handouts found.</div>
+    <div v-if="filteredHandouts.length === 0" class="empty-state">
+      <span class="empty-state-icon">📜</span>
+      <div class="empty-state-title">{{ data.handouts.length ? 'No Matches' : 'No Handouts Yet' }}</div>
+      <div class="empty-state-hint">{{ data.handouts.length ? 'Try a different search or filter.' : 'GM: share letters, maps and artefacts directly with players.' }}</div>
+    </div>
   </div>
 </template>
 

@@ -98,6 +98,22 @@
       </div>
     </div>
 
+    <!-- Change Password -->
+    <div class="settings-section">
+      <div class="settings-section-title">Change Password</div>
+      <div class="field-group"><label>Current Password</label>
+        <input v-model="pwCurrent" type="password" class="form-input" autocomplete="current-password" />
+      </div>
+      <div class="field-group"><label>New Password</label>
+        <input v-model="pwNew" type="password" class="form-input" autocomplete="new-password" />
+      </div>
+      <div class="field-group"><label>Confirm New Password</label>
+        <input v-model="pwConfirm" type="password" class="form-input" autocomplete="new-password" />
+      </div>
+      <button class="btn btn-primary" @click="changePassword">Change Password</button>
+      <div v-if="pwStatus" :class="['status-msg', pwOk ? 'status-ok' : 'status-err']">{{ pwStatus }}</div>
+    </div>
+
     <!-- Backup (GM only) -->
     <div v-if="campaign.isGm" class="settings-section">
       <div class="settings-section-title">Backup</div>
@@ -124,13 +140,14 @@ const profileStatus = ref('')
 const profileOk = ref(false)
 const bgUrl = ref(localStorage.getItem('chronicle_bg_image') || '')
 const fontSize = ref(localStorage.getItem('chronicle_font_size') || 'medium')
-const currentTheme = ref(document.documentElement.getAttribute('data-theme') || 'dnd5e')
+const currentTheme = ref(document.documentElement.getAttribute('data-theme') || 'default')
 
 const a11y = reactive(JSON.parse(localStorage.getItem('chronicle_a11y') || '{}'))
 
 const customColors = reactive(JSON.parse(localStorage.getItem('chronicle_custom_theme') || '{"bg":"#0d0d0f","surface":"#1a1a24","accent":"#c9a84c","text":"#e8e4d9","border":"#2a2a3a"}'))
 
 const THEME_META = {
+  default: { name: 'Default', color: '#6b8cff' },
   dnd5e: { name: 'D&D 5e', color: '#c9a84c' },
   coc: { name: 'Call of Cthulhu', color: '#b8a060' },
   alien: { name: 'Alien', color: '#4caf7d' },
@@ -139,6 +156,12 @@ const THEME_META = {
   achtung: { name: 'Achtung!', color: '#8a9e40' },
   custom: { name: 'Custom', color: '#c9a84c' },
 }
+
+const pwCurrent = ref('')
+const pwNew = ref('')
+const pwConfirm = ref('')
+const pwStatus = ref('')
+const pwOk = ref(false)
 
 onMounted(() => {
   if (auth.currentUser) {
@@ -231,6 +254,24 @@ function setA11y(key, val) {
   if (key === 'contrast') document.body.classList.toggle('high-contrast', val)
   if (key === 'motion') document.body.classList.toggle('reduce-motion', val)
   if (key === 'effects') document.body.classList.toggle('no-effects', val)
+}
+
+async function changePassword() {
+  pwStatus.value = ''
+  if (!pwCurrent.value || !pwNew.value) { pwStatus.value = 'All fields required.'; pwOk.value = false; return }
+  if (pwNew.value.length < 6) { pwStatus.value = 'New password must be at least 6 characters.'; pwOk.value = false; return }
+  if (pwNew.value !== pwConfirm.value) { pwStatus.value = 'Passwords do not match.'; pwOk.value = false; return }
+  const r = await data.apif('/api/users/me/password', {
+    method: 'PUT',
+    body: JSON.stringify({ current_password: pwCurrent.value, new_password: pwNew.value }),
+  })
+  if (r.ok) {
+    pwStatus.value = 'Password changed.'; pwOk.value = true
+    pwCurrent.value = ''; pwNew.value = ''; pwConfirm.value = ''
+  } else {
+    const d = await r.json().catch(() => ({}))
+    pwStatus.value = d.error || 'Failed.'; pwOk.value = false
+  }
 }
 
 async function downloadBackup() {

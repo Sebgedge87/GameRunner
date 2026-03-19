@@ -28,7 +28,11 @@
         </template>
       </EntityCard>
     </div>
-    <div v-if="filteredHooks.length === 0" class="empty-state">No hooks found.</div>
+    <div v-if="filteredHooks.length === 0" class="empty-state">
+      <span class="empty-state-icon">🪝</span>
+      <div class="empty-state-title">{{ data.hooks.length ? 'No Matches' : 'No Hooks Yet' }}</div>
+      <div class="empty-state-hint">{{ data.hooks.length ? 'Try a different search or filter.' : 'GM: plant clues and leads to draw players into the story.' }}</div>
+    </div>
   </div>
 </template>
 

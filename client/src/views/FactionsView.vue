@@ -31,7 +31,11 @@
         </template>
       </EntityCard>
     </div>
-    <div v-if="filteredFactions.length === 0" class="empty-state">No factions found.</div>
+    <div v-if="filteredFactions.length === 0" class="empty-state">
+      <span class="empty-state-icon">⚔️</span>
+      <div class="empty-state-title">{{ data.factions.length ? 'No Matches' : 'No Factions Yet' }}</div>
+      <div class="empty-state-hint">{{ data.factions.length ? 'Try a different search or filter.' : 'GM: define the guilds, cults and powers that shape your world.' }}</div>
+    </div>
   </div>
 </template>
 

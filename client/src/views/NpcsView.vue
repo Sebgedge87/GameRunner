@@ -33,7 +33,11 @@
         </template>
       </EntityCard>
     </div>
-    <div v-if="filteredNpcs.length === 0" class="empty-state">No NPCs found.</div>
+    <div v-if="filteredNpcs.length === 0" class="empty-state">
+      <span class="empty-state-icon">👤</span>
+      <div class="empty-state-title">{{ data.npcs.length ? 'No Matches' : 'No NPCs Yet' }}</div>
+      <div class="empty-state-hint">{{ data.npcs.length ? 'Try a different search or filter.' : 'GM: add the people who populate your world.' }}</div>
+    </div>
   </div>
 </template>
 

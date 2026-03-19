@@ -38,7 +38,11 @@
         </template>
       </EntityCard>
     </div>
-    <div v-if="filteredJobs.length === 0" class="empty-state">No jobs found.</div>
+    <div v-if="filteredJobs.length === 0" class="empty-state">
+      <span class="empty-state-icon">📋</span>
+      <div class="empty-state-title">{{ data.jobs.length ? 'No Matches' : 'Notice Board Empty' }}</div>
+      <div class="empty-state-hint">{{ data.jobs.length ? 'Try a different search or filter.' : 'GM: post available work for hire — bounties, escorts, investigations.' }}</div>
+    </div>
   </div>
 </template>
 
