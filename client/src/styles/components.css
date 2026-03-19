@@ -305,9 +305,10 @@ body[data-font-size="large"] .settings-label{font-size:15px;}
 body[data-font-size="large"] .detail-body{font-size:15px;}
 body[data-font-size="small"] .nav-item{font-size:12px;}
 /* ── Collapsible nav sections ───────────────────────────────────────────────── */
-.nav-section{cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between;}
-.nav-section::after{content:'▾';font-size:9px;margin-right:12px;transition:transform .2s;color:var(--text3);opacity:.7;}
-.nav-section.collapsed::after{transform:rotate(-90deg);}
+.nav-section{cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between;border-radius:4px;margin:0 6px;transition:background .15s;}
+.nav-section:hover{background:var(--surface);}
+.nav-section::after{content:'›';font-size:14px;line-height:1;margin-right:8px;transition:transform .2s;color:var(--text2);transform:rotate(90deg);}
+.nav-section.collapsed::after{transform:rotate(0deg);}
 .nav-group{overflow:hidden;}
 .nav-group.collapsed{display:none;}
 /* Custom theme variables are defined in themes.css */
