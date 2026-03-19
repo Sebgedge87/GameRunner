@@ -20,14 +20,14 @@
             </div>
           </div>
           <div class="form-group"><label>Parent Quest (Chain)</label>
-            <select v-model="f.parent_quest_id" class="form-input">
-              <option :value="null">— None —</option>
-              <option
-                v-for="q in data.quests.filter(q => q.id !== ui.gmEditModal?.id)"
-                :key="q.id"
-                :value="q.id"
-              >{{ q.title }}</option>
-            </select>
+            <SearchSelect
+              v-model="f.parent_quest_id"
+              :options="data.quests.filter(q => q.id !== ui.gmEditModal?.id)"
+              :multiple="false"
+              label-key="title"
+              value-key="id"
+              placeholder="Search quests…"
+            />
           </div>
 
           <div class="form-section-label">Urgency &amp; Deadline</div>
@@ -54,33 +54,30 @@
           <div class="form-section-label">Entity Connections</div>
           <div class="form-group">
             <label>📍 Locations</label>
-            <div v-if="data.locations.length" class="multi-pick">
-              <label v-for="loc in data.locations" :key="loc.id" class="multi-pick-item">
-                <input type="checkbox" :value="loc.title || loc.name" v-model="f.connected_locations_arr" />
-                <span>{{ loc.title || loc.name }}</span>
-              </label>
-            </div>
-            <div v-else class="multi-pick-empty">No locations yet.</div>
+            <SearchSelect
+              v-model="f.connected_locations_arr"
+              :options="data.locations.map(l => ({ id: l.id, title: l.title || l.name }))"
+              label-key="title"
+              placeholder="Search locations…"
+            />
           </div>
           <div class="form-group">
             <label>🏰 Factions</label>
-            <div v-if="data.factions.length" class="multi-pick">
-              <label v-for="fac in data.factions" :key="fac.id" class="multi-pick-item">
-                <input type="checkbox" :value="fac.name" v-model="f.connected_factions_arr" />
-                <span>{{ fac.name }}</span>
-              </label>
-            </div>
-            <div v-else class="multi-pick-empty">No factions yet.</div>
+            <SearchSelect
+              v-model="f.connected_factions_arr"
+              :options="data.factions.map(f => ({ id: f.id, title: f.name }))"
+              label-key="title"
+              placeholder="Search factions…"
+            />
           </div>
           <div class="form-group">
             <label>🧑 NPCs</label>
-            <div v-if="data.npcs.length" class="multi-pick">
-              <label v-for="npc in data.npcs" :key="npc.id" class="multi-pick-item">
-                <input type="checkbox" :value="npc.title || npc.name" v-model="f.connected_npcs_arr" />
-                <span>{{ npc.title || npc.name }}</span>
-              </label>
-            </div>
-            <div v-else class="multi-pick-empty">No NPCs yet.</div>
+            <SearchSelect
+              v-model="f.connected_npcs_arr"
+              :options="data.npcs.map(n => ({ id: n.id, title: n.title || n.name }))"
+              label-key="title"
+              placeholder="Search NPCs…"
+            />
           </div>
 
           <div class="form-section-label">Image</div>
@@ -175,7 +172,16 @@
           <div class="form-group"><label>Title</label><input v-model="f.title" class="form-input" /></div>
           <div class="form-group"><label>In-World Date</label><input v-model="f.in_world_date" class="form-input" placeholder="Day 14, Year 1502…" /></div>
           <div class="form-group"><label>Description</label><textarea v-model="f.description" class="form-input" rows="3"></textarea></div>
-          <div class="form-group"><label>Linked Quest (optional)</label><input v-model="f.linked_quest" class="form-input" /></div>
+          <div class="form-group"><label>Linked Quest (optional)</label>
+            <SearchSelect
+              v-model="f.linked_quest"
+              :options="data.quests"
+              :multiple="false"
+              label-key="title"
+              value-key="title"
+              placeholder="Search quests…"
+            />
+          </div>
         </template>
 
         <!-- Inventory -->
@@ -191,7 +197,16 @@
           <div class="form-group"><label>Name</label><input v-model="f.name" class="form-input" /></div>
           <div class="form-group"><label>Description</label><textarea v-model="f.description" class="form-input" rows="3"></textarea></div>
           <div class="form-group"><label>Significance</label><textarea v-model="f.significance" class="form-input" rows="2" placeholder="Why is this important?"></textarea></div>
-          <div class="form-group"><label>Linked Quest</label><input v-model="f.linked_quest" class="form-input" /></div>
+          <div class="form-group"><label>Linked Quest</label>
+            <SearchSelect
+              v-model="f.linked_quest"
+              :options="data.quests"
+              :multiple="false"
+              label-key="title"
+              value-key="title"
+              placeholder="Search quests…"
+            />
+          </div>
           <div class="form-group"><label>Image</label><input type="file" ref="imgInput" class="form-input" accept="image/*" /></div>
         </template>
 
@@ -348,6 +363,7 @@ import { ref, reactive, computed, watch } from 'vue'
 import { useUiStore } from '@/stores/ui'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'
+import SearchSelect from './SearchSelect.vue'
 
 const ui = useUiStore()
 const data = useDataStore()
@@ -602,28 +618,6 @@ async function save() {
 </script>
 
 <style scoped>
-/* ── Multi-pick (quest connections) ─────────────────────────────────────── */
-.multi-pick {
-  max-height: 130px;
-  overflow-y: auto;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--bg2);
-  padding: 4px 2px;
-}
-.multi-pick-item {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 4px 10px;
-  font-size: 13px;
-  color: var(--text2);
-  cursor: pointer;
-  transition: background 0.12s;
-}
-.multi-pick-item:hover { background: var(--bg3); }
-.multi-pick-item input[type="checkbox"] { accent-color: var(--gold); cursor: pointer; }
-.multi-pick-empty { font-size: 12px; color: var(--text3); font-style: italic; padding: 4px 0; }
 
 /* ── Quest banner image preview ─────────────────────────────────────────── */
 .quest-img-preview {
