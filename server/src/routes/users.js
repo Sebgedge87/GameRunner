@@ -27,12 +27,17 @@ router.get('/me', requireAuth, (req, res) => {
 
 // PUT /api/users/me — update own profile
 router.put('/me', requireAuth, (req, res) => {
-  const { character_name, character_class, character_level } = req.body;
-  const db = getDb();
-  db.prepare('UPDATE users SET character_name=COALESCE(?,character_name), character_class=COALESCE(?,character_class), character_level=COALESCE(?,character_level) WHERE id=?')
-    .run(character_name, character_class, character_level, req.user.id);
-  const user = db.prepare('SELECT id, username, character_name, character_class, character_level, role, last_seen FROM users WHERE id = ?').get(req.user.id);
-  res.json({ user });
+  try {
+    const { character_name, character_class, character_level } = req.body;
+    const db = getDb();
+    db.prepare('UPDATE users SET character_name=COALESCE(?,character_name), character_class=COALESCE(?,character_class), character_level=COALESCE(?,character_level) WHERE id=?')
+      .run(character_name ?? null, character_class ?? null, character_level ?? null, req.user.id);
+    const user = db.prepare('SELECT id, username, character_name, character_class, character_level, role, last_seen FROM users WHERE id = ?').get(req.user.id);
+    res.json({ user });
+  } catch (err) {
+    console.error('[PUT /users/me]', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // PUT /api/users/me/password — user changes their own password
