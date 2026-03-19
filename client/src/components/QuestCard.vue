@@ -43,7 +43,7 @@
 
       <!-- Description -->
       <div v-if="quest.description" class="qc-section qc-description">
-        <div class="qc-section-text">{{ quest.description }}</div>
+        <div class="qc-section-text prose" v-html="renderMd(quest.description)"></div>
       </div>
 
       <!-- Connections: Locations / Factions / NPCs -->
@@ -117,7 +117,7 @@
         <div class="qc-gm-header">
           <span class="gm-note-label">🔒 GM Note</span>
         </div>
-        <div class="qc-gm-text">{{ quest.gm_notes }}</div>
+        <div class="qc-gm-text prose" v-html="renderMd(quest.gm_notes)"></div>
       </div>
 
       <!-- Action bar -->
@@ -142,6 +142,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { renderMd } from '@/utils/markdown'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'

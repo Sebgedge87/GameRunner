@@ -4,7 +4,14 @@
     <div class="search-row" style="margin-bottom:16px">
       <input v-model="search" class="form-input" placeholder="Search factions…" style="max-width:320px" />
     </div>
-    <div class="card-grid">
+    <div v-if="data.loading && !data.factions.length" class="card-grid">
+      <div v-for="n in 4" :key="n" class="skeleton-card">
+        <div class="skeleton-line skeleton-title"></div>
+        <div class="skeleton-line skeleton-body"></div>
+        <div class="skeleton-line skeleton-body-short"></div>
+      </div>
+    </div>
+    <div v-else class="card-grid">
       <div v-if="campaign.isGm" class="add-tile" @click="ui.openGmEdit('faction', null, {})">
         <div class="add-tile-icon">+</div><div class="add-tile-label">Add Faction</div>
       </div>
@@ -16,8 +23,8 @@
       >
         <template #badges></template>
         <template #body>
-          <div v-if="faction.description" class="card-overview">{{ faction.description }}</div>
-          <div v-if="faction.goals" class="card-meta">Goals: {{ faction.goals }}</div>
+          <div v-if="faction.description" class="card-overview">{{ stripMd(faction.description) }}</div>
+          <div v-if="faction.goals" class="card-meta">Goals: {{ stripMd(faction.goals, 80) }}</div>
           <div v-if="faction.reputation != null" style="margin-top:4px">
             <div style="display:flex;justify-content:space-between;font-size:0.75em;opacity:0.6;margin-bottom:4px">
               <span>Hostile</span>
@@ -31,11 +38,16 @@
         </template>
       </EntityCard>
     </div>
-    <div v-if="filteredFactions.length === 0" class="empty-state">No factions found.</div>
+    <div v-if="!data.loading && filteredFactions.length === 0" class="empty-state">
+      <span class="empty-state-icon">⚔️</span>
+      <div class="empty-state-title">{{ data.factions.length ? 'No Matches' : 'No Factions Yet' }}</div>
+      <div class="empty-state-hint">{{ data.factions.length ? 'Try a different search or filter.' : 'GM: define the guilds, cults and powers that shape your world.' }}</div>
+    </div>
   </div>
 </template>
 
 <script setup>
+import { stripMd } from '@/utils/markdown'
 import { ref, computed, onMounted } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'

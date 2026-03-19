@@ -23,6 +23,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { renderMd } from '@/utils/markdown'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
 import { useDataStore } from '@/stores/data'
@@ -59,9 +60,19 @@ function esc(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
+// Render a prose (markdown) content block
+function md(s) { return s ? renderMd(s) : '' }
+
+// Metadata field — short values, escaped plain text
 function df(label, value) {
   if (!value && value !== 0) return ''
   return `<div class="detail-field"><div class="detail-field-label">${label}</div><div class="detail-field-value">${esc(String(value))}</div></div>`
+}
+
+// Prose field rendered as markdown
+function dfMd(label, value) {
+  if (!value) return ''
+  return `<div class="detail-field"><div class="detail-field-label">${label}</div><div class="detail-body" style="margin:0">${md(value)}</div></div>`
 }
 
 // Renders a field whose values are clickable links that open related detail views
@@ -92,28 +103,32 @@ const renderedContent = computed(() => {
       return `${img(d)}<div class="detail-title">${esc(title)}</div>
         <div class="detail-meta"><span class="tag tag-${esc(d.type||'side')}">${esc(d.type||'side')}</span><span class="tag tag-${esc(d.status||'active')}">${esc(d.status||'active')}</span></div>
         ${d.progress!=null?`<div style="margin-bottom:10px"><div class="progress-bar" style="height:6px"><div class="progress-fill" style="width:${d.progress}%"></div></div><div style="font-size:10px;color:var(--text3);margin-top:2px">${d.progress}% complete</div></div>`:''}
-        ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}
+        ${d.description?`<div class="detail-body">${md(d.description)}</div>`:''}
         ${dfLinks('Location', d.location, 'location')}${dfLinks('Connected To', d.connected_to, 'quest')}`
     case 'npc':
       return `${img(d)}<div class="detail-title">${esc(title)}</div>
         <div class="detail-meta">${d.role?`<span class="tag">${esc(d.role)}</span>`:''}<span class="tag tag-${esc(d.disposition||'neutral')}">${esc(d.disposition||'neutral')}</span>${d.faction?`<span class="tag">${esc(d.faction)}</span>`:''}</div>
-        ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}
+        ${d.description?`<div class="detail-body">${md(d.description)}</div>`:''}
+        ${d.player_notes?`<div class="detail-body" style="margin-top:8px">${md(d.player_notes)}</div>`:''}
         ${dfLinks('Location', d.location, 'location')}
-        ${isGm&&d.gm_notes?`<div class="detail-gm-box"><div class="detail-gm-label">GM NOTES</div><div class="detail-body" style="margin:0">${esc(d.gm_notes)}</div></div>`:''}`
+        ${isGm&&d.gm_notes?`<div class="detail-gm-box"><div class="detail-gm-label">GM NOTES</div><div class="detail-body" style="margin:0">${md(d.gm_notes)}</div></div>`:''}`
     case 'location':
       return `${img(d)}<div class="detail-title">${esc(title)}</div>
         <div class="detail-meta"><span class="tag tag-${esc(d.status||'unvisited')}">${esc(d.status||'unvisited')}</span>${d.danger?`<span class="tag tag-${esc(d.danger)}">${esc(d.danger)}</span>`:''}</div>
-        ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}
-        ${dfLinks('Connected To', d.connected_to, 'location')}${df('Visited Session', d.visited_session)}`
+        ${d.description?`<div class="detail-body">${md(d.description)}</div>`:''}
+        ${d.player_notes?`<div class="detail-body" style="margin-top:8px">${md(d.player_notes)}</div>`:''}
+        ${dfLinks('Connected To', d.connected_to, 'location')}${df('Visited Session', d.visited_session)}
+        ${isGm&&d.gm_notes?`<div class="detail-gm-box"><div class="detail-gm-label">GM NOTES</div><div class="detail-body" style="margin:0">${md(d.gm_notes)}</div></div>`:''}`
     case 'hook':
       return `<div class="detail-title">${esc(title)}</div>
         <div class="detail-meta"><span class="tag tag-${esc(d.type||'clue')}">${esc(d.type||'clue')}</span><span class="tag tag-${esc(d.status||'active')}">${esc(d.status||'active')}</span></div>
-        ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}
+        ${d.description?`<div class="detail-body">${md(d.description)}</div>`:''}
         ${dfLinks('Connected To', d.connected_to, 'quest')}`
     case 'faction':
       return `${img(d)}<div class="detail-title">${esc(title)}</div>
-        ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}
-        ${df('Goals',d.goals)}${df('Known Members',d.known_members)}`
+        ${d.description?`<div class="detail-body">${md(d.description)}</div>`:''}
+        ${dfMd('Goals', d.goals)}
+        ${isGm&&d.gm_notes?`<div class="detail-gm-box"><div class="detail-gm-label">GM NOTES</div><div class="detail-body" style="margin:0">${md(d.gm_notes)}</div></div>`:''}`
     case 'timeline':
       return `<div class="detail-title">${esc(title)}</div>
         <div class="detail-grid">
@@ -123,24 +138,25 @@ const renderedContent = computed(() => {
             ${d.significance&&d.significance!=='minor'?`<div class="detail-sidebar-section"><div class="detail-sidebar-label">Significance</div><span class="tag">${esc(d.significance)}</span></div>`:''}
           </div>
           <div class="detail-body-col">
-            ${d.description?`<div class="detail-body" style="margin:0">${esc(d.description)}</div>`:`<div style="color:var(--text3);font-size:13px;font-style:italic">No description recorded.</div>`}
+            ${d.description?`<div class="detail-body" style="margin:0">${md(d.description)}</div>`:`<div style="color:var(--text3);font-size:13px;font-style:italic">No description recorded.</div>`}
             ${d.linked_quest?`<div class="detail-field"><div class="detail-field-label">LINKED QUEST</div>${dfLinks('',d.linked_quest,'quest')}</div>`:''}
-            ${isGm&&d.gm_notes?`<div class="detail-gm-box"><div class="detail-gm-label">GM NOTES</div><div class="detail-body" style="margin:0;white-space:pre-wrap">${esc(d.gm_notes)}</div></div>`:''}
+            ${isGm&&d.gm_notes?`<div class="detail-gm-box"><div class="detail-gm-label">GM NOTES</div><div class="detail-body" style="margin:0">${md(d.gm_notes)}</div></div>`:''}
           </div>
         </div>`
     case 'inventory':
       return `<div class="detail-title">${esc(title)}</div>
         <div class="detail-meta"><span class="tag">×${d.quantity||1}</span><span class="tag">${esc(d.holder||'party')}</span></div>
-        ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}`
+        ${d.description?`<div class="detail-body">${md(d.description)}</div>`:''}`
     case 'key-item':
       return `${img(d)}<div class="detail-title">${esc(title)}</div>
-        ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}
+        ${d.description?`<div class="detail-body">${md(d.description)}</div>`:''}
         ${df('Significance',d.significance)}${df('Linked Quest',d.linked_quest)}`
     case 'job':
       return `<div class="detail-title">${esc(title)}</div>
         <div class="detail-meta"><span class="tag tag-${esc(d.difficulty||'medium')}">${esc(d.difficulty||'medium')}</span><span class="tag tag-${esc(d.status||'open')}">${esc(d.status||'open')}</span></div>
-        ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}
-        ${df('Reward',d.reward)}${df('Posted By',d.posted_by)}`
+        ${d.description?`<div class="detail-body">${md(d.description)}</div>`:''}
+        ${df('Reward',d.reward)}${df('Posted By',d.posted_by)}
+        ${isGm&&d.gm_notes?`<div class="detail-gm-box"><div class="detail-gm-label">GM NOTES</div><div class="detail-body" style="margin:0">${md(d.gm_notes)}</div></div>`:''}`
     case 'bestiary': {
       const st = d.stats || {}
       return `${img(d)}<div class="detail-title">${esc(title)}</div>
@@ -149,13 +165,15 @@ const renderedContent = computed(() => {
           ${st.ac!=null?`<div class="stat-chip"><div class="stat-chip-val">${st.ac}</div><div class="stat-chip-lbl">AC</div></div>`:''}
           ${st.hp!=null?`<div class="stat-chip"><div class="stat-chip-val">${st.hp}</div><div class="stat-chip-lbl">HP</div></div>`:''}
         </div>`:''}
-        ${d.description?`<div class="detail-body">${esc(d.description)}</div>`:''}`
+        ${d.description?`<div class="detail-body">${md(d.description)}</div>`:''}
+        ${d.player_notes?`<div class="detail-body">${md(d.player_notes)}</div>`:''}
+        ${isGm&&d.gm_notes?`<div class="detail-gm-box"><div class="detail-gm-label">GM NOTES</div><div class="detail-body" style="margin:0">${md(d.gm_notes)}</div></div>`:''}`
     }
     case 'rumour':
       return `<div class="detail-title" style="font-size:16px">${esc(d.text||title)}</div>
         ${isGm?`<div class="detail-meta"><span class="tag" style="background:${d.is_true?'rgba(80,160,80,0.2)':'rgba(160,60,60,0.2)'};color:${d.is_true?'var(--green)':'var(--red)'}">${d.is_true?'TRUE':'FALSE'}</span></div>`:''}`
     default:
-      return `<div class="detail-title">${esc(title)}</div><div class="detail-body">${esc(d.description||d.summary||'')}</div>`
+      return `<div class="detail-title">${esc(title)}</div><div class="detail-body">${md(d.description||d.summary||'')}</div>`
   }
 })
 

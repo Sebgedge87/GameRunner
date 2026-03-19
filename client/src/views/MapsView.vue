@@ -4,7 +4,14 @@
     <div class="search-row" style="margin-bottom:16px">
       <input v-model="search" class="form-input" placeholder="Search maps…" style="max-width:320px" />
     </div>
-    <div class="card-grid">
+    <div v-if="data.loading && !data.maps.length" class="card-grid">
+      <div v-for="n in 4" :key="n" class="skeleton-card">
+        <div class="skeleton-line skeleton-img" style="height:180px"></div>
+        <div class="skeleton-line skeleton-title"></div>
+        <div class="skeleton-line skeleton-sub"></div>
+      </div>
+    </div>
+    <div v-else class="card-grid">
       <div v-if="campaign.isGm" class="add-tile" @click="ui.openGmEdit('map', null, {})">
         <div class="add-tile-icon">+</div><div class="add-tile-label">Add Map</div>
       </div>
@@ -26,7 +33,11 @@
         </template>
       </EntityCard>
     </div>
-    <div v-if="filteredMaps.length === 0" class="empty-state">No maps found.</div>
+    <div v-if="!data.loading && filteredMaps.length === 0" class="empty-state">
+      <span class="empty-state-icon">🗺️</span>
+      <div class="empty-state-title">{{ data.maps.length ? 'No Matches' : 'No Maps Yet' }}</div>
+      <div class="empty-state-hint">{{ data.maps.length ? 'Try a different search.' : 'GM: upload battle maps, regional maps and area layouts.' }}</div>
+    </div>
 
     <!-- Fullscreen overlay -->
     <div v-if="fullscreenMap" class="modal-overlay open" style="z-index:9999;background:rgba(0,0,0,0.92)" @click="fullscreenMap = null">

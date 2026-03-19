@@ -3,7 +3,36 @@
    Each theme overrides CSS variables and gets specific overlay/texture styles
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── D&D 5e — High-Fantasy Codex ─────────────────────────────────────────── */
+/* ── Default — Clean Neutral Dark (no campaign loaded yet) ───────────────── */
+:root,
+[data-theme="default"] {
+  --bg: #0f1117;
+  --bg2: #151922;
+  --bg3: #1b202c;
+  --surface: #1f2535;
+  --surface2: #252d40;
+  --border: #2a3147;
+  --border2: #374060;
+  --accent: #6b8cff;
+  --accent2: #94aaff;
+  --accent-dim: rgba(107, 140, 255, 0.14);
+  --text: #e2e8f0;
+  --text2: #8a9ab8;
+  --text3: #4a5a78;
+  /* Theme-specific */
+  --icon-tint: #6b8cff;
+  --card-inner: #6b8cff;
+  --card-outer: #2a3147;
+  --hover-glow: inset 0 0 15px rgba(107, 140, 255, 0.08);
+  --input-bg: rgba(0, 0, 0, 0.3);
+  --font-header: 'Cinzel', Georgia, serif;
+  --font-body: 'Crimson Pro', Georgia, serif;
+  --radius: 6px;
+  --h-spacing: 0.12em;
+  --red: #e05260;
+}
+
+
 [data-theme="dnd5e"] {
   --bg: #0f0d0a;
   --bg2: #151109;

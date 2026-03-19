@@ -30,8 +30,12 @@ router.get('/', requireAuth, (req, res) => {
 
   const sessions = db.prepare("SELECT id, title, played_at as subtitle, 'session' as type FROM sessions WHERE title LIKE ? OR summary LIKE ? LIMIT 5").all(like, like);
   const jobs = db.prepare("SELECT id, title, difficulty as subtitle, 'job' as type FROM jobs WHERE title LIKE ? LIMIT 5").all(like);
+  const bestiary = db.prepare(`SELECT id, name as title, type as subtitle, 'bestiary' as type FROM bestiary WHERE name LIKE ? LIMIT 5`).all(like);
+  const maps = db.prepare(`SELECT id, title, '' as subtitle, 'map' as type FROM maps WHERE title LIKE ? LIMIT 5`).all(like);
+  const rumours = db.prepare(`SELECT id, title, source as subtitle, 'rumour' as type FROM rumours WHERE title LIKE ? OR body LIKE ? LIMIT 5`).all(like, like);
+  const handouts = db.prepare(`SELECT id, title, file_type as subtitle, 'handout' as type FROM handouts WHERE title LIKE ? LIMIT 5`).all(like);
 
-  results.push(...quests, ...npcs, ...locations, ...hooks, ...items, ...keyItems, ...factions, ...notes, ...sessions, ...jobs);
+  results.push(...quests, ...npcs, ...locations, ...hooks, ...items, ...keyItems, ...factions, ...notes, ...sessions, ...jobs, ...bestiary, ...maps, ...rumours, ...handouts);
   res.json({ results: results.slice(0, 30) });
 });
 

@@ -657,3 +657,36 @@ Open `dnd-portal-v2.html` in browser and log in.
 | `thorin` | `player2` | Player |
 | `seraphine` | `player3` | Player |
 | `zyx` | `player4` | Player |
+
+---
+
+## Changelog
+
+### 2026-03-19 — v1 Polish Sprint
+
+#### New Features
+- **Update notification banner** — server assigns a startup ID (`Date.now()`); client polls `/api/version` every 5 minutes and displays an amber sticky banner if the server has been redeployed, prompting users to refresh
+- **Markdown rendering** — installed `marked` library; all content fields across every view now render proper markdown. Created `client/src/utils/markdown.js` with `renderMd()` (full HTML) and `stripMd()` (plain-text card preview) utilities
+- **D3 bundled** — replaced CDN script injection (`cdnjs.cloudflare.com`) in Theory Board and Mindmap with proper ES import (`import * as d3 from 'd3'`); `d3` added to `client/package.json`; both views no longer break when offline
+
+#### Bug Fixes
+- **Search navigation** — `searchNav()` now opens the entity detail modal directly (not just navigates to list page) for all types that have detail views
+- **Mobile collapse button on mobile** — sidebar icon-only toggle button now hidden on ≤768px screens (icon-only mode is desktop-only)
+- **Handout `file_type`** — content editor is MarkdownEditor but was saving `file_type: 'text'`; fixed to `'markdown'` so the player-facing HandoutModal renders with `marked.parse()`
+- **`EntityLookup` null clear** — confirmed no bug; `×` button on pill emits `null`, `clearSingle()` already handled
+
+#### Improvements
+- **Sidebar** — chevrons replaced with rotating `›` icons; icon-only collapse mode on desktop (48px wide, shows only icons); smooth CSS transitions; topbar icons pinned to far right via `margin-left: auto`
+- **Map create modal** — restyled to match faction form: `entity-form-grid` layout, MarkdownEditor for description, EntityLookup for linked location, GM notes section, styled upload button
+- **Handout create modal** — MarkdownEditor for body, styled upload button + image preview
+- **Error handling** — all 17 data store `load*()` functions wrapped in `safe()` helper; failures show a toast with type name rather than leaving the user on a blank screen
+- **Search coverage** — added `bestiary`, `maps`, `rumours`, `handouts` to `/api/search` endpoint; updated `AppTopbar.vue` `PAGE_MAP` and `DETAIL_STORE` for all new types
+- **Mobile CSS** — added `.page-content`, `.entity-form-grid`, `.efg-sidebar` to mobile media queries; `.page-content` padding reduced at 768px and 480px breakpoints
+
+#### Technical Debt Flagged (not fixed yet)
+- **GmEditModal.vue** — 1,291-line "God Component" handling 18 entity types; to be refactored incrementally when touching individual forms
+- **Vault bidirectional sync** — vault watcher currently only reads; write-back for vault types (quests, npcs, etc.) may have edge cases; to be audited before v1 release
+- **Default theme** — existing themes are system-specific; a clean neutral "Default" theme should be added as the first-time fallback
+- **Password reset** — no self-service reset flow; GM can reset via dashboard but players cannot reset their own passwords
+- **Empty states** — several pages show generic "No items found" rather than themed empty states
+

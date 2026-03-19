@@ -54,7 +54,7 @@
         </template>
         <template #body>
           <div v-if="item.quantity != null" class="card-meta">Qty: {{ item.quantity }}</div>
-          <div v-if="item.description" class="card-overview">{{ item.description }}</div>
+          <div v-if="item.description" class="card-overview">{{ stripMd(item.description) }}</div>
           <div v-if="item.weight != null" class="card-meta">Weight: {{ item.weight }}</div>
         </template>
         <template #actions>
@@ -87,7 +87,7 @@
           <span v-if="item.type" class="tag">{{ item.type }}</span>
         </template>
         <template #body>
-          <div v-if="item.description" class="card-overview">{{ item.description }}</div>
+          <div v-if="item.description" class="card-overview">{{ stripMd(item.description) }}</div>
           <div v-if="item.connected_to?.length" class="card-meta">Linked: {{ item.connected_to.join(', ') }}</div>
         </template>
       </EntityCard>
@@ -98,6 +98,7 @@
 </template>
 
 <script setup>
+import { stripMd } from '@/utils/markdown'
 import { ref, computed, onMounted } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'

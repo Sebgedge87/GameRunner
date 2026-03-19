@@ -44,7 +44,7 @@
                   <span v-if="event.in_world_date" class="tag">{{ event.in_world_date }}</span>
                   <span v-if="event.session_number" class="tag">S{{ event.session_number }}</span>
                 </div>
-                <div v-if="event.description" class="tl-card-desc">{{ event.description }}</div>
+                <div v-if="event.description" class="tl-card-desc">{{ stripMd(event.description) }}</div>
               </div>
               <div class="tl-stem"></div>
             </template>
@@ -67,7 +67,7 @@
                   <span v-if="event.in_world_date" class="tag">{{ event.in_world_date }}</span>
                   <span v-if="event.session_number" class="tag">S{{ event.session_number }}</span>
                 </div>
-                <div v-if="event.description" class="tl-card-desc">{{ event.description }}</div>
+                <div v-if="event.description" class="tl-card-desc">{{ stripMd(event.description) }}</div>
               </div>
             </template>
           </div>
@@ -79,6 +79,7 @@
 </template>
 
 <script setup>
+import { stripMd } from '@/utils/markdown'
 import { ref, computed, onMounted } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'

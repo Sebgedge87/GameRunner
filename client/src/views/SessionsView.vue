@@ -10,7 +10,11 @@
 
     <!-- Sessions list -->
     <div class="card-grid" style="grid-template-columns:1fr">
-      <div v-if="!data.sessions.length" class="empty-state">No sessions recorded.</div>
+      <div v-if="!data.sessions.length" class="empty-state">
+        <span class="empty-state-icon">📖</span>
+        <div class="empty-state-title">No Sessions Yet</div>
+        <div class="empty-state-hint">GM: record each session to build a campaign chronicle.</div>
+      </div>
       <div
         v-for="s in sortedSessions"
         :key="s.id"
@@ -34,7 +38,7 @@
         <template v-if="openSessions.has(s.id)">
           <div class="ec-body">
             <!-- Summary -->
-            <div v-if="s.summary" class="session-summary">{{ s.summary }}</div>
+            <div v-if="s.summary" class="session-summary prose" v-html="renderMd(s.summary)"></div>
             <div v-else style="color:var(--text3);font-size:12px;font-style:italic">No summary recorded.</div>
 
             <!-- Player notes -->
@@ -42,7 +46,7 @@
               <div class="session-section-label">Player Notes</div>
               <div v-for="n in s.notes" :key="n.id" class="session-note">
                 <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-                  <div style="font-size:13px"><b>{{ n.character_name || 'Anon' }}</b>: {{ n.body }}</div>
+                  <div style="font-size:13px"><b>{{ n.character_name || 'Anon' }}</b>: <span class="prose" v-html="renderMd(n.body)"></span></div>
                   <div v-if="canEditNote(n)" style="display:flex;gap:4px;flex-shrink:0">
                     <button class="btn btn-sm" @click="startEditNote(s.id, n)">Edit</button>
                     <button class="btn btn-sm btn-danger" @click="deleteSessionNote(s.id, n.id)">Del</button>
@@ -133,6 +137,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { renderMd } from '@/utils/markdown'
 import { useAuthStore } from '@/stores/auth'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'

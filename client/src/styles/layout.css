@@ -262,6 +262,7 @@
 .logout-btn:hover { color: var(--text); border-color: var(--border2); }
 
 /* ── Sidebar collapse toggle button ─────────────────────────────────────── */
+@media (max-width: 768px) { .sidebar-collapse-btn { display: none; } }
 .sidebar-collapse-btn {
   display: flex;
   align-items: center;

@@ -4,7 +4,14 @@
     <div class="search-row" style="margin-bottom:16px">
       <input v-model="search" class="form-input" placeholder="Search creatures…" style="max-width:320px" />
     </div>
-    <div class="card-grid">
+    <div v-if="data.loading && !data.bestiary.length" class="card-grid">
+      <div v-for="n in 6" :key="n" class="skeleton-card">
+        <div class="skeleton-line skeleton-img"></div>
+        <div class="skeleton-line skeleton-title"></div>
+        <div class="skeleton-line skeleton-body"></div>
+      </div>
+    </div>
+    <div v-else class="card-grid">
       <div v-if="campaign.isGm" class="add-tile" @click="ui.openGmEdit('bestiary', null, {})">
         <div class="add-tile-icon">+</div><div class="add-tile-label">Add Creature</div>
       </div>
@@ -21,18 +28,23 @@
           <span v-if="creature.stats?.hp != null" class="tag">HP {{ creature.stats.hp }}</span>
         </template>
         <template #body>
-          <div v-if="creature.description" class="card-overview">{{ creature.description }}</div>
+          <div v-if="creature.description" class="card-overview">{{ stripMd(creature.description) }}</div>
         </template>
         <template #actions>
           <button v-if="campaign.isGm" class="btn btn-sm" @click.stop="revealCreature(creature.id, !creature.revealed)">{{ creature.revealed ? '👁 Hide' : '⭐ Reveal' }}</button>
         </template>
       </EntityCard>
     </div>
-    <div v-if="filteredBestiary.length === 0" class="empty-state">No creatures found.</div>
+    <div v-if="!data.loading && filteredBestiary.length === 0" class="empty-state">
+      <span class="empty-state-icon">🐉</span>
+      <div class="empty-state-title">{{ data.bestiary.length ? 'No Matches' : 'Bestiary Empty' }}</div>
+      <div class="empty-state-hint">{{ data.bestiary.length ? 'Try a different search or filter.' : 'GM: catalogue the creatures your party may encounter.' }}</div>
+    </div>
   </div>
 </template>
 
 <script setup>
+import { stripMd } from '@/utils/markdown'
 import { ref, computed, onMounted } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'

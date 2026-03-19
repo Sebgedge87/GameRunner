@@ -7,7 +7,15 @@
     <div class="filter-tabs">
       <button v-for="tab in tabs" :key="tab.value" class="filter-tab" :class="{ active: activeTab === tab.value }" @click="activeTab = tab.value">{{ tab.label }}</button>
     </div>
-    <div class="card-grid">
+    <div v-if="data.loading && !data.hooks.length" class="card-grid">
+      <div v-for="n in 6" :key="n" class="skeleton-card">
+        <div class="skeleton-line skeleton-title"></div>
+        <div class="skeleton-line skeleton-sub"></div>
+        <div class="skeleton-line skeleton-body"></div>
+        <div class="skeleton-line skeleton-body-short"></div>
+      </div>
+    </div>
+    <div v-else class="card-grid">
       <div v-if="campaign.isGm" class="add-tile" @click="ui.openGmEdit('hook', null, {})">
         <div class="add-tile-icon">+</div><div class="add-tile-label">Add Hook</div>
       </div>
@@ -22,17 +30,22 @@
           <span v-if="hook.status" class="tag" :class="statusClass(hook.status)">{{ hook.status }}</span>
         </template>
         <template #body>
-          <div v-if="hook.description" class="card-overview">{{ hook.description }}</div>
+          <div v-if="hook.description" class="card-overview">{{ stripMd(hook.description) }}</div>
           <div v-if="hook.session_delivered" class="card-meta">Delivered: Session {{ hook.session_delivered }}</div>
           <div v-if="hook.connected_to?.length" class="card-meta">Linked: {{ hook.connected_to.join(', ') }}</div>
         </template>
       </EntityCard>
     </div>
-    <div v-if="filteredHooks.length === 0" class="empty-state">No hooks found.</div>
+    <div v-if="!data.loading && filteredHooks.length === 0" class="empty-state">
+      <span class="empty-state-icon">🪝</span>
+      <div class="empty-state-title">{{ data.hooks.length ? 'No Matches' : 'No Hooks Yet' }}</div>
+      <div class="empty-state-hint">{{ data.hooks.length ? 'Try a different search or filter.' : 'GM: plant clues and leads to draw players into the story.' }}</div>
+    </div>
   </div>
 </template>
 
 <script setup>
+import { stripMd } from '@/utils/markdown'
 import { ref, computed, onMounted } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'

@@ -23,18 +23,23 @@
           <span v-if="campaign.isGm" class="tag" :class="rumour.is_true ? 'tag-active' : 'tag-inactive'">{{ rumour.is_true ? 'True' : 'False' }}</span>
         </template>
         <template #body>
-          <div v-if="rumour.text && rumour.text.length > 60" class="card-overview">{{ rumour.text }}</div>
+          <div v-if="rumour.text && rumour.text.length > 60" class="card-overview">{{ stripMd(rumour.text) }}</div>
         </template>
         <template #actions>
           <button v-if="campaign.isGm" class="btn btn-sm" @click.stop="exposeRumour(rumour.id)">📢 Expose</button>
         </template>
       </EntityCard>
     </div>
-    <div v-if="filteredRumours.length === 0" class="empty-state">No rumours found.</div>
+    <div v-if="filteredRumours.length === 0" class="empty-state">
+      <span class="empty-state-icon">🗣️</span>
+      <div class="empty-state-title">{{ data.rumours.length ? 'No Matches' : 'No Rumours Yet' }}</div>
+      <div class="empty-state-hint">{{ data.rumours.length ? 'Try a different search or filter.' : 'GM: plant whispers — some true, some false. Players won\'t know which.' }}</div>
+    </div>
   </div>
 </template>
 
 <script setup>
+import { stripMd } from '@/utils/markdown'
 import { ref, computed, onMounted } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'

@@ -121,11 +121,33 @@ const PAGE_MAP = {
   quest: 'quests', npc: 'npcs', location: 'locations', hook: 'hooks',
   inventory: 'inventory', 'key-item': 'inventory', faction: 'factions',
   note: 'notes', session: 'sessions', job: 'jobs',
+  bestiary: 'bestiary', map: 'maps', rumour: 'rumours', handout: 'handouts',
+}
+
+// Types that have a detail modal — look up the full entity and open it directly
+const DETAIL_STORE = {
+  quest:     () => data.quests,
+  npc:       () => data.npcs,
+  location:  () => data.locations,
+  hook:      () => data.hooks,
+  faction:   () => data.factions,
+  inventory: () => data.inventory,
+  'key-item':() => data.keyItems,
+  job:       () => data.jobs,
+  bestiary:  () => data.bestiary,
+  map:       () => data.maps,
+  rumour:    () => data.rumours,
 }
 
 function searchNav(result) {
   searchDropOpen.value = false
   searchQ.value = ''
+  const store = DETAIL_STORE[result.type]
+  if (store) {
+    const entity = store().find(e => String(e.id) === String(result.id))
+    if (entity) { ui.openDetail(result.type, entity); return }
+  }
+  // Fallback: navigate to list page (notes, sessions, etc.)
   const page = PAGE_MAP[result.type] || result.type
   router.push(`/${page}`)
 }

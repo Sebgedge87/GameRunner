@@ -21,7 +21,15 @@
       >{{ tab.label }}</button>
     </div>
 
-    <div class="card-grid">
+    <div v-if="data.loading && !data.quests.length" class="card-grid">
+      <div v-for="n in 6" :key="n" class="skeleton-card">
+        <div class="skeleton-line skeleton-img"></div>
+        <div class="skeleton-line skeleton-title"></div>
+        <div class="skeleton-line skeleton-sub"></div>
+        <div class="skeleton-line skeleton-body"></div>
+      </div>
+    </div>
+    <div v-else class="card-grid">
       <QuestCard
         v-for="quest in filteredQuests"
         :key="quest.id"
@@ -31,7 +39,11 @@
       />
     </div>
 
-    <div v-if="filteredQuests.length === 0" class="empty-state">No quests found.</div>
+    <div v-if="!data.loading && filteredQuests.length === 0" class="empty-state">
+      <span class="empty-state-icon">⚔️</span>
+      <div class="empty-state-title">{{ data.quests.length ? 'No Matches' : 'No Quests Yet' }}</div>
+      <div class="empty-state-hint">{{ data.quests.length ? 'Try a different search or filter.' : 'GM: use + New Quest to start your first adventure.' }}</div>
+    </div>
   </div>
 </template>
 

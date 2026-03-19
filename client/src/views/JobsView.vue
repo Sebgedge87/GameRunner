@@ -26,7 +26,7 @@
           <span v-if="job.danger" class="tag tag-inactive">{{ job.danger }}</span>
         </template>
         <template #body>
-          <div v-if="job.description" class="card-overview">{{ job.description }}</div>
+          <div v-if="job.description" class="card-overview">{{ stripMd(job.description) }}</div>
           <div v-if="job.reward" class="card-meta">🎁 {{ job.reward }}</div>
           <div v-if="job.location" class="card-meta">📍 {{ job.location }}</div>
           <div v-if="job.employer" class="card-meta">Employer: {{ job.employer }}</div>
@@ -38,11 +38,16 @@
         </template>
       </EntityCard>
     </div>
-    <div v-if="filteredJobs.length === 0" class="empty-state">No jobs found.</div>
+    <div v-if="filteredJobs.length === 0" class="empty-state">
+      <span class="empty-state-icon">📋</span>
+      <div class="empty-state-title">{{ data.jobs.length ? 'No Matches' : 'Notice Board Empty' }}</div>
+      <div class="empty-state-hint">{{ data.jobs.length ? 'Try a different search or filter.' : 'GM: post available work for hire — bounties, escorts, investigations.' }}</div>
+    </div>
   </div>
 </template>
 
 <script setup>
+import { stripMd } from '@/utils/markdown'
 import { ref, computed, onMounted } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'
