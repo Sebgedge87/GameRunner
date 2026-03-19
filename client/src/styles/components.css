@@ -401,7 +401,10 @@ body[data-font-size="small"] .nav-item{font-size:12px;}
 /* ── Modal ───────────────────────────────────────────────────────────────────── */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:200;align-items:center;justify-content:center;}
 .modal-overlay.open{display:flex;}
-.modal{background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:26px;max-width:620px;width:92%;max-height:88vh;overflow-y:auto;animation:fade-in .2s ease;}
+.modal{background:var(--surface);border:1px solid var(--card-inner,var(--accent));outline:1px solid var(--card-outer,var(--border));outline-offset:-3px;border-radius:var(--radius,4px);padding:26px;max-width:620px;width:92%;max-height:88vh;overflow-y:auto;animation:fade-in .2s ease;position:relative;}
+.modal::before,.modal::after{content:'';position:absolute;width:10px;height:10px;border-color:var(--card-inner,var(--accent));border-style:solid;opacity:0.6;}
+.modal::before{top:5px;left:5px;border-width:1px 0 0 1px;}
+.modal::after{bottom:5px;right:5px;border-width:0 1px 1px 0;}
 .modal-title{font-family:'Cinzel',serif;font-size:16px;color:var(--accent);margin-bottom:14px;}
 .modal-from{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px;}
 .modal-body{font-size:14px;color:var(--text2);line-height:1.75;white-space:pre-wrap;}
