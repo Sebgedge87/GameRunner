@@ -132,6 +132,14 @@
                     <option>Hostile</option><option>Helpful</option><option>Fearful</option>
                   </select>
                 </div>
+                <div class="form-group">
+                  <label class="efg-label">Faction</label>
+                  <EntityLookup v-model="f.faction_id" :options="data.factions.map(x=>({id:x.id,title:x.name}))" placeholder="Search factions…" />
+                </div>
+                <div class="form-group">
+                  <label class="efg-label">Home Location</label>
+                  <EntityLookup v-model="f.home_location_id" :options="data.locations.map(x=>({id:x.id,title:x.title||x.name}))" placeholder="Search locations…" />
+                </div>
               </div>
             </div>
             <!-- Body -->
@@ -139,14 +147,6 @@
               <div class="form-group" style="flex:1">
                 <label class="efg-label">Biography</label>
                 <MarkdownEditor v-model="f.description" :minRows="8" placeholder="Describe this character's appearance, background, and personality…" />
-              </div>
-              <div class="form-group">
-                <label class="efg-label">Faction</label>
-                <EntityLookup v-model="f.faction_id" :options="data.factions.map(x=>({id:x.id,title:x.name}))" placeholder="Search factions…" />
-              </div>
-              <div class="form-group">
-                <label class="efg-label">Home Location</label>
-                <EntityLookup v-model="f.home_location_id" :options="data.locations.map(x=>({id:x.id,title:x.title||x.name}))" placeholder="Search locations…" />
               </div>
               <div class="form-group">
                 <label class="efg-label">Player Notes</label>
@@ -1193,11 +1193,11 @@ async function save() {
 }
 
 .efg-portrait {
-  width: 120px;
-  height: 120px;
+  width: 100%;
+  height: 180px;
   border-radius: 8px;
   border: 2px solid var(--border2);
-  background: var(--bg3) center/cover no-repeat;
+  background: var(--bg3) center/contain no-repeat;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1286,6 +1286,6 @@ async function save() {
 @media (max-width: 600px) {
   .entity-form-grid { grid-template-columns: 1fr; }
   .efg-portrait-wrap { flex-direction: row; justify-content: flex-start; }
-  .efg-portrait { width: 80px; height: 80px; }
+  .efg-portrait { width: 100%; height: 120px; }
 }
 </style>
