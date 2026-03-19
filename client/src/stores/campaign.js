@@ -109,10 +109,23 @@ export const useCampaignStore = defineStore('campaign', () => {
     return d.campaign
   }
 
+  const currentPartyLocationId = computed(() => activeCampaign.value?.current_party_location_id || null)
+
+  async function setPartyLocation(locId) {
+    if (!activeCampaign.value?.id) return
+    const r = await apif(`/api/campaigns/${activeCampaign.value.id}/party-location`, {
+      method: 'PUT',
+      body: JSON.stringify({ location_id: locId }),
+    })
+    if (r.ok) {
+      activeCampaign.value = { ...activeCampaign.value, current_party_location_id: locId ? String(locId) : null }
+    }
+  }
+
   return {
-    activeCampaign, allCampaigns, isGm,
+    activeCampaign, allCampaigns, isGm, currentPartyLocationId,
     SYSTEM_META, SYSTEM_THEME_MAP,
     applyTheme, applyCustomTheme,
-    loadCampaigns, switchCampaign, createCampaign, joinCampaign,
+    loadCampaigns, switchCampaign, createCampaign, joinCampaign, setPartyLocation,
   }
 })

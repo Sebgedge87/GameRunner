@@ -1,6 +1,6 @@
 <template>
   <div v-if="ui.gmEditModal" class="modal-overlay open" @click.self="ui.closeGmEdit()">
-    <div class="modal" :style="{ maxWidth: type === 'bestiary' ? '680px' : '520px' }">
+    <div class="modal" :style="{ maxWidth: ['bestiary','npc','location','faction','job','timeline'].includes(type) ? '700px' : '520px' }">
       <div class="modal-title">{{ title }}</div>
       <div class="gm-modal-body">
         <!-- Quest -->
@@ -102,17 +102,119 @@
         <!-- NPC -->
         <template v-else-if="type === 'npc'">
           <div class="form-group"><label>Name</label><input v-model="f.name" class="form-input" /></div>
-          <div class="form-group"><label>Role / Occupation</label><input v-model="f.role" class="form-input" placeholder="Innkeeper, guard..." /></div>
-          <div class="form-group"><label>Description</label><textarea v-model="f.description" class="form-input" rows="3"></textarea></div>
-          <div class="form-group"><label>Notes (GM only)</label><textarea v-model="f.gm_notes" class="form-input" rows="2"></textarea></div>
-          <div class="form-group"><label>Image</label><input type="file" ref="imgInput" class="form-input" accept="image/*" /></div>
+          <div class="entity-form-grid">
+            <!-- Sidebar -->
+            <div class="efg-sidebar">
+              <div class="efg-portrait-wrap">
+                <div class="efg-portrait" :style="portraitPreview ? `background-image:url(${portraitPreview})` : ''">
+                  <span v-if="!portraitPreview" class="efg-portrait-icon">🧙</span>
+                </div>
+                <label class="btn btn-sm efg-upload-btn">
+                  Upload Portrait
+                  <input type="file" ref="imgInput" accept="image/*" style="display:none" @change="onPortraitChange" />
+                </label>
+              </div>
+              <div class="efg-stat-block">
+                <div class="efg-stat-title">Character</div>
+                <div class="form-group">
+                  <label class="efg-label">Role</label>
+                  <input v-model="f.role" class="form-input" placeholder="Innkeeper, guard…" />
+                </div>
+                <div class="form-group">
+                  <label class="efg-label">Race</label>
+                  <input v-model="f.race" class="form-input" placeholder="Human, Elf…" />
+                </div>
+                <div class="form-group">
+                  <label class="efg-label">Disposition</label>
+                  <select v-model="f.disposition" class="form-input">
+                    <option value="">Unknown</option>
+                    <option>Friendly</option><option>Neutral</option><option>Suspicious</option>
+                    <option>Hostile</option><option>Helpful</option><option>Fearful</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <!-- Body -->
+            <div class="efg-body">
+              <div class="form-group" style="flex:1">
+                <label class="efg-label">Biography</label>
+                <MarkdownEditor v-model="f.description" :minRows="8" placeholder="Describe this character's appearance, background, and personality…" />
+              </div>
+              <div class="form-group">
+                <label class="efg-label">Faction</label>
+                <EntityLookup v-model="f.faction_id" :options="data.factions.map(x=>({id:x.id,title:x.name}))" placeholder="Search factions…" />
+              </div>
+              <div class="form-group">
+                <label class="efg-label">Home Location</label>
+                <EntityLookup v-model="f.home_location_id" :options="data.locations.map(x=>({id:x.id,title:x.title||x.name}))" placeholder="Search locations…" />
+              </div>
+              <div class="form-group">
+                <label class="efg-label">Player Notes</label>
+                <MarkdownEditor v-model="f.player_notes" :minRows="3" placeholder="Notes visible to all players…" />
+              </div>
+              <div class="efg-gm-notes">
+                <div class="efg-gm-hdr"><span class="bst-gm-badge">🔒 GM Only</span><span class="bst-gm-notes-title">Private Notes</span></div>
+                <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Secrets, motivations, hidden knowledge…" />
+              </div>
+            </div>
+          </div>
         </template>
 
         <!-- Location -->
         <template v-else-if="type === 'location'">
           <div class="form-group"><label>Name</label><input v-model="f.name" class="form-input" /></div>
-          <div class="form-group"><label>Description</label><textarea v-model="f.description" class="form-input" rows="4"></textarea></div>
-          <div class="form-group"><label>Image</label><input type="file" ref="imgInput" class="form-input" accept="image/*" /></div>
+          <div class="entity-form-grid">
+            <!-- Sidebar -->
+            <div class="efg-sidebar">
+              <div class="efg-portrait-wrap">
+                <div class="efg-portrait efg-portrait--map" :style="portraitPreview ? `background-image:url(${portraitPreview})` : ''">
+                  <span v-if="!portraitPreview" class="efg-portrait-icon">🗺️</span>
+                </div>
+                <label class="btn btn-sm efg-upload-btn">
+                  Upload Thumbnail
+                  <input type="file" ref="imgInput" accept="image/*" style="display:none" @change="onPortraitChange" />
+                </label>
+              </div>
+              <div class="efg-stat-block">
+                <div class="efg-stat-title">Details</div>
+                <div class="form-group">
+                  <label class="efg-label">Type</label>
+                  <select v-model="f.location_type" class="form-input">
+                    <option value="">Unknown</option>
+                    <option>City</option><option>Town</option><option>Village</option>
+                    <option>Dungeon</option><option>Forest</option><option>Keep</option>
+                    <option>Tavern</option><option>Temple</option><option>Region</option>
+                    <option>Wilderness</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="efg-label">Danger Level (0–5)</label>
+                  <input v-model.number="f.danger_level" class="form-input" type="number" min="0" max="5" />
+                </div>
+              </div>
+            </div>
+            <!-- Body -->
+            <div class="efg-body">
+              <div class="form-group" style="flex:1">
+                <label class="efg-label">Description</label>
+                <MarkdownEditor v-model="f.description" :minRows="8" placeholder="Describe this location — its sights, smells, inhabitants, history…" />
+              </div>
+              <div class="form-group">
+                <label class="efg-label">Parent Location</label>
+                <EntityLookup v-model="f.parent_location_id"
+                  :options="data.locations.filter(l=>l.id!==ui.gmEditModal?.id).map(x=>({id:x.id,title:x.title||x.name}))"
+                  placeholder="Search locations…" />
+              </div>
+              <div class="form-group">
+                <label class="efg-label">Player Notes</label>
+                <MarkdownEditor v-model="f.player_notes" :minRows="3" placeholder="Notes visible to all players…" />
+              </div>
+              <div class="efg-gm-notes">
+                <div class="efg-gm-hdr"><span class="bst-gm-badge">🔒 GM Only</span><span class="bst-gm-notes-title">Private Notes</span></div>
+                <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Hidden traps, secret doors, GM-only lore…" />
+              </div>
+            </div>
+          </div>
         </template>
 
         <!-- Hook -->
@@ -162,25 +264,100 @@
         <!-- Faction -->
         <template v-else-if="type === 'faction'">
           <div class="form-group"><label>Name</label><input v-model="f.name" class="form-input" /></div>
-          <div class="form-group"><label>Description</label><textarea v-model="f.description" class="form-input" rows="3"></textarea></div>
-          <div class="form-group"><label>Goals</label><textarea v-model="f.goals" class="form-input" rows="2" placeholder="What does this faction want?"></textarea></div>
-          <div class="form-group"><label>Known Members</label><input v-model="f.known_members" class="form-input" placeholder="Comma-separated names" /></div>
+          <div class="entity-form-grid">
+            <!-- Sidebar -->
+            <div class="efg-sidebar">
+              <div class="efg-portrait-wrap">
+                <div class="efg-portrait" :style="portraitPreview ? `background-image:url(${portraitPreview})` : ''">
+                  <span v-if="!portraitPreview" class="efg-portrait-icon">🏰</span>
+                </div>
+                <label class="btn btn-sm efg-upload-btn">
+                  Upload Icon
+                  <input type="file" ref="imgInput" accept="image/*" style="display:none" @change="onPortraitChange" />
+                </label>
+              </div>
+              <div class="efg-stat-block">
+                <div class="efg-stat-title">Status</div>
+                <div class="form-group">
+                  <label class="efg-label">Standing (−10 to +10)</label>
+                  <input v-model.number="f.standing" class="form-input efg-stat-input" type="number" min="-10" max="10" />
+                </div>
+                <div class="form-group">
+                  <label class="efg-label">Influence (1–5)</label>
+                  <input v-model.number="f.influence" class="form-input efg-stat-input" type="number" min="1" max="5" />
+                </div>
+              </div>
+            </div>
+            <!-- Body -->
+            <div class="efg-body">
+              <div class="form-group">
+                <label class="efg-label">Description / Lore</label>
+                <MarkdownEditor v-model="f.description" :minRows="5" placeholder="Describe this faction's history, beliefs, and methods…" />
+              </div>
+              <div class="form-group">
+                <label class="efg-label">Goals</label>
+                <MarkdownEditor v-model="f.goals" :minRows="3" placeholder="What does this faction want?" />
+              </div>
+              <div class="form-group">
+                <label class="efg-label">Leader (NPC)</label>
+                <EntityLookup v-model="f.leader_npc_id" :options="data.npcs.map(x=>({id:x.id,title:x.title||x.name}))" placeholder="Search NPCs…" />
+              </div>
+              <div class="form-group">
+                <label class="efg-label">Headquarters (Location)</label>
+                <EntityLookup v-model="f.hq_location_id" :options="data.locations.map(x=>({id:x.id,title:x.title||x.name}))" placeholder="Search locations…" />
+              </div>
+              <div class="form-group">
+                <label class="efg-label">Members (NPCs)</label>
+                <EntityLookup v-model="f.member_ids" :options="data.npcs.map(x=>({id:x.id,title:x.title||x.name}))" :multiple="true" placeholder="Add members…" />
+              </div>
+              <div class="efg-gm-notes">
+                <div class="efg-gm-hdr"><span class="bst-gm-badge">🔒 GM Only</span><span class="bst-gm-notes-title">Private Notes</span></div>
+                <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Internal tensions, secret agendas, hidden members…" />
+              </div>
+            </div>
+          </div>
         </template>
 
         <!-- Timeline -->
         <template v-else-if="type === 'timeline'">
           <div class="form-group"><label>Title</label><input v-model="f.title" class="form-input" /></div>
-          <div class="form-group"><label>In-World Date</label><input v-model="f.in_world_date" class="form-input" placeholder="Day 14, Year 1502…" /></div>
-          <div class="form-group"><label>Description</label><textarea v-model="f.description" class="form-input" rows="3"></textarea></div>
-          <div class="form-group"><label>Linked Quest (optional)</label>
-            <SearchSelect
-              v-model="f.linked_quest"
-              :options="data.quests"
-              :multiple="false"
-              label-key="title"
-              value-key="title"
-              placeholder="Search quests…"
-            />
+          <div class="entity-form-grid">
+            <div class="efg-sidebar">
+              <div class="efg-stat-block" style="margin-top:0">
+                <div class="efg-stat-title">When</div>
+                <div class="form-group">
+                  <label class="efg-label">In-World Date</label>
+                  <input v-model="f.in_world_date" class="form-input" placeholder="Day 14, Year 1502…" />
+                </div>
+                <div class="form-group">
+                  <label class="efg-label">Significance</label>
+                  <select v-model="f.significance" class="form-input">
+                    <option value="minor">Minor</option>
+                    <option value="notable">Notable</option>
+                    <option value="major">Major</option>
+                    <option value="world-changing">World-Changing</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="efg-body">
+              <div class="form-group">
+                <label class="efg-label">Event Description</label>
+                <MarkdownEditor v-model="f.description" :minRows="7" placeholder="Describe what happened and its impact on the world…" />
+              </div>
+              <div class="form-group">
+                <label class="efg-label">Involved NPCs</label>
+                <EntityLookup v-model="f.involved_npc_ids" :options="data.npcs.map(x=>({id:x.id,title:x.title||x.name}))" :multiple="true" placeholder="Add NPCs…" />
+              </div>
+              <div class="form-group">
+                <label class="efg-label">Involved Factions</label>
+                <EntityLookup v-model="f.involved_faction_ids" :options="data.factions.map(x=>({id:x.id,title:x.name}))" :multiple="true" placeholder="Add factions…" />
+              </div>
+              <div class="form-group">
+                <label class="efg-label">Linked Quest</label>
+                <SearchSelect v-model="f.linked_quest" :options="data.quests" :multiple="false" label-key="title" value-key="title" placeholder="Search quests…" />
+              </div>
+            </div>
           </div>
         </template>
 
@@ -213,15 +390,52 @@
         <!-- Job -->
         <template v-else-if="type === 'job'">
           <div class="form-group"><label>Title</label><input v-model="f.title" class="form-input" placeholder="Escort the merchant…" /></div>
-          <div class="form-group"><label>Description</label><textarea v-model="f.description" class="form-input" rows="3"></textarea></div>
-          <div class="form-group"><label>Reward</label><input v-model="f.reward" class="form-input" placeholder="500gp, favour, item…" /></div>
-          <div class="form-group"><label>Difficulty</label>
-            <select v-model="f.difficulty" class="form-input">
-              <option>easy</option><option>medium</option><option>hard</option><option>deadly</option>
-            </select>
+          <div class="entity-form-grid">
+            <div class="efg-sidebar">
+              <div class="efg-stat-block" style="margin-top:0">
+                <div class="efg-stat-title">Details</div>
+                <div class="form-group">
+                  <label class="efg-label">Type</label>
+                  <select v-model="f.job_type" class="form-input">
+                    <option value="bounty">Bounty</option>
+                    <option value="escort">Escort</option>
+                    <option value="delivery">Delivery</option>
+                    <option value="investigation">Investigation</option>
+                    <option value="retrieval">Retrieval</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="efg-label">Difficulty</label>
+                  <select v-model="f.difficulty" class="form-input">
+                    <option>easy</option><option>medium</option><option>hard</option><option>deadly</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="efg-label">💰 Reward</label>
+                  <input v-model="f.reward" class="form-input" placeholder="500gp, favour…" />
+                </div>
+              </div>
+            </div>
+            <div class="efg-body">
+              <div class="form-group">
+                <label class="efg-label">Briefing</label>
+                <MarkdownEditor v-model="f.description" :minRows="7" placeholder="Describe the job, its requirements, and any known dangers…" />
+              </div>
+              <div class="form-group">
+                <label class="efg-label">📍 Source Location (Notice Board)</label>
+                <EntityLookup v-model="f.source_location_id" :options="data.locations.map(x=>({id:x.id,title:x.title||x.name}))" placeholder="Where is this job posted?" />
+              </div>
+              <div class="form-group">
+                <label class="efg-label">Posted By (NPC)</label>
+                <EntityLookup v-model="f.posted_by_npc_id" :options="data.npcs.map(x=>({id:x.id,title:x.title||x.name}))" placeholder="Search NPCs…" />
+              </div>
+              <div class="efg-gm-notes">
+                <div class="efg-gm-hdr"><span class="bst-gm-badge">🔒 GM Only</span><span class="bst-gm-notes-title">Private Notes</span></div>
+                <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="True motives, complications, hidden rewards…" />
+              </div>
+            </div>
           </div>
-          <div class="form-group"><label>Posted By (NPC)</label><input v-model="f.posted_by" class="form-input" /></div>
-          <div class="form-group"><label>Location</label><input v-model="f.location" class="form-input" /></div>
         </template>
 
         <!-- Bestiary -->
@@ -364,6 +578,8 @@ import { useUiStore } from '@/stores/ui'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'
 import SearchSelect from './SearchSelect.vue'
+import EntityLookup from './EntityLookup.vue'
+import MarkdownEditor from './MarkdownEditor.vue'
 
 const ui = useUiStore()
 const data = useDataStore()
@@ -397,6 +613,16 @@ const f = reactive({
   connected_factions_arr: [],
   connected_npcs_arr: [],
   image_url: '',
+  // NPC
+  race: '', disposition: '', faction_id: null, home_location_id: null,
+  // Location
+  danger_level: 0, location_type: '', parent_location_id: null,
+  // Faction
+  standing: 0, influence: 3, leader_npc_id: null, hq_location_id: null, member_ids: [],
+  // Job
+  source_location_id: null, posted_by_npc_id: null, job_type: 'bounty',
+  // Timeline
+  significance: 'minor', involved_npc_ids: [], involved_faction_ids: [],
 })
 
 const type = computed(() => ui.gmEditModal?.type || '')
@@ -489,7 +715,30 @@ watch(() => ui.gmEditModal, (modal) => {
   f.ac = d.stats?.ac ?? null
   f.hp = d.stats?.hp ?? null
   f.player_notes = d.player_notes || ''
-  if (modal.type === 'bestiary') portraitPreview.value = d.image_path || d.image_url || ''
+  if (['bestiary','npc','location','faction'].includes(modal.type)) portraitPreview.value = d.image_path || d.image_url || ''
+  // NPC
+  f.race = d.race || ''
+  f.disposition = d.disposition || ''
+  f.faction_id = d.faction_id || null
+  f.home_location_id = d.home_location_id || null
+  // Location
+  f.danger_level = d.danger_level || 0
+  f.location_type = d.location_type || ''
+  f.parent_location_id = d.parent_location_id || null
+  // Faction
+  f.standing = d.standing || 0
+  f.influence = d.influence || 3
+  f.leader_npc_id = d.leader_npc_id || null
+  f.hq_location_id = d.hq_location_id || null
+  f.member_ids = (d.members || []).map(m => m.id)
+  // Job
+  f.source_location_id = d.source_location_id || null
+  f.posted_by_npc_id = d.posted_by_npc_id || null
+  f.job_type = d.job_type || 'bounty'
+  // Timeline
+  f.significance = d.significance || 'minor'
+  f.involved_npc_ids = []
+  f.involved_faction_ids = []
   f.map_type = d.map_type || 'world'
   f.content = d.body || d.content || ''
   f.subject = d.subject || ''
@@ -549,11 +798,15 @@ async function save() {
         }; break
       }
       case 'npc':
-        body = { name: f.name, role: f.role, description: f.description, gm_notes: f.gm_notes }
+        body = { name: f.name, role: f.role, description: f.description, gm_notes: f.gm_notes,
+                 player_notes: f.player_notes, race: f.race, disposition: f.disposition,
+                 faction_id: f.faction_id || null, home_location_id: f.home_location_id || null }
         if (imageUrl) body.image_url = imageUrl
         break
       case 'location':
-        body = { name: f.name, description: f.description }
+        body = { name: f.name, description: f.description, danger_level: f.danger_level,
+                 location_type: f.location_type || null, parent_location_id: f.parent_location_id || null,
+                 gm_notes: f.gm_notes, player_notes: f.player_notes }
         if (imageUrl) body.image_url = imageUrl
         break
       case 'hook':
@@ -568,15 +821,25 @@ async function save() {
         else if (!isEdit.value) throw new Error('Map image is required')
         break
       case 'faction':
-        body = { name: f.name, description: f.description, goals: f.goals, known_members: f.known_members }; break
+        body = { name: f.name, description: f.description, goals: f.goals,
+                 standing: f.standing, influence: f.influence,
+                 leader_npc_id: f.leader_npc_id || null, hq_location_id: f.hq_location_id || null,
+                 gm_notes: f.gm_notes, member_ids: f.member_ids }
+        if (imageUrl) body.image_path = imageUrl
+        break
       case 'timeline':
-        body = { title: f.title, description: f.description, in_world_date: f.in_world_date, linked_quest: f.linked_quest || null }; break
+        body = { title: f.title, description: f.description, in_world_date: f.in_world_date,
+                 linked_quest: f.linked_quest || null, significance: f.significance }; break
       case 'inventory':
         body = { name: f.name, quantity: f.quantity || 1, holder: f.holder || 'party', description: f.description }; break
       case 'key-item':
         body = { name: f.name, description: f.description, significance: f.significance, linked_quest: f.linked_quest || null, image_path: imageUrl }; break
       case 'job':
-        body = { title: f.title, description: f.description, reward: f.reward, difficulty: f.difficulty || 'medium', posted_by: f.posted_by, location: f.location }; break
+        body = { title: f.title, description: f.description, reward: f.reward,
+                 difficulty: f.difficulty || 'medium', job_type: f.job_type || 'bounty',
+                 source_location_id: f.source_location_id || null,
+                 posted_by: f.posted_by || null, posted_by_npc_id: f.posted_by_npc_id || null,
+                 gm_notes: f.gm_notes }; break
       case 'bestiary':
         body = { name: f.name, description: f.description, stats: { cr: f.cr, ac: f.ac, hp: f.hp }, player_notes: f.player_notes, gm_notes: f.gm_notes, image_path: imageUrl }; break
       case 'rumour':
@@ -814,5 +1077,124 @@ async function save() {
   .bst-body { grid-template-columns: 1fr; }
   .bst-stat-block { flex-direction: row; flex-wrap: wrap; gap: 12px; }
   .bst-stat-block .form-group { flex: 1; min-width: 60px; }
+}
+
+/* ── Entity Form 30/70 Grid ──────────────────────────────────────────────── */
+.entity-form-grid {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 20px;
+  margin-top: 8px;
+}
+
+.efg-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.efg-portrait-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.efg-portrait {
+  width: 120px;
+  height: 120px;
+  border-radius: 8px;
+  border: 2px solid var(--border2);
+  background: var(--bg3) center/cover no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color .2s;
+}
+.efg-portrait:hover { border-color: var(--accent); }
+.efg-portrait--map { border-radius: 4px; }
+.efg-portrait-icon { font-size: 36px; opacity: .45; }
+
+.efg-upload-btn {
+  font-size: 10px;
+  padding: 4px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  color: var(--text2);
+  transition: border-color .15s, color .15s;
+}
+.efg-upload-btn:hover { border-color: var(--accent); color: var(--text); }
+
+.efg-stat-block {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 0;
+}
+
+.efg-stat-title {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  color: var(--accent, var(--gold));
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+  margin-bottom: 2px;
+}
+
+.efg-label {
+  display: block;
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text3);
+  margin-bottom: 5px;
+}
+
+.efg-stat-input {
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 15px !important;
+  font-weight: 700;
+  padding: 6px 8px;
+  height: auto;
+}
+
+.efg-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.efg-body > .form-group { margin-bottom: 10px; }
+
+.efg-gm-notes {
+  background: rgba(180, 40, 40, .07);
+  border: 1px solid rgba(201, 76, 76, .35);
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin-top: 4px;
+}
+
+.efg-gm-hdr {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+@media (max-width: 600px) {
+  .entity-form-grid { grid-template-columns: 1fr; }
+  .efg-portrait-wrap { flex-direction: row; justify-content: flex-start; }
+  .efg-portrait { width: 80px; height: 80px; }
 }
 </style>
