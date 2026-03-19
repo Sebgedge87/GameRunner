@@ -258,7 +258,36 @@
               <option value="city">City</option><option value="dungeon">Dungeon</option><option value="encounter">Encounter</option>
             </select>
           </div>
-          <div class="form-group"><label>Map Image</label><input type="file" ref="imgInput" class="form-input" accept="image/*" /></div>
+          <div class="form-group">
+            <label>Linked Location</label>
+            <select v-model="f.map_linked_location_id" class="form-input">
+              <option :value="null">— None —</option>
+              <option v-for="loc in data.locations" :key="loc.id" :value="loc.id">{{ loc.title || loc.name }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Mind Map Links <span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace">(hold Ctrl/Cmd to multi-select)</span></label>
+            <select v-model="f.map_connected_to" class="form-input" multiple style="height:80px">
+              <option v-for="q in data.quests" :key="'q'+q.id" :value="q.title">{{ q.title }} (Quest)</option>
+              <option v-for="n in data.npcs" :key="'n'+n.id" :value="n.title||n.name">{{ n.title||n.name }} (NPC)</option>
+              <option v-for="l in data.locations" :key="'l'+l.id" :value="l.title||l.name">{{ l.title||l.name }} (Location)</option>
+              <option v-for="h in data.hooks" :key="'h'+h.id" :value="h.title">{{ h.title }} (Hook)</option>
+            </select>
+          </div>
+          <div class="form-group"><label>GM Notes</label><textarea v-model="f.gm_notes" class="form-input" rows="2" placeholder="Private — players never see this"></textarea></div>
+          <div class="form-group">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px">
+              <input type="checkbox" v-model="f.map_gm_only" style="width:auto;margin:0" />
+              GM Only — hidden from players
+            </label>
+          </div>
+          <div class="form-group">
+            <label>Map Image{{ isEdit ? ' (leave blank to keep current)' : '' }}</label>
+            <input type="file" ref="imgInput" class="form-input" accept="image/*" @change="onMapImgChange" />
+            <img v-if="mapImgPreview || (isEdit && ui.gmEditModal?.data?.image_path)"
+                 :src="mapImgPreview || ('/uploads/' + ui.gmEditModal?.data?.image_path)"
+                 style="margin-top:8px;max-width:100%;max-height:140px;border-radius:4px;border:1px solid var(--border2);object-fit:contain" />
+          </div>
         </template>
 
         <!-- Faction -->
@@ -590,10 +619,16 @@ const questImgInput = ref(null)
 const saving = ref(false)
 const saveError = ref('')
 const portraitPreview = ref('')
+const mapImgPreview = ref('')
 
 function onPortraitChange(e) {
   const file = e.target.files?.[0]
   if (file) portraitPreview.value = URL.createObjectURL(file)
+}
+
+function onMapImgChange(e) {
+  const file = e.target.files?.[0]
+  mapImgPreview.value = file ? URL.createObjectURL(file) : ''
 }
 
 const f = reactive({
@@ -623,6 +658,8 @@ const f = reactive({
   source_location_id: null, posted_by_npc_id: null, job_type: 'bounty',
   // Timeline
   significance: 'minor', involved_npc_ids: [], involved_faction_ids: [],
+  // Map-specific
+  map_gm_only: false, map_connected_to: [], map_linked_location_id: null,
 })
 
 const type = computed(() => ui.gmEditModal?.type || '')
@@ -667,6 +704,7 @@ watch(() => ui.gmEditModal, (modal) => {
     else f[k] = ''
   })
   portraitPreview.value = ''
+  mapImgPreview.value = ''
   f.status = 'active'; f.quest_type = 'main'; f.difficulty = 'medium'
   f.quantity = 1; f.holder = 'party'; f.map_type = 'world'; f.is_true = true
   f.results_public = 0
@@ -740,6 +778,10 @@ watch(() => ui.gmEditModal, (modal) => {
   f.involved_npc_ids = []
   f.involved_faction_ids = []
   f.map_type = d.map_type || 'world'
+  // Map-specific
+  f.map_gm_only = !!(d.hidden)
+  f.map_linked_location_id = d.linked_location_id || null
+  try { f.map_connected_to = d.connected_to ? JSON.parse(d.connected_to) : [] } catch { f.map_connected_to = [] }
   f.content = d.body || d.content || ''
   f.subject = d.subject || ''
   if (type.value === 'session') {
@@ -816,7 +858,13 @@ async function save() {
       case 'session':
         body = { title: f.title, summary: f.description, session_date: f.date }; break
       case 'map':
-        body = { title: f.title, description: f.description, map_type: f.map_type }
+        body = {
+          title: f.title, description: f.description, map_type: f.map_type,
+          gm_notes: f.gm_notes || null,
+          linked_location_id: f.map_linked_location_id || null,
+          connected_to: f.map_connected_to.length ? JSON.stringify(f.map_connected_to) : null,
+          hidden: f.map_gm_only ? 1 : 0,
+        }
         if (imageUrl) body.image_path = imageUrl
         else if (!isEdit.value) throw new Error('Map image is required')
         break
