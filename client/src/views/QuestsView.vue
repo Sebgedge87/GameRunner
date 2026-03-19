@@ -273,7 +273,6 @@ onMounted(() => {
 <style scoped>
 /* Quest card — no padding on root, sections handle their own */
 .quest-card { padding: 0; overflow: hidden; cursor: pointer; }
-.quest-card.expanded { grid-column: 1 / -1; cursor: default; }
 
 /* ── Header ── */
 .qc-header {
