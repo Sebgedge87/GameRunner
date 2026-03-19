@@ -5,18 +5,26 @@
   >
     <!-- Header: always visible, click to toggle -->
     <div class="ec-header" @click="$emit('toggle')">
-      <div class="ec-title-row">
-        <span v-if="icon" class="ec-icon">{{ icon }}</span>
-        <span class="ec-title">{{ title }}</span>
-        <button
-          v-if="campaign.isGm"
-          class="btn btn-xs ec-edit-btn"
-          title="Edit"
-          @click.stop="ui.openGmEdit(type, entity.id, entity)"
-        >✏️</button>
+      <!-- Portrait thumbnail — always visible -->
+      <div class="ec-portrait">
+        <img v-if="image" :src="image" class="ec-portrait-img" alt="" />
+        <div v-else class="ec-portrait-placeholder">
+          <span class="ec-portrait-icon">{{ icon || '👤' }}</span>
+        </div>
       </div>
-      <div v-if="$slots.badges" class="ec-badge-row">
-        <slot name="badges" />
+      <div class="ec-header-content">
+        <div class="ec-title-row">
+          <span class="ec-title">{{ title }}</span>
+          <button
+            v-if="campaign.isGm"
+            class="btn btn-xs ec-edit-btn"
+            title="Edit"
+            @click.stop="ui.openGmEdit(type, entity.id, entity)"
+          >✏️</button>
+        </div>
+        <div v-if="$slots.badges" class="ec-badge-row">
+          <slot name="badges" />
+        </div>
       </div>
     </div>
 
@@ -94,9 +102,15 @@ async function doDelete() {
 .entity-card { padding: 0; overflow: hidden; cursor: pointer; }
 
 /* ── Header ── */
-.ec-header { padding: 12px 16px 10px; user-select: none; }
-.ec-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-.ec-icon { font-size: 14px; flex-shrink: 0; }
+.ec-header {
+  padding: 10px 12px 10px 10px;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ec-header-content { flex: 1; min-width: 0; }
+.ec-title-row { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
 .ec-title {
   font-family: var(--font-header, 'Cinzel', serif);
   font-size: 13px;
@@ -105,10 +119,39 @@ async function doDelete() {
   text-transform: uppercase;
   flex: 1;
   line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .ec-edit-btn { opacity: 0.45; padding: 2px 6px; font-size: 11px; transition: opacity 0.15s; flex-shrink: 0; }
 .ec-edit-btn:hover { opacity: 1; }
-.ec-badge-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ec-badge-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+
+/* ── Portrait thumbnail ── */
+.ec-portrait {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: var(--radius, 6px);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+}
+.ec-portrait-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.ec-portrait-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface2);
+}
+.ec-portrait-icon { font-size: 20px; opacity: 0.45; }
 
 /* ── Image banner ── */
 .ec-image { width: 100%; max-height: 180px; object-fit: cover; display: block; border-top: 1px solid var(--border); }
