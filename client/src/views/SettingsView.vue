@@ -172,6 +172,7 @@ onMounted(() => {
 
 function applyTheme(key) {
   currentTheme.value = key
+  localStorage.setItem('chronicle_theme_manual', '1')
   campaign.applyTheme(key)
 }
 
@@ -192,7 +193,7 @@ function resetCustomTheme() {
 }
 
 async function saveProfile() {
-  const r = await data.apif('/api/profile', {
+  const r = await data.apif('/api/users/me', {
     method: 'PUT',
     body: JSON.stringify({ character_name: charName.value, character_class: charClass.value }),
   })
