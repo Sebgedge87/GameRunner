@@ -45,6 +45,8 @@ const vaultRoutes = require('./routes/vault');
 const xpRoutes = require('./routes/xp');
 const sharesRoutes = require('./routes/shares');
 
+const SERVER_STARTUP_ID = Date.now().toString();
+
 const app = express();
 app.set('trust proxy', 1);
 
@@ -88,6 +90,9 @@ app.use((req, _res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
   next();
 });
+
+// ── Version endpoint (no auth — used for update detection) ────────────────────
+app.get('/api/version', (_req, res) => res.json({ version: SERVER_STARTUP_ID }));
 
 // ── SSE endpoint ──────────────────────────────────────────────────────────────
 app.get('/api/events', requireAuth, (req, res) => {

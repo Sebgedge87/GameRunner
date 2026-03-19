@@ -11,6 +11,15 @@
     <!-- Main area -->
     <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
       <AppTopbar />
+      <!-- Update available banner -->
+      <div v-if="updateAvailable"
+           style="background:var(--accent);color:#1a1008;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:12px;flex-shrink:0">
+        <span>⚡ A new version is available.</span>
+        <button @click="() => window.location.reload()"
+                style="background:rgba(0,0,0,0.2);border:none;border-radius:4px;padding:4px 12px;cursor:pointer;color:inherit;font-family:inherit;font-size:12px;font-weight:700">
+          Refresh now
+        </button>
+      </div>
       <div id="main" ref="mainEl">
         <RouterView v-slot="{ Component }">
           <Transition name="fade" mode="out-in">
@@ -46,7 +55,7 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, watch } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useCampaignStore } from '@/stores/campaign'
@@ -119,16 +128,34 @@ watch(() => auth.token, (token) => {
   if (!token) disconnect()
 })
 
+// ── Update detection ──────────────────────────────────────────────────────────
+const updateAvailable = ref(false)
+let startupVersion = null
+let versionPollTimer = null
+
+async function checkVersion() {
+  try {
+    const r = await fetch('/api/version')
+    if (!r.ok) return
+    const { version } = await r.json()
+    if (startupVersion === null) { startupVersion = version; return }
+    if (version !== startupVersion) updateAvailable.value = true
+  } catch (_) {}
+}
+
 onMounted(async () => {
   connect()
   await campaign.loadCampaigns()
   await data.loadAll()
   await refreshMessages()
   await refreshNotifications()
+  await checkVersion()
+  versionPollTimer = setInterval(checkVersion, 5 * 60 * 1000)
 })
 
 onUnmounted(() => {
   disconnect()
+  clearInterval(versionPollTimer)
 })
 </script>
 

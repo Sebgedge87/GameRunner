@@ -6,6 +6,7 @@
       <div class="legend-item"><div class="legend-dot" style="background:#4c7ac9"></div>NPC</div>
       <div class="legend-item"><div class="legend-dot" style="background:#4caf7d"></div>Location</div>
       <div class="legend-item"><div class="legend-dot" style="background:#8b4cc9"></div>Hook</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#c94c4c"></div>Map</div>
     </div>
     <div style="position:relative">
       <svg ref="svgEl" id="mindmap-svg" style="height:500px;width:100%"></svg>
@@ -32,7 +33,7 @@ const flyoutItem = ref(null)
 let simulation = null
 
 const TYPE_COLORS = {
-  quest: '#c9a84c', npc: '#4c7ac9', location: '#4caf7d', hook: '#8b4cc9',
+  quest: '#c9a84c', npc: '#4c7ac9', location: '#4caf7d', hook: '#8b4cc9', map: '#c94c4c',
 }
 
 function buildGraphData() {
@@ -51,6 +52,7 @@ function buildGraphData() {
   data.npcs.forEach(n => addNode({ ...n, title: n.title || n.name }, 'npc'))
   data.locations.forEach(l => addNode({ ...l, title: l.title || l.name }, 'location'))
   data.hooks.forEach(h => addNode(h, 'hook'))
+  data.maps.forEach(m => addNode(m, 'map'))
 
   const linkTo = (sourceTitle, targetTitle) => {
     const src = nodeMap.get(sourceTitle?.toLowerCase())
@@ -73,6 +75,11 @@ function buildGraphData() {
   data.hooks.forEach(h => {
     const conn = Array.isArray(h.connected_to) ? h.connected_to : (h.connected_to ? [h.connected_to] : [])
     conn.forEach(c => linkTo(h.title, c))
+  })
+  data.maps.forEach(m => {
+    let conn = []
+    try { conn = m.connected_to ? JSON.parse(m.connected_to) : [] } catch { conn = [] }
+    conn.forEach(c => linkTo(m.title, c))
   })
 
   return { nodes, links }
@@ -162,12 +169,12 @@ onMounted(async () => {
     renderMindmap()
   }
 
-  if (!data.quests.length) await data.loadAll()
+  if (!data.quests.length || !data.maps.length) await data.loadAll()
 })
 
 onUnmounted(() => {
   if (simulation) simulation.stop()
 })
 
-watch([() => data.quests, () => data.npcs, () => data.locations, () => data.hooks], renderMindmap)
+watch([() => data.quests, () => data.npcs, () => data.locations, () => data.hooks, () => data.maps], renderMindmap)
 </script>
