@@ -2,10 +2,23 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { useAuthStore } from './auth'
 import { useCampaignStore } from './campaign'
+import { useUiStore } from './ui'
 
 export const useDataStore = defineStore('data', () => {
   const auth = useAuthStore()
   const campaign = useCampaignStore()
+  const ui = useUiStore()
+
+  // Wraps a load fn with consistent error handling — shows a toast on failure
+  // rather than leaving the user staring at a blank screen
+  async function safe(fn, label) {
+    try {
+      return await fn()
+    } catch (e) {
+      console.error(`[data] ${label}:`, e)
+      ui.showToast(`Failed to load ${label}`, 'Check connection or reload', '✕')
+    }
+  }
 
   const quests = ref([])
   const npcs = ref([])
@@ -50,97 +63,126 @@ export const useDataStore = defineStore('data', () => {
   }
 
   async function loadQuests() {
-    const r = await apif('/api/quests')
-    quests.value = (await r.json()).quests || []
+    return safe(async () => {
+      const r = await apif('/api/quests'); if (!r.ok) throw new Error(r.status)
+      quests.value = (await r.json()).quests || []
+    }, 'quests')
   }
 
   async function loadNpcs() {
-    const r = await apif('/api/npcs')
-    npcs.value = (await r.json()).npcs || []
+    return safe(async () => {
+      const r = await apif('/api/npcs'); if (!r.ok) throw new Error(r.status)
+      npcs.value = (await r.json()).npcs || []
+    }, 'npcs')
   }
 
   async function loadLocations() {
-    const r = await apif('/api/locations')
-    locations.value = (await r.json()).locations || []
+    return safe(async () => {
+      const r = await apif('/api/locations'); if (!r.ok) throw new Error(r.status)
+      locations.value = (await r.json()).locations || []
+    }, 'locations')
   }
 
   async function loadHooks() {
-    const r = await apif('/api/hooks')
-    hooks.value = (await r.json()).hooks || []
+    return safe(async () => {
+      const r = await apif('/api/hooks'); if (!r.ok) throw new Error(r.status)
+      hooks.value = (await r.json()).hooks || []
+    }, 'hooks')
   }
 
   async function loadFactions() {
-    const r = await apif('/api/factions')
-    factions.value = (await r.json()).factions || []
+    return safe(async () => {
+      const r = await apif('/api/factions'); if (!r.ok) throw new Error(r.status)
+      factions.value = (await r.json()).factions || []
+    }, 'factions')
   }
 
   async function loadTimeline() {
-    const r = await apif('/api/timeline')
-    timeline.value = (await r.json()).events || []
+    return safe(async () => {
+      const r = await apif('/api/timeline'); if (!r.ok) throw new Error(r.status)
+      timeline.value = (await r.json()).events || []
+    }, 'timeline')
   }
 
   async function loadInventory() {
-    const [rI, rK] = await Promise.all([apif('/api/inventory'), apif('/api/key-items')])
-    inventory.value = (await rI.json()).inventory || []
-    keyItems.value = (await rK.json()).key_items || []
+    return safe(async () => {
+      const [rI, rK] = await Promise.all([apif('/api/inventory'), apif('/api/key-items')])
+      if (!rI.ok || !rK.ok) throw new Error('inventory load failed')
+      inventory.value = (await rI.json()).inventory || []
+      keyItems.value = (await rK.json()).key_items || []
+    }, 'inventory')
   }
 
   async function loadMaps() {
-    const r = await apif('/api/maps')
-    maps.value = (await r.json()).maps || []
+    return safe(async () => {
+      const r = await apif('/api/maps'); if (!r.ok) throw new Error(r.status)
+      maps.value = (await r.json()).maps || []
+    }, 'maps')
   }
 
   async function loadBestiary() {
-    const r = await apif('/api/bestiary')
-    bestiary.value = (await r.json()).bestiary || []
+    return safe(async () => {
+      const r = await apif('/api/bestiary'); if (!r.ok) throw new Error(r.status)
+      bestiary.value = (await r.json()).bestiary || []
+    }, 'bestiary')
   }
 
   async function loadRumours() {
-    const r = await apif('/api/rumours')
-    rumours.value = (await r.json()).rumours || []
+    return safe(async () => {
+      const r = await apif('/api/rumours'); if (!r.ok) throw new Error(r.status)
+      rumours.value = (await r.json()).rumours || []
+    }, 'rumours')
   }
 
   async function loadJobs() {
-    const r = await apif('/api/jobs')
-    jobs.value = (await r.json()).jobs || []
+    return safe(async () => {
+      const r = await apif('/api/jobs'); if (!r.ok) throw new Error(r.status)
+      jobs.value = (await r.json()).jobs || []
+    }, 'jobs')
   }
 
   async function loadNotes() {
-    const r = await apif('/api/notes')
-    notes.value = (await r.json()).notes || []
+    return safe(async () => {
+      const r = await apif('/api/notes'); if (!r.ok) throw new Error(r.status)
+      notes.value = (await r.json()).notes || []
+    }, 'notes')
   }
 
   async function loadHandouts() {
-    const r = await apif('/api/handouts')
-    handouts.value = (await r.json()).handouts || []
+    return safe(async () => {
+      const r = await apif('/api/handouts'); if (!r.ok) throw new Error(r.status)
+      handouts.value = (await r.json()).handouts || []
+    }, 'handouts')
   }
 
   async function loadUsers() {
-    const r = await apif('/api/users')
-    users.value = (await r.json()).users || []
+    return safe(async () => {
+      const r = await apif('/api/users'); if (!r.ok) throw new Error(r.status)
+      users.value = (await r.json()).users || []
+    }, 'users')
   }
 
   async function loadAgenda() {
-    try {
-      const r = await apif('/api/agenda')
+    return safe(async () => {
+      const r = await apif('/api/agenda'); if (!r.ok) throw new Error(r.status)
       const cards = (await r.json()).agenda || []
       agenda.value = campaign.isGm ? null : (cards[0] || null)
-    } catch (e) { console.error('[loadAgenda]', e) }
+    }, 'agenda')
   }
 
   async function loadStress() {
-    try {
-      const r = await apif('/api/stress')
+    return safe(async () => {
+      const r = await apif('/api/stress'); if (!r.ok) throw new Error(r.status)
       const rows = (await r.json()).stress || []
       stress.value = rows[0] || null
-    } catch (e) { console.error('[loadStress]', e) }
+    }, 'stress')
   }
 
   async function loadPins() {
-    try {
-      const r = await apif('/api/pins')
+    return safe(async () => {
+      const r = await apif('/api/pins'); if (!r.ok) throw new Error(r.status)
       pins.value = (await r.json()).pins || []
-    } catch (e) { console.error('[loadPins]', e) }
+    }, 'pins')
   }
 
   async function addPin(itemType, itemId, itemTitle) {

@@ -708,7 +708,11 @@ html{transition:background-color var(--anim-speed) ease,color var(--anim-speed) 
   #main{margin-left:0;}
   .hamburger{display:flex;align-items:center;}
   .page{padding:16px 14px;}
+  .page-content{padding:16px 14px;}
   .page-title{font-size:18px;}
+  .entity-form-grid{grid-template-columns:1fr;}
+  .efg-sidebar{border-right:none;border-bottom:1px solid var(--border);padding-bottom:16px;margin-bottom:4px;}
+  #camp-switcher{display:none;}
   .notes-layout{grid-template-columns:1fr;}
   .combat-layout{grid-template-columns:1fr;}
   .sheet-grid{grid-template-columns:1fr;}
@@ -739,6 +743,7 @@ html{transition:background-color var(--anim-speed) ease,color var(--anim-speed) 
   .dash-grid{grid-template-columns:repeat(2,1fr);}
   .stat-grid{grid-template-columns:repeat(3,1fr);}
   .page{padding:12px 10px;}
+  .page-content{padding:12px 10px;}
   .login-box{width:calc(100vw - 32px);padding:28px 22px;}
   .card{padding:14px;}
   #toast-container{bottom:16px;right:12px;left:12px;}

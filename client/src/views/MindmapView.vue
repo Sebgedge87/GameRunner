@@ -25,6 +25,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
+import * as d3 from 'd3'
 import { useDataStore } from '@/stores/data'
 
 const data = useDataStore()
@@ -86,8 +87,7 @@ function buildGraphData() {
 }
 
 async function renderMindmap() {
-  if (!svgEl.value || typeof window.d3 === 'undefined') return
-  const d3 = window.d3
+  if (!svgEl.value) return
 
   if (simulation) simulation.stop()
   const svg = d3.select(svgEl.value)
@@ -159,17 +159,8 @@ async function renderMindmap() {
 }
 
 onMounted(async () => {
-  // Load D3 if not already loaded
-  if (typeof window.d3 === 'undefined') {
-    const script = document.createElement('script')
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js'
-    script.onload = renderMindmap
-    document.head.appendChild(script)
-  } else {
-    renderMindmap()
-  }
-
   if (!data.quests.length || !data.maps.length) await data.loadAll()
+  renderMindmap()
 })
 
 onUnmounted(() => {

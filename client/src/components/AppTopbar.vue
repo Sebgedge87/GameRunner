@@ -121,6 +121,7 @@ const PAGE_MAP = {
   quest: 'quests', npc: 'npcs', location: 'locations', hook: 'hooks',
   inventory: 'inventory', 'key-item': 'inventory', faction: 'factions',
   note: 'notes', session: 'sessions', job: 'jobs',
+  bestiary: 'bestiary', map: 'maps', rumour: 'rumours', handout: 'handouts',
 }
 
 // Types that have a detail modal — look up the full entity and open it directly
@@ -133,6 +134,9 @@ const DETAIL_STORE = {
   inventory: () => data.inventory,
   'key-item':() => data.keyItems,
   job:       () => data.jobs,
+  bestiary:  () => data.bestiary,
+  map:       () => data.maps,
+  rumour:    () => data.rumours,
 }
 
 function searchNav(result) {
