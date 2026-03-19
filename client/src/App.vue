@@ -1,5 +1,5 @@
 <template>
-  <div id="chronicle-root" :data-theme="currentTheme" :class="bodyClasses">
+  <div id="chronicle-root" :class="bodyClasses">
     <div class="scanline-overlay"></div>
     <LoginView v-if="!isAuthenticated" />
     <AppLayout v-else />
@@ -19,10 +19,6 @@ const auth = useAuthStore()
 const campaign = useCampaignStore()
 
 const isAuthenticated = computed(() => auth.isAuthenticated)
-
-const currentTheme = computed(() => {
-  return document.documentElement.getAttribute('data-theme') || 'dnd5e'
-})
 
 const bodyClasses = computed(() => {
   const a11y = JSON.parse(localStorage.getItem('chronicle_a11y') || '{}')
