@@ -269,20 +269,36 @@ onMounted(() => {
   flex: 1;
   margin: 0 10px;
   background: var(--surface);
-  border: 1px solid var(--border2, #2a2a3a);
-  border-radius: 6px;
+  border: 1px solid var(--card-inner, var(--accent, #c9a84c));
+  outline: 1px solid var(--card-outer, var(--border));
+  outline-offset: -3px;
+  border-radius: var(--radius, 4px);
   padding: 10px 11px 8px;
   overflow: hidden;
   cursor: pointer;
   position: relative;
-  transition: border-color .15s, box-shadow .15s;
+  transition: border-color .15s, box-shadow .15s, transform .15s;
   /* prevent card from growing too tall */
   max-height: 128px;
 }
-.tl-event:hover .tl-card {
-  border-color: var(--accent, #c9a84c);
-  box-shadow: 0 2px 16px rgba(0,0,0,.45);
+.tl-card::before, .tl-card::after {
+  content: '';
+  position: absolute;
+  width: 8px; height: 8px;
+  border-color: var(--card-inner, var(--accent, #c9a84c));
+  border-style: solid;
+  opacity: 0.5;
+  transition: opacity .2s;
 }
+.tl-card::before { top: 4px; left: 4px; border-width: 1px 0 0 1px; }
+.tl-card::after  { bottom: 4px; right: 4px; border-width: 0 1px 1px 0; }
+.tl-event:hover .tl-card {
+  border-color: var(--accent2, var(--accent, #c9a84c));
+  box-shadow: var(--hover-glow, 0 4px 20px rgba(0,0,0,.3));
+  transform: translateY(-1px);
+}
+.tl-event:hover .tl-card::before,
+.tl-event:hover .tl-card::after { opacity: 1; }
 .tl-hidden .tl-card { opacity: .4; border-style: dashed; }
 .tl-hidden .tl-dot  { opacity: .4; }
 
