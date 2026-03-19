@@ -22,6 +22,12 @@ export const useUiStore = defineStore('ui', () => {
   function toggleSidebar() { sidebarOpen.value = !sidebarOpen.value }
   function closeSidebar() { sidebarOpen.value = false }
 
+  const sidebarCollapsed = ref(localStorage.getItem('sidebar_collapsed') === '1')
+  function toggleSidebarCollapse() {
+    sidebarCollapsed.value = !sidebarCollapsed.value
+    localStorage.setItem('sidebar_collapsed', sidebarCollapsed.value ? '1' : '0')
+  }
+
   // Notifications
   const notifications = ref([])
   const unreadNotifCount = ref(0)
@@ -111,6 +117,7 @@ export const useUiStore = defineStore('ui', () => {
   return {
     toasts, showToast, dismissToast,
     sidebarOpen, toggleSidebar, closeSidebar,
+    sidebarCollapsed, toggleSidebarCollapse,
     notifications, unreadNotifCount, setNotifications,
     messages, unreadMsgCount, setMessages,
     unreadHandoutCount,
