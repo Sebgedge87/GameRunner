@@ -4,7 +4,9 @@
       <div v-html="renderedContent"></div>
       <div class="modal-actions">
         <button class="modal-close" @click="ui.closeDetail()">CLOSE</button>
+        <button class="btn btn-sm" title="Pin" @click="pinItem">📌 Pin</button>
         <template v-if="campaign.isGm">
+          <button class="btn btn-sm" @click="toggleHiddenItem">{{ ui.detailModal?.item?.hidden ? '👁 Reveal' : '🙈 Hide' }}</button>
           <button class="btn btn-sm" @click="editItem">Edit</button>
           <button class="btn btn-sm btn-danger" @click="deleteItem">Delete</button>
         </template>
@@ -178,6 +180,20 @@ function openDetailByName(name, type) {
   if (found) {
     ui.openDetail(type, found)
   }
+}
+
+function pinItem() {
+  const { type, item } = ui.detailModal
+  const label = item.title || item.name || item.label || '(Untitled)'
+  data.addPin(type, item.id, label)
+  ui.showToast('Pinned', label, '📌')
+}
+
+async function toggleHiddenItem() {
+  const { type, item } = ui.detailModal
+  await data.toggleHidden(type, item.id)
+  TYPE_RELOAD[type]?.()
+  ui.closeDetail()
 }
 
 function editItem() {
