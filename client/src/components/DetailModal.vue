@@ -1,15 +1,21 @@
 <template>
-  <div v-if="ui.detailModal" class="modal-overlay open" @click.self="ui.closeDetail()">
-    <div :class="['modal', wideTypes.includes(ui.detailModal.type) ? 'detail-modal-box' : '']" @click="handleModalClick">
-      <div v-html="renderedContent"></div>
-      <div class="modal-actions">
-        <button class="modal-close" @click="ui.closeDetail()">CLOSE</button>
-        <button class="btn btn-sm" title="Pin" @click="pinItem">📌 Pin</button>
-        <template v-if="campaign.isGm">
-          <button class="btn btn-sm" @click="toggleHiddenItem">{{ ui.detailModal?.item?.hidden ? '👁 Reveal' : '🙈 Hide' }}</button>
-          <button class="btn btn-sm" @click="editItem">Edit</button>
-          <button class="btn btn-sm btn-danger" @click="deleteItem">Delete</button>
-        </template>
+  <div v-if="ui.detailModal" class="flyout-overlay open" @click.self="ui.closeDetail()">
+    <div class="flyout open">
+      <div class="flyout-header">
+        <div class="flyout-title">{{ typeLabel }}</div>
+        <button class="flyout-close" @click="ui.closeDetail()">✕</button>
+      </div>
+      <div class="flyout-body" @click="handleModalClick" v-html="renderedContent"></div>
+      <div class="flyout-compose">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="modal-close" @click="ui.closeDetail()">CLOSE</button>
+          <button class="btn btn-sm" title="Pin" @click="pinItem">📌 Pin</button>
+          <template v-if="campaign.isGm">
+            <button class="btn btn-sm" @click="toggleHiddenItem">{{ ui.detailModal?.item?.hidden ? '👁 Reveal' : '🙈 Hide' }}</button>
+            <button class="btn btn-sm" @click="editItem">Edit</button>
+            <button class="btn btn-sm btn-danger" @click="deleteItem">Delete</button>
+          </template>
+        </div>
       </div>
     </div>
   </div>
@@ -25,7 +31,13 @@ const ui = useUiStore()
 const campaign = useCampaignStore()
 const data = useDataStore()
 
-const wideTypes = ['timeline', 'npc', 'location', 'faction', 'bestiary', 'job']
+const TYPE_LABELS = {
+  quest: 'Quest', npc: 'NPC', location: 'Location', hook: 'Plot Hook',
+  faction: 'Faction', timeline: 'Timeline Event', inventory: 'Item',
+  'key-item': 'Key Item', job: 'Job Board', bestiary: 'Bestiary', rumour: 'Rumour',
+}
+
+const typeLabel = computed(() => TYPE_LABELS[ui.detailModal?.type] || 'Detail')
 
 const TYPE_RELOAD = {
   quest: () => data.loadQuests(),
