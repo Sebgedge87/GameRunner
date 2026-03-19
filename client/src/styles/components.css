@@ -672,6 +672,15 @@ select.form-input{cursor:pointer;}
 .empty-state-title{font-size:14px;color:var(--text2);font-family:var(--font-header,'Cinzel',serif);letter-spacing:0.05em;}
 .empty-state-hint{font-size:11px;color:var(--text3);line-height:1.6;max-width:320px;}
 .loading{color:var(--text3);font-family:'JetBrains Mono',monospace;font-size:12px;padding:16px 0;}
+/* ── Skeleton loaders ────────────────────────────────────────────────────── */
+@keyframes skeleton-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.skeleton-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius,4px);padding:18px;display:flex;flex-direction:column;gap:10px;pointer-events:none;}
+.skeleton-line{border-radius:3px;background:linear-gradient(90deg,var(--border) 25%,var(--border2) 50%,var(--border) 75%);background-size:200% 100%;animation:skeleton-shimmer 1.5s infinite linear;}
+.skeleton-img{height:120px;border-radius:var(--radius,4px);margin-bottom:4px;}
+.skeleton-title{height:14px;width:65%;}
+.skeleton-sub{height:11px;width:40%;}
+.skeleton-body{height:11px;width:90%;}
+.skeleton-body-short{height:11px;width:60%;}
 .status-msg{font-size:12px;margin-top:6px;min-height:16px;}
 .status-ok{color:var(--green);}
 .status-err{color:var(--red);}

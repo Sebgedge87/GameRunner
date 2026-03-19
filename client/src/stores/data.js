@@ -20,6 +20,8 @@ export const useDataStore = defineStore('data', () => {
     }
   }
 
+  const loading = ref(false)
+
   const quests = ref([])
   const npcs = ref([])
   const locations = ref([])
@@ -53,13 +55,18 @@ export const useDataStore = defineStore('data', () => {
   }
 
   async function loadAll() {
-    await Promise.all([
-      loadQuests(), loadNpcs(), loadLocations(), loadHooks(),
-      loadFactions(), loadTimeline(), loadInventory(), loadMaps(),
-      loadBestiary(), loadRumours(), loadJobs(), loadSessions(),
-      loadNotes(), loadHandouts(), loadUsers(),
-      loadAgenda(), loadStress(), loadPins(),
-    ])
+    loading.value = true
+    try {
+      await Promise.all([
+        loadQuests(), loadNpcs(), loadLocations(), loadHooks(),
+        loadFactions(), loadTimeline(), loadInventory(), loadMaps(),
+        loadBestiary(), loadRumours(), loadJobs(), loadSessions(),
+        loadNotes(), loadHandouts(), loadUsers(),
+        loadAgenda(), loadStress(), loadPins(),
+      ])
+    } finally {
+      loading.value = false
+    }
   }
 
   async function loadQuests() {
@@ -242,6 +249,7 @@ export const useDataStore = defineStore('data', () => {
   }
 
   return {
+    loading,
     quests, npcs, locations, hooks, factions, timeline, inventory, keyItems,
     maps, bestiary, rumours, jobs, notes, handouts, users, agenda, stress, pins,
     sessions, polls, scheduling,

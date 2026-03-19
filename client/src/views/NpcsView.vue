@@ -7,7 +7,15 @@
     <div class="filter-tabs">
       <button v-for="tab in tabs" :key="tab.value" class="filter-tab" :class="{ active: activeTab === tab.value }" @click="activeTab = tab.value">{{ tab.label }}</button>
     </div>
-    <div class="card-grid">
+    <div v-if="data.loading && !data.npcs.length" class="card-grid">
+      <div v-for="n in 6" :key="n" class="skeleton-card">
+        <div class="skeleton-line skeleton-img"></div>
+        <div class="skeleton-line skeleton-title"></div>
+        <div class="skeleton-line skeleton-sub"></div>
+        <div class="skeleton-line skeleton-body"></div>
+      </div>
+    </div>
+    <div v-else class="card-grid">
       <div v-if="campaign.isGm" class="add-tile" @click="ui.openGmEdit('npc', null, {})">
         <div class="add-tile-icon">+</div><div class="add-tile-label">Add NPC</div>
       </div>
@@ -33,7 +41,7 @@
         </template>
       </EntityCard>
     </div>
-    <div v-if="filteredNpcs.length === 0" class="empty-state">
+    <div v-if="!data.loading && filteredNpcs.length === 0" class="empty-state">
       <span class="empty-state-icon">👤</span>
       <div class="empty-state-title">{{ data.npcs.length ? 'No Matches' : 'No NPCs Yet' }}</div>
       <div class="empty-state-hint">{{ data.npcs.length ? 'Try a different search or filter.' : 'GM: add the people who populate your world.' }}</div>

@@ -22,7 +22,14 @@
       <div class="filter-tabs">
         <button v-for="tab in tabs" :key="tab.value" class="filter-tab" :class="{ active: activeTab === tab.value }" @click="activeTab = tab.value">{{ tab.label }}</button>
       </div>
-      <div class="card-grid">
+      <div v-if="data.loading && !data.locations.length" class="card-grid">
+        <div v-for="n in 6" :key="n" class="skeleton-card">
+          <div class="skeleton-line skeleton-img"></div>
+          <div class="skeleton-line skeleton-title"></div>
+          <div class="skeleton-line skeleton-body"></div>
+        </div>
+      </div>
+      <div v-else class="card-grid">
         <div v-if="campaign.isGm" class="add-tile" @click="ui.openGmEdit('location', null, {})">
           <div class="add-tile-icon">+</div><div class="add-tile-label">Add Location</div>
         </div>
@@ -52,7 +59,7 @@
           </template>
         </EntityCard>
       </div>
-      <div v-if="filteredLocations.length === 0" class="empty-state">
+      <div v-if="!data.loading && filteredLocations.length === 0" class="empty-state">
         <span class="empty-state-icon">📍</span>
         <div class="empty-state-title">{{ data.locations.length ? 'No Matches' : 'No Locations Yet' }}</div>
         <div class="empty-state-hint">{{ data.locations.length ? 'Try a different search or filter.' : 'GM: map the world — taverns, dungeons, cities and beyond.' }}</div>
