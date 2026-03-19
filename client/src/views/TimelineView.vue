@@ -39,22 +39,12 @@
           <div class="tl-half tl-half--top">
             <template v-if="i % 2 === 0">
               <div class="tl-card" @click="ui.openDetail('timeline', event)">
-                <div class="tl-card-inner">
-                  <div class="tl-card-title">{{ event.title }}</div>
-                  <div class="tl-card-meta">
-                    <span v-if="event.in_world_date" class="tag">{{ event.in_world_date }}</span>
-                    <span v-if="event.session_number" class="tag">S{{ event.session_number }}</span>
-                  </div>
-                  <div v-if="event.description" class="tl-card-desc">{{ event.description }}</div>
+                <div class="tl-card-title">{{ event.title }}</div>
+                <div class="tl-card-meta">
+                  <span v-if="event.in_world_date" class="tag">{{ event.in_world_date }}</span>
+                  <span v-if="event.session_number" class="tag">S{{ event.session_number }}</span>
                 </div>
-                <div class="tl-card-actions" @click.stop>
-                  <button class="btn btn-xs" title="Pin" @click="data.addPin('timeline', event.id, event.title)">📌</button>
-                  <template v-if="campaign.isGm">
-                    <button class="btn btn-xs" :title="event.hidden ? 'Reveal' : 'Hide'" @click="toggleHidden('timeline', event.id)">{{ event.hidden ? '👁' : '🙈' }}</button>
-                    <button class="btn btn-xs" title="Edit" @click="ui.openGmEdit('timeline', event.id, event)">✏️</button>
-                    <button class="btn btn-xs btn-danger" title="Delete" @click="deleteItem('timeline', event.id)">🗑</button>
-                  </template>
-                </div>
+                <div v-if="event.description" class="tl-card-desc">{{ event.description }}</div>
               </div>
               <div class="tl-stem"></div>
             </template>
@@ -72,22 +62,12 @@
             <template v-if="i % 2 === 1">
               <div class="tl-stem"></div>
               <div class="tl-card" @click="ui.openDetail('timeline', event)">
-                <div class="tl-card-inner">
-                  <div class="tl-card-title">{{ event.title }}</div>
-                  <div class="tl-card-meta">
-                    <span v-if="event.in_world_date" class="tag">{{ event.in_world_date }}</span>
-                    <span v-if="event.session_number" class="tag">S{{ event.session_number }}</span>
-                  </div>
-                  <div v-if="event.description" class="tl-card-desc">{{ event.description }}</div>
+                <div class="tl-card-title">{{ event.title }}</div>
+                <div class="tl-card-meta">
+                  <span v-if="event.in_world_date" class="tag">{{ event.in_world_date }}</span>
+                  <span v-if="event.session_number" class="tag">S{{ event.session_number }}</span>
                 </div>
-                <div class="tl-card-actions" @click.stop>
-                  <button class="btn btn-xs" title="Pin" @click="data.addPin('timeline', event.id, event.title)">📌</button>
-                  <template v-if="campaign.isGm">
-                    <button class="btn btn-xs" :title="event.hidden ? 'Reveal' : 'Hide'" @click="toggleHidden('timeline', event.id)">{{ event.hidden ? '👁' : '🙈' }}</button>
-                    <button class="btn btn-xs" title="Edit" @click="ui.openGmEdit('timeline', event.id, event)">✏️</button>
-                    <button class="btn btn-xs btn-danger" title="Delete" @click="deleteItem('timeline', event.id)">🗑</button>
-                  </template>
-                </div>
+                <div v-if="event.description" class="tl-card-desc">{{ event.description }}</div>
               </div>
             </template>
           </div>
@@ -137,16 +117,6 @@ function sigClass(sig) {
   return ''
 }
 
-async function toggleHidden(type, id) {
-  await data.toggleHidden(type, id)
-  await data.loadTimeline()
-}
-
-async function deleteItem(type, id) {
-  if (!await ui.confirm('Delete this event?')) return
-  await data.deleteItem(type, id)
-  await data.loadTimeline()
-}
 
 onMounted(() => {
   if (!data.timeline.length) data.loadTimeline()
@@ -329,23 +299,6 @@ onMounted(() => {
   overflow: hidden;
 }
 
-/* ── Action buttons — fade in on card hover ── */
-.tl-card-actions {
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  background: linear-gradient(transparent, var(--surface) 50%);
-  padding: 10px 8px 5px;
-  display: flex;
-  gap: 3px;
-  justify-content: flex-end;
-  opacity: 0;
-  transition: opacity .15s;
-  pointer-events: none;
-}
-.tl-card:hover .tl-card-actions {
-  opacity: 1;
-  pointer-events: all;
-}
 
 /* ── Mobile fallback: vertical list ── */
 @media (max-width: 640px) {
@@ -377,7 +330,6 @@ onMounted(() => {
   .tl-above .tl-half--bot .tl-card, .tl-below .tl-half--bot .tl-card { display: flex; flex-direction: column; }
   .tl-dot-row { position: absolute; left: -24px; top: 14px; }
   .tl-dot { position: static; }
-  .tl-card-actions { position: static; opacity: 1; pointer-events: all; background: none; padding: 5px 0 0; justify-content: flex-start; }
 }
 </style>
 
