@@ -106,21 +106,13 @@
       <router-link to="/quests" style="font-size:11px;color:var(--accent);font-family:'JetBrains Mono',monospace;margin-bottom:10px">View all →</router-link>
     </div>
     <div class="card-grid">
-      <div
+      <QuestCard
         v-for="q in activeQuests.slice(0, 6)"
         :key="q.id"
-        class="card"
-        style="cursor:pointer"
-        @click="ui.openDetail('quest', q)"
-      >
-        <div class="card-title">{{ q.title }}</div>
-        <div class="card-meta">
-          <span :class="`tag tag-${q.type || 'side'}`">{{ q.type || 'side' }}</span>
-        </div>
-        <div v-if="q.progress != null" class="progress-bar">
-          <div class="progress-fill" :style="`width:${q.progress}%`"></div>
-        </div>
-      </div>
+        :quest="q"
+        :expanded="expandedId === q.id"
+        @toggle="toggleExpand(q.id)"
+      />
       <div v-if="activeQuests.length === 0" class="empty-state" style="padding:12px 0">No active quests.</div>
     </div>
 
@@ -159,17 +151,21 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
 import { useDataStore } from '@/stores/data'
 import PlaylistPlayer from '@/components/PlaylistPlayer.vue'
+import QuestCard from '@/components/QuestCard.vue'
 
 const campaign = useCampaignStore()
 const ui = useUiStore()
 const data = useDataStore()
 const router = useRouter()
+
+const expandedId = ref(null)
+function toggleExpand(id) { expandedId.value = expandedId.value === id ? null : id }
 
 const TYPE_COLORS = {
   quest: '#c9a84c', npc: '#4c7ac9', location: '#4caf7d', hook: '#8b4cc9',
