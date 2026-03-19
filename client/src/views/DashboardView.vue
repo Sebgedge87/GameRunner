@@ -118,7 +118,11 @@
 
     <!-- Recent messages -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px">
-      <div class="dash-section" style="margin:0;flex:1">Recent Messages</div>
+      <div class="dash-section" style="margin:0;flex:1">
+        Recent Messages
+        <span v-if="ui.unreadMsgCount" style="font-size:11px;color:var(--accent);font-family:'JetBrains Mono',monospace;margin-left:8px">{{ ui.unreadMsgCount }} unread</span>
+      </div>
+      <a style="font-size:11px;color:var(--accent);font-family:'JetBrains Mono',monospace;margin-bottom:10px;cursor:pointer" @click="ui.openFlyout('msgs')">View all →</a>
     </div>
     <div>
       <div v-if="!ui.messages.length" class="empty-state" style="padding:12px">No messages.</div>
@@ -134,6 +138,31 @@
           <div class="msg-meta">{{ fmt(m.created_at) }}</div>
         </div>
         <div class="msg-preview">{{ (m.body || '').slice(0, 80) }}</div>
+      </div>
+    </div>
+
+    <!-- Recent handouts -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px">
+      <div class="dash-section" style="margin:0;flex:1">
+        Recent Handouts
+        <span v-if="ui.unreadHandoutCount" style="font-size:11px;color:var(--accent);font-family:'JetBrains Mono',monospace;margin-left:8px">{{ ui.unreadHandoutCount }} new</span>
+      </div>
+      <router-link to="/handouts" style="font-size:11px;color:var(--accent);font-family:'JetBrains Mono',monospace;margin-bottom:10px">View all →</router-link>
+    </div>
+    <div>
+      <div v-if="!recentHandouts.length" class="empty-state" style="padding:12px">No handouts.</div>
+      <div
+        v-for="h in recentHandouts"
+        :key="h.id"
+        class="msg-item"
+        style="cursor:pointer"
+        @click="ui.openHandout(h)"
+      >
+        <div class="msg-header">
+          <div class="msg-subject">{{ h.title }}</div>
+          <div class="msg-meta">{{ fmt(h.created_at) }}</div>
+        </div>
+        <div v-if="h.description" class="msg-preview">{{ h.description.slice(0, 80) }}</div>
       </div>
     </div>
 
@@ -182,6 +211,9 @@ const PIN_ROUTES = {
 
 const activeQuests = computed(() => data.quests.filter(q => q.status === 'active'))
 const openHooks = computed(() => data.hooks.filter(h => h.status === 'active').length)
+const recentHandouts = computed(() =>
+  [...data.handouts].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 3)
+)
 
 const stressPct = computed(() => {
   if (!data.stress) return 0

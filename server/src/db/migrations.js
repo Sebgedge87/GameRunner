@@ -474,6 +474,8 @@ function runMigrations() {
   try { db.exec('ALTER TABLE jobs ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
   try { db.exec('ALTER TABLE bestiary ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
   try { db.exec('ALTER TABLE rumours ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
+  // campaign scoping for messages
+  try { db.exec('ALTER TABLE messages ADD COLUMN campaign_id INTEGER REFERENCES campaigns(id)'); } catch (_) {}
   // reply_to_id for message threading
   try { db.exec('ALTER TABLE messages ADD COLUMN reply_to_id INTEGER REFERENCES messages(id)'); } catch (_) {}
   // title label for scheduling entries

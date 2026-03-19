@@ -29,6 +29,7 @@ export const useUiStore = defineStore('ui', () => {
   function setNotifications(notifs) {
     notifications.value = notifs
     unreadNotifCount.value = notifs.filter(n => !n.read_at).length
+    unreadHandoutCount.value = notifs.filter(n => !n.read_at && n.type === 'handout').length
   }
 
   // Messages
