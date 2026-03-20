@@ -206,7 +206,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
@@ -389,7 +389,7 @@ async function loadDash() {
   }
 }
 
-onMounted(async () => {
+async function initForCampaign() {
   const ac = campaign.activeCampaign
   if (ac) {
     campForm.value = {
@@ -402,12 +402,18 @@ onMounted(async () => {
     }
   }
   await Promise.all([
-    data.users.length ? null : data.loadUsers(),
-    data.quests.length ? null : data.loadQuests(),
+    data.loadUsers(),
+    data.loadQuests(),
     loadXp(),
     loadDash(),
   ])
   data.users.forEach(u => { if (!stressEdits[u.id]) stressEdits[u.id] = { stress: '', sanity: '' } })
+}
+
+onMounted(initForCampaign)
+
+watch(() => campaign.activeCampaign?.id, (newId, oldId) => {
+  if (newId && newId !== oldId) initForCampaign()
 })
 </script>
 
@@ -480,6 +486,14 @@ onMounted(async () => {
   font-size: 0.88em;
   border-radius: 3px;
   user-select: none;
+}
+.xp-player-row input[type="checkbox"] {
+  width: auto;
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
 }
 .xp-player-row:hover { background: var(--surface); }
 .xp-player-all {
