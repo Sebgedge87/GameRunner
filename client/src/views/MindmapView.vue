@@ -101,13 +101,22 @@ async function renderMindmap() {
 
   svg.attr('viewBox', `0 0 ${width} ${height}`)
 
+  // Zoomable/pannable container
+  const container = svg.append('g')
+
+  const zoom = d3.zoom()
+    .scaleExtent([0.2, 4])
+    .on('zoom', (event) => { container.attr('transform', event.transform) })
+
+  svg.call(zoom).on('dblclick.zoom', null)
+
   simulation = d3.forceSimulation(nodes)
     .force('link', d3.forceLink(links).id(d => d.id).distance(80))
     .force('charge', d3.forceManyBody().strength(-200))
     .force('center', d3.forceCenter(width / 2, height / 2))
     .force('collision', d3.forceCollide(25))
 
-  const link = svg.append('g')
+  const link = container.append('g')
     .selectAll('line')
     .data(links)
     .join('line')
@@ -115,7 +124,12 @@ async function renderMindmap() {
     .attr('stroke-opacity', 0.6)
     .attr('stroke-width', 1.5)
 
-  const node = svg.append('g')
+  const nodeDrag = d3.drag()
+    .on('start', (event, d) => { if (!event.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y })
+    .on('drag', (event, d) => { d.fx = event.x; d.fy = event.y })
+    .on('end', (event, d) => { if (!event.active) simulation.alphaTarget(0); d.fx = null; d.fy = null })
+
+  const node = container.append('g')
     .selectAll('circle')
     .data(nodes)
     .join('circle')
@@ -126,13 +140,9 @@ async function renderMindmap() {
     .attr('stroke-width', 6)
     .style('cursor', 'pointer')
     .on('click', (_, d) => { flyoutItem.value = d })
-    .call(d3.drag()
-      .on('start', (event, d) => { if (!event.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y })
-      .on('drag', (event, d) => { d.fx = event.x; d.fy = event.y })
-      .on('end', (event, d) => { if (!event.active) simulation.alphaTarget(0); d.fx = null; d.fy = null })
-    )
+    .call(nodeDrag)
 
-  const label = svg.append('g')
+  const label = container.append('g')
     .selectAll('text')
     .data(nodes)
     .join('text')
