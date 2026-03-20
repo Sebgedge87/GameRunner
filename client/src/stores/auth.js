@@ -4,6 +4,7 @@ import { ref, computed } from 'vue'
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('chronicle_token') || null)
   const currentUser = ref(null)
+  const restoring = ref(false)
 
   const isAuthenticated = computed(() => !!token.value && !!currentUser.value)
 
@@ -23,6 +24,7 @@ export const useAuthStore = defineStore('auth', () => {
       document.documentElement.setAttribute('data-theme', savedTheme)
     }
     if (!token.value) return false
+    restoring.value = true
     try {
       const r = await fetch('/api/auth/me', {
         headers: { Authorization: `Bearer ${token.value}` },
@@ -31,12 +33,19 @@ export const useAuthStore = defineStore('auth', () => {
         const d = await r.json()
         currentUser.value = d.user
         return true
-      } else {
+      } else if (r.status === 401) {
+        // Token is invalid or expired — clear it so user must log in again
         setToken(null)
+        return false
+      } else {
+        // Server error (5xx etc.) — keep the token, user can retry
         return false
       }
     } catch {
+      // Network error — keep the token, user can retry
       return false
+    } finally {
+      restoring.value = false
     }
   }
 
@@ -71,5 +80,5 @@ export const useAuthStore = defineStore('auth', () => {
     currentUser.value = null
   }
 
-  return { token, currentUser, isAuthenticated, setToken, setUser, restoreSession, login, register, logout }
+  return { token, currentUser, isAuthenticated, restoring, setToken, setUser, restoreSession, login, register, logout }
 })

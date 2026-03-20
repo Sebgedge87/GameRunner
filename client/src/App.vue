@@ -1,8 +1,11 @@
 <template>
   <div id="chronicle-root" :data-theme="currentTheme" :class="bodyClasses">
     <div class="scanline-overlay"></div>
-    <LoginView v-if="!isAuthenticated" />
-    <AppLayout v-else />
+    <div v-if="auth.restoring" class="session-restoring"></div>
+    <template v-else>
+      <LoginView v-if="!isAuthenticated" />
+      <AppLayout v-else />
+    </template>
     <ToastContainer />
   </div>
 </template>
@@ -59,5 +62,11 @@ onMounted(async () => {
 #chronicle-root {
   height: 100vh;
   overflow: hidden;
+}
+
+/* Blank screen while session is being verified — prevents login flash */
+.session-restoring {
+  height: 100vh;
+  background: var(--bg-primary, #0a0a0f);
 }
 </style>
