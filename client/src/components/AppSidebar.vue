@@ -8,7 +8,7 @@
     <!-- Navigation -->
     <nav class="sidebar-nav">
       <!-- Lobby -->
-      <RouterLink to="/home" class="nav-item" active-class="active" @click="ui.closeSidebar()">
+      <RouterLink to="/home" class="nav-item" active-class="active" @click="goHome">
         <span class="nav-icon">⌂</span>Home
       </RouterLink>
 
@@ -161,6 +161,11 @@ function toggle(section) {
   const state = JSON.parse(localStorage.getItem('nav_collapsed') || '{}')
   state[labels[section]] = collapsed[section]
   localStorage.setItem('nav_collapsed', JSON.stringify(state))
+}
+
+function goHome() {
+  campaign.leaveCampaign()
+  ui.closeSidebar()
 }
 
 function logout() {

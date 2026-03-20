@@ -137,10 +137,15 @@ export const useCampaignStore = defineStore('campaign', () => {
     }
   }
 
+  function leaveCampaign() {
+    activeCampaign.value = null
+    isGm.value = false
+  }
+
   return {
     activeCampaign, allCampaigns, isGm, currentPartyLocationId,
     SYSTEM_META, SYSTEM_THEME_MAP,
     applyTheme, applyCustomTheme, applyBgImage,
-    loadCampaigns, switchCampaign, createCampaign, joinCampaign, setPartyLocation,
+    loadCampaigns, switchCampaign, createCampaign, joinCampaign, setPartyLocation, leaveCampaign,
   }
 })
