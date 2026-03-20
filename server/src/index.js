@@ -80,7 +80,7 @@ app.use(cors({
 
 // ── Middleware ─────────────────────────────────────────────────────────────────
 app.use(express.json({ limit: '1mb' }));
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/uploads', express.static(require('./config').uploadsPath));
 // Serve the single-file client portal from /client (works standalone without Caddy)
 const clientPath = path.join(__dirname, '../../client/dist');
 app.use(express.static(clientPath));

@@ -8,6 +8,7 @@ module.exports = {
   // DB_PATH defaults to /data/chronicle.db so it can be mounted as a Docker volume.
   // Set DB_PATH in .env to point anywhere (e.g. DB_PATH=/data/chronicle.db).
   dbPath: path.resolve(process.env.DB_PATH || path.join(__dirname, '../../../data/chronicle.db')),
+  uploadsPath: path.resolve(process.env.UPLOADS_PATH || path.join(__dirname, '../../../data/uploads')),
   gmUsername: process.env.GM_USERNAME || 'dungeonmaster',
   // Set REGISTRATION_OPEN=false in .env to prevent new signups (recommended for private groups)
   registrationOpen: process.env.REGISTRATION_OPEN !== 'false',
