@@ -105,6 +105,9 @@ async function handleSseEvent(d) {
   if (d.type === 'timer_update' && d.campaign_id === campaign.activeCampaign?.id) {
     campaign.setTimer(d.timer)
   }
+  if (d.type === 'calendar_update' && d.campaign_id === campaign.activeCampaign?.id) {
+    campaign.calendarVersion++
+  }
   if (d.type === 'agenda_revealed') {
     await data.loadAgenda()
     ui.showToast('Secret Objective', 'Your agenda has been updated', '🎯')

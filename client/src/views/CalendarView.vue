@@ -265,6 +265,7 @@ onMounted(async () => {
 })
 
 watch([viewMonth, viewYear], loadEvents)
+watch(() => campaign.calendarVersion, async () => { await loadConfig(); await loadEvents() })
 
 // ── Navigation ─────────────────────────────────────────────────────────────
 function prevMonth() {

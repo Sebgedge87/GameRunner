@@ -9,6 +9,7 @@ export const useCampaignStore = defineStore('campaign', () => {
   const allCampaigns = ref([])
   const isGm = ref(false)
   const timer = ref({ label: '', end: null, remaining: 0, running: false })
+  const calendarVersion = ref(0)
 
   function setTimer(t) { timer.value = { ...timer.value, ...t } }
 
@@ -156,7 +157,7 @@ export const useCampaignStore = defineStore('campaign', () => {
   }
 
   return {
-    activeCampaign, allCampaigns, isGm, currentPartyLocationId, timer,
+    activeCampaign, allCampaigns, isGm, currentPartyLocationId, timer, calendarVersion,
     SYSTEM_META, SYSTEM_THEME_MAP,
     applyTheme, applyCustomTheme, applyBgImage,
     loadCampaigns, switchCampaign, createCampaign, joinCampaign, setPartyLocation, leaveCampaign, setTimer,
