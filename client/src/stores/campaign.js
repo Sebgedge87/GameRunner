@@ -90,6 +90,16 @@ export const useCampaignStore = defineStore('campaign', () => {
         applyTheme(activeCampaign.value.system)
       }
       applyBgImage(activeCampaign.value?.bg_image || null)
+      // Hydrate timer from campaign row
+      const ac = activeCampaign.value
+      if (ac) {
+        timer.value = {
+          label: ac.timer_label || '',
+          end: ac.timer_end || null,
+          remaining: ac.timer_remaining || 0,
+          running: !!ac.timer_running,
+        }
+      }
     } catch (e) {
       console.error('[loadCampaigns]', e)
     }
