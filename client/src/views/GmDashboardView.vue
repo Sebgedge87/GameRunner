@@ -118,9 +118,17 @@
               </div>
               <div class="field-group">
                 <label>Players</label>
-                <select v-model="xpForm.user_ids" multiple class="form-input xp-player-select">
-                  <option v-for="u in players" :key="u.id" :value="u.id">{{ u.username }}</option>
-                </select>
+                <div class="xp-player-list">
+                  <label class="xp-player-row xp-player-all">
+                    <input type="checkbox" :checked="allPlayersSelected" @change="toggleAllPlayers" />
+                    <span>All Players</span>
+                  </label>
+                  <label v-for="u in players" :key="u.id" class="xp-player-row">
+                    <input type="checkbox" :value="u.id" v-model="xpForm.user_ids" />
+                    <span>{{ u.username }}</span>
+                    <span v-if="u.character_name" class="xp-player-char">{{ u.character_name }}</span>
+                  </label>
+                </div>
               </div>
             </div>
             <button class="btn" @click="awardXp">Award XP</button>
@@ -229,6 +237,13 @@ const xpOk = ref(false)
 
 const players = computed(() => data.users.filter(u => u.role !== 'gm'))
 const activeQuests = computed(() => data.quests.filter(q => q.status?.toLowerCase() === 'active'))
+
+const allPlayersSelected = computed(() =>
+  players.value.length > 0 && players.value.every(u => xpForm.value.user_ids.includes(u.id))
+)
+function toggleAllPlayers(e) {
+  xpForm.value.user_ids = e.target.checked ? players.value.map(u => u.id) : []
+}
 
 function formatTime(ts) {
   if (!ts) return ''
@@ -447,7 +462,33 @@ onMounted(async () => {
 /* Award XP card */
 .xp-card { display: flex; flex-direction: column; gap: 0; }
 .xp-fields { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
-.xp-player-select { min-height: 80px; }
+.xp-player-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 8px;
+  background: var(--bg);
+}
+.xp-player-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 2px;
+  cursor: pointer;
+  font-size: 0.88em;
+  border-radius: 3px;
+  user-select: none;
+}
+.xp-player-row:hover { background: var(--surface); }
+.xp-player-all {
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+  margin-bottom: 2px;
+}
+.xp-player-char { opacity: 0.5; font-size: 0.85em; margin-left: auto; }
 
 /* 2-column lower dashboard */
 .dash-cols {
