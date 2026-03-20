@@ -178,11 +178,12 @@
           <div style="margin-top:12px">
             <div v-if="unreadMessages.length === 0" style="opacity:0.5;font-size:0.85em;padding:8px 0">No unread messages.</div>
             <div v-for="msg in unreadMessages" :key="msg.id" class="card" style="margin-bottom:8px">
-              <div style="display:flex;justify-content:space-between;align-items:center">
-                <span style="font-size:0.85em;font-weight:600">{{ msg.sender_name || msg.from_username }}</span>
-                <span style="font-size:0.75em;opacity:0.5">{{ formatTime(msg.created_at) }}</span>
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;min-width:0">
+                <span style="font-size:0.85em;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ msg.from_character || msg.from_username }}</span>
+                <span style="font-size:0.75em;opacity:0.5;flex-shrink:0">{{ formatTime(msg.created_at) }}</span>
               </div>
-              <div style="font-size:0.82em;opacity:0.75;margin-top:4px">{{ msg.body }}</div>
+              <div style="font-size:0.82em;font-weight:600;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ msg.subject }}</div>
+              <div style="font-size:0.82em;opacity:0.75;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ msg.body }}</div>
             </div>
           </div>
 
@@ -457,8 +458,8 @@ watch(() => campaign.activeCampaign?.id, (newId, oldId) => {
   padding: 8px;
   border-bottom: 1px solid var(--border);
 }
-.player-name { font-weight: 600; }
-.player-char { font-size: 0.8em; opacity: 0.55; }
+.player-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px; }
+.player-char { font-size: 0.8em; opacity: 0.55; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px; }
 .xp-total { color: var(--accent); font-weight: 600; }
 .xp-level { font-size: 0.75em; opacity: 0.55; margin-left: 4px; }
 .stress-cell { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
@@ -486,6 +487,7 @@ watch(() => campaign.activeCampaign?.id, (newId, oldId) => {
   font-size: 0.88em;
   border-radius: 3px;
   user-select: none;
+  min-width: 0;
 }
 .xp-player-row input[type="checkbox"] {
   width: auto;
@@ -502,7 +504,7 @@ watch(() => campaign.activeCampaign?.id, (newId, oldId) => {
   padding-bottom: 6px;
   margin-bottom: 2px;
 }
-.xp-player-char { opacity: 0.5; font-size: 0.85em; margin-left: auto; }
+.xp-player-char { opacity: 0.5; font-size: 0.85em; margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 50%; }
 
 /* 2-column lower dashboard */
 .dash-cols {
