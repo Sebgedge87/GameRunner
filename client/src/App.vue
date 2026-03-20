@@ -37,14 +37,6 @@ onMounted(async () => {
   if (a11y.effects) document.body.classList.add('no-effects')
   const sz = localStorage.getItem('chronicle_font_size') || 'medium'
   document.body.setAttribute('data-font-size', sz)
-  const bgUrl = localStorage.getItem('chronicle_bg_image')
-  if (bgUrl) {
-    const main = document.getElementById('main')
-    if (main) {
-      main.style.backgroundImage = `url(${JSON.stringify(bgUrl)})`
-      main.classList.add('has-bg-image')
-    }
-  }
   // Restore session
   await auth.restoreSession()
 })

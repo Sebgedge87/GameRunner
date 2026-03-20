@@ -98,24 +98,6 @@
           </div>
         </div>
 
-        <!-- Background Image -->
-        <div class="settings-section">
-          <div class="settings-section-title">Background Image</div>
-          <div class="field-group">
-            <label>Image URL</label>
-            <input v-model="bgUrl" class="form-input" placeholder="https://…" />
-          </div>
-          <div v-if="bgUrl" class="bg-preview" :style="`background-image:url(${JSON.stringify(bgUrl)})`"></div>
-          <div class="bg-actions">
-            <label class="btn btn-sm btn-upload">
-              Upload Image
-              <input type="file" accept="image/*" class="hidden-input" @change="uploadBg" />
-            </label>
-            <button class="btn btn-sm btn-primary" @click="applyBg">Set Background</button>
-            <button v-if="bgUrl" class="btn btn-sm btn-danger" @click="clearBg">Clear</button>
-          </div>
-        </div>
-
         <!-- Change Password -->
         <div class="settings-section">
           <div class="settings-section-title">Change Password</div>
@@ -156,7 +138,6 @@ const charName = ref('')
 const charClass = ref('')
 const profileStatus = ref('')
 const profileOk = ref(false)
-const bgUrl = ref(localStorage.getItem('chronicle_bg_image') || '')
 const fontSize = ref(localStorage.getItem('chronicle_font_size') || 'medium')
 const currentTheme = ref(document.documentElement.getAttribute('data-theme') || 'default')
 
@@ -229,30 +210,6 @@ async function saveProfile() {
   }
 }
 
-async function uploadBg(e) {
-  const file = e.target.files[0]
-  if (!file) return
-  const fd = new FormData()
-  fd.append('file', file)
-  const r = await fetch('/api/uploads', { method: 'POST', headers: { Authorization: `Bearer ${auth.token}` }, body: fd })
-  if (r.ok) { bgUrl.value = (await r.json()).url; applyBg() }
-  else ui.showToast('Upload failed', '', '✕')
-}
-
-function applyBg() {
-  localStorage.setItem('chronicle_bg_image', bgUrl.value)
-  const main = document.getElementById('main')
-  if (main) { main.style.backgroundImage = `url(${JSON.stringify(bgUrl.value)})`; main.classList.add('has-bg-image') }
-  ui.showToast('Background set', '', '✓')
-}
-
-function clearBg() {
-  bgUrl.value = ''
-  localStorage.removeItem('chronicle_bg_image')
-  const main = document.getElementById('main')
-  if (main) { main.style.backgroundImage = ''; main.classList.remove('has-bg-image') }
-}
-
 function setFontSize(sz) {
   fontSize.value = sz
   localStorage.setItem('chronicle_font_size', sz)
@@ -322,20 +279,6 @@ async function downloadBackup() {
 }
 .color-input { height: 36px; padding: 2px; }
 .custom-theme-actions { display: flex; gap: 8px; }
-
-/* Background image */
-.bg-preview {
-  width: 100%;
-  height: 120px;
-  background-size: cover;
-  background-position: center;
-  border-radius: 4px;
-  margin-bottom: 8px;
-  border: 1px solid var(--border);
-}
-.bg-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.btn-upload { cursor: pointer; }
-.hidden-input { display: none; }
 
 /* Font size */
 .font-sz-row { display: flex; gap: 8px; }

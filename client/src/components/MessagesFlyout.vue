@@ -9,7 +9,10 @@
       <!-- Compose -->
       <div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border)">
         <div style="font-size:10px;color:var(--text3);letter-spacing:.08em;margin-bottom:8px">SEND MESSAGE</div>
-        <select id="flyout-msg-to" v-model="toUser" class="form-input" style="margin-bottom:6px">
+        <div v-if="toUserLocked" class="form-input" style="margin-bottom:6px;opacity:0.7;cursor:default">
+          To: {{ toUserLockedName }}
+        </div>
+        <select v-else id="flyout-msg-to" v-model="toUser" class="form-input" style="margin-bottom:6px">
           <option value="">— All Players —</option>
           <option v-for="u in recipients" :key="u.id" :value="u.id">
             {{ u.character_name || u.username }}
@@ -51,7 +54,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { useDataStore } from '@/stores/data'
@@ -61,12 +64,26 @@ const ui = useUiStore()
 const data = useDataStore()
 
 const toUser = ref('')
+const toUserLocked = ref(false)
+const toUserLockedName = ref('')
 const subject = ref('')
 const body = ref('')
 const isSecret = ref(false)
 const requiresAck = ref(false)
 const sendStatus = ref('')
 const sendOk = ref(false)
+
+watch(() => ui.activeFlyout, (val) => {
+  if (val === 'msgs' && ui.pendingReply) {
+    toUser.value = ui.pendingReply.toUserId
+    toUserLocked.value = true
+    toUserLockedName.value = ui.pendingReply.toName
+    subject.value = ui.pendingReply.subject
+  } else if (!val) {
+    toUserLocked.value = false
+    toUserLockedName.value = ''
+  }
+})
 
 const recipients = computed(() =>
   data.users.filter(u => u.id !== auth.currentUser?.id)
@@ -98,6 +115,10 @@ async function sendMessage() {
     sendOk.value = true
     subject.value = ''
     body.value = ''
+    toUser.value = ''
+    toUserLocked.value = false
+    toUserLockedName.value = ''
+    ui.pendingReply = null
     const msgs = await data.loadMessages()
     ui.setMessages(msgs)
   } else {

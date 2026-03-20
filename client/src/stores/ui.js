@@ -52,8 +52,16 @@ export const useUiStore = defineStore('ui', () => {
 
   // Active flyout
   const activeFlyout = ref(null)
+  const pendingReply = ref(null) // { toUserId, toName, subject }
   function openFlyout(name) { activeFlyout.value = name }
-  function closeFlyout() { activeFlyout.value = null }
+  function openReplyFlyout(toUserId, toName, subject) {
+    pendingReply.value = { toUserId, toName, subject }
+    activeFlyout.value = 'msgs'
+  }
+  function closeFlyout() {
+    activeFlyout.value = null
+    pendingReply.value = null
+  }
 
   // Message viewer
   const viewingMessage = ref(null)
@@ -121,7 +129,7 @@ export const useUiStore = defineStore('ui', () => {
     notifications, unreadNotifCount, setNotifications,
     messages, unreadMsgCount, setMessages,
     unreadHandoutCount,
-    activeFlyout, openFlyout, closeFlyout,
+    activeFlyout, pendingReply, openFlyout, openReplyFlyout, closeFlyout,
     viewingMessage, openMessage, closeMessage,
     viewingHandout, openHandout, closeHandout,
     detailModal, openDetail, closeDetail,

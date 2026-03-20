@@ -25,6 +25,18 @@ export const useCampaignStore = defineStore('campaign', () => {
     custom: { label: 'Custom', icon: '🎨', color: '#c9a84c' },
   }
 
+  function applyBgImage(url) {
+    const main = document.getElementById('main')
+    if (!main) return
+    if (url) {
+      main.style.backgroundImage = `url(${JSON.stringify(url)})`
+      main.classList.add('has-bg-image')
+    } else {
+      main.style.backgroundImage = ''
+      main.classList.remove('has-bg-image')
+    }
+  }
+
   function applyTheme(system) {
     const theme = SYSTEM_THEME_MAP[system] || 'default'
     document.documentElement.setAttribute('data-theme', theme)
@@ -74,6 +86,7 @@ export const useCampaignStore = defineStore('campaign', () => {
       if (activeCampaign.value?.system && !localStorage.getItem('chronicle_theme_manual')) {
         applyTheme(activeCampaign.value.system)
       }
+      applyBgImage(activeCampaign.value?.bg_image || null)
     } catch (e) {
       console.error('[loadCampaigns]', e)
     }
@@ -92,6 +105,7 @@ export const useCampaignStore = defineStore('campaign', () => {
     activeCampaign.value = campaign
     isGm.value = campaign.my_role === 'gm'
     if (campaign.system && !localStorage.getItem('chronicle_theme_manual')) applyTheme(campaign.system)
+    applyBgImage(campaign.bg_image || null)
   }
 
   async function createCampaign(body) {
@@ -126,7 +140,7 @@ export const useCampaignStore = defineStore('campaign', () => {
   return {
     activeCampaign, allCampaigns, isGm, currentPartyLocationId,
     SYSTEM_META, SYSTEM_THEME_MAP,
-    applyTheme, applyCustomTheme,
+    applyTheme, applyCustomTheme, applyBgImage,
     loadCampaigns, switchCampaign, createCampaign, joinCampaign, setPartyLocation,
   }
 })

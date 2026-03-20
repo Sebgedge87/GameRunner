@@ -40,9 +40,28 @@
             <label>Description</label>
             <textarea v-model="campForm.description" class="form-input" style="min-height:80px;resize:vertical"></textarea>
           </div>
+          <!-- Background image row -->
           <div class="field-group" style="grid-column:1/-1">
-            <label>Background Image URL</label>
-            <input v-model="campForm.bg_image" class="form-input" placeholder="https://…" />
+            <label>Background Image</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input v-model="campForm.bg_image" class="form-input" placeholder="https://… or upload below" style="flex:1" />
+              <label class="btn btn-sm" style="cursor:pointer;flex-shrink:0">
+                Upload
+                <input type="file" accept="image/*" style="display:none" @change="uploadBgImage" />
+              </label>
+              <button v-if="campForm.bg_image" class="btn btn-sm btn-danger" style="flex-shrink:0" @click="campForm.bg_image = ''">Clear</button>
+            </div>
+            <div v-if="campForm.bg_image" class="bg-preview" :style="`background-image:url(${JSON.stringify(campForm.bg_image)})`"></div>
+          </div>
+          <!-- Invite code row -->
+          <div class="field-group" style="grid-column:1/-1">
+            <label>Invite Code</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input v-model="campForm.invite_code" class="form-input" placeholder="AUTO-GENERATED" style="font-family:'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;flex:1" maxlength="12" />
+              <button class="btn btn-sm" @click="regenInviteCode" style="flex-shrink:0">Regenerate</button>
+              <button class="btn btn-sm" @click="copyInviteCode" style="flex-shrink:0">Copy</button>
+            </div>
+            <div style="font-size:0.78em;opacity:0.5;margin-top:4px">Share this code with players so they can join from the home screen.</div>
           </div>
         </div>
         <div style="display:flex;gap:8px;margin-top:14px;align-items:center">
@@ -178,11 +197,12 @@
           <div style="margin-top:12px">
             <div v-if="unreadMessages.length === 0" style="opacity:0.5;font-size:0.85em;padding:8px 0">No unread messages.</div>
             <div v-for="msg in unreadMessages" :key="msg.id" class="card" style="margin-bottom:8px">
-              <div style="display:flex;justify-content:space-between;align-items:center">
-                <span style="font-size:0.85em;font-weight:600">{{ msg.sender_name || msg.from_username }}</span>
-                <span style="font-size:0.75em;opacity:0.5">{{ formatTime(msg.created_at) }}</span>
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;min-width:0">
+                <span style="font-size:0.85em;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ msg.from_character || msg.from_username }}</span>
+                <span style="font-size:0.75em;opacity:0.5;flex-shrink:0">{{ formatTime(msg.created_at) }}</span>
               </div>
-              <div style="font-size:0.82em;opacity:0.75;margin-top:4px">{{ msg.body }}</div>
+              <div style="font-size:0.82em;font-weight:600;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ msg.subject }}</div>
+              <div style="font-size:0.82em;opacity:0.75;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ msg.body }}</div>
             </div>
           </div>
 
@@ -206,7 +226,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
@@ -226,7 +246,7 @@ const stressMap = ref({})
 const stressEdits = reactive({})
 const xpMap = ref({})
 
-const campForm = ref({ name: '', subtitle: '', system: '', description: '', playlist_url: '', bg_image: '' })
+const campForm = ref({ name: '', subtitle: '', system: '', description: '', playlist_url: '', bg_image: '', invite_code: '' })
 const campSaving = ref(false)
 const campStatus = ref('')
 const campOk = ref(false)
@@ -265,12 +285,14 @@ async function saveCampaign() {
         description: campForm.value.description,
         playlist_url: campForm.value.playlist_url || null,
         bg_image: campForm.value.bg_image || null,
+        invite_code: campForm.value.invite_code?.toUpperCase() || null,
       }),
     })
     if (r.ok) {
       campStatus.value = 'Saved.'
       campOk.value = true
       await campaign.loadCampaigns()
+      campaign.applyBgImage(campForm.value.bg_image || null)
     } else {
       campStatus.value = 'Save failed.'
       campOk.value = false
@@ -278,6 +300,36 @@ async function saveCampaign() {
   } finally {
     campSaving.value = false
   }
+}
+
+async function uploadBgImage(e) {
+  const file = e.target.files[0]
+  if (!file) return
+  const fd = new FormData()
+  fd.append('file', file)
+  const token = localStorage.getItem('chronicle_token')
+  const r = await fetch('/api/uploads', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd })
+  if (r.ok) {
+    campForm.value.bg_image = (await r.json()).url
+    ui.showToast('Image uploaded', '', '✓')
+  } else {
+    ui.showToast('Upload failed', '', '✕')
+  }
+}
+
+function regenInviteCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+  let code = ''
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)]
+  campForm.value.invite_code = code
+}
+
+function copyInviteCode() {
+  if (!campForm.value.invite_code) return
+  navigator.clipboard.writeText(campForm.value.invite_code).then(
+    () => ui.showToast('Invite code copied!', '', '✓'),
+    () => ui.showToast('Copy failed', '', '✕'),
+  )
 }
 
 async function saveStress(userId) {
@@ -389,7 +441,7 @@ async function loadDash() {
   }
 }
 
-onMounted(async () => {
+async function initForCampaign() {
   const ac = campaign.activeCampaign
   if (ac) {
     campForm.value = {
@@ -399,19 +451,36 @@ onMounted(async () => {
       description: ac.description || '',
       playlist_url: ac.playlist_url || '',
       bg_image: ac.bg_image || '',
+      invite_code: ac.invite_code || '',
     }
   }
   await Promise.all([
-    data.users.length ? null : data.loadUsers(),
-    data.quests.length ? null : data.loadQuests(),
+    data.loadUsers(),
+    data.loadQuests(),
     loadXp(),
     loadDash(),
   ])
   data.users.forEach(u => { if (!stressEdits[u.id]) stressEdits[u.id] = { stress: '', sanity: '' } })
+}
+
+onMounted(initForCampaign)
+
+watch(() => campaign.activeCampaign?.id, (newId, oldId) => {
+  if (newId && newId !== oldId) initForCampaign()
 })
 </script>
 
 <style scoped>
+.bg-preview {
+  width: 100%;
+  height: 100px;
+  background-size: cover;
+  background-position: center;
+  border-radius: 4px;
+  margin-top: 8px;
+  border: 1px solid var(--border);
+}
+
 /* Campaign settings: 2-col form */
 .camp-form-grid {
   display: grid;
@@ -451,8 +520,8 @@ onMounted(async () => {
   padding: 8px;
   border-bottom: 1px solid var(--border);
 }
-.player-name { font-weight: 600; }
-.player-char { font-size: 0.8em; opacity: 0.55; }
+.player-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px; }
+.player-char { font-size: 0.8em; opacity: 0.55; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px; }
 .xp-total { color: var(--accent); font-weight: 600; }
 .xp-level { font-size: 0.75em; opacity: 0.55; margin-left: 4px; }
 .stress-cell { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
@@ -480,6 +549,15 @@ onMounted(async () => {
   font-size: 0.88em;
   border-radius: 3px;
   user-select: none;
+  min-width: 0;
+}
+.xp-player-row input[type="checkbox"] {
+  width: auto;
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
 }
 .xp-player-row:hover { background: var(--surface); }
 .xp-player-all {
@@ -488,7 +566,7 @@ onMounted(async () => {
   padding-bottom: 6px;
   margin-bottom: 2px;
 }
-.xp-player-char { opacity: 0.5; font-size: 0.85em; margin-left: auto; }
+.xp-player-char { opacity: 0.5; font-size: 0.85em; margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 50%; }
 
 /* 2-column lower dashboard */
 .dash-cols {
