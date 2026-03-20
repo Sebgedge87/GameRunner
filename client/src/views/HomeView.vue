@@ -2,17 +2,6 @@
   <div class="page-content">
     <div class="home-header">
       <div class="home-title">Your Campaigns</div>
-      <div class="join-row">
-        <input
-          v-model="joinCode"
-          class="form-input"
-          style="width:150px;font-family:'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase"
-          placeholder="INVITE CODE"
-          maxlength="12"
-          @keydown.enter="joinCampaign"
-        />
-        <button class="btn btn-primary btn-sm" @click="joinCampaign">Join</button>
-      </div>
     </div>
 
     <div class="camp-lobby-grid">
@@ -55,6 +44,22 @@
       <div class="camp-lobby-card camp-lobby-card-create" @click="showCreateModal = true">
         <div class="camp-lobby-create-icon">+</div>
         <div class="camp-lobby-create-label">Create a Campaign</div>
+      </div>
+
+      <!-- Join via invite code -->
+      <div class="camp-lobby-card camp-lobby-card-join">
+        <div class="camp-lobby-create-icon">⤵</div>
+        <div class="camp-lobby-create-label">Join a Campaign</div>
+        <div class="join-tile-input-row" @click.stop>
+          <input
+            v-model="joinCode"
+            class="form-input join-tile-input"
+            placeholder="INVITE CODE"
+            maxlength="12"
+            @keydown.enter="joinCampaign"
+          />
+          <button class="btn btn-primary btn-sm" @click="joinCampaign">Join</button>
+        </div>
       </div>
     </div>
 
