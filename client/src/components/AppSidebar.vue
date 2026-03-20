@@ -48,6 +48,9 @@
           <RouterLink to="/timeline" class="nav-item" active-class="active" @click="ui.closeSidebar()">
             <span class="nav-icon">⏳</span>Timeline
           </RouterLink>
+          <RouterLink to="/calendar" class="nav-item" active-class="active" @click="ui.closeSidebar()">
+            <span class="nav-icon">📅</span>Calendar
+          </RouterLink>
           <RouterLink to="/maps" class="nav-item" active-class="active" @click="ui.closeSidebar()">
             <span class="nav-icon">🗾</span>Maps
           </RouterLink>

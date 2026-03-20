@@ -2,6 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const { getDb } = require('../db/database');
 const { requireAuth, requireGm } = require('../auth/authMiddleware');
+const { broadcastSSE } = require('../services/notifications');
 
 const router = express.Router();
 
@@ -166,6 +167,58 @@ router.delete('/:id/members/:userId', requireGm, (req, res) => {
   const db = getDb();
   db.prepare('DELETE FROM campaign_members WHERE campaign_id=? AND user_id=?').run(req.params.id, req.params.userId);
   res.json({ success: true });
+});
+
+// PUT /api/campaigns/:id/timer — GM sets/starts/pauses/resets the session timer
+// Body: { action: 'set'|'start'|'pause'|'reset', label?: string, duration?: number (seconds) }
+router.put('/:id/timer', requireGm, (req, res) => {
+  const db = getDb();
+  const { action, label, duration } = req.body;
+  const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(req.params.id);
+  if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
+
+  let timer_label = campaign.timer_label;
+  let timer_end = campaign.timer_end;
+  let timer_remaining = campaign.timer_remaining;
+  let timer_running = campaign.timer_running;
+
+  if (action === 'set') {
+    // Set new timer without starting it
+    timer_label = label ?? timer_label;
+    timer_remaining = duration != null ? duration : timer_remaining;
+    timer_end = null;
+    timer_running = 0;
+  } else if (action === 'start') {
+    // Start or resume from remaining
+    if (label != null) timer_label = label;
+    if (duration != null) timer_remaining = duration;
+    const secs = timer_running ? (timer_end - Math.floor(Date.now() / 1000)) : timer_remaining;
+    timer_end = Math.floor(Date.now() / 1000) + Math.max(secs, 0);
+    timer_running = 1;
+  } else if (action === 'pause') {
+    if (timer_running) {
+      timer_remaining = Math.max((timer_end || 0) - Math.floor(Date.now() / 1000), 0);
+    }
+    timer_end = null;
+    timer_running = 0;
+  } else if (action === 'reset') {
+    timer_end = null;
+    timer_remaining = duration != null ? duration : 0;
+    timer_running = 0;
+    if (label != null) timer_label = label;
+  }
+
+  db.prepare(`
+    UPDATE campaigns SET timer_label=?, timer_end=?, timer_remaining=?, timer_running=?, updated_at=CURRENT_TIMESTAMP
+    WHERE id=?
+  `).run(timer_label, timer_end, timer_remaining, timer_running, req.params.id);
+
+  // Broadcast to all campaign members via SSE
+  const members = db.prepare('SELECT user_id FROM campaign_members WHERE campaign_id=?').all(req.params.id);
+  const payload = { type: 'timer_update', campaign_id: Number(req.params.id), timer: { label: timer_label, end: timer_end, remaining: timer_remaining, running: !!timer_running } };
+  for (const m of members) broadcastSSE(m.user_id, payload);
+
+  res.json({ timer: payload.timer });
 });
 
 // PUT /api/campaigns/:id/party-location — any member sets current party location

@@ -51,6 +51,8 @@
     <ConfirmDialog />
     <!-- Toast container -->
     <ToastContainer />
+  <!-- Timer widget (always on top, all users) -->
+  <TimerWidget />
   </div>
 </template>
 
@@ -75,6 +77,7 @@ import ShareModal from './ShareModal.vue'
 import OnboardingWizard from './OnboardingWizard.vue'
 import ConfirmDialog from './ConfirmDialog.vue'
 import ToastContainer from './ToastContainer.vue'
+import TimerWidget from './TimerWidget.vue'
 
 const auth = useAuthStore()
 const campaign = useCampaignStore()
@@ -98,6 +101,9 @@ async function handleSseEvent(d) {
   if (d.type === 'new_handout' || d.type === 'handout_group') {
     await data.loadHandouts()
     ui.showToast(d.title || 'New Handout', '', '📄')
+  }
+  if (d.type === 'timer_update' && d.campaign_id === campaign.activeCampaign?.id) {
+    campaign.setTimer(d.timer)
   }
   if (d.type === 'agenda_revealed') {
     await data.loadAgenda()

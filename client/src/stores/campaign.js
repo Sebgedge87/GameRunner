@@ -8,6 +8,9 @@ export const useCampaignStore = defineStore('campaign', () => {
   const activeCampaign = ref(null)
   const allCampaigns = ref([])
   const isGm = ref(false)
+  const timer = ref({ label: '', end: null, remaining: 0, running: false })
+
+  function setTimer(t) { timer.value = { ...timer.value, ...t } }
 
   const SYSTEM_THEME_MAP = {
     default: 'default', dnd5e: 'dnd5e', coc: 'coc', alien: 'alien',
@@ -143,9 +146,9 @@ export const useCampaignStore = defineStore('campaign', () => {
   }
 
   return {
-    activeCampaign, allCampaigns, isGm, currentPartyLocationId,
+    activeCampaign, allCampaigns, isGm, currentPartyLocationId, timer,
     SYSTEM_META, SYSTEM_THEME_MAP,
     applyTheme, applyCustomTheme, applyBgImage,
-    loadCampaigns, switchCampaign, createCampaign, joinCampaign, setPartyLocation, leaveCampaign,
+    loadCampaigns, switchCampaign, createCampaign, joinCampaign, setPartyLocation, leaveCampaign, setTimer,
   }
 })
