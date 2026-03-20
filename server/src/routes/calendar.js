@@ -1,6 +1,7 @@
 const express = require('express');
 const { getDb } = require('../db/database');
 const { requireAuth, requireGm } = require('../auth/authMiddleware');
+const { broadcastSSE } = require('../services/notifications');
 
 const router = express.Router();
 
@@ -119,6 +120,12 @@ function daysSinceEpoch(config, year, month, day) {
   return total;
 }
 
+function broadcastCalendar(db, campaignId) {
+  const members = db.prepare('SELECT user_id FROM campaign_members WHERE campaign_id = ?').all(campaignId);
+  const payload = { type: 'calendar_update', campaign_id: Number(campaignId) };
+  for (const m of members) broadcastSSE(m.user_id, payload);
+}
+
 // ── Routes ─────────────────────────────────────────────────────────────────
 
 // GET /api/calendar — return config
@@ -172,6 +179,7 @@ router.post('/events', requireAuth, requireGm, (req, res) => {
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(cid, era_index, year, month, day, title, description, type, color, weather_icon, is_gm_only ? 1 : 0, req.user.id);
   const ev = db.prepare('SELECT * FROM calendar_events WHERE id = ?').get(r.lastInsertRowid);
+  broadcastCalendar(db, cid);
   res.json({ event: ev });
 });
 
@@ -190,6 +198,7 @@ router.put('/events/:id', requireAuth, requireGm, (req, res) => {
     WHERE id=? AND campaign_id=?
   `).run(title, description, type, color, weather_icon, is_gm_only != null ? (is_gm_only ? 1 : 0) : null, day, month, year, era_index, req.params.id, cid);
   const ev = db.prepare('SELECT * FROM calendar_events WHERE id = ?').get(req.params.id);
+  broadcastCalendar(db, cid);
   res.json({ event: ev });
 });
 
@@ -198,6 +207,7 @@ router.delete('/events/:id', requireAuth, requireGm, (req, res) => {
   const db = getDb();
   const cid = getCampaignId(req);
   db.prepare('DELETE FROM calendar_events WHERE id = ? AND campaign_id = ?').run(req.params.id, cid);
+  broadcastCalendar(db, cid);
   res.json({ ok: true });
 });
 
@@ -250,6 +260,7 @@ router.post('/weather', requireAuth, requireGm, (req, res) => {
     }
   }
 
+  broadcastCalendar(db, cid);
   res.json({ generated });
 });
 
@@ -266,6 +277,7 @@ router.put('/current-date', requireAuth, requireGm, (req, res) => {
     VALUES (?, ?, CURRENT_TIMESTAMP)
     ON CONFLICT(campaign_id) DO UPDATE SET config = excluded.config, updated_at = CURRENT_TIMESTAMP
   `).run(cid, JSON.stringify(config));
+  broadcastCalendar(db, cid);
   res.json({ config });
 });
 

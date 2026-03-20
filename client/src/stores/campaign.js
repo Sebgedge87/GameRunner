@@ -9,6 +9,7 @@ export const useCampaignStore = defineStore('campaign', () => {
   const allCampaigns = ref([])
   const isGm = ref(false)
   const timer = ref({ label: '', end: null, remaining: 0, running: false })
+  const calendarVersion = ref(0)
 
   function setTimer(t) { timer.value = { ...timer.value, ...t } }
 
@@ -90,6 +91,16 @@ export const useCampaignStore = defineStore('campaign', () => {
         applyTheme(activeCampaign.value.system)
       }
       applyBgImage(activeCampaign.value?.bg_image || null)
+      // Hydrate timer from campaign row
+      const ac = activeCampaign.value
+      if (ac) {
+        timer.value = {
+          label: ac.timer_label || '',
+          end: ac.timer_end || null,
+          remaining: ac.timer_remaining || 0,
+          running: !!ac.timer_running,
+        }
+      }
     } catch (e) {
       console.error('[loadCampaigns]', e)
     }
@@ -146,7 +157,7 @@ export const useCampaignStore = defineStore('campaign', () => {
   }
 
   return {
-    activeCampaign, allCampaigns, isGm, currentPartyLocationId, timer,
+    activeCampaign, allCampaigns, isGm, currentPartyLocationId, timer, calendarVersion,
     SYSTEM_META, SYSTEM_THEME_MAP,
     applyTheme, applyCustomTheme, applyBgImage,
     loadCampaigns, switchCampaign, createCampaign, joinCampaign, setPartyLocation, leaveCampaign, setTimer,

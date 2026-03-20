@@ -37,7 +37,7 @@
 
       <!-- ── GM: Generate weather / Advance date ─────────────────────────── -->
       <div v-if="isGm" class="cal-gm-bar">
-        <button class="btn btn-sm" @click="generateWeather">🌦 Generate Weather (7d)</button>
+        <button class="btn btn-sm" @click="generateWeather">🌦 Generate Weather (month)</button>
         <button class="btn btn-sm" @click="showAdvance = !showAdvance">⏩ Advance Date</button>
         <div v-if="showAdvance" class="cal-advance-row">
           <input v-model.number="advanceDays" type="number" min="0" class="form-input cal-advance-input" placeholder="days" />
@@ -265,6 +265,7 @@ onMounted(async () => {
 })
 
 watch([viewMonth, viewYear], loadEvents)
+watch(() => campaign.calendarVersion, async () => { await loadConfig(); await loadEvents() })
 
 // ── Navigation ─────────────────────────────────────────────────────────────
 function prevMonth() {
@@ -442,7 +443,7 @@ async function deleteEvent() {
 .cal-blank { background: var(--surface); min-height: 80px; }
 .cal-cell {
   background: var(--surface);
-  min-height: 80px; padding: 4px;
+  min-height: 90px; padding: 5px;
   cursor: default;
   transition: background 0.15s;
   position: relative;
@@ -453,17 +454,17 @@ async function deleteEvent() {
 
 .cal-cell-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; }
 .cal-day-num { font-size: 12px; color: var(--text3); font-weight: 600; }
-.cal-moon { font-size: 12px; line-height: 1; }
+.cal-moon { font-size: 16px; line-height: 1; }
 
 /* ── Events ── */
 .cal-events { display: flex; flex-direction: column; gap: 2px; }
 .cal-event {
-  font-size: 10px; padding: 1px 4px;
+  font-size: 11px; padding: 2px 5px;
   border-radius: 3px;
   border-left: 2px solid var(--accent);
   background: color-mix(in srgb, var(--accent) 10%, transparent);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  display: flex; align-items: center; gap: 3px;
+  display: flex; align-items: center; gap: 4px;
   cursor: pointer;
 }
 .cal-event:hover { filter: brightness(1.2); }
@@ -473,9 +474,9 @@ async function deleteEvent() {
   color: var(--text2);
 }
 .cal-event-gm { opacity: 0.75; }
-.cal-ev-icon { flex-shrink: 0; }
+.cal-ev-icon { flex-shrink: 0; font-size: 15px; }
 .cal-ev-label { overflow: hidden; text-overflow: ellipsis; flex: 1; }
-.cal-ev-gm-badge { font-size: 9px; flex-shrink: 0; }
+.cal-ev-gm-badge { font-size: 11px; flex-shrink: 0; }
 
 /* ── Settings ── */
 .cal-settings-panel {
