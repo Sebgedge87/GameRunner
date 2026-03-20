@@ -8,10 +8,10 @@
     <div v-if="loading" class="loading">Loading dashboard…</div>
 
     <template v-else>
-      <!-- ── Campaign Controls ─────────────────────────────── -->
+      <!-- ── Campaign Settings ──────────────────────────────── -->
       <div class="section-divider">Campaign Settings</div>
       <div class="card" style="margin-top:12px;margin-bottom:24px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="camp-form-grid">
           <div class="field-group">
             <label>Name</label>
             <input v-model="campForm.name" class="form-input" />
@@ -32,15 +32,15 @@
             <label>Subtitle</label>
             <input v-model="campForm.subtitle" class="form-input" placeholder="Optional tagline…" />
           </div>
-          <div class="field-group" style="grid-column:1/-1">
-            <label>Description</label>
-            <textarea v-model="campForm.description" class="form-input" style="min-height:60px;resize:vertical"></textarea>
-          </div>
           <div class="field-group">
             <label>Playlist URL</label>
             <input v-model="campForm.playlist_url" class="form-input" placeholder="Spotify / YouTube URL" />
           </div>
-          <div class="field-group">
+          <div class="field-group" style="grid-column:1/-1">
+            <label>Description</label>
+            <textarea v-model="campForm.description" class="form-input" style="min-height:80px;resize:vertical"></textarea>
+          </div>
+          <div class="field-group" style="grid-column:1/-1">
             <label>Background Image URL</label>
             <input v-model="campForm.bg_image" class="form-input" placeholder="https://…" />
           </div>
@@ -55,50 +55,38 @@
 
       <!-- ── Players ───────────────────────────────────────── -->
       <div class="section-divider">Players</div>
-      <div style="margin-top:12px;margin-bottom:8px;overflow-x:auto">
-        <table style="width:100%;border-collapse:collapse;font-size:0.85em">
+      <div style="margin-top:12px;overflow-x:auto">
+        <table class="players-table">
           <thead>
-            <tr style="color:var(--text3);font-family:'JetBrains Mono',monospace;font-size:0.7em;letter-spacing:.05em">
-              <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border)">PLAYER</th>
-              <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border)">ROLE</th>
-              <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border)">XP</th>
-              <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border)">STRESS / SANITY</th>
-              <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border)">ACTIONS</th>
+            <tr>
+              <th>PLAYER</th>
+              <th>ROLE</th>
+              <th>XP</th>
+              <th>STRESS / SANITY</th>
+              <th>ACTIONS</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="u in data.users" :key="u.id" style="border-bottom:1px solid var(--border)">
-              <td style="padding:8px">
+            <tr v-for="u in data.users" :key="u.id">
+              <td>
                 <div style="font-weight:600">{{ u.username }}</div>
                 <div v-if="u.character_name" style="font-size:0.8em;opacity:0.55">{{ u.character_name }}</div>
               </td>
-              <td style="padding:8px">
+              <td>
                 <span class="tag" :class="u.role === 'gm' ? 'tag-active' : ''">{{ u.role }}</span>
               </td>
-              <td style="padding:8px">
+              <td>
                 <span style="color:var(--accent);font-weight:600">{{ xpMap[u.id]?.total ?? 0 }}</span>
                 <span v-if="xpMap[u.id]?.level" style="font-size:0.75em;opacity:0.55;margin-left:4px">Lvl {{ xpMap[u.id].level }}</span>
               </td>
-              <td style="padding:8px">
+              <td>
                 <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
-                  <input
-                    v-model.number="stressEdits[u.id].stress"
-                    type="number"
-                    class="form-input"
-                    style="width:55px;padding:2px 4px;font-size:12px"
-                    placeholder="str"
-                  />
-                  <input
-                    v-model.number="stressEdits[u.id].sanity"
-                    type="number"
-                    class="form-input"
-                    style="width:55px;padding:2px 4px;font-size:12px"
-                    placeholder="san"
-                  />
+                  <input v-model.number="stressEdits[u.id].stress" type="number" class="form-input" style="width:55px;padding:2px 4px;font-size:12px" placeholder="str" />
+                  <input v-model.number="stressEdits[u.id].sanity" type="number" class="form-input" style="width:55px;padding:2px 4px;font-size:12px" placeholder="san" />
                   <button class="btn btn-sm" @click="saveStress(u.id)">Set</button>
                 </div>
               </td>
-              <td style="padding:8px">
+              <td>
                 <div style="display:flex;gap:4px;flex-wrap:wrap">
                   <button class="btn btn-sm" @click="msgPlayer(u)">✉</button>
                   <button v-if="u.role !== 'gm'" class="btn btn-sm" @click="resetPassword(u)">Pwd</button>
@@ -112,19 +100,19 @@
 
       <!-- XP Award -->
       <div class="card" style="margin-top:12px;margin-bottom:24px">
-        <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:10px">AWARD XP</div>
+        <div class="mono-label">AWARD XP</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
-          <div class="field-group" style="margin:0;flex:1;min-width:120px">
+          <div class="field-group" style="margin:0;flex:1;min-width:100px">
             <label>Amount</label>
             <input v-model.number="xpForm.amount" type="number" min="0" class="form-input" placeholder="100" />
           </div>
-          <div class="field-group" style="margin:0;flex:2;min-width:180px">
+          <div class="field-group" style="margin:0;flex:2;min-width:160px">
             <label>Reason</label>
             <input v-model="xpForm.reason" class="form-input" placeholder="Defeated the dragon…" />
           </div>
           <div class="field-group" style="margin:0">
             <label>Players</label>
-            <select v-model="xpForm.user_ids" multiple class="form-input" style="min-height:80px">
+            <select v-model="xpForm.user_ids" multiple class="form-input" style="min-height:68px">
               <option v-for="u in players" :key="u.id" :value="u.id">{{ u.username }}</option>
             </select>
           </div>
@@ -133,57 +121,69 @@
         <div v-if="xpStatus" :class="['status-msg', xpOk ? 'status-ok' : 'status-err']" style="margin-top:8px">{{ xpStatus }}</div>
       </div>
 
-      <!-- ── Active Quests ─────────────────────────────────── -->
-      <div class="section-divider">Active Quests</div>
-      <div class="card-grid" style="margin-top:12px;margin-bottom:24px">
-        <div v-if="activeQuests.length === 0" style="opacity:0.5;font-size:0.85em;padding:12px 0">No active quests.</div>
-        <QuestCard
-          v-for="quest in activeQuests"
-          :key="quest.id"
-          :quest="quest"
-          :expanded="expandedId === quest.id"
-          @toggle="toggleExpand(quest.id)"
-        />
-      </div>
+      <!-- ── 2-column lower dashboard ──────────────────────── -->
+      <div class="dash-cols">
 
-      <!-- ── Agenda ────────────────────────────────────────── -->
-      <div class="section-divider">Session Agenda</div>
-      <div class="card" style="margin-top:12px;margin-bottom:24px">
-        <div v-if="agendaCards.length === 0" style="opacity:0.5;font-size:0.85em">No agenda items.</div>
-        <div v-for="card in agendaCards" :key="card.id" style="padding:10px 0;border-bottom:1px solid var(--border)">
-          <div style="font-weight:600;font-size:0.9em">{{ card.title }}</div>
-          <div v-if="card.body" style="font-size:0.82em;opacity:0.7;margin-top:4px;line-height:1.5">{{ card.body }}</div>
-        </div>
-        <button class="btn" style="margin-top:12px" @click="ui.openGmEdit('agenda', null, {})">+ Add Agenda Item</button>
-      </div>
-
-      <!-- ── Unread Messages ───────────────────────────────── -->
-      <div class="section-divider">Unread Messages</div>
-      <div style="margin-top:12px;margin-bottom:24px">
-        <div v-if="unreadMessages.length === 0" style="opacity:0.5;font-size:0.85em;padding:8px 0">No unread messages.</div>
-        <div v-for="msg in unreadMessages" :key="msg.id" class="card" style="margin-bottom:8px">
-          <div class="card-body">
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="font-size:0.85em;font-weight:600">{{ msg.sender_name || msg.from_username }}</span>
-              <span style="font-size:0.75em;opacity:0.5">{{ formatTime(msg.created_at) }}</span>
-            </div>
-            <div style="font-size:0.82em;opacity:0.75;margin-top:4px">{{ msg.body }}</div>
+        <!-- LEFT: Active Quests -->
+        <div class="dash-col">
+          <div class="section-divider">Active Quests</div>
+          <div class="card-grid" style="margin-top:12px">
+            <div v-if="activeQuests.length === 0" style="opacity:0.5;font-size:0.85em;padding:12px 0;grid-column:1/-1">No active quests.</div>
+            <QuestCard
+              v-for="quest in activeQuests"
+              :key="quest.id"
+              :quest="quest"
+              :expanded="expandedId === quest.id"
+              @toggle="toggleExpand(quest.id)"
+            />
           </div>
         </div>
-      </div>
 
-      <!-- ── Quick Actions + Backup ────────────────────────── -->
-      <div class="section-divider">Quick Actions</div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
-        <button class="btn" @click="ui.openGmEdit('quest', null, {})">+ Quest</button>
-        <button class="btn" @click="ui.openGmEdit('npc', null, {})">+ NPC</button>
-        <button class="btn" @click="ui.openGmEdit('location', null, {})">+ Location</button>
-        <button class="btn" @click="ui.openGmEdit('hook', null, {})">+ Hook</button>
-        <button class="btn" @click="ui.openGmEdit('handout', null, {})">+ Handout</button>
-        <button class="btn" @click="ui.openGmEdit('session', null, {})">+ Session</button>
-        <router-link to="/combat" class="btn">⚔ Combat Tracker</router-link>
-        <button class="btn" @click="downloadBackup">&#8659; Backup</button>
-      </div>
+        <!-- RIGHT: Agenda + Messages + Quick Actions -->
+        <div class="dash-col">
+
+          <!-- Session Agenda -->
+          <div class="section-divider">Session Agenda</div>
+          <div class="card" style="margin-top:12px">
+            <div v-if="agendaCards.length === 0" style="opacity:0.5;font-size:0.85em;padding:4px 0 8px">No agenda items.</div>
+            <div v-else class="agenda-list">
+              <div v-for="card in agendaCards" :key="card.id" class="agenda-item">
+                <div class="agenda-title">{{ card.title }}</div>
+                <div v-if="card.body" class="agenda-body">{{ card.body }}</div>
+                <div v-else class="agenda-body agenda-empty">—</div>
+              </div>
+            </div>
+            <button class="btn" style="margin-top:12px" @click="ui.openGmEdit('agenda', null, {})">+ Add Agenda Item</button>
+          </div>
+
+          <!-- Unread Messages -->
+          <div class="section-divider" style="margin-top:24px">Unread Messages</div>
+          <div style="margin-top:12px">
+            <div v-if="unreadMessages.length === 0" style="opacity:0.5;font-size:0.85em;padding:8px 0">No unread messages.</div>
+            <div v-for="msg in unreadMessages" :key="msg.id" class="card" style="margin-bottom:8px">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:0.85em;font-weight:600">{{ msg.sender_name || msg.from_username }}</span>
+                <span style="font-size:0.75em;opacity:0.5">{{ formatTime(msg.created_at) }}</span>
+              </div>
+              <div style="font-size:0.82em;opacity:0.75;margin-top:4px">{{ msg.body }}</div>
+            </div>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="section-divider" style="margin-top:24px">Quick Actions</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
+            <button class="btn" @click="ui.openGmEdit('quest', null, {})">+ Quest</button>
+            <button class="btn" @click="ui.openGmEdit('npc', null, {})">+ NPC</button>
+            <button class="btn" @click="ui.openGmEdit('location', null, {})">+ Location</button>
+            <button class="btn" @click="ui.openGmEdit('hook', null, {})">+ Hook</button>
+            <button class="btn" @click="ui.openGmEdit('handout', null, {})">+ Handout</button>
+            <button class="btn" @click="ui.openGmEdit('session', null, {})">+ Session</button>
+            <router-link to="/combat" class="btn">⚔ Combat Tracker</router-link>
+            <button class="btn" @click="downloadBackup">&#8659; Backup</button>
+          </div>
+        </div>
+
+      </div><!-- /dash-cols -->
     </template>
   </div>
 </template>
@@ -209,13 +209,11 @@ const stressMap = ref({})
 const stressEdits = reactive({})
 const xpMap = ref({})
 
-// Campaign form
 const campForm = ref({ name: '', subtitle: '', system: '', description: '', playlist_url: '', bg_image: '' })
 const campSaving = ref(false)
 const campStatus = ref('')
 const campOk = ref(false)
 
-// XP form
 const xpForm = ref({ amount: 0, reason: '', user_ids: [] })
 const xpStatus = ref('')
 const xpOk = ref(false)
@@ -358,9 +356,7 @@ async function loadDash() {
     const smap = {}
     stressRows.forEach(s => { smap[s.user_id] = s })
     stressMap.value = smap
-    // Populate editable stress values
     stressRows.forEach(s => { stressEdits[s.user_id] = { stress: s.stress ?? '', sanity: s.sanity ?? '' } })
-    // Ensure every user has an entry
     data.users.forEach(u => { if (!stressEdits[u.id]) stressEdits[u.id] = { stress: '', sanity: '' } })
   } catch (e) {
     console.error('[GmDashboard]', e)
@@ -387,7 +383,89 @@ onMounted(async () => {
     loadXp(),
     loadDash(),
   ])
-  // Ensure stressEdits has entries for all users
   data.users.forEach(u => { if (!stressEdits[u.id]) stressEdits[u.id] = { stress: '', sanity: '' } })
 })
 </script>
+
+<style scoped>
+/* Campaign settings: 2-col form */
+.camp-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Players table */
+.players-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85em;
+}
+.players-table thead tr {
+  color: var(--text3);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7em;
+  letter-spacing: .05em;
+}
+.players-table th {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.players-table td {
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Mono section label */
+.mono-label {
+  font-size: 0.7em;
+  letter-spacing: 1px;
+  color: var(--text3);
+  font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 10px;
+}
+
+/* 2-column lower dashboard */
+.dash-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+  margin-bottom: 32px;
+}
+
+/* Agenda: 2-col title + description per item */
+.agenda-list {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 0;
+}
+.agenda-item {
+  display: contents;
+}
+.agenda-title {
+  font-weight: 600;
+  font-size: 0.88em;
+  padding: 10px 12px 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.agenda-body {
+  font-size: 0.82em;
+  opacity: 0.7;
+  line-height: 1.5;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.agenda-empty {
+  opacity: 0.3;
+}
+
+@media (max-width: 900px) {
+  .dash-cols { grid-template-columns: 1fr; }
+  .camp-form-grid { grid-template-columns: 1fr; }
+  .agenda-list { grid-template-columns: 1fr; }
+  .agenda-title { border-bottom: none; padding-bottom: 2px; }
+  .agenda-body { padding-top: 0; }
+}
+</style>
