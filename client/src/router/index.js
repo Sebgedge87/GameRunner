@@ -15,6 +15,7 @@ const routes = [
   { path: '/hooks', component: () => import('@/views/HooksView.vue'), meta: { auth: true, requiresCampaign: C } },
   { path: '/factions', component: () => import('@/views/FactionsView.vue'), meta: { auth: true, requiresCampaign: C } },
   { path: '/timeline', component: () => import('@/views/TimelineView.vue'), meta: { auth: true, requiresCampaign: C } },
+  { path: '/calendar', component: () => import('@/views/CalendarView.vue'), meta: { auth: true, requiresCampaign: C } },
   { path: '/maps', component: () => import('@/views/MapsView.vue'), meta: { auth: true, requiresCampaign: C } },
   { path: '/mindmap', component: () => import('@/views/MindmapView.vue'), meta: { auth: true, requiresCampaign: C } },
   { path: '/handouts', component: () => import('@/views/HandoutsView.vue'), meta: { auth: true, requiresCampaign: C } },

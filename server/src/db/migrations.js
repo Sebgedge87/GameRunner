@@ -609,6 +609,38 @@ function runMigrations() {
     UNIQUE(event_id, entity_type, entity_id)
   )`);
 
+  // ── Session timer (GM-settable, all-visible) ───────────────────────────────
+  try { db.exec('ALTER TABLE campaigns ADD COLUMN timer_label TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE campaigns ADD COLUMN timer_end INTEGER DEFAULT NULL'); } catch (_) {}
+  try { db.exec('ALTER TABLE campaigns ADD COLUMN timer_remaining INTEGER DEFAULT 0'); } catch (_) {}
+  try { db.exec('ALTER TABLE campaigns ADD COLUMN timer_running INTEGER DEFAULT 0'); } catch (_) {}
+
+  // ── Calendar system ────────────────────────────────────────────────────────
+  db.exec(`CREATE TABLE IF NOT EXISTS campaign_calendars (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    campaign_id INTEGER NOT NULL UNIQUE REFERENCES campaigns(id) ON DELETE CASCADE,
+    config TEXT NOT NULL DEFAULT '{}',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+
+  db.exec(`CREATE TABLE IF NOT EXISTS calendar_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    campaign_id INTEGER NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+    era_index INTEGER NOT NULL DEFAULT 0,
+    year INTEGER NOT NULL,
+    month INTEGER NOT NULL,
+    day INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    type TEXT DEFAULT 'event',
+    color TEXT DEFAULT '#c9a84c',
+    weather_icon TEXT,
+    is_gm_only INTEGER DEFAULT 0,
+    created_by INTEGER REFERENCES users(id),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+
   console.log('✅ Migrations complete.');
 }
 

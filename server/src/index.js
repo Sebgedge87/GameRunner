@@ -44,6 +44,7 @@ const backupRoutes = require('./routes/backup');
 const vaultRoutes = require('./routes/vault');
 const xpRoutes = require('./routes/xp');
 const sharesRoutes = require('./routes/shares');
+const calendarRoutes = require('./routes/calendar');
 
 const SERVER_STARTUP_ID = Date.now().toString();
 
@@ -147,6 +148,7 @@ app.use('/api/backup', backupRoutes);
 app.use('/api/vault', vaultRoutes);
 app.use('/api/xp', xpRoutes);
 app.use('/api/shares', sharesRoutes);
+app.use('/api/calendar', calendarRoutes);
 
 // ── Health check ───────────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => {
