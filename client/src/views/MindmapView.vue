@@ -7,6 +7,7 @@
       <div class="legend-item"><div class="legend-dot" style="background:#4caf7d"></div>Location</div>
       <div class="legend-item"><div class="legend-dot" style="background:#8b4cc9"></div>Hook</div>
       <div class="legend-item"><div class="legend-dot" style="background:#c94c4c"></div>Map</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#c94c8b"></div>Faction</div>
     </div>
     <div style="position:relative">
       <svg ref="svgEl" id="mindmap-svg" style="height:500px;width:100%"></svg>
@@ -34,19 +35,25 @@ const flyoutItem = ref(null)
 let simulation = null
 
 const TYPE_COLORS = {
-  quest: '#c9a84c', npc: '#4c7ac9', location: '#4caf7d', hook: '#8b4cc9', map: '#c94c4c',
+  quest: '#c9a84c', npc: '#4c7ac9', location: '#4caf7d', hook: '#8b4cc9', map: '#c94c4c', faction: '#c94c8b',
 }
 
 function buildGraphData() {
   const nodes = []
+  const edgeSet = new Set()
   const links = []
-  const nodeMap = new Map()
+  // title-based lookup (all types merged)
+  const titleMap = new Map()
+  // per-type ID lookup: idMap['npc'].get('42') → node
+  const idMap = { quest: new Map(), npc: new Map(), location: new Map(), hook: new Map(), map: new Map(), faction: new Map() }
 
   const addNode = (item, type) => {
     const title = item.title || item.name || '?'
     const node = { id: `${type}-${item.id}`, title, type, description: item.description || '' }
     nodes.push(node)
-    nodeMap.set(title.toLowerCase(), node)
+    titleMap.set(title.toLowerCase(), node)
+    idMap[type].set(String(item.id), node)
+    return node
   }
 
   data.quests.forEach(q => addNode(q, 'quest'))
@@ -54,33 +61,87 @@ function buildGraphData() {
   data.locations.forEach(l => addNode({ ...l, title: l.title || l.name }, 'location'))
   data.hooks.forEach(h => addNode(h, 'hook'))
   data.maps.forEach(m => addNode(m, 'map'))
+  data.factions.forEach(f => addNode({ ...f, title: f.name }, 'faction'))
 
-  const linkTo = (sourceTitle, targetTitle) => {
-    const src = nodeMap.get(sourceTitle?.toLowerCase())
-    const tgt = nodeMap.get(targetTitle?.toLowerCase())
-    if (src && tgt && src.id !== tgt.id) {
-      links.push({ source: src.id, target: tgt.id })
-    }
+  function addLink(src, tgt) {
+    if (!src || !tgt || src.id === tgt.id) return
+    const key = src.id < tgt.id ? `${src.id}|${tgt.id}` : `${tgt.id}|${src.id}`
+    if (edgeSet.has(key)) return
+    edgeSet.add(key)
+    links.push({ source: src.id, target: tgt.id })
   }
 
+  // resolve by ID first, fall back to title
+  function resolve(type, idOrTitle) {
+    if (!idOrTitle) return null
+    const s = String(idOrTitle).trim()
+    return idMap[type]?.get(s) || titleMap.get(s.toLowerCase()) || null
+  }
+
+  function splitRef(val) {
+    if (!val) return []
+    if (Array.isArray(val)) return val.map(String)
+    return String(val).split(',').map(s => s.trim()).filter(Boolean)
+  }
+
+  // ── Quests ───────────────────────────────────────────────────────────────
   data.quests.forEach(q => {
-    if (q.location) linkTo(q.title, q.location)
-    const conn = Array.isArray(q.connected_to) ? q.connected_to : (q.connected_to ? [q.connected_to] : [])
-    conn.forEach(c => linkTo(q.title, c))
+    const qNode = idMap.quest.get(String(q.id))
+    // parent quest chain
+    if (q.parent_quest_id) addLink(qNode, idMap.quest.get(String(q.parent_quest_id)))
+    // legacy single location text field
+    if (q.location) addLink(qNode, titleMap.get(q.location.toLowerCase()))
+    // connected_locations (IDs or titles)
+    splitRef(q.connected_locations || q.connected_location).forEach(v => addLink(qNode, resolve('location', v)))
+    // connected_npcs
+    splitRef(q.connected_npcs).forEach(v => addLink(qNode, resolve('npc', v)))
+    // connected_factions
+    splitRef(q.connected_factions).forEach(v => addLink(qNode, resolve('faction', v)))
+    // legacy connected_to
+    splitRef(q.connected_to).forEach(v => addLink(qNode, titleMap.get(v.toLowerCase())))
   })
+
+  // ── NPCs ─────────────────────────────────────────────────────────────────
   data.npcs.forEach(n => {
-    if (n.location) linkTo(n.title || n.name, n.location)
-    const conn = Array.isArray(n.connected_to) ? n.connected_to : (n.connected_to ? [n.connected_to] : [])
-    conn.forEach(c => linkTo(n.title || n.name, c))
+    const nNode = idMap.npc.get(String(n.id))
+    if (n.faction_id)       addLink(nNode, idMap.faction.get(String(n.faction_id)))
+    if (n.home_location_id) addLink(nNode, idMap.location.get(String(n.home_location_id)))
+    // legacy text location
+    if (n.location) addLink(nNode, titleMap.get(n.location.toLowerCase()))
+    splitRef(n.connected_to).forEach(v => addLink(nNode, titleMap.get(v.toLowerCase())))
   })
-  data.hooks.forEach(h => {
-    const conn = Array.isArray(h.connected_to) ? h.connected_to : (h.connected_to ? [h.connected_to] : [])
-    conn.forEach(c => linkTo(h.title, c))
+
+  // ── Factions ─────────────────────────────────────────────────────────────
+  data.factions.forEach(f => {
+    const fNode = idMap.faction.get(String(f.id))
+    if (f.leader_npc_id)  addLink(fNode, idMap.npc.get(String(f.leader_npc_id)))
+    if (f.hq_location_id) addLink(fNode, idMap.location.get(String(f.hq_location_id)))
+    // faction members (enriched by server)
+    if (Array.isArray(f.members)) {
+      f.members.forEach(m => addLink(fNode, idMap.npc.get(String(m.id))))
+    }
   })
+
+  // ── Locations ────────────────────────────────────────────────────────────
+  data.locations.forEach(l => {
+    if (l.parent_location_id) {
+      addLink(idMap.location.get(String(l.id)), idMap.location.get(String(l.parent_location_id)))
+    }
+  })
+
+  // ── Maps ─────────────────────────────────────────────────────────────────
   data.maps.forEach(m => {
+    const mNode = idMap.map.get(String(m.id))
+    if (m.linked_location_id) addLink(mNode, idMap.location.get(String(m.linked_location_id)))
     let conn = []
     try { conn = m.connected_to ? JSON.parse(m.connected_to) : [] } catch { conn = [] }
-    conn.forEach(c => linkTo(m.title, c))
+    conn.forEach(c => addLink(mNode, titleMap.get(String(c).toLowerCase())))
+  })
+
+  // ── Hooks ─────────────────────────────────────────────────────────────────
+  data.hooks.forEach(h => {
+    const hNode = idMap.hook.get(String(h.id))
+    splitRef(h.connected_to).forEach(v => addLink(hNode, titleMap.get(v.toLowerCase())))
   })
 
   return { nodes, links }
@@ -169,7 +230,7 @@ async function renderMindmap() {
 }
 
 onMounted(async () => {
-  if (!data.quests.length || !data.maps.length) await data.loadAll()
+  if (!data.quests.length || !data.maps.length || !data.factions.length) await data.loadAll()
   renderMindmap()
 })
 
@@ -177,5 +238,5 @@ onUnmounted(() => {
   if (simulation) simulation.stop()
 })
 
-watch([() => data.quests, () => data.npcs, () => data.locations, () => data.hooks, () => data.maps], renderMindmap)
+watch([() => data.quests, () => data.npcs, () => data.locations, () => data.hooks, () => data.maps, () => data.factions], renderMindmap)
 </script>
