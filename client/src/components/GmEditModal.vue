@@ -827,6 +827,7 @@ watch(() => ui.gmEditModal, (modal) => {
   try { f.map_connected_to = d.connected_to ? JSON.parse(d.connected_to) : [] } catch { f.map_connected_to = [] }
   f.content = d.body || d.content || ''
   f.subject = d.subject || ''
+  f.user_id = d.to_user_id || d.user_id || ''
   if (type.value === 'session') {
     f.date = d.played_at ? d.played_at.slice(0, 10) : ''
   }
