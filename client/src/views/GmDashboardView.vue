@@ -53,73 +53,82 @@
         </div>
       </div>
 
-      <!-- ── Players ───────────────────────────────────────── -->
-      <div class="section-divider">Players</div>
-      <div style="margin-top:12px;overflow-x:auto">
-        <table class="players-table">
-          <thead>
-            <tr>
-              <th>PLAYER</th>
-              <th>ROLE</th>
-              <th>XP</th>
-              <th>STRESS / SANITY</th>
-              <th>ACTIONS</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="u in data.users" :key="u.id">
-              <td>
-                <div style="font-weight:600">{{ u.username }}</div>
-                <div v-if="u.character_name" style="font-size:0.8em;opacity:0.55">{{ u.character_name }}</div>
-              </td>
-              <td>
-                <span class="tag" :class="u.role === 'gm' ? 'tag-active' : ''">{{ u.role }}</span>
-              </td>
-              <td>
-                <span style="color:var(--accent);font-weight:600">{{ xpMap[u.id]?.total ?? 0 }}</span>
-                <span v-if="xpMap[u.id]?.level" style="font-size:0.75em;opacity:0.55;margin-left:4px">Lvl {{ xpMap[u.id].level }}</span>
-              </td>
-              <td>
-                <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
-                  <input v-model.number="stressEdits[u.id].stress" type="number" class="form-input" style="width:55px;padding:2px 4px;font-size:12px" placeholder="str" />
-                  <input v-model.number="stressEdits[u.id].sanity" type="number" class="form-input" style="width:55px;padding:2px 4px;font-size:12px" placeholder="san" />
-                  <button class="btn btn-sm" @click="saveStress(u.id)">Set</button>
-                </div>
-              </td>
-              <td>
-                <div style="display:flex;gap:4px;flex-wrap:wrap">
-                  <button class="btn btn-sm" @click="msgPlayer(u)">✉</button>
-                  <button v-if="u.role !== 'gm'" class="btn btn-sm" @click="resetPassword(u)">Pwd</button>
-                  <button v-if="u.role !== 'gm'" class="btn btn-sm btn-danger" @click="deleteUser(u)">Del</button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <!-- ── Players + Award XP side by side ──────────────── -->
+      <div class="players-xp-cols">
 
-      <!-- XP Award -->
-      <div class="card" style="margin-top:12px;margin-bottom:24px">
-        <div class="mono-label">AWARD XP</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
-          <div class="field-group" style="margin:0;flex:1;min-width:100px">
-            <label>Amount</label>
-            <input v-model.number="xpForm.amount" type="number" min="0" class="form-input" placeholder="100" />
+        <!-- LEFT: Players table -->
+        <div class="players-xp-col">
+          <div class="section-divider">Players</div>
+          <div class="players-table-wrap">
+            <table class="players-table">
+              <thead>
+                <tr>
+                  <th>PLAYER</th>
+                  <th>ROLE</th>
+                  <th>XP</th>
+                  <th>STRESS / SANITY</th>
+                  <th>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="u in data.users" :key="u.id">
+                  <td>
+                    <div class="player-name">{{ u.username }}</div>
+                    <div v-if="u.character_name" class="player-char">{{ u.character_name }}</div>
+                  </td>
+                  <td>
+                    <span class="tag" :class="u.role === 'gm' ? 'tag-active' : ''">{{ u.role }}</span>
+                  </td>
+                  <td>
+                    <span class="xp-total">{{ xpMap[u.id]?.total ?? 0 }}</span>
+                    <span v-if="xpMap[u.id]?.level" class="xp-level">Lvl {{ xpMap[u.id].level }}</span>
+                  </td>
+                  <td>
+                    <div class="stress-cell">
+                      <input v-model.number="stressEdits[u.id].stress" type="number" class="form-input stress-input" placeholder="str" />
+                      <input v-model.number="stressEdits[u.id].sanity" type="number" class="form-input stress-input" placeholder="san" />
+                      <button class="btn btn-sm" @click="saveStress(u.id)">Set</button>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="action-cell">
+                      <button class="btn btn-sm" @click="msgPlayer(u)">✉</button>
+                      <button v-if="u.role !== 'gm'" class="btn btn-sm" @click="resetPassword(u)">Pwd</button>
+                      <button v-if="u.role !== 'gm'" class="btn btn-sm btn-danger" @click="deleteUser(u)">Del</button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-          <div class="field-group" style="margin:0;flex:2;min-width:160px">
-            <label>Reason</label>
-            <input v-model="xpForm.reason" class="form-input" placeholder="Defeated the dragon…" />
-          </div>
-          <div class="field-group" style="margin:0">
-            <label>Players</label>
-            <select v-model="xpForm.user_ids" multiple class="form-input" style="min-height:68px">
-              <option v-for="u in players" :key="u.id" :value="u.id">{{ u.username }}</option>
-            </select>
-          </div>
-          <button class="btn" @click="awardXp" style="margin-bottom:1px">Award XP</button>
         </div>
-        <div v-if="xpStatus" :class="['status-msg', xpOk ? 'status-ok' : 'status-err']" style="margin-top:8px">{{ xpStatus }}</div>
-      </div>
+
+        <!-- RIGHT: Award XP -->
+        <div class="players-xp-col">
+          <div class="section-divider">Award XP</div>
+          <div class="card xp-card">
+            <div class="xp-fields">
+              <div class="field-group">
+                <label>Amount</label>
+                <input v-model.number="xpForm.amount" type="number" min="0" class="form-input" placeholder="100" />
+              </div>
+              <div class="field-group">
+                <label>Reason</label>
+                <input v-model="xpForm.reason" class="form-input" placeholder="Defeated the dragon…" />
+              </div>
+              <div class="field-group">
+                <label>Players</label>
+                <select v-model="xpForm.user_ids" multiple class="form-input xp-player-select">
+                  <option v-for="u in players" :key="u.id" :value="u.id">{{ u.username }}</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn" @click="awardXp">Award XP</button>
+            <div v-if="xpStatus" :class="['status-msg', xpOk ? 'status-ok' : 'status-err']" style="margin-top:8px">{{ xpStatus }}</div>
+          </div>
+        </div>
+
+      </div><!-- /players-xp-cols -->
 
       <!-- ── 2-column lower dashboard ──────────────────────── -->
       <div class="dash-cols">
@@ -395,6 +404,17 @@ onMounted(async () => {
   gap: 12px;
 }
 
+/* Players + XP side-by-side */
+.players-xp-cols {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 24px;
+  align-items: start;
+  margin-top: 12px;
+  margin-bottom: 24px;
+}
+.players-table-wrap { overflow-x: auto; }
+
 /* Players table */
 .players-table {
   width: 100%;
@@ -416,15 +436,18 @@ onMounted(async () => {
   padding: 8px;
   border-bottom: 1px solid var(--border);
 }
+.player-name { font-weight: 600; }
+.player-char { font-size: 0.8em; opacity: 0.55; }
+.xp-total { color: var(--accent); font-weight: 600; }
+.xp-level { font-size: 0.75em; opacity: 0.55; margin-left: 4px; }
+.stress-cell { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.stress-input { width: 55px; padding: 2px 4px; font-size: 12px; }
+.action-cell { display: flex; gap: 4px; flex-wrap: wrap; }
 
-/* Mono section label */
-.mono-label {
-  font-size: 0.7em;
-  letter-spacing: 1px;
-  color: var(--text3);
-  font-family: 'JetBrains Mono', monospace;
-  margin-bottom: 10px;
-}
+/* Award XP card */
+.xp-card { display: flex; flex-direction: column; gap: 0; }
+.xp-fields { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+.xp-player-select { min-height: 80px; }
 
 /* 2-column lower dashboard */
 .dash-cols {
@@ -462,6 +485,7 @@ onMounted(async () => {
 }
 
 @media (max-width: 900px) {
+  .players-xp-cols { grid-template-columns: 1fr; }
   .dash-cols { grid-template-columns: 1fr; }
   .camp-form-grid { grid-template-columns: 1fr; }
   .agenda-list { grid-template-columns: 1fr; }
