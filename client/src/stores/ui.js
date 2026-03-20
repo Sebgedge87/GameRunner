@@ -50,6 +50,9 @@ export const useUiStore = defineStore('ui', () => {
   // Handouts badge
   const unreadHandoutCount = ref(0)
 
+  // Good Boy Cards badge (unplayed cards awarded to this user)
+  const cardBadge = ref(0)
+
   // Active flyout
   const activeFlyout = ref(null)
   const pendingReply = ref(null) // { toUserId, toName, subject }
@@ -128,7 +131,7 @@ export const useUiStore = defineStore('ui', () => {
     sidebarCollapsed, toggleSidebarCollapse,
     notifications, unreadNotifCount, setNotifications,
     messages, unreadMsgCount, setMessages,
-    unreadHandoutCount,
+    unreadHandoutCount, cardBadge,
     activeFlyout, pendingReply, openFlyout, openReplyFlyout, closeFlyout,
     viewingMessage, openMessage, closeMessage,
     viewingHandout, openHandout, closeHandout,

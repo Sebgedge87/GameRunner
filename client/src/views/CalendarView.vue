@@ -92,11 +92,135 @@
       </div>
 
       <!-- ── Settings Panel ──────────────────────────────────────────────── -->
-      <div v-if="showSettings && isGm" class="cal-settings-panel">
+      <div v-if="showSettings && isGm && draft" class="cal-settings-panel">
         <h3>Calendar Configuration</h3>
-        <p style="color:var(--text3);font-size:12px">Edit the raw JSON config. Changes are saved immediately.</p>
-        <textarea v-model="configJson" class="cal-config-textarea" rows="20"></textarea>
-        <div style="display:flex;gap:8px;margin-top:8px">
+        <div class="cfg-tabs">
+          <button v-for="t in CFG_TABS" :key="t" class="cfg-tab" :class="{ active: cfgTab === t }" @click="cfgTab = t">{{ t }}</button>
+        </div>
+
+        <!-- General -->
+        <div v-if="cfgTab === 'General'" class="cfg-section">
+          <div class="cfg-row">
+            <label>Starting Weekday offset (0 = first day of week)</label>
+            <input v-model.number="draft.epoch_weekday" type="number" min="0" class="form-input cfg-sm" />
+          </div>
+          <div class="cfg-row">
+            <label>Active Era</label>
+            <select v-model.number="draft.current_era_index" class="form-input">
+              <option v-for="(era, i) in draft.eras" :key="i" :value="i">{{ era.name || `Era ${i + 1}` }}</option>
+            </select>
+          </div>
+          <div class="cfg-row">
+            <label>Current Date</label>
+            <div class="cfg-inline">
+              <div class="cfg-labeled-input"><span>Year</span><input v-model.number="draft.current_date.year" type="number" min="1" class="form-input cfg-sm" /></div>
+              <div class="cfg-labeled-input"><span>Month</span><input v-model.number="draft.current_date.month" type="number" min="1" :max="draft.months.length" class="form-input cfg-sm" /></div>
+              <div class="cfg-labeled-input"><span>Day</span><input v-model.number="draft.current_date.day" type="number" min="1" class="form-input cfg-sm" /></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Days of the week -->
+        <div v-if="cfgTab === 'Days'" class="cfg-section">
+          <div v-for="(d, i) in draft.days" :key="i" class="cfg-list-row">
+            <input v-model="d.name" class="form-input" placeholder="Full name" />
+            <input v-model="d.short" class="form-input cfg-short" placeholder="Short" maxlength="5" />
+            <button class="cfg-rm-btn" @click="draft.days.splice(i, 1)" title="Remove">✕</button>
+          </div>
+          <button class="btn btn-sm cfg-add-btn" @click="draft.days.push({ name: '', short: '', real_day: '' })">+ Day</button>
+        </div>
+
+        <!-- Months -->
+        <div v-if="cfgTab === 'Months'" class="cfg-section">
+          <div class="cfg-col-heads"><span>Name</span><span>Short</span><span>Days</span></div>
+          <div v-for="(m, i) in draft.months" :key="i" class="cfg-list-row">
+            <input v-model="m.name" class="form-input" placeholder="Month name" />
+            <input v-model="m.short" class="form-input cfg-short" placeholder="Short" maxlength="5" />
+            <input v-model.number="m.days" type="number" min="1" class="form-input cfg-sm" />
+            <button class="cfg-rm-btn" @click="draft.months.splice(i, 1)" title="Remove">✕</button>
+          </div>
+          <button class="btn btn-sm cfg-add-btn" @click="draft.months.push({ name: '', short: '', real_month: '', days: 30 })">+ Month</button>
+        </div>
+
+        <!-- Eras -->
+        <div v-if="cfgTab === 'Eras'" class="cfg-section">
+          <div class="cfg-col-heads"><span>Name</span><span>Suffix</span><span>Start yr</span><span>End yr</span></div>
+          <div v-for="(era, i) in draft.eras" :key="i" class="cfg-list-row">
+            <input v-model="era.name" class="form-input" placeholder="Era name" />
+            <input v-model="era.suffix" class="form-input cfg-short" placeholder="e.g. AE" />
+            <input v-model.number="era.start_year" type="number" class="form-input cfg-sm" />
+            <input v-model.number="era.end_year" type="number" class="form-input cfg-sm" />
+            <button class="cfg-rm-btn" @click="draft.eras.splice(i, 1)" title="Remove">✕</button>
+          </div>
+          <button class="btn btn-sm cfg-add-btn" @click="draft.eras.push({ id: Date.now(), name: '', suffix: '', start_year: 0, end_year: 9999 })">+ Era</button>
+        </div>
+
+        <!-- Seasons -->
+        <div v-if="cfgTab === 'Seasons'" class="cfg-section">
+          <div v-for="(s, i) in draft.seasons" :key="i" class="cfg-season-card">
+            <div class="cfg-list-row">
+              <input v-model="s.name" class="form-input" placeholder="Season name" />
+              <input v-model="s.icon" class="form-input cfg-icon" placeholder="🌿" />
+              <input v-model="s.color" type="color" class="form-input cfg-color" title="Colour" />
+              <button class="cfg-rm-btn" @click="removeSeason(i)" title="Remove">✕</button>
+            </div>
+            <div class="cfg-months-grid">
+              <label v-for="(m, mi) in draft.months" :key="mi" class="cfg-month-check">
+                <input type="checkbox" :checked="s.months.includes(mi)" @change="toggleSeasonMonth(s, mi, $event.target.checked)" />
+                {{ m.name || `Month ${mi + 1}` }}
+              </label>
+            </div>
+          </div>
+          <button class="btn btn-sm cfg-add-btn" @click="draft.seasons.push({ name: '', icon: '🌟', color: '#888888', months: [] })">+ Season</button>
+        </div>
+
+        <!-- Moons -->
+        <div v-if="cfgTab === 'Moons'" class="cfg-section">
+          <div v-for="(moon, i) in draft.moons" :key="i" class="cfg-moon-card">
+            <div class="cfg-list-row">
+              <input v-model="moon.name" class="form-input" placeholder="Moon name" />
+              <input v-model="moon.color" type="color" class="form-input cfg-color" title="Colour" />
+              <button class="cfg-rm-btn" @click="draft.moons.splice(i, 1)" title="Remove">✕</button>
+            </div>
+            <div class="cfg-row">
+              <label>Cycle length (days)</label>
+              <input v-model.number="moon.cycle_days" type="number" min="1" class="form-input cfg-sm" />
+            </div>
+            <div class="cfg-row">
+              <label>Starting phase (0=New … 4=Full … 7=Waning Crescent)</label>
+              <input v-model.number="moon.reference_phase_index" type="number" min="0" max="7" class="form-input cfg-sm" />
+            </div>
+            <div class="cfg-row">
+              <label>Reference date (year / month / day)</label>
+              <div class="cfg-inline">
+                <input v-model.number="moon.reference_date.year" type="number" min="1" class="form-input cfg-sm" />
+                <input v-model.number="moon.reference_date.month" type="number" min="1" class="form-input cfg-sm" />
+                <input v-model.number="moon.reference_date.day" type="number" min="1" class="form-input cfg-sm" />
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-sm cfg-add-btn" @click="addMoon">+ Moon</button>
+        </div>
+
+        <!-- Weather -->
+        <div v-if="cfgTab === 'Weather'" class="cfg-section">
+          <p class="cfg-hint">Season names must match those in the Seasons tab.</p>
+          <div v-for="s in draft.seasons" :key="s.name" class="cfg-weather-season">
+            <div class="cfg-weather-season-title">
+              <span :style="{ color: s.color }">{{ s.icon }}</span> {{ s.name || '(unnamed season)' }}
+            </div>
+            <div class="cfg-col-heads"><span>Label</span><span>Icon</span><span>Weight</span></div>
+            <div v-for="(w, wi) in draftWeather(s.name)" :key="wi" class="cfg-list-row">
+              <input v-model="w.label" class="form-input" placeholder="e.g. Heavy Snow" />
+              <input v-model="w.icon" class="form-input cfg-icon" placeholder="❄" />
+              <input v-model.number="w.weight" type="number" min="1" class="form-input cfg-sm" title="Relative weight" />
+              <button class="cfg-rm-btn" @click="removeWeather(s.name, wi)" title="Remove">✕</button>
+            </div>
+            <button class="btn btn-sm cfg-add-btn" @click="addWeather(s.name)">+ Entry</button>
+          </div>
+        </div>
+
+        <div class="cfg-footer">
           <button class="btn btn-primary btn-sm" @click="saveConfig">Save Config</button>
           <button class="btn btn-sm" @click="showSettings = false">Cancel</button>
         </div>
@@ -162,9 +286,54 @@ const events = ref([])  // events for the currently viewed month
 const showSettings = ref(false)
 const showAdvance = ref(false)
 const advanceDays = ref(1)
-const configJson = ref('')
 const viewMonth = ref(1)   // 1-based
 const viewYear  = ref(1)
+
+// ── Config editor ──────────────────────────────────────────────────────────
+const CFG_TABS = ['General', 'Days', 'Months', 'Eras', 'Seasons', 'Moons', 'Weather']
+const cfgTab = ref('General')
+const draft = ref(null)
+
+watch(showSettings, (open) => {
+  if (open && config.value) {
+    draft.value = JSON.parse(JSON.stringify(config.value))
+    cfgTab.value = 'General'
+  }
+})
+
+function draftWeather(seasonName) {
+  if (!draft.value.weather) draft.value.weather = {}
+  if (!draft.value.weather[seasonName]) draft.value.weather[seasonName] = []
+  return draft.value.weather[seasonName]
+}
+
+function toggleSeasonMonth(season, monthIdx, checked) {
+  if (checked) { if (!season.months.includes(monthIdx)) season.months.push(monthIdx) }
+  else season.months = season.months.filter(m => m !== monthIdx)
+}
+
+function removeSeason(i) {
+  const name = draft.value.seasons[i].name
+  draft.value.seasons.splice(i, 1)
+  if (name && draft.value.weather) delete draft.value.weather[name]
+}
+
+function addWeather(seasonName) {
+  if (!draft.value.weather) draft.value.weather = {}
+  if (!draft.value.weather[seasonName]) draft.value.weather[seasonName] = []
+  draft.value.weather[seasonName].push({ label: '', icon: '☀', weight: 10 })
+}
+
+function removeWeather(seasonName, idx) {
+  draft.value.weather[seasonName].splice(idx, 1)
+}
+
+function addMoon() {
+  draft.value.moons.push({
+    name: '', cycle_days: 28, reference_phase_index: 0,
+    reference_date: { year: 1, month: 1, day: 1 }, color: '#ffffff',
+  })
+}
 
 // ── Derived calendar objects ───────────────────────────────────────────────
 const currentMonthObj = computed(() => config.value?.months[viewMonth.value - 1])
@@ -242,7 +411,6 @@ async function loadConfig() {
   if (r.ok) {
     const d = await r.json()
     config.value = d.config
-    configJson.value = JSON.stringify(d.config, null, 2)
     // Init view to current date
     viewYear.value  = d.config.current_date?.year  || 1
     viewMonth.value = d.config.current_date?.month || 1
@@ -338,15 +506,14 @@ async function setDateToView() {
 // ── GM: Save config ────────────────────────────────────────────────────────
 async function saveConfig() {
   try {
-    const parsed = JSON.parse(configJson.value)
-    const r = await apif('/api/calendar', { method: 'PUT', body: JSON.stringify({ config: parsed }) })
+    const r = await apif('/api/calendar', { method: 'PUT', body: JSON.stringify({ config: draft.value }) })
     if (r.ok) {
       const d = await r.json()
       config.value = d.config
       showSettings.value = false
     }
   } catch (e) {
-    alert('Invalid JSON: ' + e.message)
+    alert('Save failed: ' + e.message)
   }
 }
 
@@ -478,17 +645,66 @@ async function deleteEvent() {
 .cal-ev-label { overflow: hidden; text-overflow: ellipsis; flex: 1; }
 .cal-ev-gm-badge { font-size: 11px; flex-shrink: 0; }
 
-/* ── Settings ── */
+/* ── Settings panel ── */
 .cal-settings-panel {
   margin-top: 24px;
   background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
   padding: 16px;
 }
-.cal-config-textarea {
-  width: 100%; font-family: 'JetBrains Mono', monospace; font-size: 11px;
-  background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
-  color: var(--text); padding: 8px; resize: vertical;
+.cfg-tabs {
+  display: flex; flex-wrap: wrap; gap: 4px; margin: 12px 0;
 }
+.cfg-tab {
+  padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text2); font-size: 12px; cursor: pointer;
+}
+.cfg-tab.active { background: var(--accent); color: #1a1008; border-color: var(--accent); font-weight: 700; }
+.cfg-tab:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+
+.cfg-section { display: flex; flex-direction: column; gap: 10px; padding: 4px 0; }
+.cfg-row { display: flex; flex-direction: column; gap: 4px; }
+.cfg-row label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .07em; }
+.cfg-inline { display: flex; gap: 8px; flex-wrap: wrap; }
+.cfg-labeled-input { display: flex; flex-direction: column; gap: 2px; }
+.cfg-labeled-input span { font-size: 10px; color: var(--text3); }
+
+.cfg-list-row { display: flex; gap: 6px; align-items: center; }
+.cfg-col-heads { display: flex; gap: 6px; padding: 0 2px; }
+.cfg-col-heads span { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .07em; flex: 1; }
+.cfg-col-heads span:last-child { flex: 0 0 24px; }
+
+.cfg-sm { width: 80px; flex-shrink: 0; }
+.cfg-short { width: 80px; flex-shrink: 0; }
+.cfg-icon { width: 60px; flex-shrink: 0; text-align: center; }
+.cfg-color { width: 44px; flex-shrink: 0; padding: 2px; cursor: pointer; height: 34px; }
+.cfg-rm-btn {
+  flex-shrink: 0; background: none; border: 1px solid var(--border);
+  border-radius: 4px; color: var(--text3); cursor: pointer; padding: 2px 6px;
+  font-size: 11px; line-height: 1;
+}
+.cfg-rm-btn:hover { border-color: #c0392b; color: #c0392b; }
+.cfg-add-btn { align-self: flex-start; margin-top: 2px; }
+
+.cfg-season-card, .cfg-moon-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px; display: flex; flex-direction: column; gap: 8px;
+}
+.cfg-months-grid {
+  display: flex; flex-wrap: wrap; gap: 6px; padding-top: 4px;
+}
+.cfg-month-check {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 12px; color: var(--text2); cursor: pointer;
+}
+
+.cfg-weather-season {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px; display: flex; flex-direction: column; gap: 6px;
+  margin-bottom: 6px;
+}
+.cfg-weather-season-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.cfg-hint { font-size: 11px; color: var(--text3); margin: 0 0 4px; }
+.cfg-footer { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
 
 /* ── Modal ── */
 .modal-overlay {

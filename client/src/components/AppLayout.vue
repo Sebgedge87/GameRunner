@@ -112,6 +112,19 @@ async function handleSseEvent(d) {
     await data.loadAgenda()
     ui.showToast('Secret Objective', 'Your agenda has been updated', '🎯')
   }
+  if (d.type === 'card_awarded') {
+    ui.cardBadge = (ui.cardBadge || 0) + 1
+    const icon = d.card?.type === 'good' ? '🐶' : '😈'
+    ui.showToast(d.message || 'You received a card!', d.card?.effect || '', icon)
+  }
+  if (d.type === 'card_played') {
+    const icon = d.card_type === 'good' ? '🐶' : '😈'
+    ui.showToast(
+      `${d.player_name} played: ${d.card_name}`,
+      d.card_effect || '',
+      icon,
+    )
+  }
   if (d.type === 'new_message') {
     await refreshMessages()
     ui.showToast(`📬 ${d.from || 'Someone'}: ${d.subject || 'New message'}`, '')

@@ -28,6 +28,7 @@ const routes = [
   { path: '/theory-board', component: () => import('@/views/TheoryBoardView.vue'), meta: { auth: true, requiresCampaign: C } },
   { path: '/gm-dashboard', component: () => import('@/views/GmDashboardView.vue'), meta: { auth: true, requiresCampaign: C, gm: true } },
   { path: '/combat', component: () => import('@/views/CombatView.vue'), meta: { auth: true, requiresCampaign: C, gm: true } },
+  { path: '/good-boy-cards', component: () => import('@/views/GoodBoyCardsView.vue'), meta: { auth: true, requiresCampaign: C } },
   { path: '/settings', component: () => import('@/views/SettingsView.vue'), meta: { auth: true } },
 ]
 

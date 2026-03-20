@@ -79,6 +79,10 @@
           <RouterLink to="/sessions" class="nav-item" active-class="active" @click="ui.closeSidebar()">
             <span class="nav-icon">🎲</span>Sessions
           </RouterLink>
+          <RouterLink to="/good-boy-cards" class="nav-item" active-class="active" @click="ui.closeSidebar(); ui.cardBadge = 0">
+            <span class="nav-icon">🃏</span>Cards
+            <span v-if="ui.cardBadge > 0" class="nav-badge">{{ ui.cardBadge }}</span>
+          </RouterLink>
         </div>
 
         <div class="nav-section" :class="{ collapsed: collapsed.tools }" @click="toggle('tools')">
