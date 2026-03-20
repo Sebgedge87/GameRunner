@@ -18,13 +18,13 @@
       <div class="gbc-player-tabs">
         <button
           v-for="p in players"
-          :key="p.user_id"
+          :key="p.id"
           class="gbc-player-tab"
-          :class="{ active: gmTab === p.user_id }"
-          @click="gmTab = p.user_id"
+          :class="{ active: gmTab === p.id }"
+          @click="gmTab = p.id"
         >
           {{ p.character_name || p.username }}
-          <span v-if="unplayedFor(p.user_id)" class="nav-badge">{{ unplayedFor(p.user_id) }}</span>
+          <span v-if="unplayedFor(p.id)" class="nav-badge">{{ unplayedFor(p.id) }}</span>
         </button>
       </div>
 
@@ -99,7 +99,7 @@
           <label class="form-label">Player</label>
           <select v-model="awardModal.user_id" class="form-input">
             <option value="" disabled>Select player…</option>
-            <option v-for="p in players" :key="p.user_id" :value="p.user_id">
+            <option v-for="p in players" :key="p.id" :value="p.id">
               {{ p.character_name || p.username }}
             </option>
           </select>
@@ -195,7 +195,9 @@ const myCards   = ref([])
 const allCards  = ref([])   // GM only
 const gmTab     = ref(null)
 const defs      = ref([])
-const players   = ref([])
+
+// Players derived from already-loaded users store (non-GM users)
+const players = computed(() => data.users.filter(u => u.role !== 'gm'))
 
 const awardModal = ref({ open: false, user_id: '', type: 'good', card_def_id: null })
 const playModal  = ref({ open: false, card: null, note: '' })
@@ -234,13 +236,7 @@ async function load() {
     const d = await cardsR.json()
     if (isGm.value) {
       allCards.value = d.cards
-      // Build player list from cards + campaign members
-      const membersR = await data.apif(`/api/campaigns/${campaign.activeCampaign.id}/members`)
-      if (membersR.ok) {
-        const md = await membersR.json()
-        players.value = (md.members || []).filter(m => m.role !== 'gm')
-        if (players.value.length && !gmTab.value) gmTab.value = players.value[0].user_id
-      }
+      if (!gmTab.value && players.value.length) gmTab.value = players.value[0].id
     } else {
       myCards.value = d.cards
     }
@@ -252,7 +248,7 @@ onMounted(load)
 // ── Actions ────────────────────────────────────────────────────────────────
 
 function openAward() {
-  awardModal.value = { open: true, user_id: gmTab.value || '', type: 'good', card_def_id: null }
+  awardModal.value = { open: true, user_id: gmTab.value ?? '', type: 'good', card_def_id: null }
 }
 
 async function awardCard() {
