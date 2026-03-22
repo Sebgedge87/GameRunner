@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const { getDb } = require('../db/database');
 const { jwtSecret, registrationOpen } = require('../config');
 const { requireAuth } = require('./authMiddleware');
+const { auditLog } = require('../utils/auditLog');
 
 const router = express.Router();
 const SALT_ROUNDS = 10;
@@ -60,8 +61,14 @@ router.post('/login', (req, res) => {
   const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
 
   if (!user || !bcrypt.compareSync(password, user.password_hash)) {
+    // Log failed login attempt (user_id will be null since req.user isn't set)
+    auditLog(req, 'login_failed', 'user', null, `Failed login attempt for username: ${username}`);
     return res.status(401).json({ error: 'Invalid credentials' });
   }
+
+  // Log successful login by temporarily attaching the user to req
+  req.user = user;
+  auditLog(req, 'login', 'user', user.id, `User logged in: ${user.username}`);
 
   const token = jwt.sign({ userId: user.id }, jwtSecret, { expiresIn: '30d' });
   const { password_hash, ...safeUser } = user;
