@@ -778,6 +778,11 @@ function runMigrations() {
     for (const [type, tier, name, effect] of CARDS) ins.run(type, tier, name, effect);
   }
 
+  // Token revocation: increment to invalidate all issued JWTs for a user
+  try { db.exec('ALTER TABLE users ADD COLUMN token_version INTEGER DEFAULT 0'); } catch (_) {}
+  // User preferences (theme, custom colors, etc.) persisted server-side
+  try { db.exec('ALTER TABLE users ADD COLUMN preferences TEXT'); } catch (_) {}
+
   console.log('✅ Migrations complete.');
 }
 

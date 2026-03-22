@@ -11,6 +11,9 @@
       <div v-else class="modal-body" style="color:var(--text3);font-style:italic">No content.</div>
       <div class="modal-actions">
         <button class="modal-close" @click="close">CLOSE</button>
+        <button v-if="handout.file_path" class="btn btn-sm" @click="downloadFile">
+          Download
+        </button>
         <button v-if="handout.requires_ack && !handout.acked_at" class="btn btn-primary btn-sm" @click="ack">
           Acknowledge
         </button>
@@ -43,10 +46,23 @@ function close() {
 
 async function ack() {
   if (!handout.value) return
-  const r = await data.apif(`/api/handouts/${handout.value.id}/ack`, { method: 'POST' })
+  const r = await data.apif(`/api/handouts/${handout.value.id}/ack`, { method: 'PUT' })
   if (r.ok) {
     handout.value.acked_at = new Date().toISOString()
     await data.loadHandouts()
   }
+}
+
+async function downloadFile() {
+  if (!handout.value?.file_path) return
+  const r = await data.apif(`/api/handouts/${handout.value.id}/file`)
+  if (!r.ok) return
+  const blob = await r.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = handout.value.title || 'handout'
+  a.click()
+  URL.revokeObjectURL(url)
 }
 </script>

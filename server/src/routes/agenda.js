@@ -23,7 +23,7 @@ router.post('/', requireGm, (req, res) => {
     VALUES (?, ?, ?, ?, 0, CURRENT_TIMESTAMP)
     ON CONFLICT(campaign_id, user_id) DO UPDATE SET title=excluded.title, body=excluded.body, updated_at=CURRENT_TIMESTAMP`)
     .run(user_id, campaign_id || null, title, body || null);
-  const card = db.prepare('SELECT * FROM agenda_cards WHERE user_id = ? AND campaign_id IS ?').get(user_id, campaign_id || null);
+  const card = db.prepare('SELECT * FROM agenda_cards WHERE user_id = ? AND (campaign_id = ? OR (campaign_id IS NULL AND ? IS NULL))').get(user_id, campaign_id || null, campaign_id || null);
   res.status(201).json({ card });
 });
 
@@ -40,6 +40,8 @@ router.put('/:id/reveal', requireGm, (req, res) => {
 // DELETE /api/agenda/:id
 router.delete('/:id', requireGm, (req, res) => {
   const db = getDb();
+  const card = db.prepare('SELECT id FROM agenda_cards WHERE id = ?').get(req.params.id);
+  if (!card) return res.status(404).json({ error: 'Agenda card not found' });
   db.prepare('DELETE FROM agenda_cards WHERE id = ?').run(req.params.id);
   res.json({ success: true });
 });

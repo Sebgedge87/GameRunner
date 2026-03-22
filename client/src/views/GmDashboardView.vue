@@ -94,6 +94,7 @@
                   <td>
                     <div class="player-name">{{ u.username }}</div>
                     <div v-if="u.character_name" class="player-char">{{ u.character_name }}</div>
+                    <div v-if="u.last_seen" class="player-last-seen">seen {{ formatRelative(u.last_seen) }}</div>
                   </td>
                   <td>
                     <span class="tag" :class="u.role === 'gm' ? 'tag-active' : ''">{{ u.role }}</span>
@@ -156,6 +157,17 @@
         </div>
 
       </div><!-- /players-xp-cols -->
+
+      <!-- ── Campaign Stats ─────────────────────────────────── -->
+      <div v-if="campaignStats" class="section-divider" style="margin-top:24px">Campaign Stats</div>
+      <div v-if="campaignStats" class="stats-strip">
+        <div class="stat-pill"><span class="stat-pill-num">{{ campaignStats.session_count }}</span><span class="stat-pill-label">Sessions</span></div>
+        <div class="stat-pill"><span class="stat-pill-num">{{ campaignStats.player_count }}</span><span class="stat-pill-label">Players</span></div>
+        <div class="stat-pill"><span class="stat-pill-num">{{ campaignStats.quest_count }}</span><span class="stat-pill-label">Quests <span style="opacity:.5">({{ campaignStats.active_quest_count }} active)</span></span></div>
+        <div class="stat-pill"><span class="stat-pill-num">{{ campaignStats.handout_count }}</span><span class="stat-pill-label">Handouts</span></div>
+        <div class="stat-pill"><span class="stat-pill-num">{{ campaignStats.message_count }}</span><span class="stat-pill-label">Messages</span></div>
+        <div class="stat-pill"><span class="stat-pill-num">{{ campaignStats.xp_total.toLocaleString() }}</span><span class="stat-pill-label">XP Awarded</span></div>
+      </div>
 
       <!-- ── 2-column lower dashboard ──────────────────────── -->
       <div class="dash-cols">
@@ -250,6 +262,7 @@ const campForm = ref({ name: '', subtitle: '', system: '', description: '', play
 const campSaving = ref(false)
 const campStatus = ref('')
 const campOk = ref(false)
+const campaignStats = ref(null)
 
 const xpForm = ref({ amount: 0, reason: '', user_ids: [] })
 const xpStatus = ref('')
@@ -268,6 +281,18 @@ function toggleAllPlayers(e) {
 function formatTime(ts) {
   if (!ts) return ''
   return new Date(ts).toLocaleString()
+}
+
+function formatRelative(ts) {
+  if (!ts) return ''
+  const diff = Date.now() - new Date(ts).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 2) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  return `${days}d ago`
 }
 
 async function saveCampaign() {
@@ -413,8 +438,17 @@ async function loadXp() {
     const r = await data.apif('/api/xp')
     const d = await r.json()
     const map = {}
-    ;(d.xp || []).forEach(x => { map[x.user_id] = x })
+    ;(d.totals || d.xp || []).forEach(x => { map[x.user_id] = x })
     xpMap.value = map
+  } catch (_) {}
+}
+
+async function loadStats() {
+  const id = campaign.activeCampaign?.id
+  if (!id) return
+  try {
+    const r = await data.apif(`/api/campaigns/${id}/stats`)
+    if (r.ok) campaignStats.value = (await r.json()).stats
   } catch (_) {}
 }
 
@@ -459,6 +493,7 @@ async function initForCampaign() {
     data.loadQuests(),
     loadXp(),
     loadDash(),
+    loadStats(),
   ])
   data.users.forEach(u => { if (!stressEdits[u.id]) stressEdits[u.id] = { stress: '', sanity: '' } })
 }
@@ -471,6 +506,28 @@ watch(() => campaign.activeCampaign?.id, (newId, oldId) => {
 </script>
 
 <style scoped>
+.player-last-seen { font-size: 0.72em; opacity: 0.45; margin-top: 2px; }
+
+.stats-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+  margin-bottom: 4px;
+}
+.stat-pill {
+  background: var(--surface2, rgba(255,255,255,.04));
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 80px;
+}
+.stat-pill-num { font-size: 1.4em; font-weight: 700; line-height: 1; }
+.stat-pill-label { font-size: 0.72em; opacity: 0.55; margin-top: 3px; text-align: center; }
+
 .bg-preview {
   width: 100%;
   height: 100px;

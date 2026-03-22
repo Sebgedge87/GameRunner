@@ -129,6 +129,16 @@ router.put('/:id', requireGm, (req, res) => {
   res.json({ campaign });
 });
 
+// DELETE /api/campaigns/:id — GM deletes a campaign and all its members
+router.delete('/:id', requireGm, (req, res) => {
+  const db = getDb();
+  const campaign = db.prepare('SELECT id FROM campaigns WHERE id = ?').get(req.params.id);
+  if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
+  db.prepare('DELETE FROM campaign_members WHERE campaign_id = ?').run(req.params.id);
+  db.prepare('DELETE FROM campaigns WHERE id = ?').run(req.params.id);
+  res.json({ success: true });
+});
+
 // PUT /api/campaigns/:id/activate
 router.put('/:id/activate', requireGm, (req, res) => {
   const db = getDb();
@@ -136,6 +146,34 @@ router.put('/:id/activate', requireGm, (req, res) => {
   db.prepare('UPDATE campaigns SET active = 1 WHERE id = ?').run(req.params.id);
   const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(req.params.id);
   res.json({ campaign });
+});
+
+// GET /api/campaigns/:id/stats — GM overview stats
+router.get('/:id/stats', requireGm, (req, res) => {
+  const db = getDb();
+  const id = req.params.id;
+  const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(id);
+  if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
+
+  const playerCount = db.prepare("SELECT COUNT(*) as n FROM campaign_members WHERE campaign_id = ? AND role = 'player'").get(id).n;
+  const sessionCount = db.prepare('SELECT COUNT(*) as n FROM sessions WHERE campaign_id = ?').get(id).n;
+  const handoutCount = db.prepare('SELECT COUNT(*) as n FROM handouts WHERE campaign_id = ?').get(id).n;
+  const messageCount = db.prepare('SELECT COUNT(*) as n FROM messages WHERE campaign_id = ?').get(id).n;
+  const xpTotal = db.prepare('SELECT COALESCE(SUM(amount),0) as t FROM xp_awards WHERE campaign_id = ?').get(id).t;
+  const questCount = db.prepare("SELECT COUNT(*) as n FROM vault_files WHERE campaign_id = ? AND type = 'quest'").get(id).n;
+  const activeQuestCount = db.prepare("SELECT COUNT(*) as n FROM vault_files WHERE campaign_id = ? AND type = 'quest' AND json_extract(frontmatter,'$.status') = 'active'").get(id).n;
+
+  res.json({
+    stats: {
+      player_count: playerCount,
+      session_count: sessionCount,
+      handout_count: handoutCount,
+      message_count: messageCount,
+      xp_total: xpTotal,
+      quest_count: questCount,
+      active_quest_count: activeQuestCount,
+    }
+  });
 });
 
 // GET /api/campaigns/:id/members
