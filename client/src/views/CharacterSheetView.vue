@@ -17,10 +17,17 @@
 
     <div v-if="loading" class="loading">Loading sheet...</div>
 
-    <!-- No sheet yet (GM viewing a player who has none) -->
+    <!-- No sheet yet -->
     <div v-else-if="!sheet && !editing" class="empty-state">
-      <div>No character sheet yet.</div>
-      <button v-if="campaign.isGm && selectedUserId" class="btn" style="margin-top:12px" @click="startEdit">Create Sheet for Player</button>
+      <template v-if="campaign.isGm && !selectedUserId">
+        <div style="opacity:0.5">Select a player above to view their sheet.</div>
+      </template>
+      <template v-else>
+        <div>No character sheet yet.</div>
+        <button class="btn" style="margin-top:12px" @click="startEdit">
+          {{ campaign.isGm ? 'Create Sheet for Player' : 'Create My Sheet' }}
+        </button>
+      </template>
     </div>
 
     <!-- ── EDIT MODE ──────────────────────────────────── -->
