@@ -65,7 +65,7 @@
               <input v-model="ef.concept" class="form-input" placeholder="One-line character concept…" />
             </div>
             <!-- System-specific identity fields -->
-            <template v-for="f in extraFields.filter(f => !['buddy_1','buddy_2','buddy_3','buddy_4','major_wound','temp_insanity','indef_insanity','gear','equipment_note'].includes(f.key))" :key="f.key">
+            <template v-for="f in extraFields.filter(f => !['buddy_1','buddy_2','buddy_3','buddy_4','major_wound','temp_insanity','indef_insanity','gear','equipment_note','cons_air','cons_food','cons_water','cons_power','tiny_items'].includes(f.key))" :key="f.key">
               <div class="field-group">
                 <label>{{ f.label }}</label>
                 <select v-if="f.type === 'select'" v-model="ef[f.key]" class="form-input">
@@ -106,7 +106,7 @@
               <input v-model.number="ef.hp_current" type="number" class="form-input" />
             </div>
             <div class="field-group">
-              <label>HP (Max)</label>
+              <label>HP (Max)<span v-if="activeSys === 'coriolis' && ef.strength && ef.agility" class="derive-hint" @click="ef.hp_max = (ef.strength||0)+(ef.agility||0)">← STR+AGL ({{ (ef.strength||0)+(ef.agility||0) }})</span></label>
               <input v-model.number="ef.hp_max" type="number" class="form-input" />
             </div>
             <div v-if="hasStress" class="field-group">
@@ -122,7 +122,7 @@
               <input v-model.number="ef.mp_current" type="number" class="form-input" />
             </div>
             <div v-if="hasMagicPoints" class="field-group">
-              <label>Magic Points (Max)</label>
+              <label>Magic Points (Max)<span v-if="activeSys === 'coc' && ef.pow" class="derive-hint" @click="ef.mp_max = ef.pow">← POW ({{ ef.pow }})</span></label>
               <input v-model.number="ef.mp_max" type="number" class="form-input" />
             </div>
             <div v-if="hasMindPoints" class="field-group">
@@ -130,8 +130,16 @@
               <input v-model.number="ef.mind_current" type="number" class="form-input" />
             </div>
             <div v-if="hasMindPoints" class="field-group">
-              <label>Mind Points (Max)</label>
+              <label>Mind Points (Max)<span v-if="activeSys === 'coriolis' && ef.wits && ef.empathy" class="derive-hint" @click="ef.mind_max = (ef.wits||0)+(ef.empathy||0)">← WIT+EMP ({{ (ef.wits||0)+(ef.empathy||0) }})</span></label>
               <input v-model.number="ef.mind_max" type="number" class="form-input" />
+            </div>
+            <div v-if="hasSanity" class="field-group">
+              <label>Sanity (Current)</label>
+              <input v-model.number="ef.sanity_current" type="number" class="form-input" />
+            </div>
+            <div v-if="hasSanity" class="field-group">
+              <label>Sanity (Max)</label>
+              <input v-model.number="ef.sanity_max" type="number" class="form-input" />
             </div>
             <div v-if="hasRadiation" class="field-group">
               <label>Radiation</label>
@@ -380,7 +388,7 @@
         </div>
 
         <!-- HP / Condition -->
-        <div v-if="sheet.hp_max != null || sheet.stress_max != null || sheet.mp_max != null || sheet.mind_max != null || sheet.radiation != null" class="card" style="margin-bottom:16px">
+        <div v-if="sheet.hp_max != null || sheet.stress_max != null || sheet.mp_max != null || sheet.mind_max != null || sheet.radiation != null || (hasSanity && sheet.sanity_max != null)" class="card" style="margin-bottom:16px">
           <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">CONDITION</div>
           <div style="display:flex;flex-direction:column;gap:12px">
             <div v-if="sheet.hp_max != null">
@@ -388,6 +396,7 @@
                 <span>HP</span><span>{{ sheet.hp_current ?? sheet.hp_max }} / {{ sheet.hp_max }}</span>
               </div>
               <div class="progress-bar"><div class="progress-fill" :style="`width:${hpPercent}%;background:var(--green,#4caf7d)`"></div></div>
+              <div v-if="activeSys === 'coriolis'" style="font-size:0.7em;opacity:0.35;margin-top:2px">= Strength + Agility</div>
             </div>
             <div v-if="sheet.stress_max != null">
               <div style="display:flex;justify-content:space-between;font-size:0.8em;opacity:0.7;margin-bottom:4px">
@@ -406,6 +415,13 @@
                 <span>Mind Points</span><span>{{ sheet.mind_current ?? sheet.mind_max }} / {{ sheet.mind_max }}</span>
               </div>
               <div class="progress-bar"><div class="progress-fill" :style="`width:${mindPercent}%;background:var(--accent,#c9a84c)`"></div></div>
+              <div v-if="activeSys === 'coriolis'" style="font-size:0.7em;opacity:0.35;margin-top:2px">= Wits + Empathy</div>
+            </div>
+            <div v-if="hasSanity && sheet.sanity_max != null">
+              <div style="display:flex;justify-content:space-between;font-size:0.8em;opacity:0.7;margin-bottom:4px">
+                <span>Sanity</span><span>{{ sheet.sanity_current ?? sheet.sanity_max }} / {{ sheet.sanity_max }}</span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill" :style="`width:${sanityPercent}%;background:var(--purple,#8c4ac9)`"></div></div>
             </div>
             <div v-if="sheet.radiation != null" style="display:flex;align-items:center;gap:10px;font-size:0.85em">
               <span style="opacity:0.6">Radiation</span>
@@ -439,12 +455,18 @@
                 <div class="stat-label">KNOW</div><div class="stat-value">{{ cocKnow }}%</div>
               </div>
             </div>
+            <!-- Threshold legend -->
+            <div class="coc-view-legend">
+              <span></span><span>Base</span><span>Reg</span><span title="Hard success (½ skill)">Hard</span><span title="Extreme success (⅕ skill)">Ext</span>
+            </div>
             <div class="skills-coc-view-grid">
               <template v-for="sk in systemSkills" :key="sk.key">
                 <div v-if="sheet[sk.key] != null" class="coc-view-row" :class="{ 'coc-raised': sheet[sk.key] > sk.base }">
                   <span class="coc-view-label">{{ sk.label }}</span>
                   <span class="coc-view-base">{{ sk.note || sk.base + '%' }}</span>
                   <span class="coc-view-val">{{ sheet[sk.key] }}%</span>
+                  <span class="coc-view-hard" title="Hard success">{{ Math.floor(sheet[sk.key] / 2) }}%</span>
+                  <span class="coc-view-extreme" title="Extreme success">{{ Math.floor(sheet[sk.key] / 5) }}%</span>
                 </div>
               </template>
             </div>
@@ -617,7 +639,7 @@ const auth = useAuthStore()
 const campaign = useCampaignStore()
 const ui = useUiStore()
 const {
-  hasStress, hasDndBeyond, hasBuiltinSheet, coreStats,
+  hasStress, hasSanity, hasDndBeyond, hasBuiltinSheet, coreStats,
   hasMagicPoints, hasMindPoints, hasConditions, hasRadiation, hasDrives,
   extraFields, systemSkills, conditions, drives,
 } = useSystemFeatures()
@@ -658,6 +680,8 @@ function startEdit() {
     mp_max: s.mp_max ?? null,
     mind_current: s.mind_current ?? null,
     mind_max: s.mind_max ?? null,
+    sanity_current: s.sanity_current ?? null,
+    sanity_max: s.sanity_max ?? null,
     radiation: s.radiation ?? null,
     skills_text: (s.skills || []).join(', '),
     abilities_text: (s.abilities || []).join(', '),
@@ -730,6 +754,10 @@ const mpPercent = computed(() => {
 const mindPercent = computed(() => {
   if (!sheet.value?.mind_max) return 0
   return Math.round(((sheet.value.mind_current ?? sheet.value.mind_max) / sheet.value.mind_max) * 100)
+})
+const sanityPercent = computed(() => {
+  if (!sheet.value?.sanity_max) return 0
+  return Math.round(((sheet.value.sanity_current ?? sheet.value.sanity_max) / sheet.value.sanity_max) * 100)
 })
 
 function hullPercent(ship) {
@@ -815,9 +843,11 @@ async function saveSheet() {
       sheetData.stress_max = ef.value.stress_max
       if (ef.value.mp_current != null) sheetData.mp_current = ef.value.mp_current
       if (ef.value.mp_max     != null) sheetData.mp_max     = ef.value.mp_max
-      if (ef.value.mind_current != null) sheetData.mind_current = ef.value.mind_current
-      if (ef.value.mind_max     != null) sheetData.mind_max     = ef.value.mind_max
-      if (ef.value.radiation    != null) sheetData.radiation    = ef.value.radiation
+      if (ef.value.mind_current   != null) sheetData.mind_current   = ef.value.mind_current
+      if (ef.value.mind_max       != null) sheetData.mind_max       = ef.value.mind_max
+      if (ef.value.sanity_current != null) sheetData.sanity_current = ef.value.sanity_current
+      if (ef.value.sanity_max     != null) sheetData.sanity_max     = ef.value.sanity_max
+      if (ef.value.radiation      != null) sheetData.radiation      = ef.value.radiation
       sheetData.skills    = ef.value.skills_text.split(',').map(s => s.trim()).filter(Boolean)
       sheetData.abilities = ef.value.abilities_text.split(',').map(s => s.trim()).filter(Boolean)
       sheetData.backstory = ef.value.backstory
@@ -973,10 +1003,23 @@ onMounted(() => {
   padding: 3px 0;
   border-bottom: 1px solid var(--border, rgba(255,255,255,.05));
 }
-.coc-view-label { flex: 1; font-size: 0.82em; }
-.coc-view-base  { font-size: 0.72em; opacity: 0.38; white-space: nowrap; }
-.coc-view-val   { font-size: 0.88em; font-weight: 600; min-width: 38px; text-align: right; }
+.coc-view-label    { flex: 1; font-size: 0.82em; }
+.coc-view-base     { font-size: 0.72em; opacity: 0.38; white-space: nowrap; }
+.coc-view-val      { font-size: 0.88em; font-weight: 600; min-width: 36px; text-align: right; }
+.coc-view-hard     { font-size: 0.78em; opacity: 0.52; min-width: 34px; text-align: right; }
+.coc-view-extreme  { font-size: 0.78em; opacity: 0.36; min-width: 30px; text-align: right; }
 .coc-raised .coc-view-val { color: var(--accent, #c9a84c); }
+.coc-view-legend {
+  display: flex;
+  gap: 5px;
+  padding-bottom: 4px;
+  font-size: 0.68em;
+  opacity: 0.4;
+  letter-spacing: 0.04em;
+}
+.coc-view-legend span:first-child { flex: 1; }
+.coc-view-legend span:not(:first-child) { min-width: 34px; text-align: right; white-space: nowrap; }
+.coc-view-legend span:nth-child(2) { min-width: auto; }
 
 /* ── YZE skill edit grid ─────────────────────────────── */
 .skills-yze-grid {
@@ -1046,6 +1089,17 @@ onMounted(() => {
 }
 .weapons-table--view td { opacity: 0.85; }
 .weapons-table .form-input { padding: 3px 6px !important; font-size: 0.9em; }
+
+/* ── Derived-stat auto-fill hint ─────────────────────── */
+.derive-hint {
+  font-size: 0.72em;
+  opacity: 0.5;
+  cursor: pointer;
+  margin-left: 8px;
+  text-decoration: underline dotted;
+  font-weight: 400;
+}
+.derive-hint:hover { opacity: 0.85; }
 
 /* ── Condition checkbox ──────────────────────────────── */
 .condition-check {
