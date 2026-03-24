@@ -304,7 +304,7 @@
               <label>Abilities / Talents <span style="opacity:.5;font-weight:400">(comma-separated)</span></label>
               <input v-model="ef.abilities_text" class="form-input" placeholder="Combat Training, Nerves of Steel…" />
             </div>
-            <div class="field-group" style="grid-column:1/-1">
+            <div v-if="activeSys !== 'coc'" class="field-group" style="grid-column:1/-1">
               <label>Backstory</label>
               <textarea v-model="ef.backstory" class="form-input" style="min-height:80px;resize:vertical"></textarea>
             </div>
@@ -623,43 +623,39 @@
           </div>
         </template>
 
-        <!-- CoC My Story -->
-        <div v-if="activeSys === 'coc' && sheet.story" class="card" style="margin-bottom:16px">
-          <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">MY STORY</div>
-          <div class="prose" style="font-size:0.85em;opacity:0.8;line-height:1.6" v-html="renderMd(sheet.story)"></div>
-        </div>
-
-        <!-- CoC Backstory fields -->
-        <template v-if="activeSys === 'coc' && extraFields.some(f => f.section === 'backstory' && f.type !== 'textarea' && sheet[f.key])">
+        <!-- CoC My Story + Backstory (always visible for CoC) -->
+        <template v-if="activeSys === 'coc'">
+          <div class="card" style="margin-bottom:16px">
+            <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">MY STORY</div>
+            <div v-if="sheet.story" class="prose" style="font-size:0.85em;opacity:0.8;line-height:1.6" v-html="renderMd(sheet.story)"></div>
+            <div v-else style="font-size:0.85em;opacity:0.3;font-style:italic">No story written yet.</div>
+          </div>
           <div class="card" style="margin-bottom:16px">
             <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">BACKSTORY</div>
             <div class="coc-backstory-view-grid">
-              <template v-for="f in extraFields.filter(f => f.section === 'backstory' && f.type !== 'textarea' && sheet[f.key])" :key="f.key">
+              <template v-for="f in extraFields.filter(f => f.section === 'backstory' && f.type !== 'textarea')" :key="f.key">
                 <div class="coc-bv-item">
                   <div class="coc-bv-label">{{ f.label }}</div>
-                  <div class="coc-bv-value">{{ sheet[f.key] }}</div>
+                  <div class="coc-bv-value">{{ sheet[f.key] || '—' }}</div>
                 </div>
               </template>
             </div>
           </div>
-        </template>
-
-        <!-- CoC Fellow Investigators -->
-        <div v-if="activeSys === 'coc' && [1,2,3,4].some(n => sheet['fellow_' + n + '_name'] || sheet['fellow_' + n + '_player'])" class="card" style="margin-bottom:16px">
-          <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">FELLOW INVESTIGATORS</div>
-          <div class="coc-fellow-view">
-            <template v-for="n in [1,2,3,4]" :key="n">
-              <div v-if="sheet['fellow_' + n + '_name'] || sheet['fellow_' + n + '_player']" class="coc-fellow-row">
+          <div class="card" style="margin-bottom:16px">
+            <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">FELLOW INVESTIGATORS</div>
+            <div class="coc-fellow-view">
+              <div v-for="n in [1,2,3,4]" :key="n" class="coc-fellow-row">
+                <span class="coc-fellow-num">{{ n }}.</span>
                 <span class="coc-fellow-char">{{ sheet['fellow_' + n + '_name'] || '—' }}</span>
                 <span class="coc-fellow-sep">·</span>
                 <span class="coc-fellow-player">{{ sheet['fellow_' + n + '_player'] || '—' }}</span>
               </div>
-            </template>
+            </div>
           </div>
-        </div>
+        </template>
 
-        <!-- Notes / Backstory -->
-        <div v-if="sheet.notes || sheet.backstory" class="card" style="margin-bottom:16px">
+        <!-- Notes / Backstory (hidden for CoC — they use the dedicated My Story card) -->
+        <div v-if="(sheet.notes || sheet.backstory) && activeSys !== 'coc'" class="card" style="margin-bottom:16px">
           <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">NOTES</div>
           <div v-if="sheet.backstory" class="prose" style="font-size:0.85em;opacity:0.8;margin-bottom:10px;line-height:1.6" v-html="renderMd(sheet.backstory)"></div>
           <div v-if="sheet.notes" class="prose" style="font-size:0.85em;opacity:0.7;line-height:1.6" v-html="renderMd(sheet.notes)"></div>
@@ -1398,6 +1394,7 @@ onMounted(() => {
   gap: 8px;
   font-size: 0.87em;
 }
+.coc-fellow-num   { opacity: 0.35; min-width: 16px; }
 .coc-fellow-char  { font-weight: 600; color: var(--accent, #b8a060); }
 .coc-fellow-sep   { opacity: 0.35; }
 .coc-fellow-player{ opacity: 0.65; }
