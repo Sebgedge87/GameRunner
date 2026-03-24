@@ -1,10 +1,16 @@
 <template>
   <div class="page-content tl-page">
     <div class="page-header">
-      <div class="page-title">Timeline</div>
+      <div class="page-title">
+        Timeline
+        <span v-if="cocEraLabel" class="tl-era-badge">🐙 {{ cocEraLabel }}</span>
+      </div>
       <div v-if="campaign.isGm" style="margin-left:auto">
         <button class="btn btn-primary btn-sm" @click="ui.openGmEdit('timeline', null, {})">+ Add Event</button>
       </div>
+    </div>
+    <div v-if="cocEraHint" style="font-size:0.75em;opacity:0.45;margin-bottom:12px;font-style:italic">
+      Date format hint: {{ cocEraHint }}
     </div>
 
     <div class="search-row" style="margin-bottom:12px">
@@ -84,10 +90,23 @@ import { ref, computed, onMounted } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
+import { COC_ERAS } from '@/composables/useSystemFeatures'
 
 const data = useDataStore()
 const campaign = useCampaignStore()
 const ui = useUiStore()
+
+const activeSys = computed(() => campaign.activeCampaign?.system || 'custom')
+const cocEraLabel = computed(() => {
+  if (activeSys.value !== 'coc') return null
+  const key = campaign.activeCampaign?.coc_era || '1920s'
+  return COC_ERAS.find(e => e.key === key)?.label || '1920s Era'
+})
+const cocEraHint = computed(() => {
+  if (activeSys.value !== 'coc') return null
+  const key = campaign.activeCampaign?.coc_era || '1920s'
+  return COC_ERAS.find(e => e.key === key)?.hint || null
+})
 
 const search = ref('')
 const sessionFilter = ref('')
@@ -126,6 +145,20 @@ onMounted(() => {
 
 <style scoped>
 .tl-page { padding-bottom: 48px; }
+
+.tl-era-badge {
+  font-size: 0.52em;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--accent, #b8a060);
+  color: var(--bg, #0d0d0f);
+  border-radius: 4px;
+  padding: 2px 8px;
+  vertical-align: middle;
+  margin-left: 10px;
+  opacity: 0.85;
+}
 
 /* ── Scroll wrapper ── */
 .tl-scroll {
