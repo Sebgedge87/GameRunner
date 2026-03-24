@@ -85,23 +85,6 @@
             </template>
           </div>
 
-          <!-- Fellow Investigators (CoC) -->
-          <template v-if="activeSys === 'coc'">
-            <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Fellow Investigators</div>
-            <div class="coc-fellow-grid">
-              <template v-for="n in [1,2,3,4]" :key="n">
-                <div class="field-group">
-                  <label>Char. {{ n }}</label>
-                  <input v-model="ef['fellow_' + n + '_name']" class="form-input" placeholder="Character name…" />
-                </div>
-                <div class="field-group">
-                  <label>Player {{ n }}</label>
-                  <input v-model="ef['fellow_' + n + '_player']" class="form-input" placeholder="Player name…" />
-                </div>
-              </template>
-            </div>
-          </template>
-
           <!-- Relationships (Coriolis buddy slots) -->
           <template v-if="activeSys === 'coriolis'">
             <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Relationships</div>
@@ -291,6 +274,21 @@
                 <div class="field-group">
                   <label>{{ f.label }}<span v-if="f.help" class="field-help" :data-tooltip="f.help">?</span></label>
                   <input v-model="ef[f.key]" class="form-input" />
+                </div>
+              </template>
+            </div>
+
+            <!-- Fellow Investigators — bottom of page 2 on the physical sheet -->
+            <div style="font-size:0.75em;opacity:0.55;margin:20px 0 8px;letter-spacing:.05em;text-transform:uppercase">Fellow Investigators</div>
+            <div class="coc-fellow-grid">
+              <template v-for="n in [1,2,3,4]" :key="n">
+                <div class="field-group">
+                  <label>Char. {{ n }}</label>
+                  <input v-model="ef['fellow_' + n + '_name']" class="form-input" placeholder="Character name…" />
+                </div>
+                <div class="field-group">
+                  <label>Player {{ n }}</label>
+                  <input v-model="ef['fellow_' + n + '_player']" class="form-input" placeholder="Player name…" />
                 </div>
               </template>
             </div>
