@@ -74,7 +74,7 @@
             <!-- System-specific identity fields -->
             <template v-for="f in extraFields.filter(f => !['buddy_1','buddy_2','buddy_3','buddy_4','major_wound','temp_insanity','indef_insanity','gear','equipment_note','cons_air','cons_food','cons_water','cons_power','tiny_items'].includes(f.key))" :key="f.key">
               <div class="field-group">
-                <label>{{ f.label }}<span v-if="f.help" class="field-help" :title="f.help">?</span></label>
+                <label>{{ f.label }}<span v-if="f.help" class="field-help" :data-tooltip="f.help">?</span></label>
                 <select v-if="f.type === 'select'" v-model="ef[f.key]" class="form-input">
                   <option value="">— choose —</option>
                   <option v-for="o in f.options" :key="o" :value="o">{{ o }}</option>
@@ -90,7 +90,7 @@
             <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Relationships</div>
             <div class="edit-grid">
               <div v-for="n in [1,2,3,4]" :key="n" class="field-group">
-                <label>PC {{ n }}<span class="field-help" title="Name of a crew member you have a bond or history with.">?</span></label>
+                <label>PC {{ n }}<span class="field-help" data-tooltip="Name of a crew member you have a bond or history with.">?</span></label>
                 <input v-model="ef['buddy_' + n]" class="form-input" placeholder="Name…" />
               </div>
             </div>
@@ -100,7 +100,7 @@
           <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Core Stats</div>
           <div class="edit-stats-grid">
             <div v-for="stat in coreStats" :key="stat.key" class="field-group">
-              <label>{{ stat.label }}<span v-if="stat.help" class="field-help" :title="stat.help">?</span></label>
+              <label>{{ stat.label }}<span v-if="stat.help" class="field-help" :data-tooltip="stat.help">?</span></label>
               <input v-model.number="ef[stat.key]" type="number" class="form-input" placeholder="0" />
             </div>
           </div>
@@ -109,47 +109,47 @@
           <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Condition</div>
           <div class="edit-grid">
             <div class="field-group">
-              <label>HP (Current)<span class="field-help" :title="conditionHelp.hp">?</span></label>
+              <label>HP (Current)<span class="field-help" :data-tooltip="conditionHelp.hp">?</span></label>
               <input v-model.number="ef.hp_current" type="number" class="form-input" />
             </div>
             <div class="field-group">
-              <label>HP (Max)<span class="field-help" :title="conditionHelp.hp">?</span><span v-if="activeSys === 'coriolis' && ef.strength && ef.agility" class="derive-hint" @click="ef.hp_max = (ef.strength||0)+(ef.agility||0)">← STR+AGL ({{ (ef.strength||0)+(ef.agility||0) }})</span></label>
+              <label>HP (Max)<span class="field-help" :data-tooltip="conditionHelp.hp">?</span><span v-if="activeSys === 'coriolis' && ef.strength && ef.agility" class="derive-hint" @click="ef.hp_max = (ef.strength||0)+(ef.agility||0)">← STR+AGL ({{ (ef.strength||0)+(ef.agility||0) }})</span></label>
               <input v-model.number="ef.hp_max" type="number" class="form-input" />
             </div>
             <div v-if="hasStress" class="field-group">
-              <label>Stress (Current)<span class="field-help" :title="conditionHelp.stress">?</span></label>
+              <label>Stress (Current)<span class="field-help" :data-tooltip="conditionHelp.stress">?</span></label>
               <input v-model.number="ef.stress_current" type="number" class="form-input" />
             </div>
             <div v-if="hasStress" class="field-group">
-              <label>Stress (Max)<span class="field-help" :title="conditionHelp.stress">?</span></label>
+              <label>Stress (Max)<span class="field-help" :data-tooltip="conditionHelp.stress">?</span></label>
               <input v-model.number="ef.stress_max" type="number" class="form-input" />
             </div>
             <div v-if="hasMagicPoints" class="field-group">
-              <label>Magic Points (Current)<span class="field-help" :title="conditionHelp.mp">?</span></label>
+              <label>Magic Points (Current)<span class="field-help" :data-tooltip="conditionHelp.mp">?</span></label>
               <input v-model.number="ef.mp_current" type="number" class="form-input" />
             </div>
             <div v-if="hasMagicPoints" class="field-group">
-              <label>Magic Points (Max)<span class="field-help" :title="conditionHelp.mp">?</span><span v-if="activeSys === 'coc' && ef.pow" class="derive-hint" @click="ef.mp_max = ef.pow">← POW ({{ ef.pow }})</span></label>
+              <label>Magic Points (Max)<span class="field-help" :data-tooltip="conditionHelp.mp">?</span><span v-if="activeSys === 'coc' && ef.pow" class="derive-hint" @click="ef.mp_max = ef.pow">← POW ({{ ef.pow }})</span></label>
               <input v-model.number="ef.mp_max" type="number" class="form-input" />
             </div>
             <div v-if="hasMindPoints" class="field-group">
-              <label>Mind Points (Current)<span class="field-help" :title="conditionHelp.mind">?</span></label>
+              <label>Mind Points (Current)<span class="field-help" :data-tooltip="conditionHelp.mind">?</span></label>
               <input v-model.number="ef.mind_current" type="number" class="form-input" />
             </div>
             <div v-if="hasMindPoints" class="field-group">
-              <label>Mind Points (Max)<span class="field-help" :title="conditionHelp.mind">?</span><span v-if="activeSys === 'coriolis' && ef.wits && ef.empathy" class="derive-hint" @click="ef.mind_max = (ef.wits||0)+(ef.empathy||0)">← WIT+EMP ({{ (ef.wits||0)+(ef.empathy||0) }})</span></label>
+              <label>Mind Points (Max)<span class="field-help" :data-tooltip="conditionHelp.mind">?</span><span v-if="activeSys === 'coriolis' && ef.wits && ef.empathy" class="derive-hint" @click="ef.mind_max = (ef.wits||0)+(ef.empathy||0)">← WIT+EMP ({{ (ef.wits||0)+(ef.empathy||0) }})</span></label>
               <input v-model.number="ef.mind_max" type="number" class="form-input" />
             </div>
             <div v-if="hasSanity" class="field-group">
-              <label>Sanity (Current)<span class="field-help" :title="conditionHelp.sanity">?</span></label>
+              <label>Sanity (Current)<span class="field-help" :data-tooltip="conditionHelp.sanity">?</span></label>
               <input v-model.number="ef.sanity_current" type="number" class="form-input" />
             </div>
             <div v-if="hasSanity" class="field-group">
-              <label>Sanity (Max)<span class="field-help" :title="conditionHelp.sanity">?</span></label>
+              <label>Sanity (Max)<span class="field-help" :data-tooltip="conditionHelp.sanity">?</span></label>
               <input v-model.number="ef.sanity_max" type="number" class="form-input" />
             </div>
             <div v-if="hasRadiation" class="field-group">
-              <label>Radiation<span class="field-help" :title="conditionHelp.rad">?</span></label>
+              <label>Radiation<span class="field-help" :data-tooltip="conditionHelp.rad">?</span></label>
               <input v-model.number="ef.radiation" type="number" class="form-input" min="0" />
             </div>
           </div>
@@ -160,7 +160,7 @@
             <div style="display:flex;flex-wrap:wrap;gap:12px">
               <label v-for="c in conditions" :key="c" class="condition-check">
                 <input type="checkbox" v-model="ef['cond_' + c]" />
-                <span>{{ c.charAt(0).toUpperCase() + c.slice(1) }}<span v-if="alienConditionHelp[c]" class="field-help" :title="alienConditionHelp[c]">?</span></span>
+                <span>{{ c.charAt(0).toUpperCase() + c.slice(1) }}<span v-if="alienConditionHelp[c]" class="field-help" :data-tooltip="alienConditionHelp[c]">?</span></span>
               </label>
             </div>
           </template>
@@ -171,7 +171,7 @@
             <div style="display:flex;flex-wrap:wrap;gap:12px">
               <label v-for="f in extraFields.filter(f => f.type === 'boolean')" :key="f.key" class="condition-check">
                 <input type="checkbox" v-model="ef[f.key]" />
-                <span>{{ f.label }}<span v-if="f.help" class="field-help" :title="f.help">?</span></span>
+                <span>{{ f.label }}<span v-if="f.help" class="field-help" :data-tooltip="f.help">?</span></span>
               </label>
             </div>
           </template>
@@ -181,7 +181,7 @@
             <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Consumables</div>
             <div class="edit-stats-grid">
               <div v-for="k in ['cons_air','cons_food','cons_water','cons_power']" :key="k" class="field-group">
-                <label>{{ k.split('_')[1].charAt(0).toUpperCase() + k.split('_')[1].slice(1) }}<span class="field-help" :title="consumableHelp[k]">?</span></label>
+                <label>{{ k.split('_')[1].charAt(0).toUpperCase() + k.split('_')[1].slice(1) }}<span class="field-help" :data-tooltip="consumableHelp[k]">?</span></label>
                 <input v-model.number="ef[k]" type="number" min="0" class="form-input" placeholder="0" />
               </div>
             </div>
@@ -228,7 +228,7 @@
             <template v-else-if="activeSys === 'dune'">
               <div class="skills-focus-grid">
                 <div v-for="sk in systemSkills" :key="sk.key" class="focus-skill-row">
-                  <span class="focus-skill-label">{{ sk.label }}<span v-if="sk.attr" class="yze-attr"> ({{ sk.attr }})</span><span v-if="sk.help" class="field-help" :title="sk.help">?</span></span>
+                  <span class="focus-skill-label">{{ sk.label }}<span v-if="sk.attr" class="yze-attr"> ({{ sk.attr }})</span><span v-if="sk.help" class="field-help" :data-tooltip="sk.help">?</span></span>
                   <input v-model.number="ef[sk.key]" type="number" min="0" max="5" class="focus-rank-input form-input" placeholder="0" />
                   <input v-model="ef[sk.key + '_focus']" class="focus-input form-input" placeholder="Focus…" />
                 </div>
@@ -238,7 +238,7 @@
                 <div style="font-size:0.75em;opacity:0.55;margin-bottom:8px;letter-spacing:.05em;text-transform:uppercase">Drives</div>
                 <div class="edit-stats-grid">
                   <div v-for="d in drives" :key="d" class="field-group">
-                    <label>{{ d.charAt(0).toUpperCase() + d.slice(1) }}<span class="field-help" :title="driveHelp[d]">?</span></label>
+                    <label>{{ d.charAt(0).toUpperCase() + d.slice(1) }}<span class="field-help" :data-tooltip="driveHelp[d]">?</span></label>
                     <input v-model.number="ef['drv_' + d]" type="number" min="0" max="20" class="form-input" placeholder="0" />
                   </div>
                 </div>
@@ -249,7 +249,7 @@
             <template v-else-if="activeSys === 'achtung'">
               <div class="skills-focus-grid">
                 <div v-for="sk in systemSkills" :key="sk.key" class="focus-skill-row">
-                  <span class="focus-skill-label">{{ sk.label }}<span v-if="sk.attr" class="yze-attr"> ({{ sk.attr }})</span><span v-if="sk.help" class="field-help" :title="sk.help">?</span></span>
+                  <span class="focus-skill-label">{{ sk.label }}<span v-if="sk.attr" class="yze-attr"> ({{ sk.attr }})</span><span v-if="sk.help" class="field-help" :data-tooltip="sk.help">?</span></span>
                   <input v-model.number="ef[sk.key]" type="number" min="0" max="3" class="focus-rank-input form-input" placeholder="0" />
                   <input v-model="ef[sk.key + '_focus']" class="focus-input form-input" placeholder="Focus…" />
                 </div>
@@ -259,7 +259,7 @@
 
           <!-- Textarea extra fields (Gear & Possessions / Equipment of Note / Tiny Items) -->
           <template v-for="f in extraFields.filter(f => f.type === 'textarea')" :key="f.key">
-            <div style="font-size:0.75em;opacity:0.55;margin:16px 0 6px;letter-spacing:.05em;text-transform:uppercase">{{ f.label }}<span v-if="f.help" class="field-help" style="font-size:0.85em;opacity:1" :title="f.help">?</span></div>
+            <div style="font-size:0.75em;opacity:0.55;margin:16px 0 6px;letter-spacing:.05em;text-transform:uppercase">{{ f.label }}<span v-if="f.help" class="field-help" style="font-size:0.85em;opacity:1" :data-tooltip="f.help">?</span></div>
             <textarea v-model="ef[f.key]" class="form-input" style="min-height:64px;resize:vertical;width:100%"></textarea>
           </template>
 
@@ -1156,12 +1156,40 @@ onMounted(() => {
   font-weight: 700;
   margin-left: 5px;
   cursor: help;
-  opacity: 0.35;
+  opacity: 0.4;
   vertical-align: middle;
   line-height: 1;
   user-select: none;
+  position: relative;
 }
-.field-help:hover { opacity: 0.85; }
+.field-help:hover { opacity: 1; }
+.field-help::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg2, #1e1e2e);
+  color: var(--text1, #cdd6f4);
+  border: 1px solid var(--border, rgba(255,255,255,0.12));
+  padding: 7px 11px;
+  border-radius: 6px;
+  font-size: 1.55em;
+  font-weight: 400;
+  line-height: 1.45;
+  white-space: normal;
+  width: 240px;
+  max-width: 80vw;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 200;
+  text-transform: none;
+  letter-spacing: 0;
+  font-family: inherit;
+  transition: opacity 0.12s;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+}
+.field-help:hover::after { opacity: 1; }
 
 /* ── Derived-stat auto-fill hint ─────────────────────── */
 .derive-hint {
