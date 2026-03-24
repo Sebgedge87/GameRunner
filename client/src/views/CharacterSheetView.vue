@@ -90,7 +90,7 @@
             <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Relationships</div>
             <div class="edit-grid">
               <div v-for="n in [1,2,3,4]" :key="n" class="field-group">
-                <label>PC {{ n }}</label>
+                <label>PC {{ n }}<span class="field-help" title="Name of a crew member you have a bond or history with.">?</span></label>
                 <input v-model="ef['buddy_' + n]" class="form-input" placeholder="Name…" />
               </div>
             </div>
@@ -160,7 +160,7 @@
             <div style="display:flex;flex-wrap:wrap;gap:12px">
               <label v-for="c in conditions" :key="c" class="condition-check">
                 <input type="checkbox" v-model="ef['cond_' + c]" />
-                <span>{{ c.charAt(0).toUpperCase() + c.slice(1) }}</span>
+                <span>{{ c.charAt(0).toUpperCase() + c.slice(1) }}<span v-if="alienConditionHelp[c]" class="field-help" :title="alienConditionHelp[c]">?</span></span>
               </label>
             </div>
           </template>
@@ -228,7 +228,7 @@
             <template v-else-if="activeSys === 'dune'">
               <div class="skills-focus-grid">
                 <div v-for="sk in systemSkills" :key="sk.key" class="focus-skill-row">
-                  <span class="focus-skill-label">{{ sk.label }}</span>
+                  <span class="focus-skill-label">{{ sk.label }}<span v-if="sk.attr" class="yze-attr"> ({{ sk.attr }})</span><span v-if="sk.help" class="field-help" :title="sk.help">?</span></span>
                   <input v-model.number="ef[sk.key]" type="number" min="0" max="5" class="focus-rank-input form-input" placeholder="0" />
                   <input v-model="ef[sk.key + '_focus']" class="focus-input form-input" placeholder="Focus…" />
                 </div>
@@ -249,7 +249,7 @@
             <template v-else-if="activeSys === 'achtung'">
               <div class="skills-focus-grid">
                 <div v-for="sk in systemSkills" :key="sk.key" class="focus-skill-row">
-                  <span class="focus-skill-label">{{ sk.label }}</span>
+                  <span class="focus-skill-label">{{ sk.label }}<span v-if="sk.attr" class="yze-attr"> ({{ sk.attr }})</span><span v-if="sk.help" class="field-help" :title="sk.help">?</span></span>
                   <input v-model.number="ef[sk.key]" type="number" min="0" max="3" class="focus-rank-input form-input" placeholder="0" />
                   <input v-model="ef[sk.key + '_focus']" class="focus-input form-input" placeholder="Focus…" />
                 </div>
@@ -257,9 +257,9 @@
             </template>
           </template>
 
-          <!-- Textarea extra fields (Gear & Possessions / Equipment of Note) -->
+          <!-- Textarea extra fields (Gear & Possessions / Equipment of Note / Tiny Items) -->
           <template v-for="f in extraFields.filter(f => f.type === 'textarea')" :key="f.key">
-            <div style="font-size:0.75em;opacity:0.55;margin:16px 0 6px;letter-spacing:.05em;text-transform:uppercase">{{ f.label }}</div>
+            <div style="font-size:0.75em;opacity:0.55;margin:16px 0 6px;letter-spacing:.05em;text-transform:uppercase">{{ f.label }}<span v-if="f.help" class="field-help" style="font-size:0.85em;opacity:1" :title="f.help">?</span></div>
             <textarea v-model="ef[f.key]" class="form-input" style="min-height:64px;resize:vertical;width:100%"></textarea>
           </template>
 
@@ -673,10 +673,17 @@ const conditionHelp = computed(() => {
           : 'Sanity — mental stability for this system.',
     mp:     'Magic Points = POW. Spent to cast spells and resist magical effects. Recovers with rest.',
     mind:   'Mind Points = Wits + Empathy. Lose all Mind Points and suffer a Trauma (permanent unless treated).',
-    rad:    s === 'alien'   ? 'Radiation Sickness. Each point = –1 to all rolls. Reach your STR and you die.'
+    rad:    s === 'alien'   ? 'Radiation Sickness. Each point = –1 to all rolls. Reach your STR score and you die.'
+          : s === 'coriolis'? 'Radiation exposure. Each point = –1 to all rolls. Treated by a Medicurgy roll between scenes.'
           : 'Radiation level — accumulates from environmental hazards.',
   }
 })
+const alienConditionHelp = {
+  starving:    'No food consumed. –1 to all Strength-based rolls. Worsens each day without eating.',
+  dehydrated:  'No water consumed. –2 to all rolls. Worsens rapidly — more dangerous than starvation.',
+  exhausted:   'No sleep or rest. –1 to all rolls. Push rolls are unavailable until you rest.',
+  freezing:    'Exposed to extreme cold. –1 to all rolls. Requires shelter or heated gear to remove.',
+}
 const consumableHelp = {
   cons_air:   'Supply units of breathable air. Reach 0 in a sealed environment and suffocation begins.',
   cons_food:  'Ration units. Reach 0 and gain the Starving condition after one day.',
