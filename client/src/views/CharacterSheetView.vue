@@ -171,7 +171,7 @@
             <div style="display:flex;flex-wrap:wrap;gap:12px">
               <label v-for="f in extraFields.filter(f => f.type === 'boolean')" :key="f.key" class="condition-check">
                 <input type="checkbox" v-model="ef[f.key]" />
-                <span>{{ f.label }}</span>
+                <span>{{ f.label }}<span v-if="f.help" class="field-help" :title="f.help">?</span></span>
               </label>
             </div>
           </template>
@@ -181,7 +181,7 @@
             <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Consumables</div>
             <div class="edit-stats-grid">
               <div v-for="k in ['cons_air','cons_food','cons_water','cons_power']" :key="k" class="field-group">
-                <label>{{ k.split('_')[1].charAt(0).toUpperCase() + k.split('_')[1].slice(1) }}</label>
+                <label>{{ k.split('_')[1].charAt(0).toUpperCase() + k.split('_')[1].slice(1) }}<span class="field-help" :title="consumableHelp[k]">?</span></label>
                 <input v-model.number="ef[k]" type="number" min="0" class="form-input" placeholder="0" />
               </div>
             </div>
@@ -238,7 +238,7 @@
                 <div style="font-size:0.75em;opacity:0.55;margin-bottom:8px;letter-spacing:.05em;text-transform:uppercase">Drives</div>
                 <div class="edit-stats-grid">
                   <div v-for="d in drives" :key="d" class="field-group">
-                    <label>{{ d.charAt(0).toUpperCase() + d.slice(1) }}</label>
+                    <label>{{ d.charAt(0).toUpperCase() + d.slice(1) }}<span class="field-help" :title="driveHelp[d]">?</span></label>
                     <input v-model.number="ef['drv_' + d]" type="number" min="0" max="20" class="form-input" placeholder="0" />
                   </div>
                 </div>
@@ -677,6 +677,19 @@ const conditionHelp = computed(() => {
           : 'Radiation level — accumulates from environmental hazards.',
   }
 })
+const consumableHelp = {
+  cons_air:   'Supply units of breathable air. Reach 0 in a sealed environment and suffocation begins.',
+  cons_food:  'Ration units. Reach 0 and gain the Starving condition after one day.',
+  cons_water: 'Water units. Reach 0 and gain the Dehydrated condition after one day.',
+  cons_power: 'Power cells for equipment. Reach 0 and powered gear stops working.',
+}
+const driveHelp = {
+  duty:    'Commitment to your House or organisation. High Duty means following orders even at personal cost.',
+  faith:   'Belief in a higher power or ideology. High Faith grants inner resolve against fear and temptation.',
+  justice: 'Adherence to fairness and law. High Justice drives you to right wrongs regardless of consequence.',
+  power:   'Desire for influence and control. High Power motivates ruthless ambition and resource acquisition.',
+  truth:   'Pursuit of knowledge and honesty. High Truth compels you to seek facts over convenient fictions.',
+}
 const cocIdea = computed(() => sheet.value?.int ? sheet.value.int * 5 : null)
 const cocKnow = computed(() => sheet.value?.edu ? sheet.value.edu * 5 : null)
 
