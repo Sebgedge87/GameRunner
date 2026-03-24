@@ -10,7 +10,7 @@
         <label>View Player</label>
         <select v-model="selectedUserId" @change="loadSheet">
           <option value="">— Select Player —</option>
-          <option v-for="u in data.users" :key="u.id" :value="u.id">{{ u.username }}</option>
+          <option v-for="u in data.users.filter(u => u.role !== 'gm')" :key="u.id" :value="u.id">{{ u.username }}</option>
         </select>
       </div>
     </div>
