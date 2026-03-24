@@ -72,7 +72,7 @@
               <input v-model="ef.concept" class="form-input" placeholder="One-line character concept…" />
             </div>
             <!-- System-specific identity fields -->
-            <template v-for="f in extraFields.filter(f => !['buddy_1','buddy_2','buddy_3','buddy_4','major_wound','temp_insanity','indef_insanity','gear','equipment_note','cons_air','cons_food','cons_water','cons_power','tiny_items'].includes(f.key))" :key="f.key">
+            <template v-for="f in extraFields.filter(f => !f.section && !['buddy_1','buddy_2','buddy_3','buddy_4','major_wound','temp_insanity','indef_insanity','unconscious','dying','gear','equipment_note','cons_air','cons_food','cons_water','cons_power','tiny_items'].includes(f.key))" :key="f.key">
               <div class="field-group">
                 <label>{{ f.label }}<span v-if="f.help" class="field-help" :data-tooltip="f.help">?</span></label>
                 <select v-if="f.type === 'select'" v-model="ef[f.key]" class="form-input">
@@ -84,6 +84,23 @@
               </div>
             </template>
           </div>
+
+          <!-- Fellow Investigators (CoC) -->
+          <template v-if="activeSys === 'coc'">
+            <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Fellow Investigators</div>
+            <div class="coc-fellow-grid">
+              <template v-for="n in [1,2,3,4]" :key="n">
+                <div class="field-group">
+                  <label>Char. {{ n }}</label>
+                  <input v-model="ef['fellow_' + n + '_name']" class="form-input" placeholder="Character name…" />
+                </div>
+                <div class="field-group">
+                  <label>Player {{ n }}</label>
+                  <input v-model="ef['fellow_' + n + '_player']" class="form-input" placeholder="Player name…" />
+                </div>
+              </template>
+            </div>
+          </template>
 
           <!-- Relationships (Coriolis buddy slots) -->
           <template v-if="activeSys === 'coriolis'">
@@ -258,9 +275,25 @@
           </template>
 
           <!-- Textarea extra fields (Gear & Possessions / Equipment of Note / Tiny Items) -->
-          <template v-for="f in extraFields.filter(f => f.type === 'textarea')" :key="f.key">
+          <template v-for="f in extraFields.filter(f => f.type === 'textarea' && !f.section)" :key="f.key">
             <div style="font-size:0.75em;opacity:0.55;margin:16px 0 6px;letter-spacing:.05em;text-transform:uppercase">{{ f.label }}<span v-if="f.help" class="field-help" style="font-size:0.85em;opacity:1" :data-tooltip="f.help">?</span></div>
             <textarea v-model="ef[f.key]" class="form-input" style="min-height:64px;resize:vertical;width:100%"></textarea>
+          </template>
+
+          <!-- CoC Backstory section -->
+          <template v-if="activeSys === 'coc'">
+            <div style="font-size:0.75em;opacity:0.55;margin:20px 0 8px;letter-spacing:.05em;text-transform:uppercase">My Story</div>
+            <textarea v-model="ef.story" class="form-input" style="min-height:72px;resize:vertical;width:100%" placeholder="The narrative of your investigator's life…"></textarea>
+
+            <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Backstory</div>
+            <div class="coc-backstory-grid">
+              <template v-for="f in extraFields.filter(f => f.section === 'backstory' && f.type !== 'textarea')" :key="f.key">
+                <div class="field-group">
+                  <label>{{ f.label }}<span v-if="f.help" class="field-help" :data-tooltip="f.help">?</span></label>
+                  <input v-model="ef[f.key]" class="form-input" />
+                </div>
+              </template>
+            </div>
           </template>
 
           <!-- Talents / Abilities (comma-separated, shown when no system skills or for custom) -->
@@ -351,6 +384,7 @@
       <template v-if="hasBuiltinSheet">
         <!-- Character Header -->
         <div class="card" style="margin-bottom:16px">
+          <div v-if="cocEraLabel" class="coc-era-banner">{{ cocEraLabel }} Investigator</div>
           <div class="card-body" style="display:flex;gap:20px;align-items:flex-start">
             <div v-if="sheet.portrait_url" style="flex-shrink:0">
               <img :src="sheet.portrait_url" alt="Portrait" style="width:80px;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--border)" />
@@ -364,9 +398,9 @@
                 <span v-if="sheet.background" class="tag">{{ sheet.background }}</span>
               </div>
               <div v-if="sheet.concept" style="font-size:0.85em;opacity:0.7;margin-top:8px;font-style:italic">{{ sheet.concept }}</div>
-              <!-- System-specific identity extras (non-boolean, non-textarea) -->
+              <!-- System-specific identity extras (non-boolean, non-textarea, non-section) -->
               <div v-if="extraFields.length" style="display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px">
-                <span v-for="f in extraFields.filter(f => sheet[f.key] && !['boolean','textarea'].includes(f.type) && !['buddy_1','buddy_2','buddy_3','buddy_4'].includes(f.key))"
+                <span v-for="f in extraFields.filter(f => sheet[f.key] && !['boolean','textarea'].includes(f.type) && !f.section && !['buddy_1','buddy_2','buddy_3','buddy_4'].includes(f.key))"
                       :key="f.key" style="font-size:0.8em;opacity:0.65">
                   <span style="opacity:0.6">{{ f.label }}:</span> {{ sheet[f.key] }}
                 </span>
@@ -560,13 +594,71 @@
           </div>
         </div>
 
+        <!-- CoC Derived Stats (Damage Bonus, Build, Move) -->
+        <div v-if="activeSys === 'coc' && (sheet.str != null || sheet.siz != null)" class="card" style="margin-bottom:16px">
+          <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">DERIVED STATS</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px">
+            <div class="stat-box">
+              <div class="stat-label">Dmg Bonus</div>
+              <div class="stat-value">{{ cocDamageBonus }}</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Build</div>
+              <div class="stat-value">{{ cocBuild }}</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Move</div>
+              <div class="stat-value">{{ cocMove }}</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Dodge</div>
+              <div class="stat-value">{{ sheet.sk_dodge ?? (sheet.dex ? sheet.dex * 2 : '—') }}%</div>
+            </div>
+          </div>
+        </div>
+
         <!-- Textarea extra fields (Gear & Possessions / Equipment of Note) -->
-        <template v-for="f in extraFields.filter(f => f.type === 'textarea' && sheet[f.key])" :key="f.key">
+        <template v-for="f in extraFields.filter(f => f.type === 'textarea' && !f.section && sheet[f.key])" :key="f.key">
           <div class="card" style="margin-bottom:16px">
             <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">{{ f.label.toUpperCase() }}</div>
             <div class="prose" style="font-size:0.85em;opacity:0.8;line-height:1.6" v-html="renderMd(sheet[f.key])"></div>
           </div>
         </template>
+
+        <!-- CoC My Story -->
+        <div v-if="activeSys === 'coc' && sheet.story" class="card" style="margin-bottom:16px">
+          <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">MY STORY</div>
+          <div class="prose" style="font-size:0.85em;opacity:0.8;line-height:1.6" v-html="renderMd(sheet.story)"></div>
+        </div>
+
+        <!-- CoC Backstory fields -->
+        <template v-if="activeSys === 'coc' && extraFields.some(f => f.section === 'backstory' && f.type !== 'textarea' && sheet[f.key])">
+          <div class="card" style="margin-bottom:16px">
+            <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">BACKSTORY</div>
+            <div class="coc-backstory-view-grid">
+              <template v-for="f in extraFields.filter(f => f.section === 'backstory' && f.type !== 'textarea' && sheet[f.key])" :key="f.key">
+                <div class="coc-bv-item">
+                  <div class="coc-bv-label">{{ f.label }}</div>
+                  <div class="coc-bv-value">{{ sheet[f.key] }}</div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
+
+        <!-- CoC Fellow Investigators -->
+        <div v-if="activeSys === 'coc' && [1,2,3,4].some(n => sheet['fellow_' + n + '_name'] || sheet['fellow_' + n + '_player'])" class="card" style="margin-bottom:16px">
+          <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">FELLOW INVESTIGATORS</div>
+          <div class="coc-fellow-view">
+            <template v-for="n in [1,2,3,4]" :key="n">
+              <div v-if="sheet['fellow_' + n + '_name'] || sheet['fellow_' + n + '_player']" class="coc-fellow-row">
+                <span class="coc-fellow-char">{{ sheet['fellow_' + n + '_name'] || '—' }}</span>
+                <span class="coc-fellow-sep">·</span>
+                <span class="coc-fellow-player">{{ sheet['fellow_' + n + '_player'] || '—' }}</span>
+              </div>
+            </template>
+          </div>
+        </div>
 
         <!-- Notes / Backstory -->
         <div v-if="sheet.notes || sheet.backstory" class="card" style="margin-bottom:16px">
@@ -646,7 +738,7 @@ const auth = useAuthStore()
 const campaign = useCampaignStore()
 const ui = useUiStore()
 const {
-  hasStress, hasSanity, hasDndBeyond, hasBuiltinSheet, coreStats,
+  hasStress, hasSanity, hasDndBeyond, hasBuiltinSheet, coreStats, cocEraLabel,
   hasMagicPoints, hasMindPoints, hasConditions, hasRadiation, hasDrives,
   extraFields, systemSkills, conditions, drives,
 } = useSystemFeatures()
@@ -699,6 +791,43 @@ const driveHelp = {
 }
 const cocIdea = computed(() => sheet.value?.int ? sheet.value.int * 5 : null)
 const cocKnow = computed(() => sheet.value?.edu ? sheet.value.edu * 5 : null)
+const cocBuildRaw = computed(() => {
+  const s = sheet.value; if (!s) return null
+  const total = (s.str ?? 0) + (s.siz ?? 0)
+  if (total <= 12)  return -2
+  if (total <= 16)  return -1
+  if (total <= 24)  return 0
+  if (total <= 32)  return 1
+  if (total <= 40)  return 2
+  return Math.floor((total - 40) / 8) + 2
+})
+const cocBuild = computed(() => {
+  const b = cocBuildRaw.value; if (b === null) return '—'
+  return b >= 0 ? '+' + b : String(b)
+})
+const cocDamageBonus = computed(() => {
+  const b = cocBuildRaw.value; if (b === null) return '—'
+  if (b <= -2) return '-2'
+  if (b === -1) return '-1'
+  if (b === 0)  return 'None'
+  if (b === 1)  return '+1d4'
+  if (b === 2)  return '+1d6'
+  if (b === 3)  return '+1d8'
+  if (b === 4)  return '+1d10'
+  return '+2d6'
+})
+const cocMove = computed(() => {
+  const s = sheet.value; if (!s) return '—'
+  const str = s.str ?? 0, dex = s.dex ?? 0, siz = s.siz ?? 0
+  let move = (str < siz && dex < siz) ? 7 : (str > siz && dex > siz) ? 9 : 8
+  const age = s.age ?? 0
+  if (age >= 80) move -= 5
+  else if (age >= 70) move -= 4
+  else if (age >= 60) move -= 3
+  else if (age >= 50) move -= 2
+  else if (age >= 40) move -= 1
+  return Math.max(1, move)
+})
 
 const sheet = ref(null)
 const ships = ref([])
@@ -1211,4 +1340,67 @@ onMounted(() => {
   cursor: pointer;
 }
 .condition-check input { accent-color: var(--accent, #c9a84c); }
+
+/* ── CoC era banner ──────────────────────────────────── */
+.coc-era-banner {
+  font-size: 0.68em;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent, #b8a060);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+  margin-bottom: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  opacity: 0.8;
+}
+
+/* ── CoC fellow investigators grid (edit mode) ───────── */
+.coc-fellow-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+@media (max-width: 480px) {
+  .coc-fellow-grid { grid-template-columns: 1fr; }
+}
+
+/* ── CoC backstory grid (edit mode) ─────────────────── */
+.coc-backstory-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+@media (max-width: 540px) {
+  .coc-backstory-grid { grid-template-columns: 1fr; }
+}
+
+/* ── CoC backstory view grid ─────────────────────────── */
+.coc-backstory-view-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 20px;
+}
+@media (max-width: 540px) {
+  .coc-backstory-view-grid { grid-template-columns: 1fr; }
+}
+.coc-bv-item { display: flex; flex-direction: column; gap: 2px; }
+.coc-bv-label {
+  font-size: 0.68em;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.45;
+}
+.coc-bv-value { font-size: 0.87em; opacity: 0.9; line-height: 1.4; }
+
+/* ── CoC fellow investigators view ───────────────────── */
+.coc-fellow-view { display: flex; flex-direction: column; gap: 6px; }
+.coc-fellow-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.87em;
+}
+.coc-fellow-char  { font-weight: 600; color: var(--accent, #b8a060); }
+.coc-fellow-sep   { opacity: 0.35; }
+.coc-fellow-player{ opacity: 0.65; }
 </style>

@@ -1,6 +1,14 @@
 import { computed } from 'vue'
 import { useCampaignStore } from '@/stores/campaign'
 
+export const COC_ERAS = [
+  { key: '1920s',     label: '1920s Era',           hint: 'e.g. March 14, 1923' },
+  { key: 'modern',    label: 'Modern Era',           hint: 'e.g. October 31, 2024' },
+  { key: 'delta',     label: 'Delta Green',          hint: 'e.g. November 3, 2024' },
+  { key: 'gaslight',  label: 'Victorian / Gaslight', hint: 'e.g. 12 April 1890' },
+  { key: 'dark_ages', label: 'Dark Ages',            hint: 'e.g. Autumn 1217 AD' },
+]
+
 // Per-system feature flags — controls which mechanics are visible in the UI.
 const SYSTEM_FEATURES = {
   dnd5e: {
@@ -29,15 +37,43 @@ const SYSTEM_FEATURES = {
       { key: 'luck', label: 'Luck', help: 'Starting luck pool. Spend points to flip dice rolls or avoid misfortune.' },
     ],
     extraFields: [
-      { key: 'age',           label: 'Age',                type: 'number',   help: 'Older investigators have more skills; younger ones have more skill points to spend.' },
-      { key: 'birthplace',    label: 'Birthplace',         type: 'text'    },
-      { key: 'pronoun',       label: 'Pronoun',            type: 'text'    },
-      { key: 'residence',     label: 'Residence',          type: 'text'    },
-      { key: 'assets',        label: 'Assets',             type: 'text',    help: 'Cash, property and valuables. Ties into Credit Rating for social situations.' },
-      { key: 'gear',          label: 'Gear & Possessions', type: 'textarea' },
-      { key: 'major_wound',   label: 'Major Wound',        type: 'boolean', help: 'Took ≥ half max HP in a single hit. Must make a CON roll or fall unconscious. Healing takes weeks.' },
-      { key: 'temp_insanity', label: 'Temporary Insanity', type: 'boolean', help: 'Lost 5+ Sanity in one roll. Triggers a bout of madness (1d10 rounds or hours). Recovers naturally.' },
-      { key: 'indef_insanity',label: 'Indefinite Insanity',type: 'boolean', help: 'Lost ≥ 1/5 max Sanity in one session. Requires therapy to recover. May develop a permanent phobia or mania.' },
+      // Identity (shown in generic edit grid)
+      { key: 'age',            label: 'Age',            type: 'number', help: 'Older investigators have more skills; younger ones have more skill points to spend.' },
+      { key: 'birthplace',     label: 'Birthplace',     type: 'text' },
+      { key: 'pronoun',        label: 'Pronoun',        type: 'text' },
+      { key: 'residence',      label: 'Residence',      type: 'text' },
+      // Wealth (shown in generic edit grid)
+      { key: 'assets',         label: 'Assets',         type: 'text', help: 'Cash, property and valuables. Ties into Credit Rating for social situations.' },
+      { key: 'spending_level', label: 'Spending Level', type: 'text', help: 'Lifestyle bracket: Poor, Average, Affluent, Wealthy. Determines what purchases are trivial.' },
+      // Status (boolean — rendered in Status section)
+      { key: 'major_wound',    label: 'Major Wound',        type: 'boolean', help: 'Took ≥ half max HP in a single hit. Must make a CON roll or fall unconscious. Healing takes weeks.' },
+      { key: 'temp_insanity',  label: 'Temporary Insanity', type: 'boolean', help: 'Lost 5+ Sanity in one roll. Triggers a bout of madness (1d10 rounds or hours). Recovers naturally.' },
+      { key: 'indef_insanity', label: 'Indefinite Insanity',type: 'boolean', help: 'Lost ≥ 1/5 max Sanity in one session. Requires therapy to recover. May develop a permanent phobia or mania.' },
+      { key: 'unconscious',    label: 'Unconscious',        type: 'boolean', help: 'HP reached 0 or a major wound CON roll failed. Revive with First Aid.' },
+      { key: 'dying',          label: 'Dying',              type: 'boolean', help: 'HP = 1 or 2. Will die in 1d6 rounds without successful First Aid.' },
+      // Gear (textarea — handled via generic textarea loop)
+      { key: 'gear',           label: 'Gear & Possessions', type: 'textarea' },
+      // Backstory fields (section: 'backstory' — CoC-specific sections below skills)
+      { key: 'story',                 label: 'My Story',                      type: 'textarea', section: 'backstory', help: 'The narrative of your investigator\'s life before this investigation.' },
+      { key: 'personal_description',  label: 'Personal Description',          type: 'text',     section: 'backstory' },
+      { key: 'traits',                label: 'Traits',                        type: 'text',     section: 'backstory', help: 'Mannerisms and personality quirks that define how others see you.' },
+      { key: 'ideology_beliefs',      label: 'Ideology & Beliefs',            type: 'text',     section: 'backstory', help: 'What your investigator believes in — religion, politics, philosophy.' },
+      { key: 'injuries_scars',        label: 'Injuries & Scars',              type: 'text',     section: 'backstory', help: 'Old wounds and the stories behind them.' },
+      { key: 'significant_people',    label: 'Significant People',            type: 'text',     section: 'backstory', help: 'Who matters most, and why.' },
+      { key: 'phobias_manias',        label: 'Phobias & Manias',              type: 'text',     section: 'backstory', help: 'Irrational fears or compulsions, possibly gained from SAN loss.' },
+      { key: 'meaningful_locations',  label: 'Meaningful Locations',          type: 'text',     section: 'backstory', help: 'Places that hold special significance for your investigator.' },
+      { key: 'arcane_tomes',          label: 'Arcane Tomes & Spells',         type: 'text',     section: 'backstory', help: 'Mythos tomes read; spells known. Each tome raises Cthulhu Mythos.' },
+      { key: 'treasured_possessions', label: 'Treasured Possessions',         type: 'text',     section: 'backstory' },
+      { key: 'strange_encounters',    label: 'Encounters with Strange Entities', type: 'text',  section: 'backstory', help: 'Brushes with the Mythos that left a mark.' },
+      // Fellow Investigators (section: 'fellow' — CoC-specific section)
+      { key: 'fellow_1_name',   label: 'Fellow 1 Char',   type: 'text', section: 'fellow' },
+      { key: 'fellow_1_player', label: 'Fellow 1 Player', type: 'text', section: 'fellow' },
+      { key: 'fellow_2_name',   label: 'Fellow 2 Char',   type: 'text', section: 'fellow' },
+      { key: 'fellow_2_player', label: 'Fellow 2 Player', type: 'text', section: 'fellow' },
+      { key: 'fellow_3_name',   label: 'Fellow 3 Char',   type: 'text', section: 'fellow' },
+      { key: 'fellow_3_player', label: 'Fellow 3 Player', type: 'text', section: 'fellow' },
+      { key: 'fellow_4_name',   label: 'Fellow 4 Char',   type: 'text', section: 'fellow' },
+      { key: 'fellow_4_player', label: 'Fellow 4 Player', type: 'text', section: 'fellow' },
     ],
     systemSkills: [
       { key: 'sk_accounting',    label: 'Accounting',           base: 5  },
@@ -287,6 +323,15 @@ export function useSystemFeatures() {
     const sys = campaign.activeCampaign?.system
     return SYSTEM_FEATURES[sys] ?? DEFAULTS
   })
+  const cocEra = computed(() => {
+    if (activeSys.value !== 'coc') return null
+    return campaign.activeCampaign?.coc_era || '1920s'
+  })
+  const cocEraLabel = computed(() => {
+    if (!cocEra.value) return ''
+    return COC_ERAS.find(e => e.key === cocEra.value)?.label || '1920s Era'
+  })
+
   return {
     hasStress:       computed(() => features.value.hasStress),
     hasSanity:       computed(() => features.value.hasSanity),
@@ -306,5 +351,7 @@ export function useSystemFeatures() {
     systemSkills:    computed(() => features.value.systemSkills    ?? []),
     conditions:      computed(() => features.value.conditions      ?? []),
     drives:          computed(() => features.value.drives          ?? []),
+    cocEra,
+    cocEraLabel,
   }
 }

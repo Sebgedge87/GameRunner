@@ -83,6 +83,21 @@
             </div>
           </div>
         </div>
+        <!-- CoC Era selector (only shown when CoC system is chosen) -->
+        <div v-if="cc.system === 'coc'" class="form-group">
+          <label>Era / Setting</label>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px">
+            <div
+              v-for="era in COC_ERAS"
+              :key="era.key"
+              class="sys-tile"
+              :class="{ selected: cc.coc_era === era.key }"
+              @click="cc.coc_era = era.key"
+            >
+              <div class="sys-tile-name" style="font-size:0.82em;text-align:center;padding:4px 0">{{ era.label }}</div>
+            </div>
+          </div>
+        </div>
         <div class="form-group"><label>Max Players</label><input v-model.number="cc.max_players" class="form-input" type="number" min="1" max="20" /></div>
         <div class="form-group"><label>Invite Code (optional)</label>
           <div style="display:flex;gap:8px">
@@ -110,6 +125,7 @@ import { useRouter } from 'vue-router'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
 import { useDataStore } from '@/stores/data'
+import { COC_ERAS } from '@/composables/useSystemFeatures'
 
 const campaign = useCampaignStore()
 const ui = useUiStore()
@@ -122,7 +138,7 @@ const showCreateModal = ref(false)
 const creating = ref(false)
 const createError = ref('')
 const cc = reactive({
-  name: '', subtitle: '', system: 'dnd5e', max_players: 4, invite_code: '', description: '', playlist_url: ''
+  name: '', subtitle: '', system: 'dnd5e', coc_era: '1920s', max_players: 4, invite_code: '', description: '', playlist_url: ''
 })
 
 function systemMeta(sys) {
