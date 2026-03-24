@@ -34,7 +34,7 @@
                     <th>PLAYER</th>
                     <th>ROLE</th>
                     <th>XP</th>
-                    <th>STRESS / SANITY</th>
+                    <th v-if="hasStress || hasSanity">{{ hasStress && hasSanity ? 'STRESS / SANITY' : hasStress ? 'STRESS' : 'SANITY' }}</th>
                     <th>ACTIONS</th>
                   </tr>
                 </thead>
@@ -52,10 +52,10 @@
                       <span class="xp-total">{{ xpMap[u.id]?.total ?? 0 }}</span>
                       <span v-if="xpMap[u.id]?.level" class="xp-level">Lvl {{ xpMap[u.id].level }}</span>
                     </td>
-                    <td>
+                    <td v-if="hasStress || hasSanity">
                       <div class="stress-cell">
-                        <input v-model.number="stressEdits[u.id].stress" type="number" class="form-input stress-input" placeholder="str" />
-                        <input v-model.number="stressEdits[u.id].sanity" type="number" class="form-input stress-input" placeholder="san" />
+                        <input v-if="hasStress" v-model.number="stressEdits[u.id].stress" type="number" class="form-input stress-input" placeholder="str" />
+                        <input v-if="hasSanity" v-model.number="stressEdits[u.id].sanity" type="number" class="form-input stress-input" placeholder="san" />
                         <button class="btn btn-sm" @click="saveStress(u.id)">Set</button>
                       </div>
                     </td>
@@ -298,11 +298,13 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
+import { useSystemFeatures } from '@/composables/useSystemFeatures'
 import QuestCard from '@/components/QuestCard.vue'
 
 const data = useDataStore()
 const campaign = useCampaignStore()
 const ui = useUiStore()
+const { hasStress, hasSanity } = useSystemFeatures()
 
 const expandedId = ref(null)
 function toggleExpand(id) { expandedId.value = expandedId.value === id ? null : id }

@@ -33,32 +33,28 @@
       <div v-else class="agenda-body">{{ data.agenda.body || data.agenda.title }}</div>
     </div>
 
-    <!-- Stress/Sanity bar (player only) -->
-    <div v-if="data.stress && !campaign.isGm" class="stress-wrap">
-      <template v-if="['alien','coriolis'].includes(campaign.activeCampaign?.system)">
-        <div class="stress-col">
-          <div class="stress-bar-label">
-            <span>Stress</span>
-            <span>{{ data.stress.stress }}/{{ data.stress.stress_max }}</span>
-          </div>
-          <div class="stress-track">
-            <div class="stress-fill" :style="`width:${stressPct}%;background:${stressPct > 70 ? 'var(--red)' : stressPct > 40 ? '#c9a84c' : 'var(--green)'}`"></div>
-          </div>
+    <!-- Stress/Sanity bar (player only, system-dependent) -->
+    <div v-if="data.stress && !campaign.isGm && (hasStress || hasSanity)" class="stress-wrap">
+      <div v-if="hasStress" class="stress-col">
+        <div class="stress-bar-label">
+          <span>Stress</span>
+          <span>{{ data.stress.stress }}/{{ data.stress.stress_max }}</span>
         </div>
-      </template>
-      <template v-if="['coc','achtung'].includes(campaign.activeCampaign?.system)">
-        <div class="stress-col">
-          <div class="stress-bar-label">
-            <span>Sanity</span>
-            <span>{{ data.stress.sanity }}/{{ data.stress.sanity_max }}
-              <span v-if="data.stress.indefinite_insanity" class="sanity-critical">INDEFINITE</span>
-            </span>
-          </div>
-          <div class="stress-track">
-            <div class="stress-fill" :style="`width:${sanityPct}%;background:${sanityPct > 60 ? 'var(--green)' : sanityPct > 30 ? '#c9a84c' : 'var(--red)'}`"></div>
-          </div>
+        <div class="stress-track">
+          <div class="stress-fill" :style="`width:${stressPct}%;background:${stressPct > 70 ? 'var(--red)' : stressPct > 40 ? '#c9a84c' : 'var(--green)'}`"></div>
         </div>
-      </template>
+      </div>
+      <div v-if="hasSanity" class="stress-col">
+        <div class="stress-bar-label">
+          <span>Sanity</span>
+          <span>{{ data.stress.sanity }}/{{ data.stress.sanity_max }}
+            <span v-if="data.stress.indefinite_insanity" class="sanity-critical">INDEFINITE</span>
+          </span>
+        </div>
+        <div class="stress-track">
+          <div class="stress-fill" :style="`width:${sanityPct}%;background:${sanityPct > 60 ? 'var(--green)' : sanityPct > 30 ? '#c9a84c' : 'var(--red)'}`"></div>
+        </div>
+      </div>
     </div>
 
     <!-- Pinned items -->
@@ -193,6 +189,7 @@ import { useRouter } from 'vue-router'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
 import { useDataStore } from '@/stores/data'
+import { useSystemFeatures } from '@/composables/useSystemFeatures'
 import PlaylistPlayer from '@/components/PlaylistPlayer.vue'
 import QuestCard from '@/components/QuestCard.vue'
 
@@ -200,6 +197,7 @@ const campaign = useCampaignStore()
 const ui = useUiStore()
 const data = useDataStore()
 const router = useRouter()
+const { hasStress, hasSanity } = useSystemFeatures()
 
 const expandedId = ref(null)
 function toggleExpand(id) { expandedId.value = expandedId.value === id ? null : id }
