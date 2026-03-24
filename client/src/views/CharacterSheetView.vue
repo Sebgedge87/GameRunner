@@ -65,8 +65,8 @@
               <input v-model="ef.concept" class="form-input" placeholder="One-line character concept…" />
             </div>
             <!-- System-specific identity fields -->
-            <template v-for="f in extraFields" :key="f.key">
-              <div v-if="f.type !== 'text' || !['buddy_1','buddy_2','buddy_3','buddy_4'].includes(f.key)" class="field-group">
+            <template v-for="f in extraFields.filter(f => !['buddy_1','buddy_2','buddy_3','buddy_4','major_wound','temp_insanity','indef_insanity','gear','equipment_note'].includes(f.key))" :key="f.key">
+              <div class="field-group">
                 <label>{{ f.label }}</label>
                 <select v-if="f.type === 'select'" v-model="ef[f.key]" class="form-input">
                   <option value="">— choose —</option>
@@ -150,6 +150,28 @@
             </div>
           </template>
 
+          <!-- Status flags (boolean extra fields — CoC wound/insanity) -->
+          <template v-if="extraFields.some(f => f.type === 'boolean')">
+            <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Status</div>
+            <div style="display:flex;flex-wrap:wrap;gap:12px">
+              <label v-for="f in extraFields.filter(f => f.type === 'boolean')" :key="f.key" class="condition-check">
+                <input type="checkbox" v-model="ef[f.key]" />
+                <span>{{ f.label }}</span>
+              </label>
+            </div>
+          </template>
+
+          <!-- ALIEN Consumables section -->
+          <template v-if="activeSys === 'alien'">
+            <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Consumables</div>
+            <div class="edit-stats-grid">
+              <div v-for="k in ['cons_air','cons_food','cons_water','cons_power']" :key="k" class="field-group">
+                <label>{{ k.split('_')[1].charAt(0).toUpperCase() + k.split('_')[1].slice(1) }}</label>
+                <input v-model.number="ef[k]" type="number" min="0" class="form-input" placeholder="0" />
+              </div>
+            </div>
+          </template>
+
           <!-- System Skills -->
           <template v-if="systemSkills.length">
             <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Skills</div>
@@ -220,6 +242,12 @@
             </template>
           </template>
 
+          <!-- Textarea extra fields (Gear & Possessions / Equipment of Note) -->
+          <template v-for="f in extraFields.filter(f => f.type === 'textarea')" :key="f.key">
+            <div style="font-size:0.75em;opacity:0.55;margin:16px 0 6px;letter-spacing:.05em;text-transform:uppercase">{{ f.label }}</div>
+            <textarea v-model="ef[f.key]" class="form-input" style="min-height:64px;resize:vertical;width:100%"></textarea>
+          </template>
+
           <!-- Talents / Abilities (comma-separated, shown when no system skills or for custom) -->
           <div class="edit-grid" style="margin-top:4px">
             <div v-if="!systemSkills.length" class="field-group" style="grid-column:1/-1">
@@ -239,6 +267,37 @@
               <textarea v-model="ef.notes" class="form-input" style="min-height:60px;resize:vertical"></textarea>
             </div>
           </div>
+        </template>
+
+        <!-- Weapons table -->
+        <template v-if="hasBuiltinSheet && hasWeaponsSection">
+          <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Weapons</div>
+          <div style="overflow-x:auto">
+            <table class="weapons-table" v-if="ef.weapons?.length">
+              <thead>
+                <tr>
+                  <th v-for="col in weaponCols" :key="col">{{ col.charAt(0).toUpperCase() + col.slice(1) }}</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(w, i) in ef.weapons" :key="i">
+                  <td v-for="col in weaponCols" :key="col">
+                    <input v-model="w[col]" class="form-input" style="min-width:80px" />
+                  </td>
+                  <td><button class="btn" style="padding:2px 8px;font-size:0.8em;opacity:.6" @click="removeWeapon(i)">✕</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <button class="btn" style="margin-top:6px;font-size:0.82em" @click="addWeapon">+ Add Weapon</button>
+        </template>
+
+        <!-- Critical Injuries (ALIEN / Coriolis) -->
+        <template v-if="activeSys === 'alien' || activeSys === 'coriolis'">
+          <div style="font-size:0.75em;opacity:0.55;margin:16px 0 6px;letter-spacing:.05em;text-transform:uppercase">Critical Injuries</div>
+          <textarea v-model="ef.critical_injuries" class="form-input" style="min-height:60px;resize:vertical;width:100%"
+                    placeholder="List critical injuries…"></textarea>
         </template>
 
         <!-- Portrait URL (all systems) -->
@@ -290,12 +349,17 @@
                 <span v-if="sheet.background" class="tag">{{ sheet.background }}</span>
               </div>
               <div v-if="sheet.concept" style="font-size:0.85em;opacity:0.7;margin-top:8px;font-style:italic">{{ sheet.concept }}</div>
-              <!-- System-specific identity extras -->
+              <!-- System-specific identity extras (non-boolean, non-textarea) -->
               <div v-if="extraFields.length" style="display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px">
-                <span v-for="f in extraFields.filter(f => sheet[f.key] && !['buddy_1','buddy_2','buddy_3','buddy_4'].includes(f.key))" :key="f.key"
-                      style="font-size:0.8em;opacity:0.65">
+                <span v-for="f in extraFields.filter(f => sheet[f.key] && !['boolean','textarea'].includes(f.type) && !['buddy_1','buddy_2','buddy_3','buddy_4'].includes(f.key))"
+                      :key="f.key" style="font-size:0.8em;opacity:0.65">
                   <span style="opacity:0.6">{{ f.label }}:</span> {{ sheet[f.key] }}
                 </span>
+              </div>
+              <!-- Active boolean status flags -->
+              <div v-if="extraFields.some(f => f.type === 'boolean' && sheet[f.key])" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">
+                <span v-for="f in extraFields.filter(f => f.type === 'boolean' && sheet[f.key])" :key="f.key"
+                      class="tag tag-inactive" style="font-size:0.78em">{{ f.label }}</span>
               </div>
             </div>
           </div>
@@ -308,6 +372,9 @@
             <div v-for="stat in coreStats" :key="stat.key" v-show="sheet[stat.key] != null" class="stat-box">
               <div class="stat-label">{{ stat.label }}</div>
               <div class="stat-value">{{ sheet[stat.key] ?? '—' }}</div>
+              <!-- Achtung! Bonus Damage = floor(rating / 2) -->
+              <div v-if="activeSys === 'achtung' && sheet[stat.key] != null"
+                   style="font-size:0.65em;opacity:0.5;margin-top:2px">BD {{ Math.floor(sheet[stat.key] / 2) }}</div>
             </div>
           </div>
         </div>
@@ -453,11 +520,55 @@
           </div>
         </div>
 
+        <!-- ALIEN consumables -->
+        <div v-if="activeSys === 'alien'" class="card" style="margin-bottom:16px">
+          <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">CONSUMABLES</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;text-align:center">
+            <div v-for="k in ['cons_air','cons_food','cons_water','cons_power']" :key="k" class="stat-box">
+              <div class="stat-label">{{ k.split('_')[1].toUpperCase() }}</div>
+              <div class="stat-value">{{ sheet[k] ?? '—' }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Textarea extra fields (Gear & Possessions / Equipment of Note) -->
+        <template v-for="f in extraFields.filter(f => f.type === 'textarea' && sheet[f.key])" :key="f.key">
+          <div class="card" style="margin-bottom:16px">
+            <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">{{ f.label.toUpperCase() }}</div>
+            <div class="prose" style="font-size:0.85em;opacity:0.8;line-height:1.6" v-html="renderMd(sheet[f.key])"></div>
+          </div>
+        </template>
+
         <!-- Notes / Backstory -->
         <div v-if="sheet.notes || sheet.backstory" class="card" style="margin-bottom:16px">
           <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">NOTES</div>
           <div v-if="sheet.backstory" class="prose" style="font-size:0.85em;opacity:0.8;margin-bottom:10px;line-height:1.6" v-html="renderMd(sheet.backstory)"></div>
           <div v-if="sheet.notes" class="prose" style="font-size:0.85em;opacity:0.7;line-height:1.6" v-html="renderMd(sheet.notes)"></div>
+        </div>
+
+        <!-- Weapons view -->
+        <div v-if="sheet.weapons?.length" class="card" style="margin-bottom:16px">
+          <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">WEAPONS</div>
+          <div style="overflow-x:auto">
+            <table class="weapons-table weapons-table--view">
+              <thead>
+                <tr>
+                  <th v-for="col in weaponCols" :key="col">{{ col.charAt(0).toUpperCase() + col.slice(1) }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(w, i) in sheet.weapons" :key="i">
+                  <td v-for="col in weaponCols" :key="col">{{ w[col] || '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Critical Injuries view (ALIEN / Coriolis) -->
+        <div v-if="sheet.critical_injuries" class="card" style="margin-bottom:16px">
+          <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">CRITICAL INJURIES</div>
+          <div class="prose" style="font-size:0.85em;opacity:0.8;line-height:1.6" v-html="renderMd(sheet.critical_injuries)"></div>
         </div>
 
         <!-- Ships / Vehicles -->
@@ -569,7 +680,9 @@ function startEdit() {
   }
   // Extra system-specific identity fields
   extraFields.value.forEach(f => {
-    ef.value[f.key] = s[f.key] ?? (f.type === 'number' ? null : '')
+    if (f.type === 'boolean') ef.value[f.key] = s[f.key] ?? false
+    else if (f.type === 'number') ef.value[f.key] = s[f.key] ?? null
+    else ef.value[f.key] = s[f.key] ?? ''
   })
   // System skills
   systemSkills.value.forEach(sk => {
@@ -586,6 +699,10 @@ function startEdit() {
   drives.value.forEach(d => {
     ef.value['drv_' + d] = s['drv_' + d] ?? null
   })
+  // Weapons
+  ef.value.weapons = (s.weapons || []).map(w => ({ ...w }))
+  // Critical injuries (ALIEN / Coriolis)
+  ef.value.critical_injuries = s.critical_injuries || ''
   editing.value = true
   saveError.value = ''
 }
@@ -618,6 +735,24 @@ const mindPercent = computed(() => {
 function hullPercent(ship) {
   if (!ship.hull_max) return 0
   return Math.round(((ship.hull_current ?? ship.hull_max) / ship.hull_max) * 100)
+}
+
+// Weapon columns per system
+const weaponCols = computed(() => {
+  if (activeSys.value === 'coc')    return ['name','damage','range','attacks','ammo']
+  if (activeSys.value === 'achtung') return ['name','focus','range','damage','keywords']
+  return ['name','bonus','damage','range']           // ALIEN / Coriolis / default
+})
+const hasWeaponsSection = computed(() =>
+  ['coc','alien','coriolis','achtung','custom'].includes(activeSys.value)
+)
+function addWeapon() {
+  const row = {}
+  weaponCols.value.forEach(c => { row[c] = '' })
+  ef.value.weapons = [...(ef.value.weapons || []), row]
+}
+function removeWeapon(i) {
+  ef.value.weapons = ef.value.weapons.filter((_, idx) => idx !== i)
 }
 
 function conditionClass(c) {
@@ -699,6 +834,9 @@ async function saveSheet() {
       conditions.value.forEach(c => { sheetData['cond_' + c] = ef.value['cond_' + c] ?? false })
       // Drives
       drives.value.forEach(d => { if (ef.value['drv_' + d] != null) sheetData['drv_' + d] = ef.value['drv_' + d] })
+      // Weapons + critical injuries
+      sheetData.weapons = (ef.value.weapons || []).filter(w => w.name)
+      if (ef.value.critical_injuries) sheetData.critical_injuries = ef.value.critical_injuries
     }
     if (ef.value.portrait_url) sheetData.portrait_url = ef.value.portrait_url
 
@@ -885,6 +1023,29 @@ onMounted(() => {
 .focus-view-label { flex: 1; font-size: 0.85em; }
 .focus-view-rank  { font-size: 0.95em; font-weight: 700; min-width: 24px; text-align: center; color: var(--accent, #c9a84c); }
 .focus-view-focus { font-size: 0.75em; opacity: 0.5; font-style: italic; }
+
+/* ── Weapons table ───────────────────────────────────── */
+.weapons-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82em;
+}
+.weapons-table th {
+  text-align: left;
+  font-size: 0.72em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.45;
+  padding: 4px 6px 6px;
+  border-bottom: 1px solid var(--border);
+}
+.weapons-table td {
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--border, rgba(255,255,255,.05));
+  vertical-align: middle;
+}
+.weapons-table--view td { opacity: 0.85; }
+.weapons-table .form-input { padding: 3px 6px !important; font-size: 0.9em; }
 
 /* ── Condition checkbox ──────────────────────────────── */
 .condition-check {

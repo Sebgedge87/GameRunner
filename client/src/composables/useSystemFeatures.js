@@ -25,10 +25,15 @@ const SYSTEM_FEATURES = {
       { key: 'luck', label: 'Luck' },
     ],
     extraFields: [
-      { key: 'age',        label: 'Age',        type: 'number' },
-      { key: 'birthplace', label: 'Birthplace', type: 'text' },
-      { key: 'pronoun',    label: 'Pronoun',    type: 'text' },
-      { key: 'residence',  label: 'Residence',  type: 'text' },
+      { key: 'age',          label: 'Age',                type: 'number'  },
+      { key: 'birthplace',   label: 'Birthplace',         type: 'text'    },
+      { key: 'pronoun',      label: 'Pronoun',            type: 'text'    },
+      { key: 'residence',    label: 'Residence',          type: 'text'    },
+      { key: 'assets',       label: 'Assets',             type: 'text'    },
+      { key: 'gear',         label: 'Gear & Possessions', type: 'textarea'},
+      { key: 'major_wound',  label: 'Major Wound',        type: 'boolean' },
+      { key: 'temp_insanity',label: 'Temporary Insanity', type: 'boolean' },
+      { key: 'indef_insanity',label:'Indefinite Insanity',type: 'boolean' },
     ],
     systemSkills: [
       { key: 'sk_accounting',    label: 'Accounting',           base: 5  },
@@ -91,9 +96,14 @@ const SYSTEM_FEATURES = {
       { key: 'wits',     label: 'Wits'     }, { key: 'empathy', label: 'Empathy' },
     ],
     extraFields: [
-      { key: 'buddy',  label: 'Buddy',  type: 'text' },
-      { key: 'rival',  label: 'Rival',  type: 'text' },
-      { key: 'agenda', label: 'Agenda', type: 'text' },
+      { key: 'buddy',       label: 'Buddy',       type: 'text'   },
+      { key: 'rival',       label: 'Rival',       type: 'text'   },
+      { key: 'agenda',      label: 'Agenda',      type: 'text'   },
+      { key: 'armor',       label: 'Armor Rating', type: 'number' },
+      { key: 'cons_air',   label: 'Air',          type: 'number' },
+      { key: 'cons_food',  label: 'Food',         type: 'number' },
+      { key: 'cons_water', label: 'Water',        type: 'number' },
+      { key: 'cons_power', label: 'Power',        type: 'number' },
     ],
     conditions: ['starving', 'dehydrated', 'exhausted', 'freezing'],
     systemSkills: [
@@ -135,6 +145,7 @@ const SYSTEM_FEATURES = {
       { key: 'buddy_2',          label: 'Relationship 2',   type: 'text'   },
       { key: 'buddy_3',          label: 'Relationship 3',   type: 'text'   },
       { key: 'buddy_4',          label: 'Relationship 4',   type: 'text'   },
+      { key: 'trauma',           label: 'Trauma',           type: 'number' },
     ],
     systemSkills: [
       { key: 'sk_dexterity',   label: 'Dexterity',    attr: 'Agility', group: 'general'  },
@@ -175,6 +186,7 @@ const SYSTEM_FEATURES = {
       { key: 'statement',         label: 'Statement',         type: 'text'   },
       { key: 'personality_traits',label: 'Personality Traits',type: 'text'   },
       { key: 'determination',     label: 'Determination Pts', type: 'number' },
+      { key: 'assets',            label: 'Assets',            type: 'text'   },
     ],
     drives: ['duty', 'faith', 'justice', 'power', 'truth'],
     systemSkills: [
@@ -206,6 +218,7 @@ const SYSTEM_FEATURES = {
       { key: 'personal_truths',label: 'Personal Truths & Scars',type: 'text'  },
       { key: 'injuries',       label: 'Injuries',              type: 'text'   },
       { key: 'armour',         label: 'Armour',                type: 'text'   },
+      { key: 'equipment_note', label: 'Equipment of Note',    type: 'textarea'},
     ],
     systemSkills: [
       { key: 'sk_academia',    label: 'Academia'    },
