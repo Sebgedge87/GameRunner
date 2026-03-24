@@ -20,6 +20,7 @@
     <!-- No sheet yet (GM viewing a player who has none) -->
     <div v-else-if="!sheet && !editing" class="empty-state">
       <div>No character sheet yet.</div>
+      <button v-if="campaign.isGm && selectedUserId" class="btn" style="margin-top:12px" @click="startEdit">Create Sheet for Player</button>
     </div>
 
     <!-- ── EDIT MODE ──────────────────────────────────── -->
