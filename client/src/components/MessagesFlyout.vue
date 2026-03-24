@@ -27,11 +27,18 @@
         <button class="submit-btn" @click="sendMessage">SEND</button>
         <div v-if="sendStatus" :class="['status-msg', sendOk ? 'status-ok' : 'status-err']">{{ sendStatus }}</div>
       </div>
+      <!-- Search + filter -->
+      <div style="margin-bottom:10px;display:flex;gap:6px;align-items:center">
+        <input v-model="search" class="form-input" placeholder="Search messages…" style="flex:1;font-size:0.85em" />
+        <label style="font-size:0.82em;white-space:nowrap;display:flex;align-items:center;gap:4px;cursor:pointer">
+          <input type="checkbox" v-model="unreadOnly" />Unread
+        </label>
+      </div>
       <!-- Inbox -->
       <div id="flyout-msg-list" class="msg-list">
-        <div v-if="!ui.messages.length" class="empty-state">No messages.</div>
+        <div v-if="!filteredMessages.length" class="empty-state">{{ search || unreadOnly ? 'No matching messages.' : 'No messages.' }}</div>
         <div
-          v-for="m in ui.messages"
+          v-for="m in filteredMessages"
           :key="m.id"
           class="msg-item"
           :class="{ unread: !m.read_at, secret: m.is_secret }"
@@ -45,8 +52,13 @@
             From: {{ m.from_character || m.from_username || 'Unknown' }}
             <span v-if="m.is_secret" style="color:var(--purple)"> · secret</span>
             <span v-if="!m.read_at" style="color:var(--accent)"> · unread</span>
+            <span v-if="m.requires_ack && m.acked_at" style="color:var(--green)"> · acked</span>
+            <span v-if="m.requires_ack && !m.acked_at" style="color:#c9a84c"> · needs ack</span>
           </div>
           <div class="msg-preview">{{ (m.body || '').slice(0, 80) }}</div>
+          <div v-if="m.requires_ack && !m.acked_at && m.to_user_id === auth.currentUser?.id" style="margin-top:6px">
+            <button class="btn btn-sm btn-primary" @click.stop="ackMessage(m)">Acknowledge</button>
+          </div>
         </div>
       </div>
     </div>
@@ -72,6 +84,22 @@ const isSecret = ref(false)
 const requiresAck = ref(false)
 const sendStatus = ref('')
 const sendOk = ref(false)
+const search = ref('')
+const unreadOnly = ref(false)
+
+const filteredMessages = computed(() => {
+  let msgs = ui.messages
+  if (unreadOnly.value) msgs = msgs.filter(m => !m.read_at)
+  if (search.value.trim()) {
+    const q = search.value.trim().toLowerCase()
+    msgs = msgs.filter(m =>
+      m.subject?.toLowerCase().includes(q) ||
+      m.body?.toLowerCase().includes(q) ||
+      (m.from_character || m.from_username || '').toLowerCase().includes(q)
+    )
+  }
+  return msgs
+})
 
 watch(() => ui.activeFlyout, (val) => {
   if (val === 'msgs' && ui.pendingReply) {
@@ -130,5 +158,13 @@ async function sendMessage() {
 
 function openMsg(m) {
   ui.openMessage(m)
+}
+
+async function ackMessage(m) {
+  const r = await data.apif(`/api/messages/${m.id}/ack`, { method: 'PUT' })
+  if (r.ok) {
+    const msgs = await data.loadMessages()
+    ui.setMessages(msgs)
+  }
 }
 </script>

@@ -5,222 +5,290 @@
       <div class="page-sub">Campaign management &amp; overview</div>
     </div>
 
+    <!-- Tab bar -->
+    <div class="filter-tabs" style="margin-bottom:20px">
+      <button class="filter-tab" :class="{ active: activeTab === 'overview' }" @click="activeTab = 'overview'">Overview</button>
+      <button class="filter-tab" :class="{ active: activeTab === 'settings' }" @click="activeTab = 'settings'">Settings</button>
+      <button class="filter-tab" :class="{ active: activeTab === 'stats' }" @click="activeTab = 'stats'">Stats</button>
+    </div>
+
     <div v-if="loading" class="loading">Loading dashboard…</div>
 
     <template v-else>
-      <!-- ── Campaign Settings ──────────────────────────────── -->
-      <div class="section-divider">Campaign Settings</div>
-      <div class="card" style="margin-top:12px;margin-bottom:24px">
-        <div class="camp-form-grid">
-          <div class="field-group">
-            <label>Name</label>
-            <input v-model="campForm.name" class="form-input" />
-          </div>
-          <div class="field-group">
-            <label>System</label>
-            <select v-model="campForm.system" class="form-input">
-              <option value="dnd5e">D&amp;D 5e</option>
-              <option value="coc">Call of Cthulhu</option>
-              <option value="alien">Alien RPG</option>
-              <option value="coriolis">Coriolis</option>
-              <option value="dune">Dune</option>
-              <option value="achtung">Achtung! Cthulhu</option>
-              <option value="custom">Custom</option>
-            </select>
-          </div>
-          <div class="field-group">
-            <label>Subtitle</label>
-            <input v-model="campForm.subtitle" class="form-input" placeholder="Optional tagline…" />
-          </div>
-          <div class="field-group">
-            <label>Playlist URL</label>
-            <input v-model="campForm.playlist_url" class="form-input" placeholder="Spotify / YouTube URL" />
-          </div>
-          <div class="field-group" style="grid-column:1/-1">
-            <label>Description</label>
-            <textarea v-model="campForm.description" class="form-input" style="min-height:80px;resize:vertical"></textarea>
-          </div>
-          <!-- Background image row -->
-          <div class="field-group" style="grid-column:1/-1">
-            <label>Background Image</label>
-            <div style="display:flex;gap:8px;align-items:center">
-              <input v-model="campForm.bg_image" class="form-input" placeholder="https://… or upload below" style="flex:1" />
-              <label class="btn btn-sm" style="cursor:pointer;flex-shrink:0">
-                Upload
-                <input type="file" accept="image/*" style="display:none" @change="uploadBgImage" />
-              </label>
-              <button v-if="campForm.bg_image" class="btn btn-sm btn-danger" style="flex-shrink:0" @click="campForm.bg_image = ''">Clear</button>
+
+      <!-- ══════════════════════════════════════════════════════
+           TAB: OVERVIEW
+      ══════════════════════════════════════════════════════ -->
+      <template v-if="activeTab === 'overview'">
+
+        <!-- ── Players + Award XP side by side ──────────────── -->
+        <div class="players-xp-cols">
+
+          <!-- LEFT: Players table -->
+          <div class="players-xp-col">
+            <div class="section-divider">Players</div>
+            <div class="players-table-wrap">
+              <table class="players-table">
+                <thead>
+                  <tr>
+                    <th>PLAYER</th>
+                    <th>ROLE</th>
+                    <th>XP</th>
+                    <th>STRESS / SANITY</th>
+                    <th>ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="u in data.users" :key="u.id">
+                    <td>
+                      <div class="player-name">{{ u.username }}</div>
+                      <div v-if="u.character_name" class="player-char">{{ u.character_name }}</div>
+                      <div v-if="u.last_seen" class="player-last-seen">seen {{ formatRelative(u.last_seen) }}</div>
+                    </td>
+                    <td>
+                      <span class="tag" :class="u.role === 'gm' ? 'tag-active' : ''">{{ u.role }}</span>
+                    </td>
+                    <td>
+                      <span class="xp-total">{{ xpMap[u.id]?.total ?? 0 }}</span>
+                      <span v-if="xpMap[u.id]?.level" class="xp-level">Lvl {{ xpMap[u.id].level }}</span>
+                    </td>
+                    <td>
+                      <div class="stress-cell">
+                        <input v-model.number="stressEdits[u.id].stress" type="number" class="form-input stress-input" placeholder="str" />
+                        <input v-model.number="stressEdits[u.id].sanity" type="number" class="form-input stress-input" placeholder="san" />
+                        <button class="btn btn-sm" @click="saveStress(u.id)">Set</button>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="action-cell">
+                        <button class="btn btn-sm" @click="msgPlayer(u)">✉</button>
+                        <button v-if="u.role !== 'gm'" class="btn btn-sm" @click="resetPassword(u)">Pwd</button>
+                        <button v-if="u.role !== 'gm'" class="btn btn-sm btn-danger" @click="deleteUser(u)">Del</button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-            <div v-if="campForm.bg_image" class="bg-preview" :style="`background-image:url(${JSON.stringify(campForm.bg_image)})`"></div>
           </div>
-          <!-- Invite code row -->
-          <div class="field-group" style="grid-column:1/-1">
-            <label>Invite Code</label>
-            <div style="display:flex;gap:8px;align-items:center">
-              <input v-model="campForm.invite_code" class="form-input" placeholder="AUTO-GENERATED" style="font-family:'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;flex:1" maxlength="12" />
-              <button class="btn btn-sm" @click="regenInviteCode" style="flex-shrink:0">Regenerate</button>
-              <button class="btn btn-sm" @click="copyInviteCode" style="flex-shrink:0">Copy</button>
-            </div>
-            <div style="font-size:0.78em;opacity:0.5;margin-top:4px">Share this code with players so they can join from the home screen.</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:8px;margin-top:14px;align-items:center">
-          <button class="btn" @click="saveCampaign" :disabled="campSaving">
-            {{ campSaving ? 'Saving…' : 'Save Changes' }}
-          </button>
-          <span v-if="campStatus" :class="['status-msg', campOk ? 'status-ok' : 'status-err']" style="margin:0">{{ campStatus }}</span>
-        </div>
-      </div>
 
-      <!-- ── Players + Award XP side by side ──────────────── -->
-      <div class="players-xp-cols">
-
-        <!-- LEFT: Players table -->
-        <div class="players-xp-col">
-          <div class="section-divider">Players</div>
-          <div class="players-table-wrap">
-            <table class="players-table">
-              <thead>
-                <tr>
-                  <th>PLAYER</th>
-                  <th>ROLE</th>
-                  <th>XP</th>
-                  <th>STRESS / SANITY</th>
-                  <th>ACTIONS</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="u in data.users" :key="u.id">
-                  <td>
-                    <div class="player-name">{{ u.username }}</div>
-                    <div v-if="u.character_name" class="player-char">{{ u.character_name }}</div>
-                  </td>
-                  <td>
-                    <span class="tag" :class="u.role === 'gm' ? 'tag-active' : ''">{{ u.role }}</span>
-                  </td>
-                  <td>
-                    <span class="xp-total">{{ xpMap[u.id]?.total ?? 0 }}</span>
-                    <span v-if="xpMap[u.id]?.level" class="xp-level">Lvl {{ xpMap[u.id].level }}</span>
-                  </td>
-                  <td>
-                    <div class="stress-cell">
-                      <input v-model.number="stressEdits[u.id].stress" type="number" class="form-input stress-input" placeholder="str" />
-                      <input v-model.number="stressEdits[u.id].sanity" type="number" class="form-input stress-input" placeholder="san" />
-                      <button class="btn btn-sm" @click="saveStress(u.id)">Set</button>
-                    </div>
-                  </td>
-                  <td>
-                    <div class="action-cell">
-                      <button class="btn btn-sm" @click="msgPlayer(u)">✉</button>
-                      <button v-if="u.role !== 'gm'" class="btn btn-sm" @click="resetPassword(u)">Pwd</button>
-                      <button v-if="u.role !== 'gm'" class="btn btn-sm btn-danger" @click="deleteUser(u)">Del</button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- RIGHT: Award XP -->
-        <div class="players-xp-col">
-          <div class="section-divider">Award XP</div>
-          <div class="card xp-card">
-            <div class="xp-fields">
-              <div class="field-group">
-                <label>Amount</label>
-                <input v-model.number="xpForm.amount" type="number" min="0" class="form-input" placeholder="100" />
-              </div>
-              <div class="field-group">
-                <label>Reason</label>
-                <input v-model="xpForm.reason" class="form-input" placeholder="Defeated the dragon…" />
-              </div>
-              <div class="field-group">
-                <label>Players</label>
-                <div class="xp-player-list">
-                  <label class="xp-player-row xp-player-all">
-                    <input type="checkbox" :checked="allPlayersSelected" @change="toggleAllPlayers" />
-                    <span>All Players</span>
-                  </label>
-                  <label v-for="u in players" :key="u.id" class="xp-player-row">
-                    <input type="checkbox" :value="u.id" v-model="xpForm.user_ids" />
-                    <span>{{ u.username }}</span>
-                    <span v-if="u.character_name" class="xp-player-char">{{ u.character_name }}</span>
-                  </label>
+          <!-- RIGHT: Award XP -->
+          <div class="players-xp-col">
+            <div class="section-divider">Award XP</div>
+            <div class="card xp-card">
+              <div class="xp-fields">
+                <div class="field-group">
+                  <label>Amount</label>
+                  <input v-model.number="xpForm.amount" type="number" min="0" class="form-input" placeholder="100" />
+                </div>
+                <div class="field-group">
+                  <label>Reason</label>
+                  <input v-model="xpForm.reason" class="form-input" placeholder="Defeated the dragon…" />
+                </div>
+                <div class="field-group">
+                  <label>Players</label>
+                  <div class="xp-player-list">
+                    <label class="xp-player-row xp-player-all">
+                      <input type="checkbox" :checked="allPlayersSelected" @change="toggleAllPlayers" />
+                      <span>All Players</span>
+                    </label>
+                    <label v-for="u in players" :key="u.id" class="xp-player-row">
+                      <input type="checkbox" :value="u.id" v-model="xpForm.user_ids" />
+                      <span>{{ u.username }}</span>
+                      <span v-if="u.character_name" class="xp-player-char">{{ u.character_name }}</span>
+                    </label>
+                  </div>
                 </div>
               </div>
+              <button class="btn" @click="awardXp">Award XP</button>
+              <div v-if="xpStatus" :class="['status-msg', xpOk ? 'status-ok' : 'status-err']" style="margin-top:8px">{{ xpStatus }}</div>
             </div>
-            <button class="btn" @click="awardXp">Award XP</button>
-            <div v-if="xpStatus" :class="['status-msg', xpOk ? 'status-ok' : 'status-err']" style="margin-top:8px">{{ xpStatus }}</div>
           </div>
-        </div>
 
-      </div><!-- /players-xp-cols -->
+        </div><!-- /players-xp-cols -->
 
-      <!-- ── 2-column lower dashboard ──────────────────────── -->
-      <div class="dash-cols">
+        <!-- ── 2-column lower dashboard ──────────────────────── -->
+        <div class="dash-cols">
 
-        <!-- LEFT: Active Quests -->
-        <div class="dash-col">
-          <div class="section-divider">Active Quests</div>
-          <div class="card-grid" style="margin-top:12px">
-            <div v-if="activeQuests.length === 0" style="opacity:0.5;font-size:0.85em;padding:12px 0;grid-column:1/-1">No active quests.</div>
-            <QuestCard
-              v-for="quest in activeQuests"
-              :key="quest.id"
-              :quest="quest"
-              :expanded="expandedId === quest.id"
-              @toggle="toggleExpand(quest.id)"
-            />
+          <!-- LEFT: Active Quests -->
+          <div class="dash-col">
+            <div class="section-divider">Active Quests</div>
+            <div class="card-grid" style="margin-top:12px">
+              <div v-if="activeQuests.length === 0" style="opacity:0.5;font-size:0.85em;padding:12px 0;grid-column:1/-1">No active quests.</div>
+              <QuestCard
+                v-for="quest in activeQuests"
+                :key="quest.id"
+                :quest="quest"
+                :expanded="expandedId === quest.id"
+                @toggle="toggleExpand(quest.id)"
+              />
+            </div>
           </div>
-        </div>
 
-        <!-- RIGHT: Agenda + Messages + Quick Actions -->
-        <div class="dash-col">
+          <!-- RIGHT: Agenda + Messages + Quick Actions -->
+          <div class="dash-col">
 
-          <!-- Session Agenda -->
-          <div class="section-divider">Session Agenda</div>
-          <div class="card" style="margin-top:12px">
-            <div v-if="agendaCards.length === 0" style="opacity:0.5;font-size:0.85em;padding:4px 0 8px">No agenda items.</div>
-            <div v-else class="agenda-list">
-              <div v-for="card in agendaCards" :key="card.id" class="agenda-item">
-                <div class="agenda-title">{{ card.title }}</div>
-                <div v-if="card.body" class="agenda-body">{{ card.body }}</div>
-                <div v-else class="agenda-body agenda-empty">—</div>
+            <!-- Session Agenda -->
+            <div class="section-divider">Session Agenda</div>
+            <div class="card" style="margin-top:12px">
+              <div v-if="agendaCards.length === 0" style="opacity:0.5;font-size:0.85em;padding:4px 0 8px">No agenda items.</div>
+              <div v-else class="agenda-list">
+                <div v-for="card in agendaCards" :key="card.id" class="agenda-item">
+                  <div class="agenda-title">{{ card.title }}</div>
+                  <div v-if="card.body" class="agenda-body">{{ card.body }}</div>
+                  <div v-else class="agenda-body agenda-empty">—</div>
+                </div>
+              </div>
+              <button class="btn" style="margin-top:12px" @click="ui.openGmEdit('agenda', null, {})">+ Add Agenda Item</button>
+            </div>
+
+            <!-- Unread Messages -->
+            <div class="section-divider" style="margin-top:24px">Unread Messages</div>
+            <div style="margin-top:12px">
+              <div v-if="unreadMessages.length === 0" style="opacity:0.5;font-size:0.85em;padding:8px 0">No unread messages.</div>
+              <div v-for="msg in unreadMessages" :key="msg.id" class="card" style="margin-bottom:8px">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;min-width:0">
+                  <span style="font-size:0.85em;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ msg.from_character || msg.from_username }}</span>
+                  <span style="font-size:0.75em;opacity:0.5;flex-shrink:0">{{ formatTime(msg.created_at) }}</span>
+                </div>
+                <div style="font-size:0.82em;font-weight:600;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ msg.subject }}</div>
+                <div style="font-size:0.82em;opacity:0.75;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ msg.body }}</div>
               </div>
             </div>
-            <button class="btn" style="margin-top:12px" @click="ui.openGmEdit('agenda', null, {})">+ Add Agenda Item</button>
+
+            <!-- Quick Actions -->
+            <div class="section-divider" style="margin-top:24px">Quick Actions</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
+              <button class="btn" @click="ui.openGmEdit('quest', null, {})">+ Quest</button>
+              <button class="btn" @click="ui.openGmEdit('npc', null, {})">+ NPC</button>
+              <button class="btn" @click="ui.openGmEdit('location', null, {})">+ Location</button>
+              <button class="btn" @click="ui.openGmEdit('hook', null, {})">+ Hook</button>
+              <button class="btn" @click="ui.openGmEdit('handout', null, {})">+ Handout</button>
+              <button class="btn" @click="ui.openGmEdit('session', null, {})">+ Session</button>
+              <router-link to="/combat" class="btn">⚔ Combat Tracker</router-link>
+              <button class="btn" @click="downloadBackup">&#8659; Backup</button>
+            </div>
           </div>
 
-          <!-- Unread Messages -->
-          <div class="section-divider" style="margin-top:24px">Unread Messages</div>
+        </div><!-- /dash-cols -->
+      </template>
+
+      <!-- ══════════════════════════════════════════════════════
+           TAB: SETTINGS
+      ══════════════════════════════════════════════════════ -->
+      <template v-if="activeTab === 'settings'">
+        <div class="card" style="margin-top:4px">
+          <div class="camp-form-grid">
+            <div class="field-group">
+              <label>Name</label>
+              <input v-model="campForm.name" class="form-input" />
+            </div>
+            <div class="field-group">
+              <label>System</label>
+              <select v-model="campForm.system" class="form-input">
+                <option value="dnd5e">D&amp;D 5e</option>
+                <option value="coc">Call of Cthulhu</option>
+                <option value="alien">Alien RPG</option>
+                <option value="coriolis">Coriolis</option>
+                <option value="dune">Dune</option>
+                <option value="achtung">Achtung! Cthulhu</option>
+                <option value="custom">Custom</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label>Subtitle</label>
+              <input v-model="campForm.subtitle" class="form-input" placeholder="Optional tagline…" />
+            </div>
+            <div class="field-group">
+              <label>Playlist URL</label>
+              <input v-model="campForm.playlist_url" class="form-input" placeholder="Spotify / YouTube URL" />
+            </div>
+            <div class="field-group" style="grid-column:1/-1">
+              <label>Description</label>
+              <textarea v-model="campForm.description" class="form-input" style="min-height:80px;resize:vertical"></textarea>
+            </div>
+            <!-- Background image row -->
+            <div class="field-group" style="grid-column:1/-1">
+              <label>Background Image</label>
+              <div style="display:flex;gap:8px;align-items:center">
+                <input v-model="campForm.bg_image" class="form-input" placeholder="https://… or upload below" style="flex:1" />
+                <label class="btn btn-sm" style="cursor:pointer;flex-shrink:0">
+                  Upload
+                  <input type="file" accept="image/*" style="display:none" @change="uploadBgImage" />
+                </label>
+                <button v-if="campForm.bg_image" class="btn btn-sm btn-danger" style="flex-shrink:0" @click="campForm.bg_image = ''">Clear</button>
+              </div>
+              <div v-if="campForm.bg_image" class="bg-preview" :style="`background-image:url(${JSON.stringify(campForm.bg_image)})`"></div>
+            </div>
+            <!-- Invite code row -->
+            <div class="field-group" style="grid-column:1/-1">
+              <label>Invite Code</label>
+              <div style="display:flex;gap:8px;align-items:center">
+                <input v-model="campForm.invite_code" class="form-input" placeholder="AUTO-GENERATED" style="font-family:'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;flex:1" maxlength="12" />
+                <button class="btn btn-sm" @click="regenInviteCode" style="flex-shrink:0">Regenerate</button>
+                <button class="btn btn-sm" @click="copyInviteCode" style="flex-shrink:0">Copy</button>
+              </div>
+              <div style="font-size:0.78em;opacity:0.5;margin-top:4px">Share this code with players so they can join from the home screen.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:14px;align-items:center">
+            <button class="btn" @click="saveCampaign" :disabled="campSaving">
+              {{ campSaving ? 'Saving…' : 'Save Changes' }}
+            </button>
+            <span v-if="campStatus" :class="['status-msg', campOk ? 'status-ok' : 'status-err']" style="margin:0">{{ campStatus }}</span>
+          </div>
+        </div>
+      </template>
+
+      <!-- ══════════════════════════════════════════════════════
+           TAB: STATS
+      ══════════════════════════════════════════════════════ -->
+      <template v-if="activeTab === 'stats'">
+        <div v-if="!campaignStats" style="opacity:0.5;padding:24px 0;text-align:center">Loading stats…</div>
+        <template v-else>
+          <!-- Top stat pills -->
+          <div class="stats-strip" style="margin-top:4px">
+            <div class="stat-pill"><span class="stat-pill-num">{{ campaignStats.session_count }}</span><span class="stat-pill-label">Sessions</span></div>
+            <div class="stat-pill"><span class="stat-pill-num">{{ campaignStats.player_count }}</span><span class="stat-pill-label">Players</span></div>
+            <div class="stat-pill"><span class="stat-pill-num">{{ campaignStats.quest_count }}</span><span class="stat-pill-label">Quests</span></div>
+            <div class="stat-pill stat-pill-accent"><span class="stat-pill-num">{{ campaignStats.active_quest_count }}</span><span class="stat-pill-label">Active Quests</span></div>
+            <div class="stat-pill"><span class="stat-pill-num">{{ campaignStats.handout_count }}</span><span class="stat-pill-label">Handouts</span></div>
+            <div class="stat-pill"><span class="stat-pill-num">{{ campaignStats.message_count }}</span><span class="stat-pill-label">Messages</span></div>
+            <div class="stat-pill stat-pill-accent"><span class="stat-pill-num">{{ campaignStats.xp_total.toLocaleString() }}</span><span class="stat-pill-label">Total XP Awarded</span></div>
+          </div>
+
+          <!-- Per-player XP breakdown -->
+          <div class="section-divider" style="margin-top:28px">Player Progression</div>
+          <div class="stats-player-grid" style="margin-top:12px">
+            <div v-if="!Object.keys(xpMap).length" style="opacity:0.5;font-size:0.85em">No XP awarded yet.</div>
+            <div v-for="u in data.users.filter(u => u.role !== 'gm')" :key="u.id" class="stats-player-card">
+              <div class="stats-player-name">{{ u.character_name || u.username }}</div>
+              <div v-if="u.character_name" class="stats-player-user">{{ u.username }}</div>
+              <div class="stats-player-row">
+                <span class="stats-player-xp">{{ (xpMap[u.id]?.total ?? 0).toLocaleString() }} XP</span>
+                <span class="stats-player-level" v-if="xpMap[u.id]?.level">Lvl {{ xpMap[u.id].level }}</span>
+              </div>
+              <div class="stats-xp-bar-wrap">
+                <div class="stats-xp-bar" :style="xpBarStyle(u.id)"></div>
+              </div>
+              <div v-if="u.last_seen" class="stats-player-seen">Last seen {{ formatRelative(u.last_seen) }}</div>
+            </div>
+          </div>
+
+          <!-- Audit log -->
+          <div class="section-divider" style="margin-top:28px">Recent Activity</div>
           <div style="margin-top:12px">
-            <div v-if="unreadMessages.length === 0" style="opacity:0.5;font-size:0.85em;padding:8px 0">No unread messages.</div>
-            <div v-for="msg in unreadMessages" :key="msg.id" class="card" style="margin-bottom:8px">
-              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;min-width:0">
-                <span style="font-size:0.85em;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ msg.from_character || msg.from_username }}</span>
-                <span style="font-size:0.75em;opacity:0.5;flex-shrink:0">{{ formatTime(msg.created_at) }}</span>
-              </div>
-              <div style="font-size:0.82em;font-weight:600;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ msg.subject }}</div>
-              <div style="font-size:0.82em;opacity:0.75;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ msg.body }}</div>
+            <div v-if="!auditLog.length" style="opacity:0.5;font-size:0.85em">No activity recorded.</div>
+            <div v-for="entry in auditLog" :key="entry.id" class="audit-row">
+              <span class="audit-user">{{ entry.username || 'System' }}</span>
+              <span class="audit-action">{{ entry.action }}</span>
+              <span v-if="entry.detail" class="audit-detail">{{ entry.detail }}</span>
+              <span class="audit-time">{{ formatTime(entry.created_at) }}</span>
             </div>
           </div>
+        </template>
+      </template>
 
-          <!-- Quick Actions -->
-          <div class="section-divider" style="margin-top:24px">Quick Actions</div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
-            <button class="btn" @click="ui.openGmEdit('quest', null, {})">+ Quest</button>
-            <button class="btn" @click="ui.openGmEdit('npc', null, {})">+ NPC</button>
-            <button class="btn" @click="ui.openGmEdit('location', null, {})">+ Location</button>
-            <button class="btn" @click="ui.openGmEdit('hook', null, {})">+ Hook</button>
-            <button class="btn" @click="ui.openGmEdit('handout', null, {})">+ Handout</button>
-            <button class="btn" @click="ui.openGmEdit('session', null, {})">+ Session</button>
-            <router-link to="/combat" class="btn">⚔ Combat Tracker</router-link>
-            <button class="btn" @click="downloadBackup">&#8659; Backup</button>
-          </div>
-        </div>
-
-      </div><!-- /dash-cols -->
     </template>
   </div>
 </template>
@@ -239,17 +307,21 @@ const ui = useUiStore()
 const expandedId = ref(null)
 function toggleExpand(id) { expandedId.value = expandedId.value === id ? null : id }
 
+const activeTab = ref('overview')
+
 const loading = ref(false)
 const agendaCards = ref([])
 const unreadMessages = ref([])
 const stressMap = ref({})
 const stressEdits = reactive({})
 const xpMap = ref({})
+const auditLog = ref([])
 
 const campForm = ref({ name: '', subtitle: '', system: '', description: '', playlist_url: '', bg_image: '', invite_code: '' })
 const campSaving = ref(false)
 const campStatus = ref('')
 const campOk = ref(false)
+const campaignStats = ref(null)
 
 const xpForm = ref({ amount: 0, reason: '', user_ids: [] })
 const xpStatus = ref('')
@@ -268,6 +340,18 @@ function toggleAllPlayers(e) {
 function formatTime(ts) {
   if (!ts) return ''
   return new Date(ts).toLocaleString()
+}
+
+function formatRelative(ts) {
+  if (!ts) return ''
+  const diff = Date.now() - new Date(ts).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 2) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  return `${days}d ago`
 }
 
 async function saveCampaign() {
@@ -413,8 +497,38 @@ async function loadXp() {
     const r = await data.apif('/api/xp')
     const d = await r.json()
     const map = {}
-    ;(d.xp || []).forEach(x => { map[x.user_id] = x })
+    ;(d.totals || d.xp || []).forEach(x => { map[x.user_id] = x })
     xpMap.value = map
+  } catch (_) {}
+}
+
+// XP level thresholds (matching server-side logic)
+const XP_THRESHOLDS = [0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000, 85000, 100000, 120000, 140000, 165000, 195000, 225000, 265000, 305000, 355000]
+
+function xpBarStyle(userId) {
+  const total = xpMap.value[userId]?.total ?? 0
+  const level = xpMap.value[userId]?.level ?? 1
+  const idx = Math.min(level - 1, XP_THRESHOLDS.length - 1)
+  const nextIdx = Math.min(level, XP_THRESHOLDS.length - 1)
+  const base = XP_THRESHOLDS[idx] ?? 0
+  const next = XP_THRESHOLDS[nextIdx] ?? base + 1
+  const pct = next === base ? 100 : Math.min(100, Math.round(((total - base) / (next - base)) * 100))
+  return `width:${pct}%`
+}
+
+async function loadAuditLog() {
+  try {
+    const r = await data.apif('/api/users/audit')
+    if (r.ok) auditLog.value = (await r.json()).logs || []
+  } catch (_) {}
+}
+
+async function loadStats() {
+  const id = campaign.activeCampaign?.id
+  if (!id) return
+  try {
+    const r = await data.apif(`/api/campaigns/${id}/stats`)
+    if (r.ok) campaignStats.value = (await r.json()).stats
   } catch (_) {}
 }
 
@@ -459,6 +573,8 @@ async function initForCampaign() {
     data.loadQuests(),
     loadXp(),
     loadDash(),
+    loadStats(),
+    loadAuditLog(),
   ])
   data.users.forEach(u => { if (!stressEdits[u.id]) stressEdits[u.id] = { stress: '', sanity: '' } })
 }
@@ -471,6 +587,28 @@ watch(() => campaign.activeCampaign?.id, (newId, oldId) => {
 </script>
 
 <style scoped>
+.player-last-seen { font-size: 0.72em; opacity: 0.45; margin-top: 2px; }
+
+.stats-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+  margin-bottom: 4px;
+}
+.stat-pill {
+  background: var(--surface2, rgba(255,255,255,.04));
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 80px;
+}
+.stat-pill-num { font-size: 1.4em; font-weight: 700; line-height: 1; }
+.stat-pill-label { font-size: 0.72em; opacity: 0.55; margin-top: 3px; text-align: center; }
+
 .bg-preview {
   width: 100%;
   height: 100px;
@@ -603,6 +741,111 @@ watch(() => campaign.activeCampaign?.id, (newId, oldId) => {
   opacity: 0.3;
 }
 
+/* Stats tab: accent pill variant */
+.stat-pill-accent {
+  border-color: var(--accent);
+}
+.stat-pill-accent .stat-pill-num {
+  color: var(--accent);
+}
+
+/* Stats tab: player progression grid */
+.stats-player-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+.stats-player-card {
+  background: var(--surface2, rgba(255,255,255,.04));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+.stats-player-name {
+  font-weight: 700;
+  font-size: 0.95em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stats-player-user {
+  font-size: 0.78em;
+  opacity: 0.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 6px;
+}
+.stats-player-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 6px 0 4px;
+}
+.stats-player-xp {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.9em;
+}
+.stats-player-level {
+  font-size: 0.78em;
+  opacity: 0.55;
+}
+.stats-xp-bar-wrap {
+  background: var(--border);
+  border-radius: 99px;
+  height: 5px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.stats-xp-bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 99px;
+  transition: width 0.4s ease;
+  min-width: 2px;
+}
+.stats-player-seen {
+  font-size: 0.72em;
+  opacity: 0.45;
+}
+
+/* Audit log */
+.audit-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.83em;
+  flex-wrap: wrap;
+}
+.audit-user {
+  font-weight: 600;
+  color: var(--accent);
+  min-width: 80px;
+  flex-shrink: 0;
+}
+.audit-action {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9em;
+  opacity: 0.85;
+}
+.audit-detail {
+  opacity: 0.55;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+.audit-time {
+  opacity: 0.38;
+  font-size: 0.88em;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
 @media (max-width: 900px) {
   .players-xp-cols { grid-template-columns: 1fr; }
   .dash-cols { grid-template-columns: 1fr; }
@@ -610,5 +853,6 @@ watch(() => campaign.activeCampaign?.id, (newId, oldId) => {
   .agenda-list { grid-template-columns: 1fr; }
   .agenda-title { border-bottom: none; padding-bottom: 2px; }
   .agenda-body { padding-top: 0; }
+  .stats-player-grid { grid-template-columns: 1fr 1fr; }
 }
 </style>

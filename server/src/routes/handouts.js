@@ -1,4 +1,6 @@
 const express = require('express');
+const path = require('path');
+const fs = require('fs');
 const { getDb } = require('../db/database');
 const { requireAuth, requireGm } = require('../auth/authMiddleware');
 const { createNotification, broadcastSSE } = require('../services/notifications');
@@ -33,7 +35,12 @@ router.get('/', requireAuth, (req, res) => {
     WHERE hp.user_id = ?
     ORDER BY h.created_at DESC
   `).all(req.user.id);
-  res.json({ handouts });
+  // Normalize: wrap player's single permission as a permissions array (same shape as GM response)
+  const normalized = handouts.map(h => ({
+    ...h,
+    permissions: [{ user_id: req.user.id, shared_at: h.shared_at, acked_at: h.acked_at, can_reshare: h.can_reshare }],
+  }));
+  res.json({ handouts: normalized });
 });
 
 // POST /api/handouts — GM creates handout
@@ -105,6 +112,29 @@ router.put('/:id/ack', requireAuth, (req, res) => {
   res.json({ success: true });
 });
 
+
+// GET /api/handouts/:id/file — serve the attached file
+router.get('/:id/file', requireAuth, (req, res) => {
+  const db = getDb();
+  const handout = db.prepare('SELECT * FROM handouts WHERE id = ?').get(req.params.id);
+  if (!handout) return res.status(404).json({ error: 'Not found' });
+
+  // Players must have permission
+  if (!req.user.isGm) {
+    const perm = db.prepare('SELECT id FROM handout_permissions WHERE handout_id = ? AND user_id = ?').get(handout.id, req.user.id);
+    if (!perm) return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  if (!handout.file_path) return res.status(404).json({ error: 'No file attached to this handout' });
+
+  const filePath = path.isAbsolute(handout.file_path)
+    ? handout.file_path
+    : path.join(__dirname, '../..', handout.file_path);
+
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found on server' });
+
+  res.download(filePath);
+});
 
 // DELETE /api/handouts/:id — GM deletes handout
 router.delete('/:id', requireGm, (req, res) => {

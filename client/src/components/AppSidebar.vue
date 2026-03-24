@@ -122,8 +122,20 @@
       </RouterLink>
 
       <!-- Logout -->
-      <div class="nav-item" style="margin-top:auto;color:var(--text3)" @click="logout">
+      <div class="nav-item" style="margin-top:auto;color:var(--text3)" @click="confirmLogout">
         <span class="nav-icon">⇥</span>Logout
+      </div>
+
+      <!-- Logout confirmation dialog -->
+      <div v-if="showLogoutConfirm" class="logout-confirm-overlay" @click.self="showLogoutConfirm = false">
+        <div class="logout-confirm-box">
+          <div class="logout-confirm-title">Log out?</div>
+          <div class="logout-confirm-sub">Your session will be invalidated on the server.</div>
+          <div class="logout-confirm-actions">
+            <button class="btn btn-danger" @click="logout">Log Out</button>
+            <button class="btn" @click="showLogoutConfirm = false">Cancel</button>
+          </div>
+        </div>
       </div>
     </nav>
     <!-- Sidebar collapse toggle -->
@@ -135,7 +147,7 @@
 </template>
 
 <script setup>
-import { computed, reactive } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useCampaignStore } from '@/stores/campaign'
@@ -175,8 +187,49 @@ function goHome() {
   ui.closeSidebar()
 }
 
-function logout() {
-  auth.logout()
+const showLogoutConfirm = ref(false)
+
+function confirmLogout() {
+  showLogoutConfirm.value = true
+}
+
+async function logout() {
+  showLogoutConfirm.value = false
+  await auth.logout()
   router.push('/login')
 }
 </script>
+
+<style scoped>
+.logout-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.logout-confirm-box {
+  background: var(--surface, #1a1a24);
+  border: 1px solid var(--border, #2a2a3a);
+  border-radius: 8px;
+  padding: 24px;
+  min-width: 260px;
+  max-width: 320px;
+}
+.logout-confirm-title {
+  font-size: 1.1em;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.logout-confirm-sub {
+  font-size: 0.82em;
+  opacity: 0.6;
+  margin-bottom: 18px;
+}
+.logout-confirm-actions {
+  display: flex;
+  gap: 10px;
+}
+</style>

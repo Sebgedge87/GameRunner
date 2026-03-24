@@ -89,8 +89,11 @@ router.post('/', requireGm, (req, res) => {
     const campSys = campId ? (db.prepare('SELECT system FROM campaigns WHERE id = ?').get(campId)?.system || 'default') : 'default';
     const total = db.prepare('SELECT COALESCE(SUM(amount),0) as t FROM xp_awards WHERE awarded_to = ? AND campaign_id = ?').get(uid, campId).t;
     const prev = total - Number(amount);
-    if (levelFor(total, campSys) > levelFor(prev, campSys)) {
-      try { createNotification(db, uid, 'xp', `Level up! You are now level ${levelFor(total, campSys)}`, '', ''); } catch (_) {}
+    const newLevel = levelFor(total, campSys);
+    // Keep users.character_level in sync with XP-computed level
+    try { db.prepare('UPDATE users SET character_level = ? WHERE id = ?').run(newLevel, uid); } catch (_) {}
+    if (newLevel > levelFor(prev, campSys)) {
+      try { createNotification(db, uid, 'xp', `Level up! You are now level ${newLevel}`, '', ''); } catch (_) {}
     }
   }
   res.status(201).json({ awards });

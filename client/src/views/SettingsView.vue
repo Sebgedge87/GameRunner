@@ -177,6 +177,7 @@ function applyTheme(key) {
   currentTheme.value = key
   localStorage.setItem('chronicle_theme_manual', '1')
   campaign.applyTheme(key)
+  auth.savePreferences({ theme: key })
 }
 
 function applyCustomTheme() {
@@ -184,7 +185,11 @@ function applyCustomTheme() {
   campaign.applyCustomTheme()
 }
 
-function saveCustomTheme() { applyCustomTheme(); ui.showToast('Custom theme applied', '', '🎨') }
+function saveCustomTheme() {
+  applyCustomTheme()
+  auth.savePreferences({ theme: 'custom', custom_colors: { ...customColors } })
+  ui.showToast('Custom theme applied', '', '🎨')
+}
 
 function resetCustomTheme() {
   localStorage.removeItem('chronicle_custom_theme')

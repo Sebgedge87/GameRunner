@@ -6,18 +6,34 @@
 
       <!-- Login form -->
       <div v-if="!showRegister">
-        <div class="login-field">
-          <label>Username</label>
-          <input v-model="loginUser" type="text" placeholder="adventurer" autocomplete="username" />
+        <div v-if="!requiresTotp">
+          <div class="login-field">
+            <label>Username</label>
+            <input v-model="loginUser" type="text" placeholder="adventurer" autocomplete="username" />
+          </div>
+          <div class="login-field">
+            <label>Password</label>
+            <input v-model="loginPass" type="password" placeholder="••••••••" autocomplete="current-password"
+              @keydown.enter="doLogin" />
+          </div>
         </div>
-        <div class="login-field">
-          <label>Password</label>
-          <input v-model="loginPass" type="password" placeholder="••••••••" autocomplete="current-password"
-            @keydown.enter="doLogin" />
+        <!-- 2FA step -->
+        <div v-else>
+          <div style="font-size:0.85em;opacity:0.7;margin-bottom:12px;text-align:center">
+            Enter the 6-digit code from your authenticator app
+          </div>
+          <div class="login-field">
+            <label>2FA Code</label>
+            <input v-model="totpCode" type="text" inputmode="numeric" maxlength="6" placeholder="000000"
+              autocomplete="one-time-code" @keydown.enter="doLogin" />
+          </div>
+          <div style="font-size:0.78em;opacity:0.5;text-align:center;margin-bottom:8px">
+            <a @click="requiresTotp = false; totpCode = ''" style="cursor:pointer">← Back</a>
+          </div>
         </div>
         <div class="login-error">{{ loginError }}</div>
         <button class="login-btn" @click="doLogin" :disabled="loading">
-          {{ loading ? 'ENTERING...' : 'ENTER THE CHRONICLE' }}
+          {{ loading ? 'ENTERING...' : requiresTotp ? 'VERIFY' : 'ENTER THE CHRONICLE' }}
         </button>
         <div class="login-toggle">
           No account? <a @click="showRegister = true">Register</a>
@@ -65,6 +81,8 @@ const router = useRouter()
 
 const showRegister = ref(false)
 const loading = ref(false)
+const requiresTotp = ref(false)
+const totpCode = ref('')
 
 const loginUser = ref('')
 const loginPass = ref('')
@@ -84,7 +102,11 @@ async function doLogin() {
   }
   loading.value = true
   try {
-    await auth.login(loginUser.value.trim(), loginPass.value)
+    const result = await auth.login(loginUser.value.trim(), loginPass.value, totpCode.value || null)
+    if (result?.requires_totp) {
+      requiresTotp.value = true
+      return
+    }
     router.push('/home')
   } catch (e) {
     loginError.value = e.message || 'Login failed.'

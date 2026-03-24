@@ -9,13 +9,19 @@ export const useDataStore = defineStore('data', () => {
   const campaign = useCampaignStore()
   const ui = useUiStore()
 
+  // Tracks which resources failed to load — views can check errors.has('npcs')
+  const errors = ref(new Set())
+
   // Wraps a load fn with consistent error handling — shows a toast on failure
-  // rather than leaving the user staring at a blank screen
+  // and records the resource name in errors so views can show proper error states
   async function safe(fn, label) {
+    errors.value.delete(label)
     try {
-      return await fn()
+      const result = await fn()
+      return result
     } catch (e) {
       console.error(`[data] ${label}:`, e)
+      errors.value = new Set([...errors.value, label])
       ui.showToast(`Failed to load ${label}`, 'Check connection or reload', '✕')
     }
   }
@@ -251,7 +257,7 @@ export const useDataStore = defineStore('data', () => {
   }
 
   return {
-    loading,
+    loading, errors,
     quests, npcs, locations, hooks, factions, timeline, inventory, keyItems,
     maps, bestiary, rumours, jobs, notes, handouts, users, agenda, stress, pins,
     sessions, polls, scheduling,

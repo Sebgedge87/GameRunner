@@ -8,13 +8,24 @@ const { generateSecret, verifyCode, buildOtpAuthUri } = require('../utils/totp')
 const router = express.Router();
 const SALT_ROUNDS = 10;
 
-// GET /api/users — GM sees all; players see list for messaging
+// GET /api/users — scoped to campaign when X-Campaign-Id header is present
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
-  const users = db.prepare(`
-    SELECT id, username, character_name, character_class, character_level, role, last_seen
-    FROM users ORDER BY role, character_name
-  `).all();
+  const campaignId = req.headers['x-campaign-id'] ? parseInt(req.headers['x-campaign-id'], 10) : null;
+  let users;
+  if (campaignId && !isNaN(campaignId)) {
+    users = db.prepare(`
+      SELECT u.id, u.username, u.character_name, u.character_class, u.character_level, u.role, u.last_seen
+      FROM users u
+      JOIN campaign_members cm ON cm.user_id = u.id AND cm.campaign_id = ?
+      ORDER BY u.role, u.character_name
+    `).all(campaignId);
+  } else {
+    users = db.prepare(`
+      SELECT id, username, character_name, character_class, character_level, role, last_seen
+      FROM users ORDER BY role, character_name
+    `).all();
+  }
   res.json({ users });
 });
 
@@ -49,7 +60,7 @@ router.put('/me/password', requireAuth, (req, res) => {
   const user = db.prepare('SELECT id, password_hash FROM users WHERE id = ?').get(req.user.id);
   if (!bcrypt.compareSync(current_password, user.password_hash)) return res.status(403).json({ error: 'Current password is incorrect' });
   const password_hash = bcrypt.hashSync(new_password, SALT_ROUNDS);
-  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(password_hash, req.user.id);
+  db.prepare('UPDATE users SET password_hash = ?, token_version = token_version + 1 WHERE id = ?').run(password_hash, req.user.id);
   res.json({ success: true });
 });
 
@@ -85,6 +96,29 @@ router.delete('/:id', requireGm, (req, res) => {
   db.prepare('DELETE FROM users WHERE id = ?').run(req.params.id);
   auditLog(req, 'delete', 'user', Number(req.params.id), `deleted ${user.username}`);
   res.json({ success: true });
+});
+
+// GET /api/users/me/preferences — load persisted UI preferences
+router.get('/me/preferences', requireAuth, (req, res) => {
+  const db = getDb();
+  const row = db.prepare('SELECT preferences FROM users WHERE id = ?').get(req.user.id);
+  try {
+    res.json({ preferences: JSON.parse(row?.preferences || 'null') || {} });
+  } catch {
+    res.json({ preferences: {} });
+  }
+});
+
+// PUT /api/users/me/preferences — save UI preferences (theme, custom colors, etc.)
+router.put('/me/preferences', requireAuth, (req, res) => {
+  const db = getDb();
+  // Merge with existing preferences
+  const row = db.prepare('SELECT preferences FROM users WHERE id = ?').get(req.user.id);
+  let current = {};
+  try { current = JSON.parse(row?.preferences || '{}') || {}; } catch (_) {}
+  const merged = { ...current, ...req.body };
+  db.prepare('UPDATE users SET preferences = ? WHERE id = ?').run(JSON.stringify(merged), req.user.id);
+  res.json({ preferences: merged });
 });
 
 // POST /api/users/invite — GM creates a player account (onboarding wizard)
