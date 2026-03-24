@@ -98,6 +98,19 @@ router.delete('/:id', requireGm, (req, res) => {
   res.json({ success: true });
 });
 
+// PUT /api/users/:id/level — GM sets character level directly (milestone levelling)
+router.put('/:id/level', requireGm, (req, res) => {
+  const { level } = req.body;
+  const lvl = Number(level);
+  if (!lvl || lvl < 1 || lvl > 30) return res.status(400).json({ error: 'Invalid level (1–30)' });
+  const db = getDb();
+  const user = db.prepare('SELECT id FROM users WHERE id = ?').get(req.params.id);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  db.prepare('UPDATE users SET character_level = ? WHERE id = ?').run(lvl, req.params.id);
+  auditLog(req, 'level_set', 'user', Number(req.params.id), `level → ${lvl}`);
+  res.json({ success: true, level: lvl });
+});
+
 // GET /api/users/me/preferences — load persisted UI preferences
 router.get('/me/preferences', requireAuth, (req, res) => {
   const db = getDb();

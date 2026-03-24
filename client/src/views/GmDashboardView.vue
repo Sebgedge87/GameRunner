@@ -33,7 +33,7 @@
                   <tr>
                     <th>PLAYER</th>
                     <th>ROLE</th>
-                    <th>XP</th>
+                    <th>{{ usesMilestone ? 'LEVEL' : 'XP' }}</th>
                     <th v-if="hasStress || hasSanity">{{ hasStress && hasSanity ? 'STRESS / SANITY' : hasStress ? 'STRESS' : 'SANITY' }}</th>
                     <th>ACTIONS</th>
                   </tr>
@@ -49,8 +49,19 @@
                       <span class="tag" :class="u.role === 'gm' ? 'tag-active' : ''">{{ u.role }}</span>
                     </td>
                     <td>
-                      <span class="xp-total">{{ xpMap[u.id]?.total ?? 0 }}</span>
-                      <span v-if="xpMap[u.id]?.level" class="xp-level">Lvl {{ xpMap[u.id].level }}</span>
+                      <!-- Milestone: level stepper -->
+                      <div v-if="usesMilestone && u.role !== 'gm'" class="level-stepper">
+                        <button class="btn btn-sm level-btn" @click="adjustLevel(u, -1)" :disabled="u.character_level <= 1">−</button>
+                        <span class="level-val">{{ u.character_level ?? 1 }}</span>
+                        <button class="btn btn-sm level-btn" @click="adjustLevel(u, 1)" :disabled="u.character_level >= maxLevel">+</button>
+                      </div>
+                      <!-- XP-based: show total + computed level -->
+                      <template v-else-if="!usesMilestone">
+                        <span class="xp-total">{{ xpMap[u.id]?.total ?? 0 }}</span>
+                        <span v-if="xpMap[u.id]?.level" class="xp-level">Lvl {{ xpMap[u.id].level }}</span>
+                      </template>
+                      <!-- GM row or milestone GM: just show level -->
+                      <span v-else class="xp-level">Lvl {{ u.character_level ?? 1 }}</span>
                     </td>
                     <td v-if="hasStress || hasSanity">
                       <div class="stress-cell">
@@ -61,6 +72,7 @@
                     </td>
                     <td>
                       <div class="action-cell">
+                        <a v-if="hasDndBeyond && sheetMap[u.id]?.dnd_beyond_url" :href="sheetMap[u.id].dnd_beyond_url" target="_blank" rel="noopener" class="btn btn-sm" title="Open in D&D Beyond">Beyond</a>
                         <button class="btn btn-sm" @click="msgPlayer(u)">✉</button>
                         <button v-if="u.role !== 'gm'" class="btn btn-sm" @click="resetPassword(u)">Pwd</button>
                         <button v-if="u.role !== 'gm'" class="btn btn-sm btn-danger" @click="deleteUser(u)">Del</button>
@@ -72,37 +84,54 @@
             </div>
           </div>
 
-          <!-- RIGHT: Award XP -->
+          <!-- RIGHT: Award XP (XP systems) or Milestone notes (5e) -->
           <div class="players-xp-col">
-            <div class="section-divider">Award XP</div>
-            <div class="card xp-card">
-              <div class="xp-fields">
-                <div class="field-group">
-                  <label>Amount</label>
-                  <input v-model.number="xpForm.amount" type="number" min="0" class="form-input" placeholder="100" />
-                </div>
-                <div class="field-group">
-                  <label>Reason</label>
-                  <input v-model="xpForm.reason" class="form-input" placeholder="Defeated the dragon…" />
-                </div>
-                <div class="field-group">
-                  <label>Players</label>
-                  <div class="xp-player-list">
-                    <label class="xp-player-row xp-player-all">
-                      <input type="checkbox" :checked="allPlayersSelected" @change="toggleAllPlayers" />
-                      <span>All Players</span>
-                    </label>
-                    <label v-for="u in players" :key="u.id" class="xp-player-row">
-                      <input type="checkbox" :value="u.id" v-model="xpForm.user_ids" />
-                      <span>{{ u.username }}</span>
-                      <span v-if="u.character_name" class="xp-player-char">{{ u.character_name }}</span>
-                    </label>
+
+            <!-- XP-based systems -->
+            <template v-if="usesXP">
+              <div class="section-divider">Award XP</div>
+              <div class="card xp-card">
+                <div class="xp-fields">
+                  <div class="field-group">
+                    <label>Amount</label>
+                    <input v-model.number="xpForm.amount" type="number" min="0" class="form-input" placeholder="100" />
+                  </div>
+                  <div class="field-group">
+                    <label>Reason</label>
+                    <input v-model="xpForm.reason" class="form-input" placeholder="Defeated the dragon…" />
+                  </div>
+                  <div class="field-group">
+                    <label>Players</label>
+                    <div class="xp-player-list">
+                      <label class="xp-player-row xp-player-all">
+                        <input type="checkbox" :checked="allPlayersSelected" @change="toggleAllPlayers" />
+                        <span>All Players</span>
+                      </label>
+                      <label v-for="u in players" :key="u.id" class="xp-player-row">
+                        <input type="checkbox" :value="u.id" v-model="xpForm.user_ids" />
+                        <span>{{ u.username }}</span>
+                        <span v-if="u.character_name" class="xp-player-char">{{ u.character_name }}</span>
+                      </label>
+                    </div>
                   </div>
                 </div>
+                <button class="btn" @click="awardXp">Award XP</button>
+                <div v-if="xpStatus" :class="['status-msg', xpOk ? 'status-ok' : 'status-err']" style="margin-top:8px">{{ xpStatus }}</div>
               </div>
-              <button class="btn" @click="awardXp">Award XP</button>
-              <div v-if="xpStatus" :class="['status-msg', xpOk ? 'status-ok' : 'status-err']" style="margin-top:8px">{{ xpStatus }}</div>
-            </div>
+            </template>
+
+            <!-- Milestone levelling (5e) -->
+            <template v-else>
+              <div class="section-divider">Milestone Levelling</div>
+              <div class="card" style="padding:16px">
+                <div style="font-size:0.82em;opacity:0.6;margin-bottom:14px;line-height:1.5">
+                  Use the +/− buttons in the Players table to adjust individual levels, or level up all players at once below.
+                </div>
+                <button class="btn" @click="levelUpAll">Level Up All Players</button>
+                <div v-if="xpStatus" :class="['status-msg', xpOk ? 'status-ok' : 'status-err']" style="margin-top:8px">{{ xpStatus }}</div>
+              </div>
+            </template>
+
           </div>
 
         </div><!-- /players-xp-cols -->
@@ -304,7 +333,7 @@ import QuestCard from '@/components/QuestCard.vue'
 const data = useDataStore()
 const campaign = useCampaignStore()
 const ui = useUiStore()
-const { hasStress, hasSanity } = useSystemFeatures()
+const { hasStress, hasSanity, usesXP, usesMilestone, hasDndBeyond, maxLevel } = useSystemFeatures()
 
 const expandedId = ref(null)
 function toggleExpand(id) { expandedId.value = expandedId.value === id ? null : id }
@@ -324,6 +353,7 @@ const campSaving = ref(false)
 const campStatus = ref('')
 const campOk = ref(false)
 const campaignStats = ref(null)
+const sheetMap = ref({}) // userId → { dnd_beyond_url, ... }
 
 const xpForm = ref({ amount: 0, reason: '', user_ids: [] })
 const xpStatus = ref('')
@@ -525,6 +555,43 @@ async function loadAuditLog() {
   } catch (_) {}
 }
 
+async function loadSheets() {
+  try {
+    const r = await data.apif('/api/character-sheets')
+    if (r.ok) {
+      const d = await r.json()
+      const map = {}
+      ;(d.sheets || []).forEach(s => { map[s.user_id] = s })
+      sheetMap.value = map
+    }
+  } catch (_) {}
+}
+
+async function adjustLevel(user, delta) {
+  const current = user.character_level ?? 1
+  const next = Math.max(1, Math.min(maxLevel.value, current + delta))
+  if (next === current) return
+  const r = await data.apif(`/api/users/${user.id}/level`, {
+    method: 'PUT',
+    body: JSON.stringify({ level: next }),
+  })
+  if (r.ok) {
+    user.character_level = next
+    ui.showToast(`${user.username} → Level ${next}`, '', '✓')
+  } else {
+    ui.showToast('Level update failed', '', '✕')
+  }
+}
+
+async function levelUpAll() {
+  xpStatus.value = ''
+  const targets = players.value.filter(u => (u.character_level ?? 1) < maxLevel.value)
+  if (!targets.length) { xpStatus.value = 'All players are at max level.'; xpOk.value = false; return }
+  await Promise.all(targets.map(u => adjustLevel(u, 1)))
+  xpStatus.value = `Levelled up ${targets.length} player${targets.length !== 1 ? 's' : ''}.`
+  xpOk.value = true
+}
+
 async function loadStats() {
   const id = campaign.activeCampaign?.id
   if (!id) return
@@ -577,6 +644,7 @@ async function initForCampaign() {
     loadDash(),
     loadStats(),
     loadAuditLog(),
+    loadSheets(),
   ])
   data.users.forEach(u => { if (!stressEdits[u.id]) stressEdits[u.id] = { stress: '', sanity: '' } })
 }
@@ -590,6 +658,11 @@ watch(() => campaign.activeCampaign?.id, (newId, oldId) => {
 
 <style scoped>
 .player-last-seen { font-size: 0.72em; opacity: 0.45; margin-top: 2px; }
+
+/* Milestone level stepper */
+.level-stepper { display: flex; align-items: center; gap: 4px; }
+.level-val { font-weight: 700; font-size: 1em; color: var(--accent); min-width: 22px; text-align: center; }
+.level-btn { padding: 2px 7px; font-size: 1em; line-height: 1.2; }
 
 .stats-strip {
   display: flex;
