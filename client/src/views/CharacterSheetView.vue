@@ -74,7 +74,7 @@
             <!-- System-specific identity fields -->
             <template v-for="f in extraFields.filter(f => !['buddy_1','buddy_2','buddy_3','buddy_4','major_wound','temp_insanity','indef_insanity','gear','equipment_note','cons_air','cons_food','cons_water','cons_power','tiny_items'].includes(f.key))" :key="f.key">
               <div class="field-group">
-                <label>{{ f.label }}</label>
+                <label>{{ f.label }}<span v-if="f.help" class="field-help" :title="f.help">?</span></label>
                 <select v-if="f.type === 'select'" v-model="ef[f.key]" class="form-input">
                   <option value="">— choose —</option>
                   <option v-for="o in f.options" :key="o" :value="o">{{ o }}</option>
@@ -100,7 +100,7 @@
           <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Core Stats</div>
           <div class="edit-stats-grid">
             <div v-for="stat in coreStats" :key="stat.key" class="field-group">
-              <label>{{ stat.label }}</label>
+              <label>{{ stat.label }}<span v-if="stat.help" class="field-help" :title="stat.help">?</span></label>
               <input v-model.number="ef[stat.key]" type="number" class="form-input" placeholder="0" />
             </div>
           </div>
@@ -109,47 +109,47 @@
           <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Condition</div>
           <div class="edit-grid">
             <div class="field-group">
-              <label>HP (Current)</label>
+              <label>HP (Current)<span class="field-help" :title="conditionHelp.hp">?</span></label>
               <input v-model.number="ef.hp_current" type="number" class="form-input" />
             </div>
             <div class="field-group">
-              <label>HP (Max)<span v-if="activeSys === 'coriolis' && ef.strength && ef.agility" class="derive-hint" @click="ef.hp_max = (ef.strength||0)+(ef.agility||0)">← STR+AGL ({{ (ef.strength||0)+(ef.agility||0) }})</span></label>
+              <label>HP (Max)<span class="field-help" :title="conditionHelp.hp">?</span><span v-if="activeSys === 'coriolis' && ef.strength && ef.agility" class="derive-hint" @click="ef.hp_max = (ef.strength||0)+(ef.agility||0)">← STR+AGL ({{ (ef.strength||0)+(ef.agility||0) }})</span></label>
               <input v-model.number="ef.hp_max" type="number" class="form-input" />
             </div>
             <div v-if="hasStress" class="field-group">
-              <label>Stress (Current)</label>
+              <label>Stress (Current)<span class="field-help" :title="conditionHelp.stress">?</span></label>
               <input v-model.number="ef.stress_current" type="number" class="form-input" />
             </div>
             <div v-if="hasStress" class="field-group">
-              <label>Stress (Max)</label>
+              <label>Stress (Max)<span class="field-help" :title="conditionHelp.stress">?</span></label>
               <input v-model.number="ef.stress_max" type="number" class="form-input" />
             </div>
             <div v-if="hasMagicPoints" class="field-group">
-              <label>Magic Points (Current)</label>
+              <label>Magic Points (Current)<span class="field-help" :title="conditionHelp.mp">?</span></label>
               <input v-model.number="ef.mp_current" type="number" class="form-input" />
             </div>
             <div v-if="hasMagicPoints" class="field-group">
-              <label>Magic Points (Max)<span v-if="activeSys === 'coc' && ef.pow" class="derive-hint" @click="ef.mp_max = ef.pow">← POW ({{ ef.pow }})</span></label>
+              <label>Magic Points (Max)<span class="field-help" :title="conditionHelp.mp">?</span><span v-if="activeSys === 'coc' && ef.pow" class="derive-hint" @click="ef.mp_max = ef.pow">← POW ({{ ef.pow }})</span></label>
               <input v-model.number="ef.mp_max" type="number" class="form-input" />
             </div>
             <div v-if="hasMindPoints" class="field-group">
-              <label>Mind Points (Current)</label>
+              <label>Mind Points (Current)<span class="field-help" :title="conditionHelp.mind">?</span></label>
               <input v-model.number="ef.mind_current" type="number" class="form-input" />
             </div>
             <div v-if="hasMindPoints" class="field-group">
-              <label>Mind Points (Max)<span v-if="activeSys === 'coriolis' && ef.wits && ef.empathy" class="derive-hint" @click="ef.mind_max = (ef.wits||0)+(ef.empathy||0)">← WIT+EMP ({{ (ef.wits||0)+(ef.empathy||0) }})</span></label>
+              <label>Mind Points (Max)<span class="field-help" :title="conditionHelp.mind">?</span><span v-if="activeSys === 'coriolis' && ef.wits && ef.empathy" class="derive-hint" @click="ef.mind_max = (ef.wits||0)+(ef.empathy||0)">← WIT+EMP ({{ (ef.wits||0)+(ef.empathy||0) }})</span></label>
               <input v-model.number="ef.mind_max" type="number" class="form-input" />
             </div>
             <div v-if="hasSanity" class="field-group">
-              <label>Sanity (Current)</label>
+              <label>Sanity (Current)<span class="field-help" :title="conditionHelp.sanity">?</span></label>
               <input v-model.number="ef.sanity_current" type="number" class="form-input" />
             </div>
             <div v-if="hasSanity" class="field-group">
-              <label>Sanity (Max)</label>
+              <label>Sanity (Max)<span class="field-help" :title="conditionHelp.sanity">?</span></label>
               <input v-model.number="ef.sanity_max" type="number" class="form-input" />
             </div>
             <div v-if="hasRadiation" class="field-group">
-              <label>Radiation</label>
+              <label>Radiation<span class="field-help" :title="conditionHelp.rad">?</span></label>
               <input v-model.number="ef.radiation" type="number" class="form-input" min="0" />
             </div>
           </div>
@@ -171,7 +171,7 @@
             <div style="display:flex;flex-wrap:wrap;gap:12px">
               <label v-for="f in extraFields.filter(f => f.type === 'boolean')" :key="f.key" class="condition-check">
                 <input type="checkbox" v-model="ef[f.key]" />
-                <span>{{ f.label }}</span>
+                <span>{{ f.label }}<span v-if="f.help" class="field-help" :title="f.help">?</span></span>
               </label>
             </div>
           </template>
@@ -181,7 +181,7 @@
             <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Consumables</div>
             <div class="edit-stats-grid">
               <div v-for="k in ['cons_air','cons_food','cons_water','cons_power']" :key="k" class="field-group">
-                <label>{{ k.split('_')[1].charAt(0).toUpperCase() + k.split('_')[1].slice(1) }}</label>
+                <label>{{ k.split('_')[1].charAt(0).toUpperCase() + k.split('_')[1].slice(1) }}<span class="field-help" :title="consumableHelp[k]">?</span></label>
                 <input v-model.number="ef[k]" type="number" min="0" class="form-input" placeholder="0" />
               </div>
             </div>
@@ -238,7 +238,7 @@
                 <div style="font-size:0.75em;opacity:0.55;margin-bottom:8px;letter-spacing:.05em;text-transform:uppercase">Drives</div>
                 <div class="edit-stats-grid">
                   <div v-for="d in drives" :key="d" class="field-group">
-                    <label>{{ d.charAt(0).toUpperCase() + d.slice(1) }}</label>
+                    <label>{{ d.charAt(0).toUpperCase() + d.slice(1) }}<span class="field-help" :title="driveHelp[d]">?</span></label>
                     <input v-model.number="ef['drv_' + d]" type="number" min="0" max="20" class="form-input" placeholder="0" />
                   </div>
                 </div>
@@ -655,6 +655,41 @@ const activeSys = computed(() => campaign.activeCampaign?.system || 'custom')
 const generalSkills  = computed(() => systemSkills.value.filter(s => s.group === 'general'))
 const advancedSkills = computed(() => systemSkills.value.filter(s => s.group === 'advanced'))
 const hasSkillGroups = computed(() => systemSkills.value.some(s => s.group))
+
+const conditionHelp = computed(() => {
+  const s = activeSys.value
+  return {
+    hp:     s === 'coc'     ? 'HP = (CON + SIZ) ÷ 10, rounded up. A Major Wound = losing ½ HP in one hit.'
+          : s === 'coriolis'? 'HP Max = Strength + Agility. Reach 0 and you are Broken.'
+          : s === 'alien'   ? 'Lose all HP and you suffer a critical injury. Roll on the crit table.'
+          : s === 'dune'    ? 'Lose all HP and you are taken out of the scene.'
+          : s === 'achtung' ? 'Lose all HP and suffer a Wound. Two Wounds and you are incapacitated.'
+          : 'Hit Points — reach 0 and your character is down.',
+    stress: s === 'alien'   ? 'Stress adds bonus dice but triggers Panic rolls. Starts at 0; rises when you push rolls or face horror.'
+          : s === 'achtung' ? 'Stress capacity = your Will attribute. Lose your last point and suffer Confusion.'
+          : 'Stress points — track mental strain for this system.',
+    sanity: s === 'coc'     ? 'Sanity starts at POW × 5 (max 99). Cthulhu Mythos skill permanently reduces the maximum.'
+          : s === 'achtung' ? 'Sanity = resistance to Mythos horror. Lost through encounters with the unnatural.'
+          : 'Sanity — mental stability for this system.',
+    mp:     'Magic Points = POW. Spent to cast spells and resist magical effects. Recovers with rest.',
+    mind:   'Mind Points = Wits + Empathy. Lose all Mind Points and suffer a Trauma (permanent unless treated).',
+    rad:    s === 'alien'   ? 'Radiation Sickness. Each point = –1 to all rolls. Reach your STR and you die.'
+          : 'Radiation level — accumulates from environmental hazards.',
+  }
+})
+const consumableHelp = {
+  cons_air:   'Supply units of breathable air. Reach 0 in a sealed environment and suffocation begins.',
+  cons_food:  'Ration units. Reach 0 and gain the Starving condition after one day.',
+  cons_water: 'Water units. Reach 0 and gain the Dehydrated condition after one day.',
+  cons_power: 'Power cells for equipment. Reach 0 and powered gear stops working.',
+}
+const driveHelp = {
+  duty:    'Commitment to your House or organisation. High Duty means following orders even at personal cost.',
+  faith:   'Belief in a higher power or ideology. High Faith grants inner resolve against fear and temptation.',
+  justice: 'Adherence to fairness and law. High Justice drives you to right wrongs regardless of consequence.',
+  power:   'Desire for influence and control. High Power motivates ruthless ambition and resource acquisition.',
+  truth:   'Pursuit of knowledge and honesty. High Truth compels you to seek facts over convenient fictions.',
+}
 const cocIdea = computed(() => sheet.value?.int ? sheet.value.int * 5 : null)
 const cocKnow = computed(() => sheet.value?.edu ? sheet.value.edu * 5 : null)
 
@@ -1100,6 +1135,26 @@ onMounted(() => {
 }
 .weapons-table--view td { opacity: 0.85; }
 .weapons-table .form-input { padding: 3px 6px !important; font-size: 0.9em; }
+
+/* ── Field help badge (?-icon tooltip trigger) ───────── */
+.field-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  font-size: 0.6em;
+  font-weight: 700;
+  margin-left: 5px;
+  cursor: help;
+  opacity: 0.35;
+  vertical-align: middle;
+  line-height: 1;
+  user-select: none;
+}
+.field-help:hover { opacity: 0.85; }
 
 /* ── Derived-stat auto-fill hint ─────────────────────── */
 .derive-hint {
