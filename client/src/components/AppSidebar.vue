@@ -90,7 +90,7 @@
         </div>
         <div class="nav-group" :class="{ collapsed: collapsed.tools }">
           <RouterLink to="/character-sheet" class="nav-item" active-class="active" @click="ui.closeSidebar()">
-            <span class="nav-icon">🧙</span>Sheet
+            <span class="nav-icon">🧙</span>Character
           </RouterLink>
           <RouterLink to="/notes" class="nav-item" active-class="active" @click="ui.closeSidebar()">
             <span class="nav-icon">📝</span>Notes

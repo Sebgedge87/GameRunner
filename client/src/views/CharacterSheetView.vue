@@ -1,7 +1,7 @@
 <template>
   <div class="page-content">
     <div class="page-header">
-      <div class="page-title">Character Sheet</div>
+      <div class="page-title">Character</div>
     </div>
 
     <!-- GM: player selector -->
@@ -17,16 +17,15 @@
 
     <div v-if="loading" class="loading">Loading sheet...</div>
 
-    <!-- No sheet yet -->
+    <!-- No sheet yet (GM viewing a player who has none) -->
     <div v-else-if="!sheet && !editing" class="empty-state">
       <div>No character sheet yet.</div>
-      <button v-if="!campaign.isGm" class="btn" style="margin-top:12px" @click="startEdit">Create Sheet</button>
     </div>
 
     <!-- ── EDIT MODE ──────────────────────────────────── -->
     <template v-else-if="editing">
       <div class="card" style="margin-bottom:16px">
-        <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:14px">EDIT SHEET</div>
+        <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:14px">{{ sheet ? 'EDIT CHARACTER' : 'CREATE CHARACTER' }}</div>
 
         <!-- D&D Beyond URL (5e only) -->
         <template v-if="hasDndBeyond">
@@ -803,6 +802,10 @@ async function loadSheet() {
       sheet.value = raw ? { ...raw, ...(raw.sheet_data || {}) } : null
     } else {
       sheet.value = null
+    }
+    // Auto-open edit form when the player has no sheet yet
+    if (!sheet.value && !campaign.isGm) {
+      startEdit()
     }
     const rs = await data.apif('/api/character-sheets/ships/all')
     if (rs.ok) ships.value = (await rs.json()).ships || []
