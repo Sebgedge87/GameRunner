@@ -1408,122 +1408,215 @@ onMounted(() => {
 /* ── Page flip container ─────────────────────────────────── */
 .sheet-page-wrap {
   position: relative;
-  overflow: hidden; /* clip the outgoing page during flip */
+  perspective: 1400px; /* single perspective on the container */
 }
 
 /* ── Page flip transition ─────────────────────────────────── */
-/* Forward flip (left → right turn) */
+/*
+ * Forward: outgoing page folds away (spine = left edge, right side swings left),
+ *          then new page unfolds from flat against the spine.
+ * Backward: mirror — spine on the right.
+ */
+
+/* Forward: leave – fold outgoing page to the left around its left edge */
 .flip-forward-leave-active {
-  animation: flipOutLeft 0.32s cubic-bezier(0.4, 0, 1, 1) forwards;
+  animation: foldAwayLeft 0.36s ease-in forwards;
   position: absolute;
-  width: 100%;
-  top: 0;
+  width: 100%; top: 0; left: 0;
+  z-index: 2;
+  transform-origin: left center;
 }
+/* Forward: enter – new page unfolds from the spine (delayed so fold completes first) */
 .flip-forward-enter-active {
-  animation: flipInRight 0.32s cubic-bezier(0, 0, 0.6, 1) forwards;
+  animation: unfoldFromLeft 0.32s 0.2s ease-out both;
+  z-index: 1;
+  transform-origin: left center;
 }
 
-/* Backward flip (right → left turn) */
+/* Backward: leave – fold outgoing page to the right around its right edge */
 .flip-backward-leave-active {
-  animation: flipOutRight 0.32s cubic-bezier(0.4, 0, 1, 1) forwards;
+  animation: foldAwayRight 0.36s ease-in forwards;
   position: absolute;
-  width: 100%;
-  top: 0;
+  width: 100%; top: 0; left: 0;
+  z-index: 2;
+  transform-origin: right center;
 }
+/* Backward: enter – new page unfolds from the right spine */
 .flip-backward-enter-active {
-  animation: flipInLeft 0.32s cubic-bezier(0, 0, 0.6, 1) forwards;
+  animation: unfoldFromRight 0.32s 0.2s ease-out both;
+  z-index: 1;
+  transform-origin: right center;
 }
 
-@keyframes flipOutLeft {
-  0%   { transform: perspective(1200px) rotateY(0deg);   opacity: 1; }
-  60%  { transform: perspective(1200px) rotateY(-75deg); opacity: 0.3; }
-  100% { transform: perspective(1200px) rotateY(-90deg); opacity: 0; }
+/* Spine stays fixed; far edge swings away and behind */
+@keyframes foldAwayLeft {
+  0%   { transform: rotateY(0deg);   box-shadow: none; }
+  45%  { transform: rotateY(-55deg); box-shadow: -14px 0 32px rgba(0,0,0,0.4); }
+  100% { transform: rotateY(-90deg); box-shadow: none; }
 }
-@keyframes flipInRight {
-  0%   { transform: perspective(1200px) rotateY(90deg);  opacity: 0; }
-  40%  { transform: perspective(1200px) rotateY(15deg);  opacity: 0.7; }
-  100% { transform: perspective(1200px) rotateY(0deg);   opacity: 1; }
+@keyframes unfoldFromLeft {
+  0%   { transform: rotateY(-90deg); }
+  100% { transform: rotateY(0deg); }
 }
-@keyframes flipOutRight {
-  0%   { transform: perspective(1200px) rotateY(0deg);   opacity: 1; }
-  60%  { transform: perspective(1200px) rotateY(75deg);  opacity: 0.3; }
-  100% { transform: perspective(1200px) rotateY(90deg);  opacity: 0; }
+
+@keyframes foldAwayRight {
+  0%   { transform: rotateY(0deg);  box-shadow: none; }
+  45%  { transform: rotateY(55deg); box-shadow: 14px 0 32px rgba(0,0,0,0.4); }
+  100% { transform: rotateY(90deg); box-shadow: none; }
 }
-@keyframes flipInLeft {
-  0%   { transform: perspective(1200px) rotateY(-90deg); opacity: 0; }
-  40%  { transform: perspective(1200px) rotateY(-15deg); opacity: 0.7; }
-  100% { transform: perspective(1200px) rotateY(0deg);   opacity: 1; }
+@keyframes unfoldFromRight {
+  0%   { transform: rotateY(90deg); }
+  100% { transform: rotateY(0deg); }
 }
 
 /* ── WW2 Dossier / Achtung! Cthulhu mode ─────────────────────────── */
+/*
+ * Palette:
+ *   Paper bg:  #e8d5a3  (warm manila)
+ *   Card bg:   #d4be87  (aged tan)
+ *   Dark card: #c4a96a  (deeper tan crease)
+ *   Text:      #1a0d04  (near-black ink)
+ *   Muted txt: #5a3e22  (dark sepia)
+ *   Border:    #8b6210  (dark golden-brown)
+ *   Stamp red: #8b1a1a  (military stamp)
+ */
+
+/* Page background — aged manila paper */
+.dossier-mode {
+  background: #d9c48a;
+  --dossier-paper:   #e8d5a3;
+  --dossier-card:    #d4be87;
+  --dossier-deep:    #c4a96a;
+  --dossier-ink:     #1a0d04;
+  --dossier-sepia:   #5a3e22;
+  --dossier-border:  #8b6210;
+  --dossier-stamp:   #8b1a1a;
+}
+
+.dossier-mode .page-content,
+.dossier-mode .sheet-page {
+  background: var(--dossier-paper);
+}
+
 .dossier-mode .card,
 .dossier-mode .sheet-header-card {
-  background: #2c2a1e !important;
-  border-color: #6a7258 !important;
+  background: var(--dossier-card) !important;
+  border-color: var(--dossier-border) !important;
+  color: var(--dossier-ink) !important;
   position: relative;
+}
+
+/* Inner cards a touch darker for depth */
+.dossier-mode .card .card,
+.dossier-mode .card > div[style*="background"] {
+  background: var(--dossier-deep) !important;
 }
 
 .dossier-mode .page-title {
   font-family: 'Special Elite', 'Courier New', monospace;
   letter-spacing: 0.08em;
+  color: var(--dossier-ink);
 }
 
 .dossier-mode .stat-box {
-  background: #24221a;
-  border-color: #6a7258;
+  background: var(--dossier-deep);
+  border-color: var(--dossier-border);
 }
 
 .dossier-mode .stat-value {
   font-family: 'Special Elite', 'Courier New', monospace;
-  color: var(--accent-yellow, #e9c46a);
+  color: var(--dossier-stamp);
 }
 
 .dossier-mode .stat-label {
-  color: #9a8c6e;
+  color: var(--dossier-sepia);
 }
 
+/* Section labels — stamp style */
 .dossier-mode .acht-card-header,
 .dossier-mode .acht-sheet-card {
-  border-left-width: 4px;
+  border-left: 4px solid var(--dossier-stamp);
+  border-color: var(--dossier-border) !important;
+  background: var(--dossier-card) !important;
 }
 
-/* Dossier: stamp-style section headers */
 .dossier-mode [style*="letter-spacing:1px"],
 .dossier-mode [style*="letter-spacing:.05em"] {
   font-family: 'Special Elite', 'Courier New', monospace !important;
+  color: var(--dossier-sepia) !important;
 }
 
-/* Dossier mode — olive/military page navigation */
+/* Inputs on manila paper */
+.dossier-mode input,
+.dossier-mode textarea,
+.dossier-mode select {
+  background: #f0e4bc !important;
+  border-color: var(--dossier-border) !important;
+  color: var(--dossier-ink) !important;
+}
+.dossier-mode input:focus,
+.dossier-mode textarea:focus,
+.dossier-mode select:focus {
+  border-color: var(--dossier-stamp) !important;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(139,26,26,0.18);
+}
+
+/* Page navigation tabs — manila folder tabs */
 .dossier-mode .dossier-page-tab {
-  background: #26241a;
-  border-color: #6a7258;
-  color: #9a8c6e;
-  font-family: 'Special Elite', serif;
+  background: var(--dossier-deep);
+  border-color: var(--dossier-border);
+  color: var(--dossier-sepia);
+  font-family: 'Special Elite', 'Courier New', monospace;
   letter-spacing: 0.08em;
 }
-.dossier-mode .dossier-page-tab::after { background: #26241a; }
+.dossier-mode .dossier-page-tab::after { background: var(--dossier-deep); }
+.dossier-mode .dossier-page-tab:hover { color: var(--dossier-ink); }
 .dossier-mode .dossier-page-tab.active {
-  background: #1e1c12;
-  border-color: var(--accent-yellow, #e9c46a);
-  color: var(--accent-yellow, #e9c46a);
+  background: var(--dossier-paper);
+  border-color: var(--dossier-stamp);
+  color: var(--dossier-stamp);
 }
-.dossier-mode .dossier-page-tab.active::after { background: #1e1c12; }
+.dossier-mode .dossier-page-tab.active::after { background: var(--dossier-paper); }
 .dossier-mode .dossier-nav-btn {
-  border-color: #6a7258;
-  color: #9a8c6e;
+  border-color: var(--dossier-border);
+  color: var(--dossier-sepia);
 }
 .dossier-mode .dossier-nav-btn:hover:not(:disabled) {
-  border-color: var(--accent-yellow, #e9c46a);
-  color: var(--accent-yellow, #e9c46a);
+  border-color: var(--dossier-stamp);
+  color: var(--dossier-stamp);
 }
-/* Dossier page gets a subtle aged-paper shadow during flip */
-.dossier-mode .flip-forward-leave-active,
-.dossier-mode .flip-backward-leave-active {
-  box-shadow: 8px 0 24px rgba(0,0,0,0.5);
-}
-/* Dossier: character name colour — dark red is invisible on dark bg, use cream/yellow */
+
+/* Character name — dark ink, not accent colour */
 .dossier-mode .sheet-header-card [style*="color:var(--accent)"] {
-  color: var(--accent-yellow, #e9c46a) !important;
+  color: var(--dossier-stamp) !important;
+}
+
+/* Labels and helper text */
+.dossier-mode label,
+.dossier-mode .field-label {
+  color: var(--dossier-sepia) !important;
+}
+
+/* Save indicator on manila bg */
+.dossier-mode .sheet-save-indicator.saved  { color: #2e5c1a; }
+.dossier-mode .sheet-save-indicator.saving { color: var(--dossier-sepia); }
+.dossier-mode .sheet-save-indicator.error  { color: var(--dossier-stamp); }
+
+/* Subtle paper texture via gradient */
+.dossier-mode .sheet-page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 28px,
+    rgba(139, 98, 16, 0.06) 28px,
+    rgba(139, 98, 16, 0.06) 29px
+  );
+  z-index: 0;
 }
 
 /* ── Save status indicator ───────────────────────────── */
