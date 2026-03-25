@@ -7,8 +7,8 @@
       </div>
     </div>
 
-    <!-- GM: player selector -->
-    <div v-if="campaign.isGm" class="gm-only" style="margin-bottom:16px;max-width:280px">
+    <!-- GM: player selector (only when not viewing a specific character by id) -->
+    <div v-if="campaign.isGm && !characterId" class="gm-only" style="margin-bottom:16px;max-width:280px">
       <div class="field-group">
         <label>View Player</label>
         <select v-model="selectedUserId" @change="loadSheet">
@@ -832,7 +832,7 @@
       </template>
 
       <!-- Edit button (players edit their own; GM can edit any) -->
-      <div v-if="!campaign.isGm || selectedUserId" style="margin-top:24px">
+      <div v-if="!campaign.isGm || selectedUserId || characterId" style="margin-top:24px">
         <button class="btn" @click="startEdit">Edit Sheet</button>
       </div>
 
@@ -1128,8 +1128,12 @@ async function loadSheet() {
         sheet.value = null
       }
     }
-    // Auto-open edit form when the player has no sheet yet
-    if (!sheet.value && !campaign.isGm) {
+    // Auto-open edit form when no sheet exists, or when a new character
+    // has been created with no sheet_data filled in yet
+    const isNewChar = characterId.value && sheet.value &&
+      !sheet.value.class && !sheet.value.concept &&
+      !coreStats.value.some(s => sheet.value[s.key] != null)
+    if ((!sheet.value || isNewChar) && !campaign.isGm) {
       startEdit()
     }
     const rs = await data.apif('/api/character-sheets/ships/all')
