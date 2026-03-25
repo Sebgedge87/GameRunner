@@ -326,7 +326,7 @@ export function useSystemFeatures() {
     return SYSTEM_FEATURES[sys] ?? DEFAULTS
   })
   const cocEra = computed(() => {
-    if (activeSys.value !== 'coc') return null
+    if (campaign.activeCampaign?.system !== 'coc') return null
     return campaign.activeCampaign?.coc_era || '1920s'
   })
   const cocEraLabel = computed(() => {
