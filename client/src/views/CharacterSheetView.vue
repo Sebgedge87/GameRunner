@@ -411,11 +411,18 @@
     <!-- ── VIEW MODE ──────────────────────────────────── -->
     <template v-else>
 
-      <!-- Tab navigation (built-in sheet only) -->
-      <div v-if="hasBuiltinSheet" class="sheet-tabs">
-        <button class="sheet-tab" :class="{ active: activePage === 'identity' }" @click="activePage = 'identity'">Identity</button>
-        <button class="sheet-tab" :class="{ active: activePage === 'skills' }" @click="activePage = 'skills'">Skills</button>
-        <button class="sheet-tab" :class="{ active: activePage === 'notes' }" @click="activePage = 'notes'">Notes</button>
+      <!-- Page navigation (built-in sheet only) -->
+      <div v-if="hasBuiltinSheet" class="dossier-page-nav">
+        <button class="dossier-nav-btn dossier-nav-prev" :disabled="pageIndex === 0" @click="prevPage" aria-label="Previous page">&#8249;</button>
+        <div class="dossier-page-tabs">
+          <button v-for="(p, i) in pages" :key="p.id"
+            class="dossier-page-tab"
+            :class="{ active: activePage === p.id }"
+            @click="goToPage(i)">
+            <span class="dossier-tab-label">{{ p.label }}</span>
+          </button>
+        </div>
+        <button class="dossier-nav-btn dossier-nav-next" :disabled="pageIndex === pages.length - 1" @click="nextPage" aria-label="Next page">&#8250;</button>
       </div>
 
       <!-- D&D Beyond banner (5e with URL set) -->
@@ -436,8 +443,13 @@
       <!-- Built-in sheet for other systems -->
       <template v-if="hasBuiltinSheet">
 
-        <!-- PAGE: IDENTITY ───────────────────────────────── -->
-        <div v-show="activePage === 'identity'" class="sheet-page">
+        <!-- Page flip container -->
+        <div class="sheet-page-wrap">
+        <Transition :name="flipTransition">
+        <div class="sheet-page" :key="activePage">
+
+        <!-- ── IDENTITY ──────────────────────────────────── -->
+        <template v-if="activePage === 'identity'">
 
         <!-- Character Header -->
         <div class="card sheet-header-card" style="margin-bottom:16px">
@@ -540,10 +552,10 @@
           </div>
         </div>
 
-        </div><!-- /sheet-page identity -->
+        </template><!-- /identity -->
 
-        <!-- PAGE: SKILLS ─────────────────────────────────── -->
-        <div v-show="activePage === 'skills'" class="sheet-page">
+        <!-- ── SKILLS ───────────────────────────────────── -->
+        <template v-else-if="activePage === 'skills'">
 
         <!-- Skills — system skills with values -->
         <div v-if="systemSkills.length" class="card" style="margin-bottom:16px">
@@ -689,10 +701,10 @@
           </div>
         </template>
 
-        </div><!-- /sheet-page skills -->
+        </template><!-- /skills -->
 
-        <!-- PAGE: NOTES ──────────────────────────────────── -->
-        <div v-show="activePage === 'notes'" class="sheet-page">
+        <!-- ── NOTES ────────────────────────────────────── -->
+        <template v-else>
 
         <!-- CoC My Story + Backstory (always visible for CoC) -->
         <template v-if="activeSys === 'coc'">
@@ -806,7 +818,10 @@
           <div class="prose" style="font-size:0.85em;opacity:0.8;line-height:1.6" v-html="renderMd(sheet.critical_injuries)"></div>
         </div>
 
-        </div><!-- /sheet-page notes -->
+        </template><!-- /notes -->
+        </div><!-- /sheet-page -->
+        </Transition>
+        </div><!-- /sheet-page-wrap -->
 
         <!-- Ships / Vehicles (shown on all pages) -->
         <template v-if="ships.length">
@@ -960,6 +975,24 @@ const saving = ref(false)
 const saveError = ref('')
 const selectedUserId = ref('')
 const activePage = ref('identity') // 'identity' | 'skills' | 'notes'
+const flipDirection = ref('forward') // controls page-flip CSS transition direction
+
+const pages = [
+  { id: 'identity', label: 'Identity' },
+  { id: 'skills',   label: 'Skills'   },
+  { id: 'notes',    label: 'Notes'    },
+]
+const pageIndex = computed(() => pages.findIndex(p => p.id === activePage.value))
+const flipTransition = computed(() => `flip-${flipDirection.value}`)
+
+function goToPage(idx) {
+  const current = pageIndex.value
+  if (idx === current) return
+  flipDirection.value = idx > current ? 'forward' : 'backward'
+  activePage.value = pages[idx].id
+}
+function prevPage() { goToPage(pageIndex.value - 1) }
+function nextPage() { goToPage(pageIndex.value + 1) }
 
 // When loaded via ?id= from CharactersView, use new characters API
 const characterId = computed(() => route.query.id ? Number(route.query.id) : null)
@@ -1128,12 +1161,10 @@ async function loadSheet() {
         sheet.value = null
       }
     }
-    // Auto-open edit form when no sheet exists, or when a new character
-    // has been created with no sheet_data filled in yet
-    const isNewChar = characterId.value && sheet.value &&
-      !sheet.value.class && !sheet.value.concept &&
-      !coreStats.value.some(s => sheet.value[s.key] != null)
-    if ((!sheet.value || isNewChar) && !campaign.isGm) {
+    // Auto-open edit form when the player has no sheet yet, or when it's a freshly created character with no data
+    const isNewEmpty = characterId.value && sheet.value &&
+                       Object.keys(sheet.value.sheet_data || {}).length === 0
+    if ((!sheet.value || isNewEmpty) && !campaign.isGm) {
       startEdit()
     }
     const rs = await data.apif('/api/character-sheets/ships/all')
@@ -1669,37 +1700,113 @@ onMounted(() => {
   font-family: 'JetBrains Mono', monospace;
 }
 
-/* Tab navigation */
-.sheet-tabs {
+/* ── Dossier page navigation ─────────────────────────────── */
+.dossier-page-nav {
   display: flex;
-  gap: 2px;
-  margin-bottom: 16px;
-  border-bottom: 1px solid var(--border);
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
 }
-.sheet-tab {
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  padding: 8px 16px;
+.dossier-page-tabs {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+  justify-content: center;
+}
+.dossier-page-tab {
+  background: var(--surface2, #20202e);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  padding: 6px 20px 5px;
   cursor: pointer;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.72em;
-  letter-spacing: 0.1em;
+  font-size: 0.7em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text3);
-  margin-bottom: -1px;
+  border-radius: 4px 4px 0 0;
+  position: relative;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+.dossier-page-tab::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 0; right: 0;
+  height: 1px;
+  background: var(--surface2, #20202e);
+}
+.dossier-page-tab:hover { color: var(--text); }
+.dossier-page-tab.active {
+  color: var(--accent);
+  background: var(--surface, #18181f);
+  border-color: var(--accent);
+  z-index: 1;
+}
+.dossier-page-tab.active::after { background: var(--surface, #18181f); }
+.dossier-nav-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  width: 32px; height: 32px;
+  cursor: pointer;
+  font-size: 1.3em;
+  line-height: 1;
+  color: var(--text3);
+  display: flex; align-items: center; justify-content: center;
   transition: color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
 }
-.sheet-tab:hover { color: var(--text); }
-.sheet-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.dossier-nav-btn:hover:not(:disabled) { color: var(--text); border-color: var(--accent); }
+.dossier-nav-btn:disabled { opacity: 0.25; cursor: default; }
 
-/* Sheet page transition */
-.sheet-page {
-  animation: pagein 0.18s ease;
+/* ── Page flip container ─────────────────────────────────── */
+.sheet-page-wrap {
+  position: relative;
+  overflow: hidden; /* clip the outgoing page during flip */
 }
-@keyframes pagein {
-  from { opacity: 0; transform: translateX(8px); }
-  to   { opacity: 1; transform: translateX(0); }
+
+/* ── Page flip transition ─────────────────────────────────── */
+/* Forward flip (left → right turn) */
+.flip-forward-leave-active {
+  animation: flipOutLeft 0.32s cubic-bezier(0.4, 0, 1, 1) forwards;
+  position: absolute;
+  width: 100%;
+  top: 0;
+}
+.flip-forward-enter-active {
+  animation: flipInRight 0.32s cubic-bezier(0, 0, 0.6, 1) forwards;
+}
+
+/* Backward flip (right → left turn) */
+.flip-backward-leave-active {
+  animation: flipOutRight 0.32s cubic-bezier(0.4, 0, 1, 1) forwards;
+  position: absolute;
+  width: 100%;
+  top: 0;
+}
+.flip-backward-enter-active {
+  animation: flipInLeft 0.32s cubic-bezier(0, 0, 0.6, 1) forwards;
+}
+
+@keyframes flipOutLeft {
+  0%   { transform: perspective(1200px) rotateY(0deg);   opacity: 1; }
+  60%  { transform: perspective(1200px) rotateY(-75deg); opacity: 0.3; }
+  100% { transform: perspective(1200px) rotateY(-90deg); opacity: 0; }
+}
+@keyframes flipInRight {
+  0%   { transform: perspective(1200px) rotateY(90deg);  opacity: 0; }
+  40%  { transform: perspective(1200px) rotateY(15deg);  opacity: 0.7; }
+  100% { transform: perspective(1200px) rotateY(0deg);   opacity: 1; }
+}
+@keyframes flipOutRight {
+  0%   { transform: perspective(1200px) rotateY(0deg);   opacity: 1; }
+  60%  { transform: perspective(1200px) rotateY(75deg);  opacity: 0.3; }
+  100% { transform: perspective(1200px) rotateY(90deg);  opacity: 0; }
+}
+@keyframes flipInLeft {
+  0%   { transform: perspective(1200px) rotateY(-90deg); opacity: 0; }
+  40%  { transform: perspective(1200px) rotateY(-15deg); opacity: 0.7; }
+  100% { transform: perspective(1200px) rotateY(0deg);   opacity: 1; }
 }
 
 /* ── WW2 Dossier / Achtung! Cthulhu mode ─────────────────────────── */
@@ -1740,15 +1847,36 @@ onMounted(() => {
   font-family: 'Special Elite', 'Courier New', monospace !important;
 }
 
-/* Tab bar in dossier mode — olive/military feel */
-.dossier-mode .sheet-tabs {
-  border-bottom-color: #6a7258;
+/* Dossier mode — olive/military page navigation */
+.dossier-mode .dossier-page-tab {
+  background: #26241a;
+  border-color: #6a7258;
+  color: #9a8c6e;
+  font-family: 'Special Elite', serif;
+  letter-spacing: 0.08em;
 }
-.dossier-mode .sheet-tab {
+.dossier-mode .dossier-page-tab::after { background: #26241a; }
+.dossier-mode .dossier-page-tab.active {
+  background: #1e1c12;
+  border-color: var(--accent-yellow, #e9c46a);
+  color: var(--accent-yellow, #e9c46a);
+}
+.dossier-mode .dossier-page-tab.active::after { background: #1e1c12; }
+.dossier-mode .dossier-nav-btn {
+  border-color: #6a7258;
   color: #9a8c6e;
 }
-.dossier-mode .sheet-tab.active {
+.dossier-mode .dossier-nav-btn:hover:not(:disabled) {
+  border-color: var(--accent-yellow, #e9c46a);
   color: var(--accent-yellow, #e9c46a);
-  border-bottom-color: var(--accent-yellow, #e9c46a);
+}
+/* Dossier page gets a subtle aged-paper shadow during flip */
+.dossier-mode .flip-forward-leave-active,
+.dossier-mode .flip-backward-leave-active {
+  box-shadow: 8px 0 24px rgba(0,0,0,0.5);
+}
+/* Dossier: character name colour — dark red is invisible on dark bg, use cream/yellow */
+.dossier-mode .sheet-header-card [style*="color:var(--accent)"] {
+  color: var(--accent-yellow, #e9c46a) !important;
 }
 </style>
