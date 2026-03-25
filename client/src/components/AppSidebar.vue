@@ -89,8 +89,8 @@
           Tools
         </div>
         <div class="nav-group" :class="{ collapsed: collapsed.tools }">
-          <RouterLink to="/character-sheet" class="nav-item" active-class="active" @click="ui.closeSidebar()">
-            <span class="nav-icon">🧙</span>Character
+          <RouterLink to="/characters" class="nav-item" active-class="active" @click="ui.closeSidebar()">
+            <span class="nav-icon">🧙</span>Characters
           </RouterLink>
           <RouterLink to="/notes" class="nav-item" active-class="active" @click="ui.closeSidebar()">
             <span class="nav-icon">📝</span>Notes

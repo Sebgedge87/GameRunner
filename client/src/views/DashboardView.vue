@@ -26,6 +26,35 @@
     <!-- Playlist player -->
     <PlaylistPlayer :url="playlistUrl" />
 
+    <!-- Character shortcut (player only) -->
+    <div v-if="!campaign.isGm" class="char-shortcut-row">
+      <div v-if="myCharacters.length === 0" class="char-shortcut-new" @click="router.push('/characters')">
+        <span class="char-shortcut-plus">+</span>
+        <span>Create your character</span>
+      </div>
+      <template v-else>
+        <div
+          v-for="c in myCharacters"
+          :key="c.id"
+          class="char-shortcut-tile"
+          @click="router.push(`/character-sheet?id=${c.id}`)"
+        >
+          <div class="char-shortcut-portrait">
+            <img v-if="c.portrait_url" :src="c.portrait_url" :alt="c.name" class="char-shortcut-img" />
+            <div v-else class="char-shortcut-initials">{{ initials(c.name) }}</div>
+          </div>
+          <div class="char-shortcut-details">
+            <div class="char-shortcut-name">{{ c.name }}</div>
+            <div v-if="c.sheet_data?.class" class="char-shortcut-class">{{ c.sheet_data.class }}</div>
+          </div>
+          <div class="char-shortcut-arrow">→</div>
+        </div>
+        <div class="char-shortcut-add" @click="router.push('/characters')" title="Manage characters">
+          <span class="nav-icon">🧙</span> Characters
+        </div>
+      </template>
+    </div>
+
     <!-- Agenda card (player only) -->
     <div v-if="data.agenda && !campaign.isGm" class="agenda-card">
       <div class="agenda-card-title">SECRET OBJECTIVE</div>
@@ -189,6 +218,7 @@ import { useRouter } from 'vue-router'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
 import { useDataStore } from '@/stores/data'
+import { useAuthStore } from '@/stores/auth'
 import { useSystemFeatures } from '@/composables/useSystemFeatures'
 import PlaylistPlayer from '@/components/PlaylistPlayer.vue'
 import QuestCard from '@/components/QuestCard.vue'
@@ -196,8 +226,32 @@ import QuestCard from '@/components/QuestCard.vue'
 const campaign = useCampaignStore()
 const ui = useUiStore()
 const data = useDataStore()
+const auth = useAuthStore()
 const router = useRouter()
 const { hasStress, hasSanity } = useSystemFeatures()
+
+// Characters for the current player
+const myCharacters = ref([])
+
+async function loadMyCharacters() {
+  if (campaign.isGm) return
+  try {
+    const headers = {
+      Authorization: `Bearer ${auth.token}`,
+      'Content-Type': 'application/json',
+    }
+    if (campaign.activeCampaign?.id) headers['X-Campaign-Id'] = campaign.activeCampaign.id
+    const r = await fetch('/api/characters', { headers })
+    if (r.ok) {
+      const d = await r.json()
+      myCharacters.value = d.characters || []
+    }
+  } catch (_) {}
+}
+
+function initials(name) {
+  return (name || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+}
 
 const expandedId = ref(null)
 function toggleExpand(id) { expandedId.value = expandedId.value === id ? null : id }
@@ -256,11 +310,48 @@ function openMessage(m) { ui.openMessage(m) }
 
 onMounted(async () => {
   if (!data.scheduling.length) await data.loadSessions()
+  await loadMyCharacters()
 })
 </script>
 
 <style scoped>
 .campaign-subtitle { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+/* Character shortcut row */
+.char-shortcut-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; align-items: center; }
+.char-shortcut-tile {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius, 6px); padding: 8px 12px;
+  cursor: pointer; transition: border-color 0.15s;
+  min-width: 180px;
+}
+.char-shortcut-tile:hover { border-color: var(--accent); }
+.char-shortcut-portrait {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--surface2, #2a2a3a); overflow: hidden;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.char-shortcut-img { width: 100%; height: 100%; object-fit: cover; }
+.char-shortcut-initials { font-size: 0.9em; font-weight: 700; opacity: 0.3; font-family: 'JetBrains Mono', monospace; }
+.char-shortcut-details { flex: 1; min-width: 0; }
+.char-shortcut-name { font-weight: 600; font-size: 0.9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.char-shortcut-class { font-size: 0.75em; opacity: 0.5; }
+.char-shortcut-arrow { opacity: 0.3; font-size: 0.9em; }
+.char-shortcut-new {
+  display: flex; align-items: center; gap: 8px;
+  border: 1px dashed var(--border); border-radius: var(--radius, 6px);
+  padding: 8px 16px; cursor: pointer; font-size: 0.82em; opacity: 0.6;
+  transition: opacity 0.15s, border-color 0.15s;
+}
+.char-shortcut-new:hover { opacity: 1; border-color: var(--accent); }
+.char-shortcut-plus { font-size: 1.2em; opacity: 0.7; }
+.char-shortcut-add {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.75em; opacity: 0.45; cursor: pointer;
+  font-family: 'JetBrains Mono', monospace; padding: 4px 8px;
+}
+.char-shortcut-add:hover { opacity: 0.8; }
 
 /* Stress bars */
 .stress-wrap { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }

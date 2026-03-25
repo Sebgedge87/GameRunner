@@ -336,6 +336,19 @@ function runMigrations() {
       UNIQUE(user_id, campaign_id)
     );
 
+    -- ── Characters (multi-character per user per campaign) ─────────────────────
+    CREATE TABLE IF NOT EXISTS characters (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      campaign_id INTEGER REFERENCES campaigns(id) ON DELETE CASCADE,
+      name TEXT NOT NULL DEFAULT 'New Character',
+      system TEXT DEFAULT 'dnd5e',
+      portrait_url TEXT,
+      sheet_data TEXT DEFAULT '{}',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
     -- ── Ship / Vehicle ─────────────────────────────────────────────────────────
     CREATE TABLE IF NOT EXISTS ship_sheets (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
