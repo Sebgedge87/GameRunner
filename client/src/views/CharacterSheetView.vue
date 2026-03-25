@@ -1128,8 +1128,10 @@ async function loadSheet() {
         sheet.value = null
       }
     }
-    // Auto-open edit form when the player has no sheet yet
-    if (!sheet.value && !campaign.isGm) {
+    // Auto-open edit form when the player has no sheet yet, or when it's a freshly created character with no data
+    const isNewEmpty = characterId.value && sheet.value &&
+                       Object.keys(sheet.value.sheet_data || {}).length === 0
+    if ((!sheet.value || isNewEmpty) && !campaign.isGm) {
       startEdit()
     }
     const rs = await data.apif('/api/character-sheets/ships/all')
@@ -1746,5 +1748,9 @@ onMounted(() => {
 .dossier-mode .sheet-tab.active {
   color: var(--accent-yellow, #e9c46a);
   border-bottom-color: var(--accent-yellow, #e9c46a);
+}
+/* Dossier: character name colour — dark red is invisible on dark bg, use cream/yellow */
+.dossier-mode .sheet-header-card [style*="color:var(--accent)"] {
+  color: var(--accent-yellow, #e9c46a) !important;
 }
 </style>
