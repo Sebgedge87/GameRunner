@@ -87,7 +87,7 @@ export const useCampaignStore = defineStore('campaign', () => {
       }
       const myCamp = allCampaigns.value.find(c => c.id === activeCampaign.value?.id)
       isGm.value = myCamp ? myCamp.my_role === 'gm' : false
-      if (activeCampaign.value?.system && !localStorage.getItem('chronicle_theme_manual')) {
+      if (activeCampaign.value?.system) {
         applyTheme(activeCampaign.value.system)
       }
       applyBgImage(activeCampaign.value?.bg_image || null)
@@ -118,7 +118,7 @@ export const useCampaignStore = defineStore('campaign', () => {
     }
     activeCampaign.value = campaign
     isGm.value = campaign.my_role === 'gm'
-    if (campaign.system && !localStorage.getItem('chronicle_theme_manual')) applyTheme(campaign.system)
+    if (campaign.system) applyTheme(campaign.system)
     applyBgImage(campaign.bg_image || null)
   }
 
