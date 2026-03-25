@@ -175,7 +175,6 @@ onMounted(() => {
 
 function applyTheme(key) {
   currentTheme.value = key
-  localStorage.setItem('chronicle_theme_manual', '1')
   campaign.applyTheme(key)
   auth.savePreferences({ theme: key })
 }
