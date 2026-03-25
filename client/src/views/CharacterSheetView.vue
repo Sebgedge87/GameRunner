@@ -32,7 +32,7 @@
 
     <!-- ── EDIT MODE ──────────────────────────────────── -->
     <template v-else-if="editing">
-      <div class="card" style="margin-bottom:16px">
+      <div class="sheet-edit-wrap">
         <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:14px">{{ sheet ? 'EDIT CHARACTER' : 'CREATE CHARACTER' }}</div>
 
         <!-- D&D Beyond URL (5e only) -->
@@ -1398,4 +1398,13 @@ onMounted(() => {
 .coc-fellow-char  { font-weight: 600; color: var(--accent, #b8a060); }
 .coc-fellow-sep   { opacity: 0.35; }
 .coc-fellow-player{ opacity: 0.65; }
+
+/* ── Edit-mode wrapper (themed, no hover lift) ──────── */
+.sheet-edit-wrap {
+  margin-bottom: 16px;
+  background: var(--surface);
+  border: 1px solid var(--card-inner, var(--accent));
+  border-radius: var(--radius, 6px);
+  padding: 20px;
+}
 </style>
