@@ -52,19 +52,19 @@
               <input v-model="ef.name" class="form-input" />
             </div>
             <div class="field-group">
-              <label>Class / Role</label>
+              <label>{{ activeSys === 'achtung' ? 'Archetype' : 'Class / Role' }}</label>
               <input v-model="ef.class" class="form-input" placeholder="e.g. Investigator, Marine…" />
             </div>
             <div class="field-group">
-              <label>Race / Species</label>
+              <label>{{ activeSys === 'achtung' ? 'Nationality' : 'Race / Species' }}</label>
               <input v-model="ef.race" class="form-input" placeholder="e.g. Human, Android…" />
             </div>
             <div class="field-group">
-              <label>Level / Rank</label>
+              <label>{{ activeSys === 'achtung' ? 'Rank' : 'Level / Rank' }}</label>
               <input v-model.number="ef.level" type="number" class="form-input" min="1" />
             </div>
             <div class="field-group">
-              <label>Background / Occupation</label>
+              <label>{{ activeSys === 'achtung' ? 'Background' : 'Background / Occupation' }}</label>
               <input v-model="ef.background" class="form-input" />
             </div>
             <div class="field-group">
@@ -337,6 +337,51 @@
             </table>
           </div>
           <button class="btn" style="margin-top:6px;font-size:0.82em" @click="addWeapon">+ Add Weapon</button>
+        </template>
+
+        <!-- Achtung! Cthulhu: biography, talents, spells -->
+        <template v-if="activeSys === 'achtung'">
+          <div style="font-size:0.75em;opacity:0.55;margin:20px 0 6px;letter-spacing:.05em;text-transform:uppercase">Biography</div>
+          <textarea v-model="ef.biography" class="form-input" style="min-height:80px;resize:vertical;width:100%"
+                    placeholder="Your character's history, background and motivations…"></textarea>
+
+          <div style="font-size:0.75em;opacity:0.55;margin:20px 0 8px;letter-spacing:.05em;text-transform:uppercase">Talents</div>
+          <div style="overflow-x:auto">
+            <table class="weapons-table" v-if="ef.acht_talents?.length">
+              <thead><tr><th>Name</th><th>Archetype</th><th>Effect</th><th></th></tr></thead>
+              <tbody>
+                <tr v-for="(t, i) in ef.acht_talents" :key="i">
+                  <td><input v-model="t.name"      class="form-input" style="min-width:120px" /></td>
+                  <td><input v-model="t.archetype" class="form-input" style="min-width:100px" /></td>
+                  <td><input v-model="t.effect"    class="form-input" style="min-width:200px" /></td>
+                  <td><button class="btn" style="padding:2px 8px;font-size:0.8em;opacity:.6" @click="ef.acht_talents.splice(i,1)">✕</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <button class="btn" style="margin-top:6px;font-size:0.82em"
+                  @click="ef.acht_talents = [...(ef.acht_talents||[]), {name:'',archetype:'',effect:''}]">+ Add Talent</button>
+
+          <div style="font-size:0.75em;opacity:0.55;margin:20px 0 8px;letter-spacing:.05em;text-transform:uppercase">Spells</div>
+          <div style="overflow-x:auto">
+            <table class="weapons-table" v-if="ef.acht_spells?.length">
+              <thead><tr><th>Name</th><th>Skill</th><th>Difficulty</th><th>Cost</th><th>Duration</th><th>Effect</th><th>Momentum</th><th></th></tr></thead>
+              <tbody>
+                <tr v-for="(sp, i) in ef.acht_spells" :key="i">
+                  <td><input v-model="sp.name"       class="form-input" style="min-width:110px" /></td>
+                  <td><input v-model="sp.skill"      class="form-input" style="min-width:90px" /></td>
+                  <td><input v-model="sp.difficulty" class="form-input" style="min-width:80px" /></td>
+                  <td><input v-model="sp.cost"       class="form-input" style="min-width:60px" /></td>
+                  <td><input v-model="sp.duration"   class="form-input" style="min-width:80px" /></td>
+                  <td><input v-model="sp.effect"     class="form-input" style="min-width:180px" /></td>
+                  <td><input v-model="sp.momentum"   class="form-input" style="min-width:80px" /></td>
+                  <td><button class="btn" style="padding:2px 8px;font-size:0.8em;opacity:.6" @click="ef.acht_spells.splice(i,1)">✕</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <button class="btn" style="margin-top:6px;font-size:0.82em"
+                  @click="ef.acht_spells = [...(ef.acht_spells||[]), {name:'',skill:'',difficulty:'',cost:'',duration:'',effect:'',momentum:''}]">+ Add Spell</button>
         </template>
 
         <!-- Critical Injuries (ALIEN / Coriolis) -->
@@ -680,6 +725,55 @@
           </div>
         </div>
 
+        <!-- Achtung! Cthulhu — biography, talents, spells (always visible) -->
+        <template v-if="activeSys === 'achtung'">
+          <div class="card acht-sheet-card" style="margin-bottom:16px">
+            <div class="acht-card-header">BIOGRAPHY</div>
+            <div v-if="sheet.biography" class="prose" style="font-size:0.87em;line-height:1.65;opacity:0.9" v-html="renderMd(sheet.biography)"></div>
+            <div v-else class="acht-empty">No biography written yet.</div>
+          </div>
+
+          <div class="card acht-sheet-card" style="margin-bottom:16px">
+            <div class="acht-card-header">TALENTS</div>
+            <table v-if="sheet.acht_talents?.length" class="acht-table">
+              <thead>
+                <tr><th>Name</th><th>Archetype</th><th>Effect</th></tr>
+              </thead>
+              <tbody>
+                <tr v-for="(t, i) in sheet.acht_talents" :key="i">
+                  <td class="acht-td-name">{{ t.name || '—' }}</td>
+                  <td class="acht-td-arch">{{ t.archetype || '—' }}</td>
+                  <td>{{ t.effect || '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div v-else class="acht-empty">No talents recorded.</div>
+          </div>
+
+          <div class="card acht-sheet-card" style="margin-bottom:16px">
+            <div class="acht-card-header">SPELLS</div>
+            <div style="overflow-x:auto">
+              <table v-if="sheet.acht_spells?.length" class="acht-table">
+                <thead>
+                  <tr><th>Name</th><th>Skill</th><th>Diff.</th><th>Cost</th><th>Duration</th><th>Effect</th><th>Momentum</th></tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(sp, i) in sheet.acht_spells" :key="i">
+                    <td class="acht-td-name">{{ sp.name || '—' }}</td>
+                    <td>{{ sp.skill || '—' }}</td>
+                    <td>{{ sp.difficulty || '—' }}</td>
+                    <td>{{ sp.cost || '—' }}</td>
+                    <td>{{ sp.duration || '—' }}</td>
+                    <td>{{ sp.effect || '—' }}</td>
+                    <td>{{ sp.momentum || '—' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div v-else class="acht-empty">No spells recorded.</div>
+            </div>
+          </div>
+        </template>
+
         <!-- Critical Injuries view (ALIEN / Coriolis) -->
         <div v-if="sheet.critical_injuries" class="card" style="margin-bottom:16px">
           <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">CRITICAL INJURIES</div>
@@ -899,6 +993,11 @@ function startEdit() {
   ef.value.weapons = (s.weapons || []).map(w => ({ ...w }))
   // Critical injuries (ALIEN / Coriolis)
   ef.value.critical_injuries = s.critical_injuries || ''
+  // Achtung! Cthulhu structured tables
+  if (activeSys.value === 'achtung') {
+    ef.value.acht_talents = (s.acht_talents || []).map(t => ({ ...t }))
+    ef.value.acht_spells  = (s.acht_spells  || []).map(t => ({ ...t }))
+  }
   editing.value = true
   saveError.value = ''
 }
@@ -940,7 +1039,7 @@ function hullPercent(ship) {
 // Weapon columns per system
 const weaponCols = computed(() => {
   if (activeSys.value === 'coc')    return ['name','damage','range','attacks','ammo']
-  if (activeSys.value === 'achtung') return ['name','focus','range','damage','keywords']
+  if (activeSys.value === 'achtung') return ['name','focus','range','damage','ammo','size','qualities']
   return ['name','bonus','damage','range']           // ALIEN / Coriolis / default
 })
 const hasWeaponsSection = computed(() =>
@@ -1043,6 +1142,11 @@ async function saveSheet() {
       // Weapons + critical injuries
       sheetData.weapons = (ef.value.weapons || []).filter(w => w.name)
       if (ef.value.critical_injuries) sheetData.critical_injuries = ef.value.critical_injuries
+      // Achtung! Cthulhu structured tables
+      if (sys === 'achtung') {
+        sheetData.acht_talents = (ef.value.acht_talents || []).filter(t => t.name)
+        sheetData.acht_spells  = (ef.value.acht_spells  || []).filter(t => t.name)
+      }
     }
     if (ef.value.portrait_url) sheetData.portrait_url = ef.value.portrait_url
 
@@ -1398,6 +1502,49 @@ onMounted(() => {
 .coc-fellow-char  { font-weight: 600; color: var(--accent, #b8a060); }
 .coc-fellow-sep   { opacity: 0.35; }
 .coc-fellow-player{ opacity: 0.65; }
+
+/* ── Achtung! Cthulhu sheet styling ─────────────────── */
+.acht-sheet-card {
+  /* Olive-green left accent stripe */
+  border-left: 3px solid var(--accent-yellow, #e9c46a);
+}
+.acht-card-header {
+  font-size: 0.68em;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent-yellow, #e9c46a);
+  border-bottom: 1px solid var(--border2, #6a7258);
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+}
+.acht-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.83em;
+}
+.acht-table th {
+  text-align: left;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-yellow, #e9c46a);
+  border-bottom: 1px solid var(--border2, #6a7258);
+  padding: 4px 8px;
+  opacity: 0.85;
+}
+.acht-table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--border, #505840);
+  color: var(--text2);
+  vertical-align: top;
+  line-height: 1.4;
+}
+.acht-table tr:last-child td { border-bottom: none; }
+.acht-td-name { font-weight: 600; color: var(--text); min-width: 110px; }
+.acht-td-arch { font-style: italic; min-width: 90px; }
+.acht-empty   { font-size: 0.83em; opacity: 0.3; font-style: italic; }
 
 /* ── Edit-mode wrapper (themed, no hover lift) ──────── */
 .sheet-edit-wrap {
