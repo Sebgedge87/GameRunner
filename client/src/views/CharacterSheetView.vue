@@ -498,7 +498,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { renderMd } from '@/utils/markdown'
 import { useDataStore } from '@/stores/data'
@@ -644,14 +644,16 @@ const dossierMode = computed(() => activeSys.value === 'achtung')
 const ef = ref({})
 
 let _saveTimer = null
+let _watchSuppressed = false
 watch(ef, () => {
-  if (!sheet.value) return
+  if (!sheet.value || _watchSuppressed) return
   if (_saveTimer) clearTimeout(_saveTimer)
   saveStatus.value = ''
   _saveTimer = setTimeout(() => saveSheet(), 1500)
 }, { deep: true })
 
 function startEdit() {
+  _watchSuppressed = true
   const s = sheet.value || {}
   ef.value = {
     name: s.name || '',
@@ -721,6 +723,7 @@ function startEdit() {
     ef.value.acht_talents = (s.acht_talents || []).map(t => ({ ...t }))
     ef.value.acht_spells  = (s.acht_spells  || []).map(t => ({ ...t }))
   }
+  nextTick(() => { _watchSuppressed = false })
 }
 
 const hasStats = computed(() => coreStats.value.some(s => sheet.value?.[s.key] != null))
@@ -903,10 +906,12 @@ async function saveSheet() {
       })
     }
     if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || 'Save failed') }
-    ui.showToast('Sheet saved', '', '✓')
+    const saved = await r.json()
+    // Update sheet in-place without re-fetching (avoids re-triggering the watcher)
+    const raw = saved.sheet || saved.character
+    if (raw) sheet.value = { ...raw, ...(raw.sheet_data || {}) }
     saveStatus.value = 'saved'
     setTimeout(() => { if (saveStatus.value === 'saved') saveStatus.value = '' }, 2000)
-    await loadSheet()
   } catch (e) {
     saveError.value = e.message
     saveStatus.value = 'error'
