@@ -1,7 +1,10 @@
 <template>
-  <div class="page-content">
+  <div class="page-content" :class="{ 'dossier-mode': dossierMode }">
     <div class="page-header">
-      <div class="page-title">Character</div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <a v-if="characterId" class="back-link" @click="router.push('/characters')">← Characters</a>
+        <div class="page-title">{{ sheet?.name || 'Character' }}</div>
+      </div>
     </div>
 
     <!-- GM: player selector -->
@@ -408,6 +411,13 @@
     <!-- ── VIEW MODE ──────────────────────────────────── -->
     <template v-else>
 
+      <!-- Tab navigation (built-in sheet only) -->
+      <div v-if="hasBuiltinSheet" class="sheet-tabs">
+        <button class="sheet-tab" :class="{ active: activePage === 'identity' }" @click="activePage = 'identity'">Identity</button>
+        <button class="sheet-tab" :class="{ active: activePage === 'skills' }" @click="activePage = 'skills'">Skills</button>
+        <button class="sheet-tab" :class="{ active: activePage === 'notes' }" @click="activePage = 'notes'">Notes</button>
+      </div>
+
       <!-- D&D Beyond banner (5e with URL set) -->
       <div v-if="hasDndBeyond && sheet.dnd_beyond_url" class="beyond-banner">
         <div class="beyond-banner-info">
@@ -425,12 +435,18 @@
 
       <!-- Built-in sheet for other systems -->
       <template v-if="hasBuiltinSheet">
+
+        <!-- PAGE: IDENTITY ───────────────────────────────── -->
+        <div v-show="activePage === 'identity'" class="sheet-page">
+
         <!-- Character Header -->
-        <div class="card" style="margin-bottom:16px">
+        <div class="card sheet-header-card" style="margin-bottom:16px">
           <div v-if="cocEraLabel" class="coc-era-banner">{{ cocEraLabel }} Investigator</div>
           <div class="card-body" style="display:flex;gap:20px;align-items:flex-start">
-            <div v-if="sheet.portrait_url" style="flex-shrink:0">
-              <img :src="sheet.portrait_url" alt="Portrait" style="width:80px;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--border)" />
+            <!-- Portrait (top-left, prominent) -->
+            <div class="char-portrait-wrap">
+              <img v-if="sheet.portrait_url" :src="sheet.portrait_url" alt="Portrait" class="char-portrait-full" />
+              <div v-else class="char-portrait-empty">{{ initials(sheet.name) }}</div>
             </div>
             <div style="flex:1">
               <div style="font-size:1.3em;font-weight:600;color:var(--accent)">{{ sheet.name }}</div>
@@ -523,6 +539,11 @@
             </span>
           </div>
         </div>
+
+        </div><!-- /sheet-page identity -->
+
+        <!-- PAGE: SKILLS ─────────────────────────────────── -->
+        <div v-show="activePage === 'skills'" class="sheet-page">
 
         <!-- Skills — system skills with values -->
         <div v-if="systemSkills.length" class="card" style="margin-bottom:16px">
@@ -668,6 +689,11 @@
           </div>
         </template>
 
+        </div><!-- /sheet-page skills -->
+
+        <!-- PAGE: NOTES ──────────────────────────────────── -->
+        <div v-show="activePage === 'notes'" class="sheet-page">
+
         <!-- CoC My Story + Backstory (always visible for CoC) -->
         <template v-if="activeSys === 'coc'">
           <div class="card" style="margin-bottom:16px">
@@ -780,7 +806,9 @@
           <div class="prose" style="font-size:0.85em;opacity:0.8;line-height:1.6" v-html="renderMd(sheet.critical_injuries)"></div>
         </div>
 
-        <!-- Ships / Vehicles -->
+        </div><!-- /sheet-page notes -->
+
+        <!-- Ships / Vehicles (shown on all pages) -->
         <template v-if="ships.length">
           <div class="section-divider" style="margin-top:24px">Ships &amp; Vehicles</div>
           <div class="card-grid" style="margin-top:12px">
@@ -814,6 +842,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { renderMd } from '@/utils/markdown'
 import { useDataStore } from '@/stores/data'
 import { useAuthStore } from '@/stores/auth'
@@ -821,6 +850,8 @@ import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
 import { useSystemFeatures } from '@/composables/useSystemFeatures'
 
+const route = useRoute()
+const router = useRouter()
 const data = useDataStore()
 const auth = useAuthStore()
 const campaign = useCampaignStore()
@@ -832,6 +863,10 @@ const {
 } = useSystemFeatures()
 
 const activeSys = computed(() => campaign.activeCampaign?.system || 'custom')
+
+function initials(name) {
+  return (name || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+}
 const generalSkills  = computed(() => systemSkills.value.filter(s => s.group === 'general'))
 const advancedSkills = computed(() => systemSkills.value.filter(s => s.group === 'advanced'))
 const hasSkillGroups = computed(() => systemSkills.value.some(s => s.group))
@@ -924,6 +959,11 @@ const editing = ref(false)
 const saving = ref(false)
 const saveError = ref('')
 const selectedUserId = ref('')
+const activePage = ref('identity') // 'identity' | 'skills' | 'notes'
+
+// When loaded via ?id= from CharactersView, use new characters API
+const characterId = computed(() => route.query.id ? Number(route.query.id) : null)
+const dossierMode = computed(() => activeSys.value === 'achtung')
 
 // Edit form
 const ef = ref({})
@@ -937,7 +977,7 @@ function startEdit() {
     level: s.level || 1,
     background: s.background || '',
     concept: s.concept || '',
-    portrait_url: s.portrait_url || '',
+    portrait_url: s.portrait_url || s.sheet_data?.portrait_url || '',
     hp_current: s.hp_current ?? null,
     hp_max: s.hp_max ?? null,
     stress_current: s.stress_current ?? null,
@@ -1065,15 +1105,28 @@ async function loadSheet() {
   loading.value = true
   editing.value = false
   try {
-    const uid = campaign.isGm && selectedUserId.value ? selectedUserId.value : auth.currentUser?.id
-    if (!uid) return
-    const r = await data.apif(`/api/character-sheets/${uid}`)
-    if (r.ok) {
-      const d = await r.json()
-      const raw = d.sheet
-      sheet.value = raw ? { ...raw, ...(raw.sheet_data || {}) } : null
+    if (characterId.value) {
+      // New characters API — loaded via ?id= from CharactersView
+      const r = await data.apif(`/api/characters/${characterId.value}`)
+      if (r.ok) {
+        const d = await r.json()
+        const raw = d.character
+        sheet.value = raw ? { ...raw, ...(raw.sheet_data || {}) } : null
+      } else {
+        sheet.value = null
+      }
     } else {
-      sheet.value = null
+      // Legacy path: load by user id from old character-sheets API
+      const uid = campaign.isGm && selectedUserId.value ? selectedUserId.value : auth.currentUser?.id
+      if (!uid) return
+      const r = await data.apif(`/api/character-sheets/${uid}`)
+      if (r.ok) {
+        const d = await r.json()
+        const raw = d.sheet
+        sheet.value = raw ? { ...raw, ...(raw.sheet_data || {}) } : null
+      } else {
+        sheet.value = null
+      }
     }
     // Auto-open edit form when the player has no sheet yet
     if (!sheet.value && !campaign.isGm) {
@@ -1150,15 +1203,31 @@ async function saveSheet() {
     }
     if (ef.value.portrait_url) sheetData.portrait_url = ef.value.portrait_url
 
-    const r = await data.apif(`/api/character-sheets/${uid}`, {
-      method: 'PUT',
-      body: JSON.stringify({
-        campaign_id: campId,
-        system: sys,
-        sheet_data: sheetData,
-        dnd_beyond_url: ef.value.dnd_beyond_url || null,
-      }),
-    })
+    let r
+    if (characterId.value) {
+      // Save to new characters API
+      r = await data.apif(`/api/characters/${characterId.value}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          name: sheetData.name || ef.value.name,
+          system: sys,
+          portrait_url: ef.value.portrait_url || null,
+          sheet_data: sheetData,
+          campaign_id: campId,
+        }),
+      })
+    } else {
+      // Legacy save to character-sheets API
+      r = await data.apif(`/api/character-sheets/${uid}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          campaign_id: campId,
+          system: sys,
+          sheet_data: sheetData,
+          dnd_beyond_url: ef.value.dnd_beyond_url || null,
+        }),
+      })
+    }
     if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || 'Save failed') }
     ui.showToast('Sheet saved', '', '✓')
     await loadSheet()
@@ -1171,12 +1240,14 @@ async function saveSheet() {
 }
 
 onMounted(() => {
-  if (!campaign.isGm) loadSheet()
+  if (characterId.value || !campaign.isGm) loadSheet()
   if (!data.users.length) data.loadUsers()
 })
 </script>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
+
 /* Stat display boxes */
 .stat-box {
   background: var(--surface2, #20202e);
@@ -1553,5 +1624,127 @@ onMounted(() => {
   border: 1px solid var(--card-inner, var(--accent));
   border-radius: var(--radius, 6px);
   padding: 20px;
+}
+
+/* Back link */
+.back-link {
+  font-size: 0.75em;
+  color: var(--accent);
+  cursor: pointer;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+  white-space: nowrap;
+}
+.back-link:hover { opacity: 1; }
+
+/* Portrait in view mode */
+.char-portrait-wrap {
+  flex-shrink: 0;
+  width: 100px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.char-portrait-full {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  display: block;
+}
+.char-portrait-empty {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  background: var(--surface2, #2a2a3a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6em;
+  font-weight: 700;
+  opacity: 0.2;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Tab navigation */
+.sheet-tabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.sheet-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72em;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.sheet-tab:hover { color: var(--text); }
+.sheet-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* Sheet page transition */
+.sheet-page {
+  animation: pagein 0.18s ease;
+}
+@keyframes pagein {
+  from { opacity: 0; transform: translateX(8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ── WW2 Dossier / Achtung! Cthulhu mode ─────────────────────────── */
+.dossier-mode .card,
+.dossier-mode .sheet-header-card {
+  background: #2c2a1e !important;
+  border-color: #6a7258 !important;
+  position: relative;
+}
+
+.dossier-mode .page-title {
+  font-family: 'Special Elite', 'Courier New', monospace;
+  letter-spacing: 0.08em;
+}
+
+.dossier-mode .stat-box {
+  background: #24221a;
+  border-color: #6a7258;
+}
+
+.dossier-mode .stat-value {
+  font-family: 'Special Elite', 'Courier New', monospace;
+  color: var(--accent-yellow, #e9c46a);
+}
+
+.dossier-mode .stat-label {
+  color: #9a8c6e;
+}
+
+.dossier-mode .acht-card-header,
+.dossier-mode .acht-sheet-card {
+  border-left-width: 4px;
+}
+
+/* Dossier: stamp-style section headers */
+.dossier-mode [style*="letter-spacing:1px"],
+.dossier-mode [style*="letter-spacing:.05em"] {
+  font-family: 'Special Elite', 'Courier New', monospace !important;
+}
+
+/* Tab bar in dossier mode — olive/military feel */
+.dossier-mode .sheet-tabs {
+  border-bottom-color: #6a7258;
+}
+.dossier-mode .sheet-tab {
+  color: #9a8c6e;
+}
+.dossier-mode .sheet-tab.active {
+  color: var(--accent-yellow, #e9c46a);
+  border-bottom-color: var(--accent-yellow, #e9c46a);
 }
 </style>

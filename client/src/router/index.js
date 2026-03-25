@@ -23,6 +23,7 @@ const routes = [
   { path: '/bestiary', component: () => import('@/views/BestiaryView.vue'), meta: { auth: true, requiresCampaign: C } },
   { path: '/rumours', component: () => import('@/views/RumoursView.vue'), meta: { auth: true, requiresCampaign: C } },
   { path: '/sessions', component: () => import('@/views/SessionsView.vue'), meta: { auth: true, requiresCampaign: C } },
+  { path: '/characters', component: () => import('@/views/CharactersView.vue'), meta: { auth: true, requiresCampaign: C } },
   { path: '/character-sheet', component: () => import('@/views/CharacterSheetView.vue'), meta: { auth: true, requiresCampaign: C } },
   { path: '/notes', component: () => import('@/views/NotesView.vue'), meta: { auth: true, requiresCampaign: C } },
   { path: '/theory-board', component: () => import('@/views/TheoryBoardView.vue'), meta: { auth: true, requiresCampaign: C } },
