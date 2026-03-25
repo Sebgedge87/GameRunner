@@ -1399,8 +1399,12 @@ onMounted(() => {
 .coc-fellow-sep   { opacity: 0.35; }
 .coc-fellow-player{ opacity: 0.65; }
 
-/* ── Edit-mode wrapper (no card border) ─────────────── */
+/* ── Edit-mode wrapper (themed, no hover lift) ──────── */
 .sheet-edit-wrap {
   margin-bottom: 16px;
+  background: var(--surface);
+  border: 1px solid var(--card-inner, var(--accent));
+  border-radius: var(--radius, 6px);
+  padding: 20px;
 }
 </style>
