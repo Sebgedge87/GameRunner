@@ -21,7 +21,7 @@
     <div v-if="loading" class="loading">Loading sheet...</div>
 
     <!-- No sheet yet -->
-    <div v-else-if="!sheet && !editing" class="empty-state">
+    <div v-else-if="!sheet" class="empty-state">
       <template v-if="campaign.isGm && !selectedUserId">
         <div style="opacity:0.5">Select a player above to view their sheet.</div>
       </template>
@@ -33,10 +33,63 @@
       </template>
     </div>
 
-    <!-- ── EDIT MODE ──────────────────────────────────── -->
-    <template v-else-if="editing">
-      <div class="sheet-edit-wrap">
-        <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:14px">{{ sheet ? 'EDIT CHARACTER' : 'CREATE CHARACTER' }}</div>
+    <!-- ── VIEW MODE (always editable) ──────────────────────────────────── -->
+    <template v-else>
+
+      <!-- Page navigation (built-in sheet only) -->
+      <div v-if="hasBuiltinSheet" class="dossier-page-nav">
+        <button class="dossier-nav-btn dossier-nav-prev" :disabled="pageIndex === 0" @click="prevPage" aria-label="Previous page">&#8249;</button>
+        <div class="dossier-page-tabs">
+          <button v-for="(p, i) in pages" :key="p.id"
+            class="dossier-page-tab"
+            :class="{ active: activePage === p.id }"
+            @click="goToPage(i)">
+            <span class="dossier-tab-label">{{ p.label }}</span>
+          </button>
+        </div>
+        <button class="dossier-nav-btn dossier-nav-next" :disabled="pageIndex === pages.length - 1" @click="nextPage" aria-label="Next page">&#8250;</button>
+        <span class="sheet-save-indicator" :class="saveStatus">
+          <span v-if="saveStatus === 'saving'">Saving…</span>
+          <span v-else-if="saveStatus === 'saved'">Saved ✓</span>
+          <span v-else-if="saveStatus === 'error'" :title="saveError">Error ✗</span>
+        </span>
+      </div>
+
+      <!-- D&D Beyond banner (5e with URL set) -->
+      <div v-if="hasDndBeyond && sheet.dnd_beyond_url" class="beyond-banner">
+        <div class="beyond-banner-info">
+          <div class="beyond-banner-name">{{ sheet.name || auth.currentUser?.username }}</div>
+          <div class="beyond-banner-sub">D&amp;D Beyond character sheet</div>
+        </div>
+        <a :href="sheet.dnd_beyond_url" target="_blank" rel="noopener" class="btn beyond-btn">Open in D&amp;D Beyond ↗</a>
+      </div>
+
+      <!-- 5e: nudge to add Beyond URL if missing -->
+      <div v-else-if="hasDndBeyond && !sheet.dnd_beyond_url" class="beyond-placeholder">
+        <div style="opacity:.6;font-size:.9em">No D&amp;D Beyond link set.</div>
+        <button v-if="!campaign.isGm" class="btn btn-sm" style="margin-top:8px" @click="startEdit">Add D&amp;D Beyond URL</button>
+      </div>
+
+      <!-- Built-in sheet for other systems -->
+      <template v-if="hasBuiltinSheet">
+
+        <!-- Page flip container -->
+        <div class="sheet-page-wrap">
+        <Transition :name="flipTransition">
+        <div class="sheet-page" :key="activePage">
+
+        <!-- ── IDENTITY ──────────────────────────────────── -->
+        <template v-if="activePage === 'identity'">
+
+        <!-- Portrait URL field + inline preview -->
+        <div class="field-group" style="margin-bottom:12px">
+          <label>Portrait URL <span style="opacity:.5;font-weight:400">(optional)</span></label>
+          <div style="display:flex;gap:10px;align-items:center">
+            <img v-if="ef.portrait_url" :src="ef.portrait_url" alt="Portrait"
+                 style="width:48px;height:48px;object-fit:cover;border-radius:4px;border:1px solid var(--border);flex-shrink:0" />
+            <input v-model="ef.portrait_url" class="form-input" placeholder="https://…" />
+          </div>
+        </div>
 
         <!-- D&D Beyond URL (5e only) -->
         <template v-if="hasDndBeyond">
@@ -47,7 +100,7 @@
           </div>
         </template>
 
-        <!-- Built-in sheet fields (non-5e systems) -->
+        <!-- Basic identity grid -->
         <template v-if="hasBuiltinSheet">
           <div class="edit-grid">
             <div class="field-group">
@@ -74,8 +127,8 @@
               <label>Concept</label>
               <input v-model="ef.concept" class="form-input" placeholder="One-line character concept…" />
             </div>
-            <!-- System-specific identity fields -->
-            <template v-for="f in extraFields.filter(f => !f.section && !['buddy_1','buddy_2','buddy_3','buddy_4','major_wound','temp_insanity','indef_insanity','unconscious','dying','gear','equipment_note','cons_air','cons_food','cons_water','cons_power','tiny_items'].includes(f.key))" :key="f.key">
+            <!-- System-specific identity fields (excluding section/boolean/textarea/consumable/relationship keys) -->
+            <template v-for="f in extraFields.filter(f => !f.section && !f.type === 'boolean' && !f.type === 'textarea' && !['buddy_1','buddy_2','buddy_3','buddy_4','major_wound','temp_insanity','indef_insanity','unconscious','dying','gear','equipment_note','cons_air','cons_food','cons_water','cons_power','tiny_items'].includes(f.key))" :key="f.key">
               <div class="field-group">
                 <label>{{ f.label }}<span v-if="f.help" class="field-help" :data-tooltip="f.help">?</span></label>
                 <select v-if="f.type === 'select'" v-model="ef[f.key]" class="form-input">
@@ -189,160 +242,150 @@
               </div>
             </div>
           </template>
+        </template>
 
-          <!-- System Skills -->
-          <template v-if="systemSkills.length">
-            <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Skills</div>
+        </template><!-- /identity -->
 
-            <!-- CoC: % skills in compact 3-col grid -->
-            <template v-if="activeSys === 'coc'">
-              <div class="skills-coc-grid">
-                <div v-for="sk in systemSkills" :key="sk.key" class="coc-skill-row">
-                  <span class="coc-skill-label">{{ sk.label }}</span>
-                  <span class="coc-skill-base">{{ sk.note || sk.base + '%' }}</span>
-                  <input v-model.number="ef[sk.key]" type="number" min="0" max="100" class="coc-skill-input form-input" placeholder="—" />
-                </div>
+        <!-- ── SKILLS ───────────────────────────────────── -->
+        <template v-else-if="activePage === 'skills'">
+
+        <!-- System Skills -->
+        <template v-if="systemSkills.length">
+          <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Skills</div>
+
+          <!-- CoC: % skills in compact 3-col grid -->
+          <template v-if="activeSys === 'coc'">
+            <div class="skills-coc-grid">
+              <div v-for="sk in systemSkills" :key="sk.key" class="coc-skill-row">
+                <span class="coc-skill-label">{{ sk.label }}</span>
+                <span class="coc-skill-base">{{ sk.note || sk.base + '%' }}</span>
+                <input v-model.number="ef[sk.key]" type="number" min="0" max="100" class="coc-skill-input form-input" placeholder="—" />
               </div>
-            </template>
+            </div>
+          </template>
 
-            <!-- YZE dice skills (ALIEN / Coriolis) -->
-            <template v-else-if="activeSys === 'alien' || activeSys === 'coriolis'">
-              <template v-if="hasSkillGroups">
-                <div style="font-size:0.72em;opacity:0.45;margin-bottom:6px">GENERAL</div>
-              </template>
+          <!-- YZE dice skills (ALIEN / Coriolis) -->
+          <template v-else-if="activeSys === 'alien' || activeSys === 'coriolis'">
+            <template v-if="hasSkillGroups">
+              <div style="font-size:0.72em;opacity:0.45;margin-bottom:6px">GENERAL</div>
+            </template>
+            <div class="skills-yze-grid">
+              <div v-for="sk in (hasSkillGroups ? generalSkills : systemSkills)" :key="sk.key" class="yze-skill-row">
+                <span class="yze-skill-label">{{ sk.label }}<span v-if="sk.attr" class="yze-attr"> ({{ sk.attr }})</span></span>
+                <input v-model.number="ef[sk.key]" type="number" min="0" max="5" class="yze-skill-input form-input" placeholder="0" />
+              </div>
+            </div>
+            <template v-if="hasSkillGroups">
+              <div style="font-size:0.72em;opacity:0.45;margin:12px 0 6px">ADVANCED</div>
               <div class="skills-yze-grid">
-                <div v-for="sk in (hasSkillGroups ? generalSkills : systemSkills)" :key="sk.key" class="yze-skill-row">
+                <div v-for="sk in advancedSkills" :key="sk.key" class="yze-skill-row">
                   <span class="yze-skill-label">{{ sk.label }}<span v-if="sk.attr" class="yze-attr"> ({{ sk.attr }})</span></span>
                   <input v-model.number="ef[sk.key]" type="number" min="0" max="5" class="yze-skill-input form-input" placeholder="0" />
                 </div>
               </div>
-              <template v-if="hasSkillGroups">
-                <div style="font-size:0.72em;opacity:0.45;margin:12px 0 6px">ADVANCED</div>
-                <div class="skills-yze-grid">
-                  <div v-for="sk in advancedSkills" :key="sk.key" class="yze-skill-row">
-                    <span class="yze-skill-label">{{ sk.label }}<span v-if="sk.attr" class="yze-attr"> ({{ sk.attr }})</span></span>
-                    <input v-model.number="ef[sk.key]" type="number" min="0" max="5" class="yze-skill-input form-input" placeholder="0" />
-                  </div>
-                </div>
-              </template>
-            </template>
-
-            <!-- Dune: skill rank + focus -->
-            <template v-else-if="activeSys === 'dune'">
-              <div class="skills-focus-grid">
-                <div v-for="sk in systemSkills" :key="sk.key" class="focus-skill-row">
-                  <span class="focus-skill-label">{{ sk.label }}<span v-if="sk.attr" class="yze-attr"> ({{ sk.attr }})</span><span v-if="sk.help" class="field-help" :data-tooltip="sk.help">?</span></span>
-                  <input v-model.number="ef[sk.key]" type="number" min="0" max="5" class="focus-rank-input form-input" placeholder="0" />
-                  <input v-model="ef[sk.key + '_focus']" class="focus-input form-input" placeholder="Focus…" />
-                </div>
-              </div>
-              <!-- Drives -->
-              <div v-if="hasDrives" style="margin-top:14px">
-                <div style="font-size:0.75em;opacity:0.55;margin-bottom:8px;letter-spacing:.05em;text-transform:uppercase">Drives</div>
-                <div class="edit-stats-grid">
-                  <div v-for="d in drives" :key="d" class="field-group">
-                    <label>{{ d.charAt(0).toUpperCase() + d.slice(1) }}<span class="field-help" :data-tooltip="driveHelp[d]">?</span></label>
-                    <input v-model.number="ef['drv_' + d]" type="number" min="0" max="20" class="form-input" placeholder="0" />
-                  </div>
-                </div>
-              </div>
-            </template>
-
-            <!-- Achtung! Cthulhu: skill rank + focus -->
-            <template v-else-if="activeSys === 'achtung'">
-              <div class="skills-focus-grid">
-                <div v-for="sk in systemSkills" :key="sk.key" class="focus-skill-row">
-                  <span class="focus-skill-label">{{ sk.label }}<span v-if="sk.attr" class="yze-attr"> ({{ sk.attr }})</span><span v-if="sk.help" class="field-help" :data-tooltip="sk.help">?</span></span>
-                  <input v-model.number="ef[sk.key]" type="number" min="0" max="3" class="focus-rank-input form-input" placeholder="0" />
-                  <input v-model="ef[sk.key + '_focus']" class="focus-input form-input" placeholder="Focus…" />
-                </div>
-              </div>
             </template>
           </template>
 
-          <!-- Textarea extra fields (Gear & Possessions / Equipment of Note / Tiny Items) -->
-          <template v-for="f in extraFields.filter(f => f.type === 'textarea' && !f.section)" :key="f.key">
-            <div style="font-size:0.75em;opacity:0.55;margin:16px 0 6px;letter-spacing:.05em;text-transform:uppercase">{{ f.label }}<span v-if="f.help" class="field-help" style="font-size:0.85em;opacity:1" :data-tooltip="f.help">?</span></div>
-            <textarea v-model="ef[f.key]" class="form-input" style="min-height:64px;resize:vertical;width:100%"></textarea>
-          </template>
-
-          <!-- CoC Backstory section -->
-          <template v-if="activeSys === 'coc'">
-            <div style="font-size:0.75em;opacity:0.55;margin:20px 0 8px;letter-spacing:.05em;text-transform:uppercase">My Story</div>
-            <textarea v-model="ef.story" class="form-input" style="min-height:72px;resize:vertical;width:100%" placeholder="The narrative of your investigator's life…"></textarea>
-
-            <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Backstory</div>
-            <div class="coc-backstory-grid">
-              <template v-for="f in extraFields.filter(f => f.section === 'backstory' && f.type !== 'textarea')" :key="f.key">
-                <div class="field-group">
-                  <label>{{ f.label }}<span v-if="f.help" class="field-help" :data-tooltip="f.help">?</span></label>
-                  <input v-model="ef[f.key]" class="form-input" />
-                </div>
-              </template>
+          <!-- Dune: skill rank + focus -->
+          <template v-else-if="activeSys === 'dune'">
+            <div class="skills-focus-grid">
+              <div v-for="sk in systemSkills" :key="sk.key" class="focus-skill-row">
+                <span class="focus-skill-label">{{ sk.label }}<span v-if="sk.attr" class="yze-attr"> ({{ sk.attr }})</span><span v-if="sk.help" class="field-help" :data-tooltip="sk.help">?</span></span>
+                <input v-model.number="ef[sk.key]" type="number" min="0" max="5" class="focus-rank-input form-input" placeholder="0" />
+                <input v-model="ef[sk.key + '_focus']" class="focus-input form-input" placeholder="Focus…" />
+              </div>
             </div>
-
-            <!-- Fellow Investigators — bottom of page 2 on the physical sheet -->
-            <div style="font-size:0.75em;opacity:0.55;margin:20px 0 8px;letter-spacing:.05em;text-transform:uppercase">Fellow Investigators</div>
-            <div class="coc-fellow-grid">
-              <template v-for="n in [1,2,3,4]" :key="n">
-                <div class="field-group">
-                  <label>Char. {{ n }}</label>
-                  <input v-model="ef['fellow_' + n + '_name']" class="form-input" placeholder="Character name…" />
+            <!-- Drives -->
+            <div v-if="hasDrives" style="margin-top:14px">
+              <div style="font-size:0.75em;opacity:0.55;margin-bottom:8px;letter-spacing:.05em;text-transform:uppercase">Drives</div>
+              <div class="edit-stats-grid">
+                <div v-for="d in drives" :key="d" class="field-group">
+                  <label>{{ d.charAt(0).toUpperCase() + d.slice(1) }}<span class="field-help" :data-tooltip="driveHelp[d]">?</span></label>
+                  <input v-model.number="ef['drv_' + d]" type="number" min="0" max="20" class="form-input" placeholder="0" />
                 </div>
-                <div class="field-group">
-                  <label>Player {{ n }}</label>
-                  <input v-model="ef['fellow_' + n + '_player']" class="form-input" placeholder="Player name…" />
-                </div>
-              </template>
+              </div>
             </div>
           </template>
 
-          <!-- Talents / Abilities (comma-separated, shown when no system skills or for custom) -->
-          <div class="edit-grid" style="margin-top:4px">
-            <div v-if="!systemSkills.length" class="field-group" style="grid-column:1/-1">
-              <label>Skills <span style="opacity:.5;font-weight:400">(comma-separated)</span></label>
-              <input v-model="ef.skills_text" class="form-input" placeholder="Firearms, First Aid, Spot Hidden…" />
+          <!-- Achtung! Cthulhu: skill rank + focus -->
+          <template v-else-if="activeSys === 'achtung'">
+            <div class="skills-focus-grid">
+              <div v-for="sk in systemSkills" :key="sk.key" class="focus-skill-row">
+                <span class="focus-skill-label">{{ sk.label }}<span v-if="sk.attr" class="yze-attr"> ({{ sk.attr }})</span><span v-if="sk.help" class="field-help" :data-tooltip="sk.help">?</span></span>
+                <input v-model.number="ef[sk.key]" type="number" min="0" max="3" class="focus-rank-input form-input" placeholder="0" />
+                <input v-model="ef[sk.key + '_focus']" class="focus-input form-input" placeholder="Focus…" />
+              </div>
             </div>
-            <div class="field-group" style="grid-column:1/-1">
-              <label>Abilities / Talents <span style="opacity:.5;font-weight:400">(comma-separated)</span></label>
-              <input v-model="ef.abilities_text" class="form-input" placeholder="Combat Training, Nerves of Steel…" />
-            </div>
-            <div v-if="activeSys !== 'coc'" class="field-group" style="grid-column:1/-1">
-              <label>Backstory</label>
-              <textarea v-model="ef.backstory" class="form-input" style="min-height:80px;resize:vertical"></textarea>
-            </div>
-            <div class="field-group" style="grid-column:1/-1">
-              <label>Notes</label>
-              <textarea v-model="ef.notes" class="form-input" style="min-height:60px;resize:vertical"></textarea>
-            </div>
+          </template>
+        </template>
+
+        <!-- Custom skills/abilities text inputs -->
+        <div class="edit-grid" style="margin-top:4px">
+          <div v-if="!systemSkills.length" class="field-group" style="grid-column:1/-1">
+            <label>Skills <span style="opacity:.5;font-weight:400">(comma-separated)</span></label>
+            <input v-model="ef.skills_text" class="form-input" placeholder="Firearms, First Aid, Spot Hidden…" />
+          </div>
+          <div class="field-group" style="grid-column:1/-1">
+            <label>Abilities / Talents <span style="opacity:.5;font-weight:400">(comma-separated)</span></label>
+            <input v-model="ef.abilities_text" class="form-input" placeholder="Combat Training, Nerves of Steel…" />
+          </div>
+        </div>
+
+        </template><!-- /skills -->
+
+        <!-- ── NOTES ────────────────────────────────────── -->
+        <template v-else>
+
+        <!-- Textarea extra fields (Gear, Equipment of Note, Tiny Items) -->
+        <template v-for="f in extraFields.filter(f => f.type === 'textarea' && !f.section)" :key="f.key">
+          <div style="font-size:0.75em;opacity:0.55;margin:16px 0 6px;letter-spacing:.05em;text-transform:uppercase">{{ f.label }}<span v-if="f.help" class="field-help" style="font-size:0.85em;opacity:1" :data-tooltip="f.help">?</span></div>
+          <textarea v-model="ef[f.key]" class="form-input" style="min-height:64px;resize:vertical;width:100%"></textarea>
+        </template>
+
+        <!-- CoC: My Story, Backstory grid, Fellow Investigators -->
+        <template v-if="activeSys === 'coc'">
+          <div style="font-size:0.75em;opacity:0.55;margin:20px 0 8px;letter-spacing:.05em;text-transform:uppercase">My Story</div>
+          <textarea v-model="ef.story" class="form-input" style="min-height:72px;resize:vertical;width:100%" placeholder="The narrative of your investigator's life…"></textarea>
+
+          <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Backstory</div>
+          <div class="coc-backstory-grid">
+            <template v-for="f in extraFields.filter(f => f.section === 'backstory' && f.type !== 'textarea')" :key="f.key">
+              <div class="field-group">
+                <label>{{ f.label }}<span v-if="f.help" class="field-help" :data-tooltip="f.help">?</span></label>
+                <input v-model="ef[f.key]" class="form-input" />
+              </div>
+            </template>
+          </div>
+
+          <!-- Fellow Investigators -->
+          <div style="font-size:0.75em;opacity:0.55;margin:20px 0 8px;letter-spacing:.05em;text-transform:uppercase">Fellow Investigators</div>
+          <div class="coc-fellow-grid">
+            <template v-for="n in [1,2,3,4]" :key="n">
+              <div class="field-group">
+                <label>Char. {{ n }}</label>
+                <input v-model="ef['fellow_' + n + '_name']" class="form-input" placeholder="Character name…" />
+              </div>
+              <div class="field-group">
+                <label>Player {{ n }}</label>
+                <input v-model="ef['fellow_' + n + '_player']" class="form-input" placeholder="Player name…" />
+              </div>
+            </template>
           </div>
         </template>
 
-        <!-- Weapons table -->
-        <template v-if="hasBuiltinSheet && hasWeaponsSection">
-          <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Weapons</div>
-          <div style="overflow-x:auto">
-            <table class="weapons-table" v-if="ef.weapons?.length">
-              <thead>
-                <tr>
-                  <th v-for="col in weaponCols" :key="col">{{ col.charAt(0).toUpperCase() + col.slice(1) }}</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(w, i) in ef.weapons" :key="i">
-                  <td v-for="col in weaponCols" :key="col">
-                    <input v-model="w[col]" class="form-input" style="min-width:80px" />
-                  </td>
-                  <td><button class="btn" style="padding:2px 8px;font-size:0.8em;opacity:.6" @click="removeWeapon(i)">✕</button></td>
-                </tr>
-              </tbody>
-            </table>
+        <!-- Non-CoC: Backstory textarea + Notes textarea -->
+        <template v-if="activeSys !== 'coc'">
+          <div v-if="activeSys !== 'achtung'" class="field-group" style="margin-top:16px">
+            <label>Backstory</label>
+            <textarea v-model="ef.backstory" class="form-input" style="min-height:80px;resize:vertical"></textarea>
           </div>
-          <button class="btn" style="margin-top:6px;font-size:0.82em" @click="addWeapon">+ Add Weapon</button>
+          <div class="field-group" style="margin-top:16px">
+            <label>Notes</label>
+            <textarea v-model="ef.notes" class="form-input" style="min-height:60px;resize:vertical"></textarea>
+          </div>
         </template>
 
-        <!-- Achtung! Cthulhu: biography, talents, spells -->
+        <!-- Achtung! Cthulhu: Biography, Talents table, Spells table -->
         <template v-if="activeSys === 'achtung'">
           <div style="font-size:0.75em;opacity:0.55;margin:20px 0 6px;letter-spacing:.05em;text-transform:uppercase">Biography</div>
           <textarea v-model="ef.biography" class="form-input" style="min-height:80px;resize:vertical;width:100%"
@@ -387,436 +430,39 @@
                   @click="ef.acht_spells = [...(ef.acht_spells||[]), {name:'',skill:'',difficulty:'',cost:'',duration:'',effect:'',momentum:''}]">+ Add Spell</button>
         </template>
 
-        <!-- Critical Injuries (ALIEN / Coriolis) -->
+        <!-- Weapons table (for systems with hasWeaponsSection) -->
+        <template v-if="hasBuiltinSheet && hasWeaponsSection">
+          <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Weapons</div>
+          <div style="overflow-x:auto">
+            <table class="weapons-table" v-if="ef.weapons?.length">
+              <thead>
+                <tr>
+                  <th v-for="col in weaponCols" :key="col">{{ col.charAt(0).toUpperCase() + col.slice(1) }}</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(w, i) in ef.weapons" :key="i">
+                  <td v-for="col in weaponCols" :key="col">
+                    <input v-model="w[col]" class="form-input" style="min-width:80px" />
+                  </td>
+                  <td><button class="btn" style="padding:2px 8px;font-size:0.8em;opacity:.6" @click="removeWeapon(i)">✕</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <button class="btn" style="margin-top:6px;font-size:0.82em" @click="addWeapon">+ Add Weapon</button>
+        </template>
+
+        <!-- Critical Injuries textarea (ALIEN / Coriolis) -->
         <template v-if="activeSys === 'alien' || activeSys === 'coriolis'">
           <div style="font-size:0.75em;opacity:0.55;margin:16px 0 6px;letter-spacing:.05em;text-transform:uppercase">Critical Injuries</div>
           <textarea v-model="ef.critical_injuries" class="form-input" style="min-height:60px;resize:vertical;width:100%"
                     placeholder="List critical injuries…"></textarea>
         </template>
 
-        <!-- Portrait URL (all systems) -->
-        <div class="field-group" style="margin-top:12px">
-          <label>Portrait URL <span style="opacity:.5;font-weight:400">(optional)</span></label>
-          <input v-model="ef.portrait_url" class="form-input" placeholder="https://…" />
-        </div>
-
+        <!-- Error message -->
         <div v-if="saveError" class="status-msg status-err" style="margin-top:10px">{{ saveError }}</div>
-        <div style="display:flex;gap:8px;margin-top:14px">
-          <button class="btn" @click="saveSheet" :disabled="saving">{{ saving ? 'Saving…' : 'Save' }}</button>
-          <button class="btn" style="opacity:.7" @click="cancelEdit">Cancel</button>
-        </div>
-      </div>
-    </template>
-
-    <!-- ── VIEW MODE ──────────────────────────────────── -->
-    <template v-else>
-
-      <!-- Page navigation (built-in sheet only) -->
-      <div v-if="hasBuiltinSheet" class="dossier-page-nav">
-        <button class="dossier-nav-btn dossier-nav-prev" :disabled="pageIndex === 0" @click="prevPage" aria-label="Previous page">&#8249;</button>
-        <div class="dossier-page-tabs">
-          <button v-for="(p, i) in pages" :key="p.id"
-            class="dossier-page-tab"
-            :class="{ active: activePage === p.id }"
-            @click="goToPage(i)">
-            <span class="dossier-tab-label">{{ p.label }}</span>
-          </button>
-        </div>
-        <button class="dossier-nav-btn dossier-nav-next" :disabled="pageIndex === pages.length - 1" @click="nextPage" aria-label="Next page">&#8250;</button>
-      </div>
-
-      <!-- D&D Beyond banner (5e with URL set) -->
-      <div v-if="hasDndBeyond && sheet.dnd_beyond_url" class="beyond-banner">
-        <div class="beyond-banner-info">
-          <div class="beyond-banner-name">{{ sheet.name || auth.currentUser?.username }}</div>
-          <div class="beyond-banner-sub">D&amp;D Beyond character sheet</div>
-        </div>
-        <a :href="sheet.dnd_beyond_url" target="_blank" rel="noopener" class="btn beyond-btn">Open in D&amp;D Beyond ↗</a>
-      </div>
-
-      <!-- 5e: nudge to add Beyond URL if missing -->
-      <div v-else-if="hasDndBeyond && !sheet.dnd_beyond_url" class="beyond-placeholder">
-        <div style="opacity:.6;font-size:.9em">No D&amp;D Beyond link set.</div>
-        <button v-if="!campaign.isGm" class="btn btn-sm" style="margin-top:8px" @click="startEdit">Add D&amp;D Beyond URL</button>
-      </div>
-
-      <!-- Built-in sheet for other systems -->
-      <template v-if="hasBuiltinSheet">
-
-        <!-- Page flip container -->
-        <div class="sheet-page-wrap">
-        <Transition :name="flipTransition">
-        <div class="sheet-page" :key="activePage">
-
-        <!-- ── IDENTITY ──────────────────────────────────── -->
-        <template v-if="activePage === 'identity'">
-
-        <!-- Character Header -->
-        <div class="card sheet-header-card" style="margin-bottom:16px">
-          <div v-if="cocEraLabel" class="coc-era-banner">{{ cocEraLabel }} Investigator</div>
-          <div class="card-body" style="display:flex;gap:20px;align-items:flex-start">
-            <!-- Portrait (top-left, prominent) -->
-            <div class="char-portrait-wrap">
-              <img v-if="sheet.portrait_url" :src="sheet.portrait_url" alt="Portrait" class="char-portrait-full" />
-              <div v-else class="char-portrait-empty">{{ initials(sheet.name) }}</div>
-            </div>
-            <div style="flex:1">
-              <div style="font-size:1.3em;font-weight:600;color:var(--accent)">{{ sheet.name }}</div>
-              <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">
-                <span v-if="sheet.class" class="tag">{{ sheet.class }}</span>
-                <span v-if="sheet.race" class="tag">{{ sheet.race }}</span>
-                <span v-if="sheet.level" class="tag tag-active">Level {{ sheet.level }}</span>
-                <span v-if="sheet.background" class="tag">{{ sheet.background }}</span>
-              </div>
-              <div v-if="sheet.concept" style="font-size:0.85em;opacity:0.7;margin-top:8px;font-style:italic">{{ sheet.concept }}</div>
-              <!-- System-specific identity extras (non-boolean, non-textarea, non-section) -->
-              <div v-if="extraFields.length" style="display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px">
-                <span v-for="f in extraFields.filter(f => sheet[f.key] && !['boolean','textarea'].includes(f.type) && !f.section && !['buddy_1','buddy_2','buddy_3','buddy_4'].includes(f.key))"
-                      :key="f.key" style="font-size:0.8em;opacity:0.65">
-                  <span style="opacity:0.6">{{ f.label }}:</span> {{ sheet[f.key] }}
-                </span>
-              </div>
-              <!-- Active boolean status flags -->
-              <div v-if="extraFields.some(f => f.type === 'boolean' && sheet[f.key])" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">
-                <span v-for="f in extraFields.filter(f => f.type === 'boolean' && sheet[f.key])" :key="f.key"
-                      class="tag tag-inactive" style="font-size:0.78em">{{ f.label }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Stats -->
-        <div v-if="hasStats" class="card" style="margin-bottom:16px">
-          <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">STATS</div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px">
-            <div v-for="stat in coreStats" :key="stat.key" v-show="sheet[stat.key] != null" class="stat-box">
-              <div class="stat-label">{{ stat.label }}</div>
-              <div class="stat-value">{{ sheet[stat.key] ?? '—' }}</div>
-              <!-- Achtung! Bonus Damage = floor(rating / 2) -->
-              <div v-if="activeSys === 'achtung' && sheet[stat.key] != null"
-                   style="font-size:0.65em;opacity:0.5;margin-top:2px">BD {{ Math.floor(sheet[stat.key] / 2) }}</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- HP / Condition -->
-        <div v-if="sheet.hp_max != null || sheet.stress_max != null || sheet.mp_max != null || sheet.mind_max != null || sheet.radiation != null || (hasSanity && sheet.sanity_max != null)" class="card" style="margin-bottom:16px">
-          <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">CONDITION</div>
-          <div style="display:flex;flex-direction:column;gap:12px">
-            <div v-if="sheet.hp_max != null">
-              <div style="display:flex;justify-content:space-between;font-size:0.8em;opacity:0.7;margin-bottom:4px">
-                <span>HP</span><span>{{ sheet.hp_current ?? sheet.hp_max }} / {{ sheet.hp_max }}</span>
-              </div>
-              <div class="progress-bar"><div class="progress-fill" :style="`width:${hpPercent}%;background:var(--green,#4caf7d)`"></div></div>
-              <div v-if="activeSys === 'coriolis'" style="font-size:0.7em;opacity:0.35;margin-top:2px">= Strength + Agility</div>
-            </div>
-            <div v-if="sheet.stress_max != null">
-              <div style="display:flex;justify-content:space-between;font-size:0.8em;opacity:0.7;margin-bottom:4px">
-                <span>Stress</span><span>{{ sheet.stress_current ?? 0 }} / {{ sheet.stress_max }}</span>
-              </div>
-              <div class="progress-bar"><div class="progress-fill" :style="`width:${stressPercent}%;background:var(--red,#c94c4c)`"></div></div>
-            </div>
-            <div v-if="sheet.mp_max != null">
-              <div style="display:flex;justify-content:space-between;font-size:0.8em;opacity:0.7;margin-bottom:4px">
-                <span>Magic Points</span><span>{{ sheet.mp_current ?? sheet.mp_max }} / {{ sheet.mp_max }}</span>
-              </div>
-              <div class="progress-bar"><div class="progress-fill" :style="`width:${mpPercent}%;background:var(--blue,#4c7ac9)`"></div></div>
-            </div>
-            <div v-if="sheet.mind_max != null">
-              <div style="display:flex;justify-content:space-between;font-size:0.8em;opacity:0.7;margin-bottom:4px">
-                <span>Mind Points</span><span>{{ sheet.mind_current ?? sheet.mind_max }} / {{ sheet.mind_max }}</span>
-              </div>
-              <div class="progress-bar"><div class="progress-fill" :style="`width:${mindPercent}%;background:var(--accent,#c9a84c)`"></div></div>
-              <div v-if="activeSys === 'coriolis'" style="font-size:0.7em;opacity:0.35;margin-top:2px">= Wits + Empathy</div>
-            </div>
-            <div v-if="hasSanity && sheet.sanity_max != null">
-              <div style="display:flex;justify-content:space-between;font-size:0.8em;opacity:0.7;margin-bottom:4px">
-                <span>Sanity</span><span>{{ sheet.sanity_current ?? sheet.sanity_max }} / {{ sheet.sanity_max }}</span>
-              </div>
-              <div class="progress-bar"><div class="progress-fill" :style="`width:${sanityPercent}%;background:var(--purple,#8c4ac9)`"></div></div>
-            </div>
-            <div v-if="sheet.radiation != null" style="display:flex;align-items:center;gap:10px;font-size:0.85em">
-              <span style="opacity:0.6">Radiation</span>
-              <span class="tag" :class="sheet.radiation > 0 ? 'tag-inactive' : ''">{{ sheet.radiation }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Conditions (ALIEN) -->
-        <div v-if="hasConditions && conditions.some(c => sheet['cond_' + c])" class="card" style="margin-bottom:16px">
-          <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">CONDITIONS</div>
-          <div style="display:flex;flex-wrap:wrap;gap:6px">
-            <span v-for="c in conditions.filter(c => sheet['cond_' + c])" :key="c" class="tag tag-inactive">
-              {{ c.charAt(0).toUpperCase() + c.slice(1) }}
-            </span>
-          </div>
-        </div>
-
-        </template><!-- /identity -->
-
-        <!-- ── SKILLS ───────────────────────────────────── -->
-        <template v-else-if="activePage === 'skills'">
-
-        <!-- Skills — system skills with values -->
-        <div v-if="systemSkills.length" class="card" style="margin-bottom:16px">
-          <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">SKILLS</div>
-
-          <!-- CoC: compact 3-col % grid -->
-          <template v-if="activeSys === 'coc'">
-            <!-- Derived: IDEA / KNOW -->
-            <div v-if="cocIdea || cocKnow" style="display:flex;gap:12px;margin-bottom:12px">
-              <div v-if="cocIdea" class="stat-box" style="min-width:80px">
-                <div class="stat-label">IDEA</div><div class="stat-value">{{ cocIdea }}%</div>
-              </div>
-              <div v-if="cocKnow" class="stat-box" style="min-width:80px">
-                <div class="stat-label">KNOW</div><div class="stat-value">{{ cocKnow }}%</div>
-              </div>
-            </div>
-            <!-- Threshold legend -->
-            <div class="coc-view-legend">
-              <span></span><span>Base</span><span>Reg</span><span title="Hard success (½ skill)">Hard</span><span title="Extreme success (⅕ skill)">Ext</span>
-            </div>
-            <div class="skills-coc-view-grid">
-              <template v-for="sk in systemSkills" :key="sk.key">
-                <div v-if="sheet[sk.key] != null" class="coc-view-row" :class="{ 'coc-raised': sheet[sk.key] > sk.base }">
-                  <span class="coc-view-label">{{ sk.label }}</span>
-                  <span class="coc-view-base">{{ sk.note || sk.base + '%' }}</span>
-                  <span class="coc-view-val">{{ sheet[sk.key] }}%</span>
-                  <span class="coc-view-hard" title="Hard success">{{ Math.floor(sheet[sk.key] / 2) }}%</span>
-                  <span class="coc-view-extreme" title="Extreme success">{{ Math.floor(sheet[sk.key] / 5) }}%</span>
-                </div>
-              </template>
-            </div>
-          </template>
-
-          <!-- YZE dice skills (ALIEN / Coriolis) -->
-          <template v-else-if="activeSys === 'alien' || activeSys === 'coriolis'">
-            <template v-if="hasSkillGroups">
-              <div style="font-size:0.72em;opacity:0.45;margin-bottom:6px">GENERAL</div>
-            </template>
-            <div class="skills-yze-view">
-              <div v-for="sk in (hasSkillGroups ? generalSkills : systemSkills)" :key="sk.key" class="yze-view-row">
-                <span class="yze-view-label">{{ sk.label }}</span>
-                <span v-if="sk.attr" class="yze-view-attr">{{ sk.attr }}</span>
-                <span class="yze-view-dice">
-                  <span v-for="i in 5" :key="i" class="die-pip" :class="{ active: i <= (sheet[sk.key] || 0) }">●</span>
-                </span>
-              </div>
-            </div>
-            <template v-if="hasSkillGroups">
-              <div style="font-size:0.72em;opacity:0.45;margin:12px 0 6px">ADVANCED</div>
-              <div class="skills-yze-view">
-                <div v-for="sk in advancedSkills" :key="sk.key" class="yze-view-row">
-                  <span class="yze-view-label">{{ sk.label }}</span>
-                  <span v-if="sk.attr" class="yze-view-attr">{{ sk.attr }}</span>
-                  <span class="yze-view-dice">
-                    <span v-for="i in 5" :key="i" class="die-pip" :class="{ active: i <= (sheet[sk.key] || 0) }">●</span>
-                  </span>
-                </div>
-              </div>
-            </template>
-          </template>
-
-          <!-- Dune skills with rank + focus -->
-          <template v-else-if="activeSys === 'dune'">
-            <div class="skills-focus-view">
-              <div v-for="sk in systemSkills" :key="sk.key" class="focus-view-row">
-                <span class="focus-view-label">{{ sk.label }}</span>
-                <span class="focus-view-rank">{{ sheet[sk.key] ?? '—' }}</span>
-                <span v-if="sheet[sk.key + '_focus']" class="focus-view-focus">{{ sheet[sk.key + '_focus'] }}</span>
-              </div>
-            </div>
-            <!-- Drives -->
-            <template v-if="hasDrives && drives.some(d => sheet['drv_' + d] != null)">
-              <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin:14px 0 8px">DRIVES</div>
-              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px">
-                <div v-for="d in drives" :key="d" class="stat-box">
-                  <div class="stat-label">{{ d.toUpperCase() }}</div>
-                  <div class="stat-value">{{ sheet['drv_' + d] ?? '—' }}</div>
-                </div>
-              </div>
-            </template>
-          </template>
-
-          <!-- Achtung! skills with rank + focus -->
-          <template v-else-if="activeSys === 'achtung'">
-            <div class="skills-focus-view">
-              <div v-for="sk in systemSkills" :key="sk.key" class="focus-view-row">
-                <span class="focus-view-label">{{ sk.label }}</span>
-                <span class="focus-view-rank">{{ sheet[sk.key] ?? '—' }}</span>
-                <span v-if="sheet[sk.key + '_focus']" class="focus-view-focus">{{ sheet[sk.key + '_focus'] }}</span>
-              </div>
-            </div>
-          </template>
-        </div>
-
-        <!-- Abilities / fallback skills (custom / legacy) -->
-        <div v-if="(!systemSkills.length && sheet.skills?.length) || sheet.abilities?.length" class="card" style="margin-bottom:16px">
-          <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">SKILLS &amp; ABILITIES</div>
-          <div style="display:flex;flex-wrap:wrap;gap:6px">
-            <span v-for="s in (!systemSkills.length ? (sheet.skills || []) : [])" :key="s" class="tag">{{ s }}</span>
-            <span v-for="a in (sheet.abilities || [])" :key="a" class="tag tag-active">{{ a }}</span>
-          </div>
-        </div>
-
-        <!-- ALIEN consumables -->
-        <div v-if="activeSys === 'alien'" class="card" style="margin-bottom:16px">
-          <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">CONSUMABLES</div>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;text-align:center">
-            <div v-for="k in ['cons_air','cons_food','cons_water','cons_power']" :key="k" class="stat-box">
-              <div class="stat-label">{{ k.split('_')[1].toUpperCase() }}</div>
-              <div class="stat-value">{{ sheet[k] ?? '—' }}</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- CoC Derived Stats (Damage Bonus, Build, Move) -->
-        <div v-if="activeSys === 'coc' && (sheet.str != null || sheet.siz != null)" class="card" style="margin-bottom:16px">
-          <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">DERIVED STATS</div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px">
-            <div class="stat-box">
-              <div class="stat-label">Dmg Bonus</div>
-              <div class="stat-value">{{ cocDamageBonus }}</div>
-            </div>
-            <div class="stat-box">
-              <div class="stat-label">Build</div>
-              <div class="stat-value">{{ cocBuild }}</div>
-            </div>
-            <div class="stat-box">
-              <div class="stat-label">Move</div>
-              <div class="stat-value">{{ cocMove }}</div>
-            </div>
-            <div class="stat-box">
-              <div class="stat-label">Dodge</div>
-              <div class="stat-value">{{ sheet.sk_dodge ?? (sheet.dex ? sheet.dex * 2 : '—') }}%</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Textarea extra fields (Gear & Possessions / Equipment of Note) -->
-        <template v-for="f in extraFields.filter(f => f.type === 'textarea' && !f.section && sheet[f.key])" :key="f.key">
-          <div class="card" style="margin-bottom:16px">
-            <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">{{ f.label.toUpperCase() }}</div>
-            <div class="prose" style="font-size:0.85em;opacity:0.8;line-height:1.6" v-html="renderMd(sheet[f.key])"></div>
-          </div>
-        </template>
-
-        </template><!-- /skills -->
-
-        <!-- ── NOTES ────────────────────────────────────── -->
-        <template v-else>
-
-        <!-- CoC My Story + Backstory (always visible for CoC) -->
-        <template v-if="activeSys === 'coc'">
-          <div class="card" style="margin-bottom:16px">
-            <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">MY STORY</div>
-            <div v-if="sheet.story" class="prose" style="font-size:0.85em;opacity:0.8;line-height:1.6" v-html="renderMd(sheet.story)"></div>
-            <div v-else style="font-size:0.85em;opacity:0.3;font-style:italic">No story written yet.</div>
-          </div>
-          <div class="card" style="margin-bottom:16px">
-            <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">BACKSTORY</div>
-            <div class="coc-backstory-view-grid">
-              <template v-for="f in extraFields.filter(f => f.section === 'backstory' && f.type !== 'textarea')" :key="f.key">
-                <div class="coc-bv-item">
-                  <div class="coc-bv-label">{{ f.label }}</div>
-                  <div class="coc-bv-value">{{ sheet[f.key] || '—' }}</div>
-                </div>
-              </template>
-            </div>
-          </div>
-          <div class="card" style="margin-bottom:16px">
-            <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">FELLOW INVESTIGATORS</div>
-            <div class="coc-fellow-view">
-              <div v-for="n in [1,2,3,4]" :key="n" class="coc-fellow-row">
-                <span class="coc-fellow-num">{{ n }}.</span>
-                <span class="coc-fellow-char">{{ sheet['fellow_' + n + '_name'] || '—' }}</span>
-                <span class="coc-fellow-sep">·</span>
-                <span class="coc-fellow-player">{{ sheet['fellow_' + n + '_player'] || '—' }}</span>
-              </div>
-            </div>
-          </div>
-        </template>
-
-        <!-- Notes / Backstory (hidden for CoC — they use the dedicated My Story card) -->
-        <div v-if="(sheet.notes || sheet.backstory) && activeSys !== 'coc'" class="card" style="margin-bottom:16px">
-          <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">NOTES</div>
-          <div v-if="sheet.backstory" class="prose" style="font-size:0.85em;opacity:0.8;margin-bottom:10px;line-height:1.6" v-html="renderMd(sheet.backstory)"></div>
-          <div v-if="sheet.notes" class="prose" style="font-size:0.85em;opacity:0.7;line-height:1.6" v-html="renderMd(sheet.notes)"></div>
-        </div>
-
-        <!-- Weapons view -->
-        <div v-if="sheet.weapons?.length" class="card" style="margin-bottom:16px">
-          <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">WEAPONS</div>
-          <div style="overflow-x:auto">
-            <table class="weapons-table weapons-table--view">
-              <thead>
-                <tr>
-                  <th v-for="col in weaponCols" :key="col">{{ col.charAt(0).toUpperCase() + col.slice(1) }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(w, i) in sheet.weapons" :key="i">
-                  <td v-for="col in weaponCols" :key="col">{{ w[col] || '—' }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Achtung! Cthulhu — biography, talents, spells (always visible) -->
-        <template v-if="activeSys === 'achtung'">
-          <div class="card acht-sheet-card" style="margin-bottom:16px">
-            <div class="acht-card-header">BIOGRAPHY</div>
-            <div v-if="sheet.biography" class="prose" style="font-size:0.87em;line-height:1.65;opacity:0.9" v-html="renderMd(sheet.biography)"></div>
-            <div v-else class="acht-empty">No biography written yet.</div>
-          </div>
-
-          <div class="card acht-sheet-card" style="margin-bottom:16px">
-            <div class="acht-card-header">TALENTS</div>
-            <table v-if="sheet.acht_talents?.length" class="acht-table">
-              <thead>
-                <tr><th>Name</th><th>Archetype</th><th>Effect</th></tr>
-              </thead>
-              <tbody>
-                <tr v-for="(t, i) in sheet.acht_talents" :key="i">
-                  <td class="acht-td-name">{{ t.name || '—' }}</td>
-                  <td class="acht-td-arch">{{ t.archetype || '—' }}</td>
-                  <td>{{ t.effect || '—' }}</td>
-                </tr>
-              </tbody>
-            </table>
-            <div v-else class="acht-empty">No talents recorded.</div>
-          </div>
-
-          <div class="card acht-sheet-card" style="margin-bottom:16px">
-            <div class="acht-card-header">SPELLS</div>
-            <div style="overflow-x:auto">
-              <table v-if="sheet.acht_spells?.length" class="acht-table">
-                <thead>
-                  <tr><th>Name</th><th>Skill</th><th>Diff.</th><th>Cost</th><th>Duration</th><th>Effect</th><th>Momentum</th></tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(sp, i) in sheet.acht_spells" :key="i">
-                    <td class="acht-td-name">{{ sp.name || '—' }}</td>
-                    <td>{{ sp.skill || '—' }}</td>
-                    <td>{{ sp.difficulty || '—' }}</td>
-                    <td>{{ sp.cost || '—' }}</td>
-                    <td>{{ sp.duration || '—' }}</td>
-                    <td>{{ sp.effect || '—' }}</td>
-                    <td>{{ sp.momentum || '—' }}</td>
-                  </tr>
-                </tbody>
-              </table>
-              <div v-else class="acht-empty">No spells recorded.</div>
-            </div>
-          </div>
-        </template>
-
-        <!-- Critical Injuries view (ALIEN / Coriolis) -->
-        <div v-if="sheet.critical_injuries" class="card" style="margin-bottom:16px">
-          <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px">CRITICAL INJURIES</div>
-          <div class="prose" style="font-size:0.85em;opacity:0.8;line-height:1.6" v-html="renderMd(sheet.critical_injuries)"></div>
-        </div>
 
         </template><!-- /notes -->
         </div><!-- /sheet-page -->
@@ -846,17 +492,13 @@
         </template>
       </template>
 
-      <!-- Edit button (players edit their own; GM can edit any) -->
-      <div v-if="!campaign.isGm || selectedUserId || characterId" style="margin-top:24px">
-        <button class="btn" @click="startEdit">Edit Sheet</button>
-      </div>
 
     </template>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { renderMd } from '@/utils/markdown'
 import { useDataStore } from '@/stores/data'
@@ -970,9 +612,9 @@ const cocMove = computed(() => {
 const sheet = ref(null)
 const ships = ref([])
 const loading = ref(false)
-const editing = ref(false)
 const saving = ref(false)
 const saveError = ref('')
+const saveStatus = ref('')  // '' | 'saving' | 'saved' | 'error'
 const selectedUserId = ref('')
 const activePage = ref('identity') // 'identity' | 'skills' | 'notes'
 const flipDirection = ref('forward') // controls page-flip CSS transition direction
@@ -1000,6 +642,14 @@ const dossierMode = computed(() => activeSys.value === 'achtung')
 
 // Edit form
 const ef = ref({})
+
+let _saveTimer = null
+watch(ef, () => {
+  if (!sheet.value) return
+  if (_saveTimer) clearTimeout(_saveTimer)
+  saveStatus.value = ''
+  _saveTimer = setTimeout(() => saveSheet(), 1500)
+}, { deep: true })
 
 function startEdit() {
   const s = sheet.value || {}
@@ -1071,13 +721,6 @@ function startEdit() {
     ef.value.acht_talents = (s.acht_talents || []).map(t => ({ ...t }))
     ef.value.acht_spells  = (s.acht_spells  || []).map(t => ({ ...t }))
   }
-  editing.value = true
-  saveError.value = ''
-}
-
-function cancelEdit() {
-  editing.value = false
-  saveError.value = ''
 }
 
 const hasStats = computed(() => coreStats.value.some(s => sheet.value?.[s.key] != null))
@@ -1136,7 +779,6 @@ function conditionClass(c) {
 
 async function loadSheet() {
   loading.value = true
-  editing.value = false
   try {
     if (characterId.value) {
       // New characters API — loaded via ?id= from CharactersView
@@ -1161,12 +803,8 @@ async function loadSheet() {
         sheet.value = null
       }
     }
-    // Auto-open edit form when the player has no sheet yet, or when it's a freshly created character with no data
-    const isNewEmpty = characterId.value && sheet.value &&
-                       Object.keys(sheet.value.sheet_data || {}).length === 0
-    if ((!sheet.value || isNewEmpty) && !campaign.isGm) {
-      startEdit()
-    }
+    // Always populate ef from the loaded sheet
+    startEdit()
     const rs = await data.apif('/api/character-sheets/ships/all')
     if (rs.ok) ships.value = (await rs.json()).ships || []
   } catch (e) {
@@ -1179,6 +817,7 @@ async function loadSheet() {
 
 async function saveSheet() {
   saving.value = true
+  saveStatus.value = 'saving'
   saveError.value = ''
   try {
     const uid = campaign.isGm && selectedUserId.value ? selectedUserId.value : auth.currentUser?.id
@@ -1265,10 +904,12 @@ async function saveSheet() {
     }
     if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || 'Save failed') }
     ui.showToast('Sheet saved', '', '✓')
+    saveStatus.value = 'saved'
+    setTimeout(() => { if (saveStatus.value === 'saved') saveStatus.value = '' }, 2000)
     await loadSheet()
-    editing.value = false
   } catch (e) {
     saveError.value = e.message
+    saveStatus.value = 'error'
   } finally {
     saving.value = false
   }
@@ -1879,4 +1520,22 @@ onMounted(() => {
 .dossier-mode .sheet-header-card [style*="color:var(--accent)"] {
   color: var(--accent-yellow, #e9c46a) !important;
 }
+
+/* ── Save status indicator ───────────────────────────── */
+.sheet-save-indicator {
+  font-size: 0.7em;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  border-radius: 3px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+}
+.sheet-save-indicator.saving,
+.sheet-save-indicator.saved,
+.sheet-save-indicator.error { opacity: 1; }
+.sheet-save-indicator.saving { color: var(--text3); }
+.sheet-save-indicator.saved  { color: #4caf50; }
+.sheet-save-indicator.error  { color: #e74c3c; }
 </style>
