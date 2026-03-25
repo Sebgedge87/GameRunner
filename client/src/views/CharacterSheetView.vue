@@ -21,7 +21,7 @@
     <div v-if="loading" class="loading">Loading sheet...</div>
 
     <!-- No sheet yet -->
-    <div v-else-if="!sheet && !editing" class="empty-state">
+    <div v-else-if="!sheet" class="empty-state">
       <template v-if="campaign.isGm && !selectedUserId">
         <div style="opacity:0.5">Select a player above to view their sheet.</div>
       </template>
