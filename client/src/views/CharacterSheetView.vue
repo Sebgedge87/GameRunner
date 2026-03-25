@@ -1500,16 +1500,19 @@ onMounted(() => {
 
 .dossier-mode .card,
 .dossier-mode .sheet-header-card {
-  background: var(--dossier-card) !important;
-  border-color: var(--dossier-border) !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
   color: var(--dossier-ink) !important;
-  position: relative;
 }
 
-/* Inner cards a touch darker for depth */
+/* Inner cards — same, no nesting depth */
 .dossier-mode .card .card,
 .dossier-mode .card > div[style*="background"] {
-  background: var(--dossier-deep) !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .dossier-mode .page-title {
@@ -1519,8 +1522,11 @@ onMounted(() => {
 }
 
 .dossier-mode .stat-box {
-  background: var(--dossier-deep);
-  border-color: var(--dossier-border);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--dossier-border);
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .dossier-mode .stat-value {
@@ -1532,12 +1538,15 @@ onMounted(() => {
   color: var(--dossier-sepia);
 }
 
-/* Section labels — stamp style */
+/* Section dividers — underline rule instead of box */
 .dossier-mode .acht-card-header,
 .dossier-mode .acht-sheet-card {
-  border-left: 4px solid var(--dossier-stamp);
-  border-color: var(--dossier-border) !important;
-  background: var(--dossier-card) !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--dossier-border) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding-left: 0 !important;
 }
 
 .dossier-mode [style*="letter-spacing:1px"],
@@ -1546,20 +1555,30 @@ onMounted(() => {
   color: var(--dossier-sepia) !important;
 }
 
-/* Inputs on manila paper */
+/* Inputs — paper form lines (bottom border only, no box) */
 .dossier-mode input,
-.dossier-mode textarea,
 .dossier-mode select {
-  background: #f0e4bc !important;
-  border-color: var(--dossier-border) !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--dossier-border) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  color: var(--dossier-ink) !important;
+  padding-left: 2px !important;
+}
+.dossier-mode textarea {
+  background: transparent !important;
+  border: 1px solid var(--dossier-border) !important;
+  border-radius: 2px !important;
+  box-shadow: none !important;
   color: var(--dossier-ink) !important;
 }
 .dossier-mode input:focus,
 .dossier-mode textarea:focus,
 .dossier-mode select:focus {
-  border-color: var(--dossier-stamp) !important;
+  border-bottom-color: var(--dossier-stamp) !important;
   outline: none;
-  box-shadow: 0 0 0 2px rgba(139,26,26,0.18);
+  box-shadow: none !important;
 }
 
 /* Page navigation tabs — manila folder tabs */
