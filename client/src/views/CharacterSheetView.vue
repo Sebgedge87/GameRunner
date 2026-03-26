@@ -977,7 +977,7 @@ onMounted(() => {
 
 /* ── Tab bar — sits above the document box ──────────────────────────── */
 .doc-tabs-bar {
-  max-width: 880px;
+  max-width: 1200px;
   margin: 0 auto;
   display: flex;
   align-items: flex-end;
@@ -1049,7 +1049,7 @@ onMounted(() => {
 
 /* ── Document box — aged paper with offset shadow ───────────────────── */
 .document-box {
-  max-width: 880px;
+  max-width: 1200px;
   margin: 0 auto;
   background: var(--paper);
   border: 1px solid var(--border-ink);
@@ -2013,14 +2013,8 @@ textarea.form-input { resize: vertical; }
   box-sizing: border-box;
 }
 
-/* ── Tab bar — cream-paper tint ─────────────────────────────────────── */
-.coc-mode .doc-tabs-bar {
-  max-width: 794px !important;
-}
-
 /* ── Document box — cream paper, drop shadow ─────────────────────────── */
 .coc-mode .document-box {
-  max-width: 794px !important;
   background: #f4efe4 !important;
   border: 1px solid #cfc7b7 !important;
   box-shadow: 0 4px 18px rgba(0,0,0,0.14) !important;
@@ -2045,7 +2039,6 @@ textarea.form-input { resize: vertical; }
 .coc-mode .sheet-page-wrap {
   background: transparent !important;
   border: none !important;
-  padding: 0 !important;
   box-shadow: none !important;
 }
 
