@@ -56,10 +56,8 @@ router.beforeEach((to, from) => {
     from.name !== undefined &&
     !window.matchMedia('(prefers-reduced-motion: reduce)').matches
   ) {
-    const transition = document.startViewTransition(async () => {
-      await nextTick()
-    })
-    return transition.ready.catch(() => {}) // non-blocking — navigation proceeds regardless
+    document.startViewTransition(() => nextTick())
+    // Don't return the transition — guard must return undefined to allow navigation
   }
 })
 
