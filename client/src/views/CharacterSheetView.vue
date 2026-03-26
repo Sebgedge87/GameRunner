@@ -1422,118 +1422,54 @@ onMounted(() => {
   overflow: hidden;
 }
 
-/* ── Page flip transition ────────────────────────────────────────────────
- * Improvements over a plain rotateY:
- *  1. perspective() applied per-transform (consistent regardless of container width)
- *  2. ::after gradient overlay sweeps a fold shadow across the leaving page
- *  3. blur() at deep angles — text softens as page disappears "behind" the spine
- *  4. will-change triggers GPU compositing layer
- *  5. Unfold overshoots to +5° then settles — natural paper spring
- *  6. Elevation box-shadow rises at mid-fold (page lifts off the surface)
+/* ── Page slide transition ──────────────────────────────────────────────
+ * Pages slide horizontally like physical document pages being moved across
+ * a desk. The leaving page exits in the direction of travel; the incoming
+ * page enters from the opposite side.
  * ──────────────────────────────────────────────────────────────────────── */
 
-/* GPU layer hint for both active pages */
+/* GPU layer hint — both pages during transition */
 .flip-forward-leave-active,  .flip-forward-enter-active,
 .flip-backward-leave-active, .flip-backward-enter-active {
-  will-change: transform, filter;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+  will-change: transform, opacity;
 }
 
-/* ── Forward (→): spine on left ──────────────────────────── */
+/* ── Forward (→): current slides left, next slides in from right ── */
 .flip-forward-leave-active {
   position: absolute; width: 100%; top: 0; left: 0; z-index: 2;
-  transform-origin: left center;
-  animation: foldLeft 0.48s cubic-bezier(0.6, 0, 0.85, 0.45) forwards;
+  animation: slideOutLeft 0.28s ease-in forwards;
 }
 .flip-forward-enter-active {
   z-index: 1;
-  transform-origin: left center;
-  animation: unfoldLeft 0.42s 0.34s cubic-bezier(0.15, 0.8, 0.35, 1) both;
+  animation: slideInRight 0.28s ease-out both;
 }
 
-/* Fold-shadow gradient: sweeps from the far (right) edge toward the spine */
-.flip-forward-leave-active::after {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(to left, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 60%);
-  pointer-events: none;
-  animation: shadowForward 0.48s cubic-bezier(0.6, 0, 0.85, 0.45) forwards;
-  z-index: 10;
-}
-@keyframes shadowForward {
-  0%   { opacity: 0; }
-  45%  { opacity: 1; }
-  100% { opacity: 0.6; }
-}
-
-/* ── Backward (←): spine on right ───────────────────────── */
+/* ── Backward (←): current slides right, prev slides in from left ── */
 .flip-backward-leave-active {
   position: absolute; width: 100%; top: 0; left: 0; z-index: 2;
-  transform-origin: right center;
-  animation: foldRight 0.48s cubic-bezier(0.6, 0, 0.85, 0.45) forwards;
+  animation: slideOutRight 0.28s ease-in forwards;
 }
 .flip-backward-enter-active {
   z-index: 1;
-  transform-origin: right center;
-  animation: unfoldRight 0.42s 0.34s cubic-bezier(0.15, 0.8, 0.35, 1) both;
+  animation: slideInLeft 0.28s ease-out both;
 }
 
-.flip-backward-leave-active::after {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(to right, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 60%);
-  pointer-events: none;
-  animation: shadowBackward 0.48s cubic-bezier(0.6, 0, 0.85, 0.45) forwards;
-  z-index: 10;
+/* ── Keyframes ─────────────────────────────────────────────────── */
+@keyframes slideOutLeft {
+  from { transform: translateX(0);     opacity: 1; }
+  to   { transform: translateX(-100%); opacity: 0.3; }
 }
-@keyframes shadowBackward {
-  0%   { opacity: 0; }
-  45%  { opacity: 1; }
-  100% { opacity: 0.6; }
+@keyframes slideInRight {
+  from { transform: translateX(100%);  opacity: 0.3; }
+  to   { transform: translateX(0);     opacity: 1; }
 }
-
-/* ── Keyframes ───────────────────────────────────────── */
-@keyframes foldLeft {
-  0%   { transform: perspective(1200px) rotateY(0deg);
-         filter: brightness(1);    box-shadow: 0 2px 0 rgba(0,0,0,0); }
-  20%  { transform: perspective(1200px) rotateY(-22deg);
-         filter: brightness(0.92); box-shadow: 0 8px 24px rgba(0,0,0,0.28); }
-  60%  { transform: perspective(1200px) rotateY(-62deg);
-         filter: brightness(0.5) blur(1.5px); box-shadow: 0 14px 32px rgba(0,0,0,0.18); }
-  100% { transform: perspective(1200px) rotateY(-90deg);
-         filter: brightness(0.12) blur(4px); box-shadow: none; }
+@keyframes slideOutRight {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(100%); opacity: 0.3; }
 }
-@keyframes unfoldLeft {
-  0%   { transform: perspective(1200px) rotateY(-90deg);
-         filter: brightness(0.12); }
-  55%  { transform: perspective(1200px) rotateY(-12deg);
-         filter: brightness(0.9); }
-  80%  { transform: perspective(1200px) rotateY(4deg);    /* spring overshoot */
-         filter: brightness(1.02); }
-  100% { transform: perspective(1200px) rotateY(0deg);
-         filter: brightness(1); }
-}
-
-@keyframes foldRight {
-  0%   { transform: perspective(1200px) rotateY(0deg);
-         filter: brightness(1);    box-shadow: 0 2px 0 rgba(0,0,0,0); }
-  20%  { transform: perspective(1200px) rotateY(22deg);
-         filter: brightness(0.92); box-shadow: 0 8px 24px rgba(0,0,0,0.28); }
-  60%  { transform: perspective(1200px) rotateY(62deg);
-         filter: brightness(0.5) blur(1.5px); box-shadow: 0 14px 32px rgba(0,0,0,0.18); }
-  100% { transform: perspective(1200px) rotateY(90deg);
-         filter: brightness(0.12) blur(4px); box-shadow: none; }
-}
-@keyframes unfoldRight {
-  0%   { transform: perspective(1200px) rotateY(90deg);
-         filter: brightness(0.12); }
-  55%  { transform: perspective(1200px) rotateY(12deg);
-         filter: brightness(0.9); }
-  80%  { transform: perspective(1200px) rotateY(-4deg);   /* spring overshoot */
-         filter: brightness(1.02); }
-  100% { transform: perspective(1200px) rotateY(0deg);
-         filter: brightness(1); }
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); opacity: 0.3; }
+  to   { transform: translateX(0);     opacity: 1; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -1872,20 +1808,20 @@ onMounted(() => {
   box-shadow: 0 8px 32px rgba(0,0,0,0.55), 0 2px 6px rgba(0,0,0,0.35) !important;
 }
 
-/* ── Sheet page — cream with 32px ruled lines ─────────────────────── */
+/* ── Sheet page — cream with 36px ruled lines ─────────────────────── */
 .coc-mode .sheet-page {
   background-color: #d4c89a !important;
   background-image: repeating-linear-gradient(
     0deg,
     transparent,
-    transparent 31px,
-    rgba(60, 40, 10, 0.20) 31px,
-    rgba(60, 40, 10, 0.20) 32px
+    transparent 35px,
+    rgba(60, 40, 10, 0.18) 35px,
+    rgba(60, 40, 10, 0.18) 36px
   ) !important;
   background-attachment: local !important;
   color: #1a1005;
   font-family: 'Courier New', 'Special Elite', monospace;
-  padding: 16px 20px;
+  padding: 20px 28px;
 }
 
 /* ── All box-sizing ─────────────────────────────────────────────────── */
@@ -1912,9 +1848,9 @@ onMounted(() => {
   border-radius: 0 !important;
 }
 
-/* ── Ledger alignment: 32px rows ─────────────────────────────────── */
+/* ── Ledger alignment: 36px rows (more breathing room) ────────────── */
 .coc-mode {
-  --R: 32px;
+  --R: 36px;
 }
 
 .coc-mode .field-group {
@@ -1923,26 +1859,28 @@ onMounted(() => {
   align-items: center !important;
   min-height: var(--R);
   margin: 0 !important;
-  padding: 0 !important;
-  gap: 8px;
+  padding: 0 2px !important;
+  gap: 10px;
+  border-bottom: 1px solid rgba(60, 40, 10, 0.12);
 }
 
 .coc-mode .field-group > label {
-  flex: 0 0 42%;
-  max-width: 42%;
+  flex: 0 0 38%;
+  max-width: 38%;
   height: var(--R);
   line-height: var(--R) !important;
   display: flex !important;
   align-items: center !important;
   overflow: hidden;
   white-space: nowrap;
-  font-size: 0.60em !important;
+  font-size: 0.72em !important;
   text-transform: uppercase;
-  letter-spacing: 0.10em;
-  color: #3a2408 !important;
+  letter-spacing: 0.08em;
+  color: #5c3d18 !important;
   font-family: 'Courier New', monospace !important;
   margin: 0 !important;
   padding: 0 !important;
+  font-weight: 600;
 }
 
 .coc-mode .edit-stats-grid .field-group > label {
@@ -1957,17 +1895,25 @@ onMounted(() => {
 
 .coc-mode [style*="letter-spacing:.05em"],
 .coc-mode [style*="letter-spacing: .05em"] {
-  height: var(--R) !important;
-  line-height: var(--R) !important;
-  margin: 0 !important;
-  padding: 0 !important;
+  height: calc(var(--R) * 1.2) !important;
+  line-height: calc(var(--R) * 1.2) !important;
+  margin-top: 8px !important;
+  margin-bottom: 0 !important;
+  padding: 0 2px !important;
   display: flex !important;
   align-items: flex-end !important;
+  font-size: 0.68em !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.20em !important;
+  color: #3a2408 !important;
+  border-bottom: 1px solid rgba(60, 40, 10, 0.35) !important;
+  font-weight: 700 !important;
 }
 .coc-mode [style*="margin:16px 0"] {
-  margin: 0 !important;
-  height: var(--R) !important;
-  line-height: var(--R) !important;
+  margin-top: 8px !important;
+  margin-bottom: 0 !important;
+  height: calc(var(--R) * 1.2) !important;
+  line-height: calc(var(--R) * 1.2) !important;
   display: flex !important;
   align-items: flex-end !important;
 }
@@ -1977,13 +1923,12 @@ onMounted(() => {
 .coc-mode select {
   background: transparent !important;
   border: none !important;
-  border-bottom: 1px solid rgba(60, 40, 10, 0.25) !important;
   border-radius: 0 !important;
   box-shadow: none !important;
   color: #1a1005 !important;
   font-family: 'Courier New', monospace !important;
-  font-size: 0.88em !important;
-  padding-left: 2px !important;
+  font-size: 0.92em !important;
+  padding-left: 4px !important;
   height: var(--R) !important;
   line-height: var(--R) !important;
   padding-top: 0 !important;
@@ -1992,15 +1937,17 @@ onMounted(() => {
 }
 .coc-mode textarea {
   background: transparent !important;
-  border: 1px solid rgba(60, 40, 10, 0.25) !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(60, 40, 10, 0.25) !important;
   border-radius: 0 !important;
   box-shadow: none !important;
   color: #1a1005 !important;
   font-family: 'Courier New', monospace !important;
-  font-size: 0.88em !important;
+  font-size: 0.92em !important;
   line-height: var(--R) !important;
-  padding: calc(var(--R) * 0.25) 4px !important;
+  padding: 4px !important;
   min-height: calc(var(--R) * 2) !important;
+  width: 100% !important;
 }
 .coc-mode input:focus,
 .coc-mode textarea:focus,
@@ -2091,26 +2038,38 @@ onMounted(() => {
 .coc-mode .page-title {
   color: #1a1005 !important;
   font-family: 'Courier New', monospace !important;
-  font-size: 1.6em !important;
+  font-size: 1.5em !important;
   font-weight: 900 !important;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  border-bottom: 2px solid rgba(60, 40, 10, 0.45) !important;
-  padding-bottom: 6px !important;
+  line-height: 1.1;
 }
 .coc-mode .page-title::after { display: none !important; }
-.coc-mode .back-link { color: #7a1a10 !important; font-family: 'Courier New', monospace !important; }
+.coc-mode .back-link {
+  color: #7a1a10 !important;
+  font-family: 'Courier New', monospace !important;
+  font-size: 0.75em !important;
+  letter-spacing: 0.05em;
+}
 
-/* ── All body text within the paper ─────────────────────────────── */
-.coc-mode .sheet-page,
-.coc-mode .sheet-page p,
-.coc-mode .sheet-page span,
-.coc-mode .sheet-page div,
-.coc-mode .sheet-page td,
-.coc-mode .sheet-page th,
-.coc-mode .sheet-page label {
+/* ── Investigator subheading line below title ─────────────────── */
+.coc-mode .page-header::after {
+  content: 'CALL OF CTHULHU — INVESTIGATOR SHEET';
+  display: block;
+  font-family: 'Courier New', monospace;
+  font-size: 0.65em;
+  letter-spacing: 0.22em;
+  color: #7a5c2a;
+  margin-top: 4px;
+  text-transform: uppercase;
+}
+
+/* ── Base text within the paper ─────────────────────────────────── */
+.coc-mode .sheet-page {
   color: #1a1005;
   font-family: 'Courier New', monospace;
+  font-size: 0.92em;
+  line-height: 1;
 }
 
 /* ── Tooltips on the paper ───────────────────────────────────────── */
