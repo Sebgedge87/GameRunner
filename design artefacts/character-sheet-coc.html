@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Design Artefact — CoC Character Sheet</title>
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet"/>
+<style>
+/*
+  DESIGN ARTEFACT: Call of Cthulhu Character Sheet
+  Style: WW2 Classified Document / Aged Paper
+  ------------------------------------------------
+  DESIGN TOKENS:
+    Paper bg:     #e8dfc0
+    Header bar:   #c8b882
+    Border/ink:   #8a7240
+    Dark ink:     #2a1a08
+    Mid ink:      #4a3a18
+    Faded ink:    #6a5428
+    Placeholder:  #a89a6a
+    Stamp red:    #8b1a1a
+    Desk bg:      #b8a86a
+
+  FONTS:
+    Body/UI:  'Courier Prime', monospace
+    Stamps:   'Special Elite', cursive
+
+  LAYOUT:
+    - A4 proportioned page (max-width 720px scaling to viewport)
+    - Rotated -0.6deg — placed-on-desk feel
+    - Sharp corners, layered box-shadow
+    - Paper curl ::after on bottom-right
+    - Two tabs: Page I (identity/stats/condition) / Page II (skills/weapons/gear)
+    - All inputs: transparent bg, border-bottom only
+    - Responsive breakpoints: 900px, 600px
+
+  RESPONSIVE MAX-WIDTHS:
+    default:        min(720px, 90vw)
+    min-width 1280: min(900px, 75vw)
+    min-width 1600: min(1060px, 70vw)
+    min-width 1920: min(1200px, 65vw)
+
+  INTEGRATION NOTES:
+    - All inputs v-model into sheet_data JSONB blob
+    - Autosave at 1500ms (already exists in CharacterSheetView.vue)
+    - No new DB columns needed
+    - Google Fonts link belongs in index.html
+    - .app-bg background: transparent — inherits app theme
+*/
+*{box-sizing:border-box;margin:0;padding:0;}
+.app-bg{min-height:100vh;background:#1c1f1a;padding:32px 24px 48px;display:flex;flex-direction:column;align-items:center;}
+.a4-wrap{width:min(720px,90vw);transform:rotate(-0.6deg);transform-origin:center top;box-shadow:0 2px 4px rgba(0,0,0,.15),3px 3px 0 rgba(0,0,0,.2),6px 6px 0 rgba(0,0,0,.15),8px 12px 28px rgba(0,0,0,.55),-2px -1px 8px rgba(0,0,0,.2);position:relative;}
+.a4-wrap::after{content:'';position:absolute;bottom:0;right:0;width:28px;height:28px;background:linear-gradient(225deg,#b8a87a 45%,rgba(140,110,60,.4) 100%);clip-path:polygon(100% 0,100% 100%,0 100%);z-index:10;}
+.tabs{display:flex;padding:0 0 0 2px;}
+.tab{font-family:'Courier Prime',monospace;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:6px 18px;background:#c8b882;border:1px solid #8a7240;border-bottom:none;cursor:pointer;color:#4a3a18;transition:background .15s;}
+.tab.active{background:#e8dfc0;color:#2a1a08;border-bottom:1px solid #e8dfc0;position:relative;z-index:2;}
+.tab:hover:not(.active){background:#d4c496;}
+.document{background:#e8dfc0;border:1px solid #8a7240;position:relative;display:flex;flex-direction:column;}
+.document::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(120,100,60,.07) 27px,rgba(120,100,60,.07) 28px);pointer-events:none;z-index:0;}
+.doc-header{background:#c8b882;border-bottom:2px solid #8a7240;padding:10px 18px;display:flex;justify-content:space-between;align-items:center;position:relative;z-index:1;flex-wrap:wrap;gap:8px;}
+.classified-stamp{font-family:'Special Elite',cursive;color:#8b1a1a;font-size:18px;letter-spacing:4px;border:3px double #8b1a1a;padding:3px 10px;transform:rotate(-2deg);display:inline-block;opacity:.85;}
+.page{display:none;padding:16px 18px;position:relative;z-index:1;}
+.page.active{display:flex;flex-direction:column;gap:11px;}
+.section{padding-bottom:11px;border-bottom:1px solid #b0a070;}
+.section:last-child{border-bottom:none;padding-bottom:0;}
+.section-header{font-family:'Courier Prime',monospace;font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#4a3a18;background:#c8b882;padding:2px 8px;margin-bottom:7px;border-left:3px solid #8a7240;}
+.fl{font-size:8px;letter-spacing:2px;text-transform:uppercase;color:#6a5428;font-family:'Courier Prime',monospace;}
+.fi{background:transparent;border:none;border-bottom:1px solid #8a7240;font-family:'Courier Prime',monospace;font-size:12px;color:#2a1a08;width:100%;padding:1px 0;outline:none;}
+.fi::placeholder{color:#a89a6a;font-style:italic;}
+.top-sec{display:grid;grid-template-columns:100px 1fr;gap:12px;}
+.portrait-box{border:1.5px solid #8a7240;background:#d4c9a8;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100px;position:relative;overflow:hidden;}
+.id-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;}
+.id-row{display:flex;flex-direction:column;gap:1px;}
+.id-row.full{grid-column:1/-1;}
+.stats-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;}
+.stat-box{border:1px solid #8a7240;background:rgba(180,160,100,.2);padding:3px 4px;text-align:center;}
+.stat-name{font-size:7px;letter-spacing:1px;color:#6a5428;font-family:'Courier Prime',monospace;font-weight:700;text-transform:uppercase;}
+.stat-val{font-size:15px;font-weight:700;color:#2a1a08;width:100%;background:transparent;border:none;text-align:center;font-family:'Courier Prime',monospace;outline:none;}
+.stat-sub{font-size:7px;color:#8a7240;display:flex;justify-content:space-between;margin-top:1px;}
+.stat-sub input{width:16px;background:transparent;border:none;border-bottom:1px solid #8a7240;font-size:7px;color:#4a3a18;text-align:center;outline:none;font-family:'Courier Prime',monospace;}
+.cond-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;}
+.cond-box{border:1px solid #8a7240;padding:4px 6px;background:rgba(180,160,100,.15);}
+.cond-label{font-size:7px;letter-spacing:1px;color:#6a5428;font-family:'Courier Prime',monospace;font-weight:700;text-transform:uppercase;margin-bottom:2px;}
+.cond-input{background:transparent;border:none;border-bottom:1px solid #8a7240;font-size:13px;font-weight:700;color:#2a1a08;text-align:center;font-family:'Courier Prime',monospace;outline:none;width:100%;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.notes-area{width:100%;background:rgba(180,160,100,.1);border:1px solid #b0a070;font-family:'Courier Prime',monospace;font-size:10px;color:#2a1a08;padding:5px;resize:none;outline:none;min-height:55px;line-height:1.6;}
+.skills-cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 14px;}
+.skill-row{display:flex;align-items:center;gap:3px;padding:1px 0;border-bottom:1px dotted #c0b080;font-size:9px;color:#2a1a08;}
+.skill-chk{width:9px;height:9px;border:1px solid #8a7240;background:transparent;flex-shrink:0;cursor:pointer;}
+.skill-name{flex:1;font-family:'Courier Prime',monospace;font-size:9px;}
+.skill-base{font-size:7px;color:#8a7240;white-space:nowrap;}
+.skill-val{width:24px;background:transparent;border:none;border-bottom:1px solid #8a7240;text-align:center;font-family:'Courier Prime',monospace;font-size:11px;font-weight:700;color:#2a1a08;outline:none;}
+.weap-row{display:grid;grid-template-columns:2fr 1fr 1fr 55px;gap:4px;border-bottom:1px dotted #c0b080;padding:2px 0;}
+.gear-row{display:grid;grid-template-columns:2fr 1fr;gap:6px;border-bottom:1px dotted #c0b080;padding:2px 0;}
+.ii{background:transparent;border:none;border-bottom:1px solid #b0a070;font-family:'Courier Prime',monospace;font-size:10px;color:#2a1a08;width:100%;outline:none;}
+.ii::placeholder{color:#b0a070;font-style:italic;}
+.doc-footer{background:#c8b882;border-top:2px solid #8a7240;padding:4px 18px;display:flex;justify-content:space-between;align-items:center;font-size:8px;color:#6a5428;font-family:'Courier Prime',monospace;letter-spacing:1px;flex-wrap:wrap;gap:4px;position:relative;z-index:1;}
+.lua-stamp{font-size:8px;border:1px solid #8b1a1a;color:#8b1a1a;padding:2px 5px;letter-spacing:2px;opacity:.7;transform:rotate(1deg);display:inline-block;}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+@media(min-width:1280px){.a4-wrap{width:min(900px,75vw);}}
+@media(min-width:1600px){.a4-wrap{width:min(1060px,70vw);}}
+@media(min-width:1920px){.a4-wrap{width:min(1200px,65vw);}}
+@media(max-width:900px){.stats-grid{grid-template-columns:repeat(4,1fr);}.cond-grid{grid-template-columns:repeat(3,1fr);}.skills-cols{grid-template-columns:1fr 1fr;}.app-bg{padding:20px 12px 36px;}.a4-wrap{transform:rotate(-0.4deg);}}
+@media(max-width:600px){.stats-grid{grid-template-columns:repeat(2,1fr);}.cond-grid{grid-template-columns:1fr 1fr;}.skills-cols{grid-template-columns:1fr;}.top-sec{grid-template-columns:80px 1fr;}.two-col{grid-template-columns:1fr;}.id-grid{grid-template-columns:1fr;}.tab{font-size:9px;padding:4px 8px;}.app-bg{padding:12px 8px 24px;}.a4-wrap{transform:rotate(-0.2deg);}}
+</style>
+</head>
+<body>
+<div class="app-bg">
+  <div class="a4-wrap">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab(0)">Page I — Investigator</div>
+      <div class="tab" onclick="switchTab(1)">Page II — Skills &amp; Equipment</div>
+    </div>
+    <div class="document">
+      <div class="doc-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <a href="#" style="font-family:'Courier Prime',monospace;font-size:10px;color:#6a5428;text-decoration:none;">← Characters</a>
+          <span style="font-family:'Courier Prime',monospace;font-size:16px;font-weight:700;color:#2a1a08;letter-spacing:2px;" id="charNameHeader">INVESTIGATOR</span>
+        </div>
+        <div class="classified-stamp">CLASSIFIED</div>
+      </div>
+      <div class="page active" id="page0">
+        <div class="section">
+          <div class="top-sec">
+            <div class="portrait-box">
+              <img id="portraitImg" src="" style="display:none;width:100%;height:100%;object-fit:cover;"/>
+              <div id="portraitPH" style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+                <div style="width:32px;height:32px;border:1.5px dashed #8a7240;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#8a7240" stroke-width="1.5" width="20" height="20"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                </div>
+                <div style="font-size:7px;color:#6a5428;letter-spacing:1px;text-align:center;font-family:'Courier Prime',monospace;">SUBJECT<br>PHOTO</div>
+              </div>
+              <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(180,160,100,.9);padding:2px;">
+                <input id="portraitURL" type="text" placeholder="Portrait URL" style="width:100%;font-size:7px;background:transparent;border:none;border-bottom:1px solid #8a7240;color:#4a3a18;text-align:center;outline:none;font-family:'Courier Prime',monospace;"/>
+              </div>
+            </div>
+            <div class="id-grid">
+              <div class="id-row full"><span class="fl">Investigator Name</span><input class="fi" type="text" placeholder="Full legal name..." style="font-size:14px;font-weight:700;" oninput="document.getElementById('charNameHeader').textContent=this.value||'INVESTIGATOR'"/></div>
+              <div class="id-row"><span class="fl">Occupation</span><input class="fi" type="text" placeholder="e.g. Journalist..."/></div>
+              <div class="id-row"><span class="fl">Age / Birthdate</span><input class="fi" type="text" placeholder="e.g. 34, Oct 1893"/></div>
+              <div class="id-row"><span class="fl">Nationality</span><input class="fi" type="text" placeholder="e.g. American, Boston"/></div>
+              <div class="id-row"><span class="fl">Sex / Appearance</span><input class="fi" type="text" placeholder="e.g. Male, dark hair..."/></div>
+            </div>
+          </div>
+        </div>
+        <div class="section"><div class="fl" style="margin-bottom:3px;">Personal History &amp; Background</div><textarea class="notes-area" style="min-height:38px;" placeholder="Biographical summary..."></textarea></div>
+        <div class="section">
+          <div class="section-header">&#9632; Core Characteristics</div>
+          <div class="stats-grid">
+            <div class="stat-box"><div class="stat-name">STR</div><input class="stat-val" type="number" placeholder="—"/><div class="stat-sub"><span>½</span><input type="number"/><span>⅕</span><input type="number"/></div></div>
+            <div class="stat-box"><div class="stat-name">CON</div><input class="stat-val" type="number" placeholder="—"/><div class="stat-sub"><span>½</span><input type="number"/><span>⅕</span><input type="number"/></div></div>
+            <div class="stat-box"><div class="stat-name">SIZ</div><input class="stat-val" type="number" placeholder="—"/><div class="stat-sub"><span>½</span><input type="number"/><span>⅕</span><input type="number"/></div></div>
+            <div class="stat-box"><div class="stat-name">DEX</div><input class="stat-val" type="number" placeholder="—"/><div class="stat-sub"><span>½</span><input type="number"/><span>⅕</span><input type="number"/></div></div>
+            <div class="stat-box"><div class="stat-name">APP</div><input class="stat-val" type="number" placeholder="—"/><div class="stat-sub"><span>½</span><input type="number"/><span>⅕</span><input type="number"/></div></div>
+            <div class="stat-box"><div class="stat-name">INT</div><input class="stat-val" type="number" placeholder="—"/><div class="stat-sub"><span>½</span><input type="number"/><span>⅕</span><input type="number"/></div></div>
+            <div class="stat-box"><div class="stat-name">POW</div><input class="stat-val" type="number" placeholder="—"/><div class="stat-sub"><span>½</span><input type="number"/><span>⅕</span><input type="number"/></div></div>
+            <div class="stat-box"><div class="stat-name">EDU</div><input class="stat-val" type="number" placeholder="—"/><div class="stat-sub"><span>½</span><input type="number"/><span>⅕</span><input type="number"/></div></div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-header">&#9632; Condition</div>
+          <div class="cond-grid">
+            <div class="cond-box"><div class="cond-label">Hit Points</div><div style="display:flex;gap:3px;align-items:center;"><div style="flex:1;text-align:center;"><span style="font-size:7px;color:#8a7240;">CUR</span><br/><input class="cond-input" type="number" placeholder="0"/></div><span style="font-size:7px;color:#8a7240;">/</span><div style="flex:1;text-align:center;"><span style="font-size:7px;color:#8a7240;">MAX</span><br/><input class="cond-input" type="number" placeholder="0"/></div></div></div>
+            <div class="cond-box"><div class="cond-label">Sanity</div><div style="display:flex;gap:3px;align-items:center;"><div style="flex:1;text-align:center;"><span style="font-size:7px;color:#8a7240;">CUR</span><br/><input class="cond-input" type="number" placeholder="0"/></div><span style="font-size:7px;color:#8a7240;">/</span><div style="flex:1;text-align:center;"><span style="font-size:7px;color:#8a7240;">MAX</span><br/><input class="cond-input" type="number" placeholder="0"/></div></div></div>
+            <div class="cond-box"><div class="cond-label">Magic Points</div><div style="display:flex;gap:3px;align-items:center;"><div style="flex:1;text-align:center;"><span style="font-size:7px;color:#8a7240;">CUR</span><br/><input class="cond-input" type="number" placeholder="0"/></div><span style="font-size:7px;color:#8a7240;">/</span><div style="flex:1;text-align:center;"><span style="font-size:7px;color:#8a7240;">MAX</span><br/><input class="cond-input" type="number" placeholder="0"/></div></div></div>
+            <div class="cond-box"><div class="cond-label">Luck</div><input class="cond-input" type="number" placeholder="0"/></div>
+            <div class="cond-box"><div class="cond-label">Move Rate</div><input class="cond-input" type="number" placeholder="8"/></div>
+            <div class="cond-box"><div class="cond-label">Build / DB</div><input class="cond-input" type="text" placeholder="+0"/></div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="two-col">
+            <div><div class="section-header">&#9632; Allies &amp; Contacts</div><textarea class="notes-area" placeholder="Names, relationships..."></textarea></div>
+            <div><div class="section-header">&#9632; Phobias &amp; Disorders</div><textarea class="notes-area" placeholder="Phobias, manias..."></textarea></div>
+          </div>
+        </div>
+      </div>
+      <div class="page" id="page1">
+        <div class="section">
+          <div class="section-header">&#9632; Skills</div>
+          <div class="skills-cols" id="skillsContainer"></div>
+        </div>
+        <div class="section">
+          <div class="section-header">&#9632; Weapons</div>
+          <div style="display:grid;grid-template-columns:2fr 1fr 1fr 55px;gap:4px;margin-bottom:2px;"><span class="fl">Weapon</span><span class="fl">Damage</span><span class="fl">Range</span><span class="fl">Skill %</span></div>
+          <div id="weapRows"></div>
+        </div>
+        <div class="section">
+          <div class="section-header">&#9632; Possessions &amp; Notes</div>
+          <div style="display:grid;grid-template-columns:2fr 1fr;gap:6px;margin-bottom:2px;"><span class="fl">Item</span><span class="fl">Notes</span></div>
+          <div id="gearRows"></div>
+          <textarea class="notes-area" style="margin-top:6px;" placeholder="Session notes, clues, tomes..."></textarea>
+        </div>
+      </div>
+      <div class="doc-footer">
+        <span>Keep secure — destroy if compromised</span>
+        <span id="pageIndicator">Page I of II</span>
+        <span class="lua-stamp">For authorised eyes only</span>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+function switchTab(n){document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===n));document.querySelectorAll('.page').forEach((p,i)=>p.classList.toggle('active',i===n));document.getElementById('pageIndicator').textContent='Page '+(n===0?'I':'II')+' of II';}
+const skills=[["Accounting","05"],["Anthropology","01"],["Appraise","05"],["Archaeology","01"],["Art / Craft","05"],["Charm","15"],["Climb","20"],["Credit Rating","00"],["Cthulhu Mythos","00"],["Disguise","05"],["Dodge","DEX½"],["Drive Auto","20"],["Electrical Repair","10"],["Fast Talk","05"],["Fighting (Brawl)","25"],["Firearms (Handgun)","20"],["Firearms (Rifle)","25"],["First Aid","30"],["History","05"],["Intimidate","15"],["Jump","20"],["Language (Own)","EDU"],["Law","05"],["Library Use","20"],["Listen","20"],["Locksmith","01"],["Mechanical Repair","10"],["Medicine","01"],["Natural World","10"],["Navigate","10"],["Occult","05"],["Operate Heavy Mach.","01"],["Persuade","10"],["Pilot","01"],["Psychology","10"],["Ride","05"],["Science","01"],["Sleight of Hand","10"],["Spot Hidden","25"],["Stealth","20"],["Survival","10"],["Swim","20"],["Throw","20"],["Track","10"]];
+const sc=document.getElementById('skillsContainer');
+skills.forEach(([n,b])=>{const r=document.createElement('div');r.className='skill-row';r.innerHTML=`<div style="width:9px;height:9px;border:1px solid #8a7240;flex-shrink:0;cursor:pointer;" onclick="this.style.background=this.style.background?'':'#8b1a1a'"></div><span class="skill-name">${n}</span><span class="skill-base">(${b})</span><input class="skill-val" type="number" min="1" max="99"/>`;sc.appendChild(r);});
+const wr=document.getElementById('weapRows');for(let i=0;i<4;i++){const r=document.createElement('div');r.className='weap-row';r.innerHTML=`<input class="ii" type="text" placeholder="e.g. .38 Revolver"/><input class="ii" type="text" placeholder="1D10"/><input class="ii" type="text" placeholder="15 yds"/><input class="ii" type="number" placeholder="20"/>`;wr.appendChild(r);}
+const gr=document.getElementById('gearRows');for(let i=0;i<4;i++){const r=document.createElement('div');r.className='gear-row';r.innerHTML=`<input class="ii" type="text" placeholder="Item..."/><input class="ii" type="text" placeholder="Notes..."/>`;gr.appendChild(r);}
+document.getElementById('portraitURL').addEventListener('input',function(){const img=document.getElementById('portraitImg');const ph=document.getElementById('portraitPH');if(this.value.trim()){img.src=this.value.trim();img.style.display='block';ph.style.display='none';}else{img.style.display='none';ph.style.display='flex';}});
+</script>
+</body>
+</html>

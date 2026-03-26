@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Design Artefact — Campaign Creation Wizard</title>
+<style>
+/*
+  DESIGN ARTEFACT: Campaign Creation Wizard
+  Step 2: Game System Selection
+  Step 3: Review Defaults
+  Step 4: First Entity (with Import)
+  ----------------------------------------
+  DESIGN TOKENS (dark app theme):
+    App bg:         #1c1f1a
+    Surface:        rgba(255,255,255,.03)
+    Border default: rgba(255,255,255,.1)
+    Border hover:   rgba(168,192,128,.4)
+    Accent green:   #a8c080
+    Text primary:   rgba(255,255,255,.85)
+    Text secondary: rgba(255,255,255,.4)
+    Text muted:     rgba(255,255,255,.25)
+    Warning amber:  #EF9F27
+
+  INTEGRATION NOTES:
+    - Wizard steps managed by existing Vue Router or internal step state
+    - system_templates table: id, system_slug, name, is_builtin, owner_id, config JSONB
+    - config JSONB shape: { calendar, factions, location_types, npc_roles, quest_structures }
+    - On campaign create: copy chosen template config into campaign row
+    - User overrides stored per-campaign — never mutate original template
+    - Parse pipeline: parseEntityInput(raw, type, format) → { name, tags, fields, confidence, warnings }
+    - Entity import modal accessible from campaign wizard AND standalone entity pages
+*/
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#1c1f1a;min-height:100vh;padding:32px;font-family:system-ui,sans-serif;color:rgba(255,255,255,.85);}
+.wizard-wrap{max-width:780px;margin:0 auto;}
+.step-bar{display:flex;align-items:center;gap:0;margin-bottom:32px;}
+.step{display:flex;align-items:center;gap:8px;font-size:12px;color:rgba(255,255,255,.3);letter-spacing:.5px;}
+.step.active{color:#a8c080;}.step.done{color:rgba(255,255,255,.5);}
+.step-num{width:24px;height:24px;border-radius:50%;border:1.5px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0;}
+.step.active .step-num{border-color:#a8c080;background:rgba(168,192,128,.15);color:#a8c080;}
+.step.done .step-num{border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.06);}
+.step-line{flex:1;height:1px;background:rgba(255,255,255,.08);margin:0 8px;}
+.section-title{font-size:20px;font-weight:500;margin-bottom:4px;}
+.section-sub{font-size:13px;color:rgba(255,255,255,.4);margin-bottom:24px;}
+.system-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:24px;}
+.sys-card{border:1.5px solid rgba(255,255,255,.1);border-radius:8px;padding:14px;cursor:pointer;transition:border-color .15s,background .15s;background:rgba(255,255,255,.03);}
+.sys-card:hover{border-color:rgba(168,192,128,.4);background:rgba(168,192,128,.05);}
+.sys-card.selected{border-color:#a8c080;background:rgba(168,192,128,.1);}
+.sys-icon{width:32px;height:32px;border-radius:6px;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;margin-bottom:10px;font-size:14px;}
+.sys-name{font-size:13px;font-weight:500;color:rgba(255,255,255,.85);margin-bottom:2px;}
+.sys-desc{font-size:11px;color:rgba(255,255,255,.35);}
+.preview-box{border:0.5px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);padding:16px;margin-bottom:24px;}
+.preview-title{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:12px;}
+.preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.preview-item{padding:10px 12px;border-radius:6px;background:rgba(255,255,255,.04);border:0.5px solid rgba(255,255,255,.07);}
+.preview-item-label{font-size:10px;letter-spacing:.5px;color:rgba(255,255,255,.3);margin-bottom:4px;text-transform:uppercase;}
+.preview-item-val{font-size:12px;color:rgba(255,255,255,.7);}
+.preview-tag{display:inline-block;font-size:10px;background:rgba(168,192,128,.12);color:#a8c080;border-radius:4px;padding:2px 6px;margin:2px 2px 0 0;}
+.btn-row{display:flex;justify-content:space-between;align-items:center;margin-top:8px;}
+.btn{padding:8px 20px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:1.5px solid rgba(255,255,255,.15);background:transparent;color:rgba(255,255,255,.6);transition:all .15s;}
+.btn:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.9);}
+.btn.primary{background:#a8c080;border-color:#a8c080;color:#1c1f1a;}
+.btn.primary:hover{background:#b8d090;}
+.btn.ghost{border-color:transparent;color:rgba(255,255,255,.3);}
+.import-tabs{display:flex;gap:0;margin-bottom:16px;border-bottom:0.5px solid rgba(255,255,255,.1);}
+.itab{padding:8px 16px;font-size:12px;font-weight:500;color:rgba(255,255,255,.35);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s;}
+.itab.active{color:#a8c080;border-bottom-color:#a8c080;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.field-row.full{grid-template-columns:1fr;}
+.field{display:flex;flex-direction:column;gap:4px;}
+.field label{font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:rgba(255,255,255,.35);}
+.field input,.field select,.field textarea{background:rgba(255,255,255,.05);border:0.5px solid rgba(255,255,255,.12);border-radius:8px;color:rgba(255,255,255,.8);font-size:13px;padding:8px 10px;outline:none;width:100%;font-family:inherit;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:rgba(168,192,128,.5);}
+.field input::placeholder,.field textarea::placeholder{color:rgba(255,255,255,.2);}
+.field textarea{resize:vertical;min-height:90px;font-family:monospace;font-size:12px;}
+.field select option{background:#2a2d28;}
+.parse-btn{padding:6px 14px;font-size:12px;border:0.5px solid rgba(168,192,128,.4);border-radius:8px;background:rgba(168,192,128,.08);color:#a8c080;cursor:pointer;margin-top:6px;}
+.warning-row{display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:8px;background:rgba(186,117,23,.1);border:0.5px solid rgba(186,117,23,.3);margin-bottom:10px;}
+.warning-dot{width:6px;height:6px;border-radius:50%;background:#BA7517;flex-shrink:0;}
+.warning-text{font-size:11px;color:#EF9F27;}
+.upload-zone{border:1.5px dashed rgba(255,255,255,.12);border-radius:8px;padding:28px;text-align:center;cursor:pointer;transition:border-color .15s;margin-bottom:12px;}
+.upload-zone:hover{border-color:rgba(168,192,128,.4);}
+.file-badge{font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.4);border:0.5px solid rgba(255,255,255,.1);}
+.page{display:none;}.page.active{display:block;}
+</style>
+</head>
+<body>
+<div class="wizard-wrap">
+  <div class="step-bar">
+    <div class="step done" id="s1"><div class="step-num">1</div><span>Name</span></div>
+    <div class="step-line"></div>
+    <div class="step active" id="s2"><div class="step-num">2</div><span>Game system</span></div>
+    <div class="step-line"></div>
+    <div class="step" id="s3"><div class="step-num">3</div><span>Review defaults</span></div>
+    <div class="step-line"></div>
+    <div class="step" id="s4"><div class="step-num">4</div><span>First entity</span></div>
+  </div>
+
+  <div class="page active" id="pg-system">
+    <div class="section-title">Choose a game system</div>
+    <div class="section-sub">Defaults for calendar, factions, locations, NPCs and quests will be pre-configured. You can customise everything after.</div>
+    <div class="system-grid" id="sysGrid">
+      <div class="sys-card selected" onclick="selectSystem(this,'coc')"><div class="sys-icon">&#9760;</div><div class="sys-name">Call of Cthulhu</div><div class="sys-desc">7th Edition · 1920s</div></div>
+      <div class="sys-card" onclick="selectSystem(this,'dnd')"><div class="sys-icon">&#9670;</div><div class="sys-name">D&amp;D 5e</div><div class="sys-desc">Fantasy · Gregorian</div></div>
+      <div class="sys-card" onclick="selectSystem(this,'dg')"><div class="sys-icon">&#9632;</div><div class="sys-name">Delta Green</div><div class="sys-desc">Modern · Handler</div></div>
+      <div class="sys-card" onclick="selectSystem(this,'blades')"><div class="sys-icon">&#9656;</div><div class="sys-name">Blades in the Dark</div><div class="sys-desc">Scoundrels · Doskvol</div></div>
+      <div class="sys-card" onclick="selectSystem(this,'custom')" style="border-style:dashed;"><div class="sys-icon">+</div><div class="sys-name">Custom system</div><div class="sys-desc">Build your own</div></div>
+    </div>
+    <div class="preview-box"><div class="preview-title">What gets configured</div><div class="preview-grid" id="previewGrid"></div></div>
+    <div class="btn-row"><button class="btn ghost">← Back</button><button class="btn primary" onclick="showPage('pg-review')">Review defaults →</button></div>
+  </div>
+
+  <div class="page" id="pg-review">
+    <div class="section-title">Review &amp; customise defaults</div>
+    <div class="section-sub">These will be applied when your campaign is created. Toggle off anything you don't need.</div>
+    <div class="preview-box"><div class="preview-title">Calendar</div><div class="preview-grid"><div class="preview-item"><div class="preview-item-label">System</div><div class="preview-item-val">Gregorian (1920s epoch)</div></div><div class="preview-item"><div class="preview-item-label">Start date</div><div class="preview-item-val">January 1, 1920</div></div><div class="preview-item"><div class="preview-item-label">Moons</div><div class="preview-item-val">Standard lunar cycle</div></div><div class="preview-item"><div class="preview-item-label">Seasons</div><div class="preview-item-val">Northern hemisphere</div></div></div></div>
+    <div class="preview-box"><div class="preview-title">Factions, locations &amp; NPCs</div><div class="preview-grid"><div class="preview-item"><div class="preview-item-label">Faction types</div><div class="preview-item-val"><span class="preview-tag">Cult</span><span class="preview-tag">Agency</span><span class="preview-tag">Institution</span><span class="preview-tag">Criminal</span></div></div><div class="preview-item"><div class="preview-item-label">Location types</div><div class="preview-item-val"><span class="preview-tag">City</span><span class="preview-tag">Ruin</span><span class="preview-tag">Wilderness</span><span class="preview-tag">Dreamlands</span></div></div><div class="preview-item"><div class="preview-item-label">NPC roles</div><div class="preview-item-val"><span class="preview-tag">Investigator</span><span class="preview-tag">Cultist</span><span class="preview-tag">Bystander</span><span class="preview-tag">Deep One</span></div></div><div class="preview-item"><div class="preview-item-label">Quest structures</div><div class="preview-item-val"><span class="preview-tag">Investigation</span><span class="preview-tag">Retrieval</span><span class="preview-tag">Survival</span></div></div></div></div>
+    <div class="btn-row"><button class="btn ghost" onclick="showPage('pg-system')">← Back</button><button class="btn primary" onclick="showPage('pg-import')">Create campaign →</button></div>
+  </div>
+
+  <div class="page" id="pg-import">
+    <div class="section-title">Add your first entity</div>
+    <div class="section-sub">Use the guided wizard, paste raw text, or upload a file — all three feed the same form.</div>
+    <div class="import-tabs">
+      <div class="itab active" onclick="switchImport(0,this)">Guided wizard</div>
+      <div class="itab" onclick="switchImport(1,this)">Paste JSON / Markdown</div>
+      <div class="itab" onclick="switchImport(2,this)">Upload file</div>
+    </div>
+    <div id="import-guided">
+      <div class="field-row"><div class="field"><label>Entity type</label><select><option>NPC</option><option>Location</option><option>Faction</option><option>Quest / Hook</option></select></div><div class="field"><label>Name</label><input type="text" placeholder="e.g. Ezekiel Marsh..."/></div></div>
+      <div class="field-row"><div class="field"><label>Role / type</label><select><option>Cultist</option><option>Investigator</option><option>Bystander</option><option>Deep One</option></select></div><div class="field"><label>Location</label><input type="text" placeholder="e.g. Innsmouth, MA..."/></div></div>
+      <div class="field-row full"><div class="field"><label>Description</label><input type="text" placeholder="One-line summary..."/></div></div>
+      <div class="field-row full"><div class="field"><label>Notes</label><textarea placeholder="Background, secrets, connections..."></textarea></div></div>
+    </div>
+    <div id="import-paste" style="display:none;">
+      <div class="warning-row"><div class="warning-dot"></div><div class="warning-text">Fields Claude isn't confident about will be highlighted for you to confirm after parsing.</div></div>
+      <div class="field-row full"><div class="field"><label>Paste JSON or Markdown</label><textarea placeholder="# Ezekiel Marsh&#10;**Role:** Cultist&#10;**Location:** Innsmouth, MA&#10;..."></textarea></div></div>
+      <button class="parse-btn">Parse and prefill fields →</button>
+    </div>
+    <div id="import-upload" style="display:none;">
+      <div class="upload-zone">
+        <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="1.5" width="32" height="32" style="margin:0 auto 10px;display:block;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+        <div style="font-size:13px;color:rgba(255,255,255,.5);margin-bottom:4px;">Drop a file here or click to browse</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.25);margin-bottom:10px;">Parsed fields will prefill the guided wizard</div>
+        <div style="display:flex;justify-content:center;gap:6px;"><span class="file-badge">.json</span><span class="file-badge">.md</span><span class="file-badge">.csv</span></div>
+      </div>
+    </div>
+    <div class="btn-row" style="margin-top:16px;"><button class="btn ghost" onclick="showPage('pg-review')">← Back</button><div style="display:flex;gap:8px;"><button class="btn">Skip for now</button><button class="btn primary">Add entity &amp; finish</button></div></div>
+  </div>
+</div>
+<script>
+const systemPreviews={coc:[{label:'Calendar',val:'Gregorian · 1920s epoch'},{label:'Faction types',val:'Cult, Agency, Institution, Criminal'},{label:'Location types',val:'City, Ruin, Wilderness, Dreamlands'},{label:'NPC roles',val:'Investigator, Cultist, Bystander, Deep One'},{label:'Quest structures',val:'Investigation, Retrieval, Survival'},{label:'Sheet',val:'CoC 7e — STR/CON/SIZ/DEX/APP/INT/POW/EDU'}],dnd:[{label:'Calendar',val:'Harptos calendar'},{label:'Faction types',val:'Guild, Kingdom, Religion, Thieves'},{label:'Location types',val:'Town, Dungeon, Wilderness, Planar'},{label:'NPC roles',val:'Hero, Villain, Merchant, Noble, Guard'},{label:'Quest structures',val:'Dungeon delve, Escort, Diplomacy'},{label:'Sheet',val:'D&D 5e — STR/DEX/CON/INT/WIS/CHA'}],dg:[{label:'Calendar',val:'Gregorian · Modern epoch'},{label:'Faction types',val:'Handler cell, Unnatural, Government'},{label:'Location types',val:'Safe house, Site, Urban, Remote'},{label:'NPC roles',val:'Handler, Agent, Asset, Threat'},{label:'Quest structures',val:'Operation, Containment, Elimination'},{label:'Sheet',val:'Delta Green — modified CoC stats'}],blades:[{label:'Calendar',val:'Doskvol custom — 6 seasons'},{label:'Faction types',val:'Crew, Noble house, Cult, City watch'},{label:'Location types',val:'District, Lair, Haunt, Void Sea'},{label:'NPC roles',val:'Contact, Rival, Mark, Ghost, Demon'},{label:'Quest structures',val:'Score, Downtime, Entanglement'},{label:'Sheet',val:'Blades — Actions & Attributes'}],custom:[{label:'Calendar',val:'Define your own time system'},{label:'Faction types',val:'You choose the categories'},{label:'Location types',val:'You choose the tags'},{label:'NPC roles',val:'You define the roles'},{label:'Quest structures',val:'You name the phases'},{label:'Sheet',val:'Build from scratch'}]};
+function selectSystem(el,key){document.querySelectorAll('.sys-card').forEach(c=>c.classList.remove('selected'));el.classList.add('selected');const items=systemPreviews[key]||[];document.getElementById('previewGrid').innerHTML=items.map(i=>`<div class="preview-item"><div class="preview-item-label">${i.label}</div><div class="preview-item-val">${i.val}</div></div>`).join('');}
+function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active');const m={'pg-system':2,'pg-review':3,'pg-import':4};const n=m[id]||2;document.querySelectorAll('.step').forEach((s,i)=>{s.classList.remove('active','done');if(i+1===n)s.classList.add('active');else if(i+1<n)s.classList.add('done');});}
+function switchImport(idx,el){document.querySelectorAll('.itab').forEach(t=>t.classList.remove('active'));el.classList.add('active');['import-guided','import-paste','import-upload'].forEach((id,i)=>{document.getElementById(id).style.display=i===idx?'block':'none';});}
+selectSystem(document.querySelector('.sys-card.selected'),'coc');
+</script>
+</body>
+</html>
