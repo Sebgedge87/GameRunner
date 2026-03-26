@@ -203,3 +203,103 @@ textarea {
 [data-theme="achtung"] .nav-icon {
   filter: grayscale(100%) sepia(70%) hue-rotate(20deg) saturate(160%) brightness(1.05);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BASELINE GRID — 32px vertical rhythm
+   Applies to text-heavy view containers (Character Sheet, NPC Bio, Notes)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.baseline-ruled,
+.notes-view .notes-body,
+.character-sheet-view .sheet-body,
+.npc-bio,
+.npc-bio-area,
+.npc-lore-area,
+.session-notes-body,
+.handout-body,
+.location-lore-area {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent calc(var(--line-height) - 1px),
+    rgba(197 160 89 / 0.08) calc(var(--line-height) - 1px),
+    rgba(197 160 89 / 0.08) var(--line-height)
+  );
+  background-size: 100% var(--line-height);
+  background-attachment: local;
+  line-height: var(--line-height);
+}
+[data-theme="alien"]    .baseline-ruled,
+[data-theme="alien"]    .notes-view .notes-body  { background-image: repeating-linear-gradient(to bottom, transparent, transparent calc(var(--line-height) - 1px), rgba(57 255 20 / 0.07) calc(var(--line-height) - 1px), rgba(57 255 20 / 0.07) var(--line-height)); }
+[data-theme="coriolis"] .baseline-ruled,
+[data-theme="coriolis"] .notes-view .notes-body  { background-image: repeating-linear-gradient(to bottom, transparent, transparent calc(var(--line-height) - 1px), rgba(0 210 255 / 0.08) calc(var(--line-height) - 1px), rgba(0 210 255 / 0.08) var(--line-height)); }
+[data-theme="dune"]     .baseline-ruled,
+[data-theme="dune"]     .notes-view .notes-body  { background-image: repeating-linear-gradient(to bottom, transparent, transparent calc(var(--line-height) - 1px), rgba(226 114 34 / 0.09) calc(var(--line-height) - 1px), rgba(226 114 34 / 0.09) var(--line-height)); }
+[data-theme="coc"]      .baseline-ruled,
+[data-theme="coc"]      .notes-view .notes-body  { background-image: repeating-linear-gradient(to bottom, transparent, transparent calc(var(--line-height) - 1px), rgba(154 124 30 / 0.1) calc(var(--line-height) - 1px), rgba(154 124 30 / 0.1) var(--line-height)); }
+[data-theme="achtung"]  .baseline-ruled,
+[data-theme="achtung"]  .notes-view .notes-body  { background-image: repeating-linear-gradient(to bottom, transparent, transparent calc(var(--line-height) - 1px), rgba(233 196 106 / 0.07) calc(var(--line-height) - 1px), rgba(233 196 106 / 0.07) var(--line-height)); }
+
+/* ── Dynamic Content Shunting — textareas grow in 32px increments ─────────── */
+textarea,
+.edit-field-textarea,
+.auto-grow-field {
+  field-sizing: content;
+  min-height: var(--line-height);
+  line-height: var(--line-height);
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+/* ── Ink Aesthetic — deep Midnight Blue user-input text ──────────────────── */
+[data-theme="dnd5e"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]),
+[data-theme="dnd5e"] textarea,
+[data-theme="coc"]   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]),
+[data-theme="coc"]   textarea,
+[data-theme="achtung"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]),
+[data-theme="achtung"] textarea {
+  color: var(--ink-color, #1A237E);
+  text-shadow: 0 0 var(--ink-blur, 0.5px) rgba(26, 35, 126, 0.3);
+  caret-color: var(--ink-color, #1A237E);
+}
+
+/* ── Rubber Ink-Stamp Add Buttons ────────────────────────────────────────── */
+.btn-add,
+button.add-btn {
+  --stamp-angle: -2deg;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 14px 6px;
+  font-family: var(--font-header, 'Cinzel', serif);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: transparent;
+  border: 2px solid var(--accent);
+  border-radius: 3px;
+  box-shadow: 2px 2px 0 var(--border2), 0 0 0 1px var(--border2);
+  transform: rotate(var(--stamp-angle));
+  cursor: pointer;
+  transition: box-shadow 0.12s, opacity 0.12s;
+  filter: contrast(1.05);
+}
+.btn-add::before { content: '✦'; font-size: 9px; opacity: 0.7; }
+.btn-add:hover, button.add-btn:hover {
+  box-shadow: 3px 3px 0 var(--border2), 0 0 8px rgba(197,160,89,0.22);
+  opacity: 0.9;
+}
+.btn-add:active, button.add-btn:active {
+  animation: stamp-press 0.2s ease-out forwards;
+  box-shadow: 1px 1px 0 var(--border2);
+}
+[data-theme="alien"] .btn-add, [data-theme="alien"] button.add-btn {
+  --stamp-angle: 0deg; border-radius: 0;
+  box-shadow: 2px 2px 0 rgba(57,255,20,0.25), 0 0 6px rgba(57,255,20,0.15);
+}
+[data-theme="coriolis"] .btn-add, [data-theme="coriolis"] button.add-btn {
+  --stamp-angle: 0deg;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  box-shadow: 0 0 8px rgba(0,210,255,0.2);
+}

@@ -13,10 +13,8 @@
 
     <div class="filter-tabs">
       <button
-        v-for="tab in tabs"
-        :key="tab.value"
-        class="filter-tab"
-        :class="{ active: activeTab === tab.value }"
+        v-for="tab in tabs" :key="tab.value"
+        class="filter-tab" :class="{ active: activeTab === tab.value }"
         @click="activeTab = tab.value"
       >{{ tab.label }}</button>
     </div>
@@ -69,6 +67,14 @@ const tabs = [
   { value: 'failed', label: 'Failed' },
 ]
 
+// Edit form state
+const ef = reactive({
+  title: '', description: '', status: 'active', quest_type: 'main',
+  location: '', connected_npcs: '', connected_quests: '',
+  reward_gold: '', reward_xp: '', reward_items: '',
+  urgency: '', expires_in: '',
+})
+
 const filteredQuests = computed(() => {
   let list = data.quests
   if (activeTab.value !== 'all') list = list.filter(q => q.status?.toLowerCase() === activeTab.value)
@@ -86,6 +92,7 @@ const filteredQuests = computed(() => {
 function toggleExpand(id) {
   expandedId.value = expandedId.value === id ? null : id
 }
+
 
 onMounted(() => {
   if (!data.quests.length) data.loadQuests()

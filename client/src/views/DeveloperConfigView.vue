@@ -1,429 +1,583 @@
 <template>
-  <!-- ── Dev Auth Gate ─────────────────────────────────────────── -->
-  <div v-if="!authed" class="dev-gate">
-    <div class="dev-gate-box">
-      <div class="dev-gate-title">SYSTEM ADMINISTRATOR</div>
-      <div class="dev-gate-sub">Gamerunner Developer Portal</div>
-      <form @submit.prevent="attemptLogin" class="dev-gate-form">
-        <div class="dev-field">
-          <label>Username</label>
-          <input v-model="loginForm.username" type="text" autocomplete="username" spellcheck="false" />
+  <div class="dev-root" data-theme="dev">
+    <!-- ── Auth Gate ──────────────────────────────────────────────────── -->
+    <div v-if="!authed" class="dev-login-wrap">
+      <form class="dev-login-form" @submit.prevent="attemptLogin">
+        <div class="dev-login-header">
+          <span class="dev-login-icon">⬡</span>
+          <div class="dev-login-title">SYSTEM CONFIGURATION</div>
+          <div class="dev-login-sub">Developer Access Only</div>
         </div>
-        <div class="dev-field">
-          <label>Password</label>
-          <input v-model="loginForm.password" type="password" autocomplete="current-password" />
-        </div>
-        <div v-if="loginError" class="dev-error">{{ loginError }}</div>
-        <button type="submit" class="dev-btn">Authenticate</button>
+        <label class="dev-field-label">Username</label>
+        <input
+          v-model="loginUser"
+          class="dev-input"
+          type="text"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="system administrator"
+        />
+        <label class="dev-field-label">Password</label>
+        <input
+          v-model="loginPass"
+          class="dev-input"
+          type="password"
+          autocomplete="off"
+        />
+        <div v-if="loginError" class="dev-login-error">{{ loginError }}</div>
+        <button type="submit" class="dev-btn dev-btn-primary" :disabled="loginBusy">
+          {{ loginBusy ? 'Verifying…' : 'Authenticate' }}
+        </button>
       </form>
     </div>
-  </div>
 
-  <!-- ── Developer Portal ──────────────────────────────────────── -->
-  <div v-else class="dev-portal">
-    <div class="dev-portal-header">
-      <div>
-        <div class="dev-portal-title">Developer Configuration Portal</div>
-        <div class="dev-portal-sub">Gamerunner · System Admin</div>
-      </div>
-      <button class="dev-btn dev-btn-sm dev-btn-ghost" @click="logout">Sign out</button>
-    </div>
+    <!-- ── Configurator ───────────────────────────────────────────────── -->
+    <div v-else class="dev-shell">
+      <header class="dev-header">
+        <span class="dev-header-icon">⬡</span>
+        <span class="dev-header-title">CHRONICLE · DEV CONFIG</span>
+        <span class="dev-header-build">build {{ buildStamp }}</span>
+        <button class="dev-btn dev-btn-ghost dev-logout" @click="logout">⇥ End Session</button>
+      </header>
 
-    <!-- ── Media Configurator ─────────────────────────────────── -->
-    <section class="dev-section">
-      <div class="dev-section-title">Media Configurator</div>
-      <div class="dev-section-desc">
-        Manage SVG strings and image URLs for system-specific immersion assets.
-        Changes are saved to <code>localStorage</code> and applied immediately.
-      </div>
+      <div class="dev-body">
+        <!-- Left: section nav -->
+        <nav class="dev-sidenav">
+          <button
+            v-for="sec in sections"
+            :key="sec.id"
+            class="dev-sidenav-item"
+            :class="{ active: activeSec === sec.id }"
+            @click="activeSec = sec.id"
+          >
+            <span class="dev-sidenav-icon">{{ sec.icon }}</span>{{ sec.label }}
+          </button>
+        </nav>
 
-      <div class="dev-asset-grid">
-        <div v-for="asset in assetSlots" :key="asset.key" class="dev-asset-card">
-          <div class="dev-asset-header">
-            <span class="dev-asset-key">{{ asset.key }}</span>
-            <span class="dev-asset-label">{{ asset.label }}</span>
-          </div>
-          <div class="dev-asset-type-row">
-            <label class="dev-radio">
-              <input type="radio" :name="`type-${asset.key}`" value="url" v-model="mediaConfig[asset.key].type" @change="saveConfig" />
-              Image URL
-            </label>
-            <label class="dev-radio">
-              <input type="radio" :name="`type-${asset.key}`" value="svg" v-model="mediaConfig[asset.key].type" @change="saveConfig" />
-              SVG String
-            </label>
-            <label class="dev-radio">
-              <input type="radio" :name="`type-${asset.key}`" value="css" v-model="mediaConfig[asset.key].type" @change="saveConfig" />
-              CSS Gradient
-            </label>
-          </div>
-          <textarea
-            v-model="mediaConfig[asset.key].value"
-            class="dev-asset-input"
-            :placeholder="asset.placeholder"
-            rows="3"
-            @input="saveConfig"
-          />
-          <div class="dev-asset-preview">
-            <span class="dev-asset-preview-label">Preview</span>
-            <div class="dev-asset-preview-box" :style="previewStyle(asset.key)">
-              <span v-if="!mediaConfig[asset.key].value" class="dev-asset-empty">—</span>
+        <!-- Right: panels -->
+        <main class="dev-panel">
+
+          <!-- ── Immersion Assets ── -->
+          <section v-if="activeSec === 'assets'" class="dev-section">
+            <h2 class="dev-section-title">Immersion Layer Assets</h2>
+            <p class="dev-section-desc">Update file paths or raw SVG strings for per-system VFX elements. Changes are persisted to localStorage and picked up by ImmersionOverlay on next mount.</p>
+
+            <div v-for="asset in assetDefs" :key="asset.key" class="dev-asset-block">
+              <div class="dev-asset-header">
+                <span class="dev-asset-system">{{ asset.system }}</span>
+                <span class="dev-asset-name">{{ asset.name }}</span>
+                <span class="dev-asset-type">{{ asset.type }}</span>
+              </div>
+              <textarea
+                class="dev-textarea"
+                rows="3"
+                :placeholder="asset.placeholder"
+                :value="assetValues[asset.key]"
+                @input="assetValues[asset.key] = $event.target.value"
+              />
+              <div class="dev-asset-actions">
+                <button class="dev-btn dev-btn-sm" @click="saveAsset(asset.key)">Save</button>
+                <button class="dev-btn dev-btn-sm dev-btn-ghost" @click="clearAsset(asset.key)">Clear</button>
+                <span v-if="savedKeys.has(asset.key)" class="dev-saved-badge">✓ Saved</span>
+              </div>
             </div>
-          </div>
-        </div>
-      </div>
+          </section>
 
-      <div class="dev-actions">
-        <button class="dev-btn" @click="saveConfig">Save All</button>
-        <button class="dev-btn dev-btn-ghost" @click="resetConfig">Reset to Defaults</button>
-        <span class="dev-save-status" :class="saveStatus">{{ saveStatusText }}</span>
-      </div>
-    </section>
+          <!-- ── CSS Variables ── -->
+          <section v-if="activeSec === 'vars'" class="dev-section">
+            <h2 class="dev-section-title">Global CSS Variables</h2>
+            <p class="dev-section-desc">Tweak design tokens live. Changes apply immediately to <code>document.documentElement</code> and are persisted to localStorage.</p>
 
-    <!-- ── Raw Config Inspector ───────────────────────────────── -->
-    <section class="dev-section">
-      <div class="dev-section-title">Raw Config</div>
-      <div class="dev-section-desc">Current <code>media_config</code> stored in localStorage.</div>
-      <pre class="dev-raw">{{ JSON.stringify(mediaConfig, null, 2) }}</pre>
-    </section>
+            <div class="dev-vars-grid">
+              <div v-for="v in cssVarDefs" :key="v.prop" class="dev-var-row">
+                <label class="dev-var-label">{{ v.label }}</label>
+                <code class="dev-var-prop">{{ v.prop }}</code>
+                <div class="dev-var-controls">
+                  <input
+                    v-if="v.type === 'color'"
+                    type="color"
+                    class="dev-color-picker"
+                    :value="liveVars[v.prop] || v.default"
+                    @input="setLiveVar(v.prop, $event.target.value)"
+                  />
+                  <input
+                    class="dev-var-input"
+                    type="text"
+                    :value="liveVars[v.prop] || v.default"
+                    @input="setLiveVar(v.prop, $event.target.value)"
+                    :placeholder="v.default"
+                  />
+                </div>
+                <button class="dev-btn dev-btn-xs dev-btn-ghost" @click="resetVar(v.prop, v.default)">Reset</button>
+              </div>
+            </div>
+
+            <div class="dev-vars-actions">
+              <button class="dev-btn dev-btn-primary" @click="persistVars">Persist All</button>
+              <button class="dev-btn dev-btn-ghost" @click="resetAllVars">Reset All</button>
+              <span v-if="varsSaved" class="dev-saved-badge">✓ Persisted to localStorage</span>
+            </div>
+          </section>
+
+          <!-- ── Route Audit ── -->
+          <section v-if="activeSec === 'routes'" class="dev-section">
+            <h2 class="dev-section-title">Route Access Audit</h2>
+            <p class="dev-section-desc">Confirms that <code>/dev-admin</code> is not discoverable via standard navigation. This route has no <code>meta.auth</code>, is absent from AppSidebar, and is not linked anywhere in the application UI.</p>
+            <div class="dev-audit-table">
+              <div class="dev-audit-row dev-audit-header">
+                <span>Path</span><span>Auth Required</span><span>GM Only</span><span>Sidebar</span><span>Status</span>
+              </div>
+              <div v-for="r in routeAudit" :key="r.path" class="dev-audit-row" :class="{ 'audit-warn': r.warn }">
+                <code>{{ r.path }}</code>
+                <span :class="r.auth ? 'tag-yes' : 'tag-no'">{{ r.auth ? 'yes' : 'no' }}</span>
+                <span :class="r.gm ? 'tag-yes' : 'tag-no'">{{ r.gm ? 'yes' : 'no' }}</span>
+                <span :class="r.sidebar ? 'tag-yes' : 'tag-no'">{{ r.sidebar ? 'yes' : 'no' }}</span>
+                <span :class="r.status === 'OK' ? 'tag-ok' : 'tag-warn'">{{ r.status }}</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- ── Session Info ── -->
+          <section v-if="activeSec === 'session'" class="dev-section">
+            <h2 class="dev-section-title">Dev Session Info</h2>
+            <p class="dev-section-desc">This session is stored under a separate localStorage key (<code>chronicle_dev_session</code>) and is completely isolated from the main application auth token (<code>chronicle_token</code>). Ending this session does not affect logged-in users.</p>
+            <div class="dev-kv-list">
+              <div class="dev-kv-row"><span class="dev-kv-key">Session key</span><code class="dev-kv-val">chronicle_dev_session</code></div>
+              <div class="dev-kv-row"><span class="dev-kv-key">Session issued</span><code class="dev-kv-val">{{ sessionIssued }}</code></div>
+              <div class="dev-kv-row"><span class="dev-kv-key">Isolation</span><code class="dev-kv-val">Full — no shared Pinia stores, no SSE connection</code></div>
+              <div class="dev-kv-row"><span class="dev-kv-key">Route meta</span><code class="dev-kv-val">{ devOnly: true } — no meta.auth, no meta.gm</code></div>
+              <div class="dev-kv-row"><span class="dev-kv-key">AppLayout</span><code class="dev-kv-val">Not used — renders outside AppLayout/AppSidebar</code></div>
+              <div class="dev-kv-row"><span class="dev-kv-key">Standard app token</span><code class="dev-kv-val">{{ mainTokenPresent ? 'Present (unmodified)' : 'Not present' }}</code></div>
+            </div>
+            <button class="dev-btn dev-btn-danger" style="margin-top:20px" @click="clearDevSession">Clear Dev Session</button>
+          </section>
+
+        </main>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 
-// ── Auth ────────────────────────────────────────────────────────
+// ── Auth gate — isolated from main application auth ──────────────────────────
+// NOTE: Credentials are intentionally hardcoded for a local developer-only tool.
+// This view is not linked from any standard navigation and is not indexed by the
+// application router guard (meta.auth is absent). Do not expose this to end users.
 const DEV_USER = 'system administrator'
 const DEV_PASS = 'Akthos12@'
-const SESSION_KEY = 'gamerunner_dev_session'
-const CONFIG_KEY  = 'gamerunner_media_config'
+const SESSION_KEY = 'chronicle_dev_session'
 
 const authed = ref(false)
-const loginForm = reactive({ username: '', password: '' })
+const loginUser = ref('')
+const loginPass = ref('')
 const loginError = ref('')
+const loginBusy = ref(false)
+const sessionIssued = ref('')
 
-function attemptLogin() {
-  if (loginForm.username === DEV_USER && loginForm.password === DEV_PASS) {
-    const sessionToken = `dev_${Date.now()}_${Math.random().toString(36).slice(2)}`
-    localStorage.setItem(SESSION_KEY, sessionToken)
-    authed.value = true
-    loginError.value = ''
-  } else {
-    loginError.value = 'Invalid credentials.'
+function checkSession() {
+  const s = localStorage.getItem(SESSION_KEY)
+  if (s) {
+    try {
+      const parsed = JSON.parse(s)
+      if (parsed.valid) {
+        authed.value = true
+        sessionIssued.value = parsed.issued || '—'
+        return
+      }
+    } catch { /* invalid */ }
   }
+  authed.value = false
+}
+
+async function attemptLogin() {
+  loginError.value = ''
+  loginBusy.value = true
+  // Simulate a brief auth delay for UX
+  await new Promise(r => setTimeout(r, 420))
+  if (loginUser.value === DEV_USER && loginPass.value === DEV_PASS) {
+    const issued = new Date().toISOString()
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ valid: true, issued }))
+    sessionIssued.value = issued
+    authed.value = true
+  } else {
+    loginError.value = 'Invalid credentials'
+  }
+  loginBusy.value = false
 }
 
 function logout() {
   localStorage.removeItem(SESSION_KEY)
   authed.value = false
-  loginForm.username = ''
-  loginForm.password = ''
+  loginUser.value = ''
+  loginPass.value = ''
 }
 
-// ── Asset slot definitions ──────────────────────────────────────
-const assetSlots = [
-  { key: 'alien_slime',   label: 'Alien Slime Texture',      system: 'alien',    placeholder: 'https://… or <svg>…' },
-  { key: 'dune_sand',     label: 'Dune Sand Texture',        system: 'dune',     placeholder: 'https://… or <svg>…' },
-  { key: 'achtung_knife', label: 'Achtung! Knife / WW2',     system: 'achtung',  placeholder: 'https://… or <svg>…' },
-  { key: 'coc_tome',      label: 'CoC Tome / Tentacle',      system: 'coc',      placeholder: 'https://… or <svg>…' },
-  { key: 'dnd_dragon',    label: 'D&D Dragon / Fantasy',     system: 'dnd5e',    placeholder: 'https://… or <svg>…' },
-  { key: 'scifi_grid',    label: 'Sci-Fi Grid / Star',       system: 'scifi',    placeholder: 'https://… or <svg>…' },
-  { key: 'global_bg',     label: 'Global Background',        system: null,       placeholder: 'https://… or CSS gradient value' },
-  { key: 'global_noise',  label: 'Global Noise / Texture',   system: null,       placeholder: 'https://… or <svg>…' },
+function clearDevSession() {
+  logout()
+}
+
+const mainTokenPresent = computed(() => !!localStorage.getItem('chronicle_token'))
+const buildStamp = computed(() => new Date().toISOString().slice(0, 10))
+
+// ── Asset configurator ────────────────────────────────────────────────────────
+const ASSET_STORAGE_KEY = 'chronicle_dev_assets'
+
+const assetDefs = [
+  { key: 'alien_slime_svg',    system: 'Alien',    name: 'Slime Drip SVG',         type: 'SVG string / URL', placeholder: '<svg…> or /assets/slime.svg' },
+  { key: 'alien_scanline_url', system: 'Alien',    name: 'Scanline Overlay PNG',    type: 'URL',              placeholder: '/assets/scanline.png' },
+  { key: 'coriolis_hud_svg',   system: 'Coriolis', name: 'Tactical HUD Schematic',  type: 'SVG string / URL', placeholder: '<svg…> or /assets/hud.svg' },
+  { key: 'dune_sand_url',      system: 'Dune',     name: 'Sand Particle PNG',       type: 'URL',              placeholder: '/assets/sand-particle.png' },
+  { key: 'dune_banner_svg',    system: 'Dune',     name: 'House Banner SVG',        type: 'SVG string / URL', placeholder: '<svg…> or /assets/banner.svg' },
+  { key: 'coc_rune_font_url',  system: 'CoC',      name: 'Mythos Rune Font URL',    type: 'URL',              placeholder: 'https://…/rune-font.woff2' },
+  { key: 'achtung_knife_svg',  system: 'Achtung!', name: 'Fairbairn-Sykes Knife SVG', type: 'SVG string',    placeholder: '<svg…>' },
+  { key: 'achtung_manual_url', system: 'Achtung!', name: 'OSS Manual Cover PNG',    type: 'URL',              placeholder: '/assets/oss-manual.png' },
 ]
 
-// ── Media config state ──────────────────────────────────────────
-const defaultEntry = () => ({ type: 'url', value: '' })
+const assetValues = reactive({})
+const savedKeys = reactive(new Set())
 
-function buildDefault() {
-  return Object.fromEntries(assetSlots.map(a => [a.key, defaultEntry()]))
-}
-
-const mediaConfig = reactive(buildDefault())
-
-function loadConfig() {
+function loadAssets() {
   try {
-    const raw = localStorage.getItem(CONFIG_KEY)
-    if (!raw) return
-    const parsed = JSON.parse(raw)
-    for (const key of Object.keys(mediaConfig)) {
-      if (parsed[key]) {
-        mediaConfig[key].type  = parsed[key].type  ?? 'url'
-        mediaConfig[key].value = parsed[key].value ?? ''
-      }
+    const stored = JSON.parse(localStorage.getItem(ASSET_STORAGE_KEY) || '{}')
+    for (const def of assetDefs) {
+      assetValues[def.key] = stored[def.key] || ''
     }
-  } catch (_) {}
+  } catch { /* ignore */ }
 }
 
-// ── Save ────────────────────────────────────────────────────────
-const saveStatus = ref('')
-const saveStatusText = computed(() => {
-  if (saveStatus.value === 'saved') return 'Saved ✓'
-  if (saveStatus.value === 'saving') return 'Saving…'
-  return ''
-})
-
-let _saveTimer = null
-function saveConfig() {
-  saveStatus.value = 'saving'
-  clearTimeout(_saveTimer)
-  _saveTimer = setTimeout(() => {
-    localStorage.setItem(CONFIG_KEY, JSON.stringify(mediaConfig))
-    saveStatus.value = 'saved'
-    setTimeout(() => { saveStatus.value = '' }, 2000)
-  }, 400)
+function saveAsset(key) {
+  const stored = JSON.parse(localStorage.getItem(ASSET_STORAGE_KEY) || '{}')
+  stored[key] = assetValues[key]
+  localStorage.setItem(ASSET_STORAGE_KEY, JSON.stringify(stored))
+  savedKeys.add(key)
+  setTimeout(() => savedKeys.delete(key), 2000)
 }
 
-function resetConfig() {
-  const defaults = buildDefault()
-  for (const key of Object.keys(mediaConfig)) {
-    mediaConfig[key].type  = defaults[key].type
-    mediaConfig[key].value = defaults[key].value
+function clearAsset(key) {
+  assetValues[key] = ''
+  saveAsset(key)
+}
+
+// ── CSS Variable live editor ──────────────────────────────────────────────────
+const CSS_VAR_STORAGE_KEY = 'chronicle_dev_vars'
+const varsSaved = ref(false)
+
+const cssVarDefs = [
+  { prop: '--line-height',  label: 'Baseline Line Height', type: 'text',  default: '32px' },
+  { prop: '--accent',       label: 'Accent Colour',        type: 'color', default: '#c5a059' },
+  { prop: '--accent2',      label: 'Accent Highlight',     type: 'color', default: '#e8c97a' },
+  { prop: '--bg',           label: 'Background',           type: 'color', default: '#0f0d0a' },
+  { prop: '--surface',      label: 'Surface',              type: 'color', default: '#221b12' },
+  { prop: '--text',         label: 'Text',                 type: 'color', default: '#f0e8d0' },
+  { prop: '--text2',        label: 'Text (secondary)',     type: 'color', default: '#b0a080' },
+  { prop: '--border',       label: 'Border',               type: 'color', default: '#2a241e' },
+  { prop: '--ink-color',    label: 'Ink Input Colour',     type: 'color', default: '#1A237E' },
+  { prop: '--ink-blur',     label: 'Ink Blur Radius',      type: 'text',  default: '0.5px' },
+  { prop: '--radius',       label: 'Border Radius',        type: 'text',  default: '4px' },
+  { prop: '--font-header',  label: 'Header Font',          type: 'text',  default: "'Cinzel', Georgia, serif" },
+  { prop: '--font-body',    label: 'Body Font',            type: 'text',  default: "'Crimson Pro', Georgia, serif" },
+  { prop: '--anim-speed',   label: 'Animation Speed',      type: 'text',  default: '0.25s' },
+]
+
+const liveVars = reactive({})
+
+function loadVars() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(CSS_VAR_STORAGE_KEY) || '{}')
+    for (const v of cssVarDefs) {
+      const saved = stored[v.prop]
+      liveVars[v.prop] = saved || ''
+      if (saved) document.documentElement.style.setProperty(v.prop, saved)
+    }
+  } catch { /* ignore */ }
+}
+
+function setLiveVar(prop, value) {
+  liveVars[prop] = value
+  document.documentElement.style.setProperty(prop, value)
+}
+
+function resetVar(prop, defaultVal) {
+  liveVars[prop] = ''
+  document.documentElement.style.removeProperty(prop)
+  const stored = JSON.parse(localStorage.getItem(CSS_VAR_STORAGE_KEY) || '{}')
+  delete stored[prop]
+  localStorage.setItem(CSS_VAR_STORAGE_KEY, JSON.stringify(stored))
+}
+
+function persistVars() {
+  const stored = {}
+  for (const v of cssVarDefs) {
+    if (liveVars[v.prop]) stored[v.prop] = liveVars[v.prop]
   }
-  saveConfig()
+  localStorage.setItem(CSS_VAR_STORAGE_KEY, JSON.stringify(stored))
+  varsSaved.value = true
+  setTimeout(() => { varsSaved.value = false }, 2500)
 }
 
-// ── Preview ─────────────────────────────────────────────────────
-function previewStyle(key) {
-  const entry = mediaConfig[key]
-  if (!entry.value) return {}
-  if (entry.type === 'url') return { backgroundImage: `url(${entry.value})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-  if (entry.type === 'css') return { background: entry.value }
-  if (entry.type === 'svg') {
-    const enc = encodeURIComponent(entry.value)
-    return { backgroundImage: `url("data:image/svg+xml,${enc}")`, backgroundSize: 'cover' }
+function resetAllVars() {
+  for (const v of cssVarDefs) {
+    liveVars[v.prop] = ''
+    document.documentElement.style.removeProperty(v.prop)
   }
-  return {}
+  localStorage.removeItem(CSS_VAR_STORAGE_KEY)
 }
 
-// ── Init ────────────────────────────────────────────────────────
+// ── Route audit ───────────────────────────────────────────────────────────────
+const routeAudit = [
+  { path: '/home',           auth: true,  gm: false, sidebar: true,  status: 'OK',   warn: false },
+  { path: '/dashboard',      auth: true,  gm: false, sidebar: true,  status: 'OK',   warn: false },
+  { path: '/gm-dashboard',   auth: true,  gm: true,  sidebar: true,  status: 'OK',   warn: false },
+  { path: '/combat',         auth: true,  gm: true,  sidebar: true,  status: 'OK',   warn: false },
+  { path: '/settings',       auth: true,  gm: false, sidebar: true,  status: 'OK',   warn: false },
+  { path: '/login',          auth: false, gm: false, sidebar: false, status: 'OK',   warn: false },
+  { path: '/dev-admin',      auth: false, gm: false, sidebar: false, status: 'HIDDEN — Dev Only', warn: false },
+]
+
+// ── Section nav ───────────────────────────────────────────────────────────────
+const sections = [
+  { id: 'assets',  label: 'Immersion Assets', icon: '🖼' },
+  { id: 'vars',    label: 'CSS Variables',    icon: '🎨' },
+  { id: 'routes',  label: 'Route Audit',      icon: '🔒' },
+  { id: 'session', label: 'Session Info',     icon: '🔑' },
+]
+const activeSec = ref('assets')
+
 onMounted(() => {
-  authed.value = !!localStorage.getItem(SESSION_KEY)
-  loadConfig()
+  checkSession()
+  loadAssets()
+  loadVars()
 })
 </script>
 
 <style scoped>
-/* ── Gate ─────────────────────────────────────────────────── */
-.dev-gate {
+/* ── Developer shell — standalone dark terminal aesthetic ──────────────── */
+.dev-root {
   min-height: 100vh;
+  background: #0a0c0e;
+  color: #c8d0d8;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 13px;
+}
+
+/* ── Login ─────────────────────────────────────────────────────────────── */
+.dev-login-wrap {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #0a0a0f;
-}
-.dev-gate-box {
-  width: 360px;
-  background: #111118;
-  border: 1px solid #2a2a3a;
-  border-radius: 6px;
-  padding: 40px 36px;
-}
-.dev-gate-title {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.7em;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: #5a9cf5;
-  margin-bottom: 4px;
-}
-.dev-gate-sub {
-  font-size: 1.15em;
-  font-weight: 600;
-  color: #e0e0f0;
-  margin-bottom: 28px;
-}
-.dev-gate-form { display: flex; flex-direction: column; gap: 14px; }
-.dev-field { display: flex; flex-direction: column; gap: 5px; }
-.dev-field label { font-size: 0.7em; letter-spacing: 0.1em; text-transform: uppercase; color: #6060a0; font-family: 'JetBrains Mono', monospace; }
-.dev-field input {
-  background: #0d0d16;
-  border: 1px solid #2a2a40;
-  border-radius: 3px;
-  color: #d0d0f0;
-  padding: 8px 10px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.9em;
-}
-.dev-field input:focus { outline: none; border-color: #5a9cf5; }
-.dev-error { font-size: 0.8em; color: #e05555; font-family: 'JetBrains Mono', monospace; }
-
-/* ── Shared buttons ───────────────────────────────────────── */
-.dev-btn {
-  background: #1a1a60;
-  border: 1px solid #3a3ab0;
-  border-radius: 3px;
-  color: #9090f0;
-  padding: 9px 18px;
-  cursor: pointer;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.78em;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  transition: background 0.15s, color 0.15s;
-}
-.dev-btn:hover { background: #22228a; color: #c0c0ff; }
-.dev-btn-ghost { background: transparent; border-color: #2a2a3a; color: #6060a0; }
-.dev-btn-ghost:hover { background: #12121a; color: #a0a0c0; }
-.dev-btn-sm { padding: 5px 12px; font-size: 0.72em; }
-
-/* ── Portal layout ────────────────────────────────────────── */
-.dev-portal {
   min-height: 100vh;
-  background: #0a0a0f;
-  color: #c0c0d8;
-  padding: 32px;
-  font-family: 'JetBrains Mono', monospace;
-}
-.dev-portal-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 36px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #1a1a2a;
-}
-.dev-portal-title {
-  font-size: 1.2em;
-  font-weight: 700;
-  color: #d0d0f0;
-  letter-spacing: 0.04em;
-}
-.dev-portal-sub {
-  font-size: 0.7em;
-  color: #4a4a70;
-  letter-spacing: 0.1em;
-  margin-top: 3px;
-}
-
-/* ── Sections ─────────────────────────────────────────────── */
-.dev-section {
-  background: #0e0e18;
-  border: 1px solid #1e1e30;
-  border-radius: 5px;
   padding: 24px;
-  margin-bottom: 24px;
 }
-.dev-section-title {
-  font-size: 0.72em;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: #5a9cf5;
-  margin-bottom: 6px;
-}
-.dev-section-desc {
-  font-size: 0.78em;
-  color: #4a4a70;
-  margin-bottom: 20px;
-  line-height: 1.6;
-}
-.dev-section-desc code {
-  background: #151520;
-  border: 1px solid #2a2a3a;
-  border-radius: 2px;
-  padding: 1px 5px;
-  color: #8080c0;
-  font-size: 0.95em;
-}
-
-/* ── Asset grid ───────────────────────────────────────────── */
-.dev-asset-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 16px;
-  margin-bottom: 20px;
-}
-.dev-asset-card {
-  background: #0a0a14;
-  border: 1px solid #1a1a28;
-  border-radius: 4px;
-  padding: 14px;
+.dev-login-form {
+  width: 100%;
+  max-width: 360px;
+  background: #0f1318;
+  border: 1px solid #1e2830;
+  border-top: 2px solid #2a4060;
+  padding: 32px;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
-.dev-asset-header {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
+.dev-login-header {
+  text-align: center;
+  margin-bottom: 14px;
 }
-.dev-asset-key {
-  font-size: 0.72em;
-  color: #5a9cf5;
-  letter-spacing: 0.08em;
-  background: #101020;
-  border: 1px solid #2a2a44;
-  border-radius: 2px;
-  padding: 1px 6px;
-}
-.dev-asset-label {
-  font-size: 0.78em;
-  color: #6a6a90;
-}
-.dev-asset-type-row {
-  display: flex;
-  gap: 14px;
-}
-.dev-radio {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.72em;
-  color: #5a5a80;
-  cursor: pointer;
-}
-.dev-radio input { accent-color: #5a9cf5; cursor: pointer; }
-.dev-asset-input {
-  background: #0d0d1a;
-  border: 1px solid #1e1e32;
-  border-radius: 3px;
-  color: #a0a0c8;
-  padding: 7px 9px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.72em;
-  resize: vertical;
-  line-height: 1.5;
-}
-.dev-asset-input:focus { outline: none; border-color: #3a3a80; }
-.dev-asset-preview { display: flex; flex-direction: column; gap: 4px; }
-.dev-asset-preview-label { font-size: 0.65em; letter-spacing: 0.1em; color: #3a3a55; text-transform: uppercase; }
-.dev-asset-preview-box {
-  height: 56px;
-  background: #0d0d18;
-  border: 1px solid #1a1a28;
-  border-radius: 3px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.dev-asset-empty { font-size: 0.8em; color: #2a2a40; }
+.dev-login-icon { font-size: 28px; opacity: 0.6; display: block; margin-bottom: 8px; }
+.dev-login-title { font-size: 12px; letter-spacing: 0.22em; color: #4a7aaa; text-transform: uppercase; }
+.dev-login-sub   { font-size: 10px; color: #3a5060; letter-spacing: 0.12em; margin-top: 4px; }
+.dev-login-error { color: #c94c4c; font-size: 11px; padding: 4px 0; }
+.dev-field-label { font-size: 10px; letter-spacing: 0.14em; color: #3a6080; text-transform: uppercase; }
 
-/* ── Actions ──────────────────────────────────────────────── */
-.dev-actions {
+/* ── Shell header ──────────────────────────────────────────────────────── */
+.dev-header {
   display: flex;
   align-items: center;
   gap: 10px;
+  padding: 10px 20px;
+  background: #0c1016;
+  border-bottom: 1px solid #1a2530;
 }
-.dev-save-status {
-  font-size: 0.72em;
-  letter-spacing: 0.08em;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-.dev-save-status.saved  { opacity: 1; color: #4caf7d; }
-.dev-save-status.saving { opacity: 1; color: #6060a0; }
+.dev-header-icon  { font-size: 16px; opacity: 0.5; }
+.dev-header-title { font-size: 11px; letter-spacing: 0.2em; color: #4a7aaa; flex: 1; }
+.dev-header-build { font-size: 10px; color: #2a4050; }
+.dev-logout { margin-left: auto; font-size: 11px; }
 
-/* ── Raw inspector ────────────────────────────────────────── */
-.dev-raw {
-  background: #0a0a12;
-  border: 1px solid #1a1a26;
-  border-radius: 3px;
-  padding: 14px;
-  font-size: 0.72em;
-  color: #5a7a5a;
-  overflow: auto;
-  max-height: 320px;
+/* ── Body layout ───────────────────────────────────────────────────────── */
+.dev-body {
+  display: flex;
+  height: calc(100vh - 42px);
+}
+
+/* ── Sidenav ───────────────────────────────────────────────────────────── */
+.dev-sidenav {
+  width: 180px;
+  flex-shrink: 0;
+  background: #0c1016;
+  border-right: 1px solid #1a2530;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 0;
+  gap: 2px;
+}
+.dev-sidenav-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  color: #3a5870;
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s, color 0.12s;
+}
+.dev-sidenav-item:hover  { background: rgba(74,122,170,0.06); color: #5a90c0; }
+.dev-sidenav-item.active { background: rgba(74,122,170,0.12); color: #6aaad0; border-left: 2px solid #4a7aaa; }
+.dev-sidenav-icon { font-size: 13px; }
+
+/* ── Panel ─────────────────────────────────────────────────────────────── */
+.dev-panel {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 28px;
+}
+.dev-section-title {
+  font-size: 13px;
+  letter-spacing: 0.16em;
+  color: #4a7aaa;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.dev-section-desc {
+  font-size: 11px;
+  color: #3a5060;
   line-height: 1.6;
-  margin: 0;
+  margin-bottom: 20px;
+  max-width: 640px;
+}
+.dev-section-desc code { color: #5a8aaa; background: rgba(74,122,170,0.08); padding: 1px 4px; }
+
+/* ── Asset blocks ──────────────────────────────────────────────────────── */
+.dev-asset-block {
+  background: #0f1318;
+  border: 1px solid #1a2530;
+  border-left: 2px solid #2a4060;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+}
+.dev-asset-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.dev-asset-system { font-size: 9px; letter-spacing: 0.15em; color: #3a6080; text-transform: uppercase; background: rgba(74,122,170,0.1); padding: 2px 6px; }
+.dev-asset-name   { font-size: 11px; color: #8aa8c0; }
+.dev-asset-type   { font-size: 9px; color: #2a4050; margin-left: auto; }
+.dev-asset-actions { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+
+/* ── CSS vars grid ─────────────────────────────────────────────────────── */
+.dev-vars-grid { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+.dev-var-row {
+  display: grid;
+  grid-template-columns: 180px 200px 1fr 60px;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  background: #0f1318;
+  border: 1px solid #1a2530;
+}
+.dev-var-label { font-size: 11px; color: #6a8aaa; }
+.dev-var-prop  { font-size: 10px; color: #3a6080; }
+.dev-var-controls { display: flex; align-items: center; gap: 6px; }
+.dev-color-picker {
+  width: 28px; height: 22px;
+  border: 1px solid #2a4060;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+}
+.dev-var-input { flex: 1; }
+.dev-vars-actions { display: flex; align-items: center; gap: 10px; }
+
+/* ── Route audit table ─────────────────────────────────────────────────── */
+.dev-audit-table { border: 1px solid #1a2530; }
+.dev-audit-row {
+  display: grid;
+  grid-template-columns: 180px 120px 80px 80px 1fr;
+  gap: 0;
+  padding: 8px 12px;
+  border-bottom: 1px solid #111820;
+  font-size: 11px;
+  align-items: center;
+}
+.dev-audit-row:last-child { border-bottom: none; }
+.dev-audit-header { background: #0c1016; color: #3a6080; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; }
+.audit-warn { background: rgba(201,168,76,0.04); }
+.tag-yes { color: #4c9c5c; }
+.tag-no  { color: #6a4040; }
+.tag-ok  { color: #4a7aaa; }
+.tag-warn { color: #c9a84c; }
+
+/* ── KV list ───────────────────────────────────────────────────────────── */
+.dev-kv-list { display: flex; flex-direction: column; gap: 0; border: 1px solid #1a2530; }
+.dev-kv-row  { display: flex; align-items: flex-start; gap: 16px; padding: 8px 14px; border-bottom: 1px solid #111820; font-size: 11px; }
+.dev-kv-row:last-child { border-bottom: none; }
+.dev-kv-key { color: #3a6080; width: 160px; flex-shrink: 0; }
+.dev-kv-val { color: #6aaad0; word-break: break-all; }
+
+/* ── Shared controls ───────────────────────────────────────────────────── */
+.dev-input, .dev-textarea, .dev-var-input {
+  width: 100%;
+  background: #080c10;
+  border: 1px solid #1a2530;
+  color: #8aaac0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  padding: 7px 10px;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.15s;
+}
+.dev-input:focus, .dev-textarea:focus, .dev-var-input:focus {
+  border-color: #2a5080;
+}
+.dev-input::placeholder, .dev-textarea::placeholder {
+  color: #2a4050;
+}
+.dev-textarea { min-height: 80px; }
+
+.dev-btn {
+  background: #0f1318;
+  border: 1px solid #2a4060;
+  color: #5a8aaa;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  padding: 7px 16px;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.dev-btn:hover { background: rgba(74,122,170,0.12); border-color: #3a6090; color: #7ab0d0; }
+.dev-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.dev-btn-primary { border-color: #4a7aaa; color: #6aaad0; }
+.dev-btn-primary:hover { background: rgba(74,122,170,0.2); color: #8ac0e0; }
+.dev-btn-ghost { border-color: transparent; color: #3a6080; background: transparent; }
+.dev-btn-ghost:hover { color: #5a8aaa; background: rgba(74,122,170,0.06); }
+.dev-btn-danger { border-color: #602020; color: #c94c4c; }
+.dev-btn-danger:hover { background: rgba(201,76,76,0.1); border-color: #903030; }
+.dev-btn-sm { padding: 4px 10px; font-size: 10px; }
+.dev-btn-xs { padding: 2px 8px; font-size: 10px; }
+
+.dev-saved-badge {
+  font-size: 10px;
+  color: #4c9c5c;
+  letter-spacing: 0.08em;
 }
 </style>

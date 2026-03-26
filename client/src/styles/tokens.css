@@ -40,6 +40,13 @@
   --radius: 4px;
   --h-spacing: 0.15em;
 
+  /* Baseline grid */
+  --line-height: 32px;
+
+  /* Ink aesthetic */
+  --ink-color: #1A237E;
+  --ink-blur: 0.5px;
+
   /* Aliases */
   --anim-speed: 0.25s;
 }
