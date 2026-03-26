@@ -1494,9 +1494,19 @@ onMounted(() => {
   --dossier-stamp:   #8b1a1a;
 }
 
-.dossier-mode .page-content,
+.dossier-mode .page-content {
+  background: #d9c48a;
+}
 .dossier-mode .sheet-page {
-  background: var(--dossier-paper);
+  background-color: var(--dossier-paper);
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 31px,
+    rgba(139, 98, 16, 0.10) 31px,
+    rgba(139, 98, 16, 0.10) 32px
+  );
+  background-attachment: local;
 }
 
 .dossier-mode .card,
@@ -1623,20 +1633,74 @@ onMounted(() => {
 .dossier-mode .sheet-save-indicator.saving { color: var(--dossier-sepia); }
 .dossier-mode .sheet-save-indicator.error  { color: var(--dossier-stamp); }
 
-/* Subtle paper texture via gradient */
-.dossier-mode .sheet-page::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 28px,
-    rgba(139, 98, 16, 0.06) 28px,
-    rgba(139, 98, 16, 0.06) 29px
-  );
-  z-index: 0;
+/* (ruled lines are now on .sheet-page background-image directly, scrolls with content) */
+
+/* ── Ledger row-grid alignment: 32px atomic unit ─────────────────────── */
+/*
+ * Every element height, line-height, padding, and margin must be
+ * exact multiples of 32px so text baselines land on the ruled lines.
+ */
+.dossier-mode,
+.coc-mode {
+  --R: 32px; /* row unit */
+}
+
+/* All text inside the sheet page inherits the grid line-height */
+.dossier-mode .sheet-page *,
+.coc-mode    .sheet-page * {
+  line-height: var(--R);
+  box-sizing: border-box;
+}
+
+/* Single-line inputs sit in exactly one row */
+.dossier-mode input,
+.dossier-mode select,
+.coc-mode input,
+.coc-mode select {
+  height: var(--R) !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  line-height: var(--R) !important;
+}
+
+/* Labels are half a row so label+input together = one full row */
+.dossier-mode label,
+.coc-mode label {
+  display: block;
+  line-height: calc(var(--R) * 0.75) !important;
+  margin-bottom: 0 !important;
+  font-size: 0.68em;
+  text-transform: uppercase;
+  letter-spacing: 0.10em;
+}
+
+/* Field groups snap to whole-row multiples */
+.dossier-mode .field-group,
+.coc-mode    .field-group {
+  margin-bottom: var(--R) !important;
+  padding-bottom: 0 !important;
+}
+
+/* Section subheadings (the small ALL CAPS dividers) — one full row */
+.dossier-mode [style*="letter-spacing:.05em"],
+.dossier-mode [style*="letter-spacing: .05em"],
+.coc-mode    [style*="letter-spacing:.05em"],
+.coc-mode    [style*="letter-spacing: .05em"] {
+  height: var(--R) !important;
+  line-height: var(--R) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex;
+  align-items: flex-end;
+}
+
+/* Textareas grow in whole-row steps */
+.dossier-mode textarea,
+.coc-mode textarea {
+  line-height: var(--R) !important;
+  padding-top: calc(var(--R) * 0.25) !important;
+  padding-bottom: calc(var(--R) * 0.25) !important;
+  min-height: calc(var(--R) * 2) !important;
 }
 
 /* ── Save status indicator ───────────────────────────── */
@@ -1661,15 +1725,15 @@ onMounted(() => {
    CoC 2026 — Investigative Ledger Skeuomorphic Standard
    ══════════════════════════════════════════════════════════════════════════ */
 
-/* Notebook grid lines on every sheet page */
+/* Notebook grid lines — exactly 32px to match --R row unit */
 .coc-mode .sheet-page {
   background-image:
     repeating-linear-gradient(
       0deg,
       transparent,
       transparent 31px,
-      var(--coc-line, rgba(74, 60, 40, 0.15)) 31px,
-      var(--coc-line, rgba(74, 60, 40, 0.15)) 32px
+      var(--coc-line, rgba(74, 60, 40, 0.18)) 31px,
+      var(--coc-line, rgba(74, 60, 40, 0.18)) 32px
     );
   background-attachment: local;
 }
