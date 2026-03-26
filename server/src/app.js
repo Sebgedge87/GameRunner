@@ -43,6 +43,7 @@ const vaultRoutes = require('./routes/vault');
 const xpRoutes = require('./routes/xp');
 const sharesRoutes = require('./routes/shares');
 const charactersRoutes = require('./routes/characters');
+const devAdminRoutes = require('./routes/devAdmin');
 
 const app = express();
 
@@ -118,6 +119,7 @@ app.use('/api/vault', vaultRoutes);
 app.use('/api/xp', xpRoutes);
 app.use('/api/shares', sharesRoutes);
 app.use('/api/characters', charactersRoutes);
+app.use('/api/dev-admin', devAdminRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', service: 'The Chronicle', timestamp: new Date().toISOString() });

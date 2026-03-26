@@ -119,6 +119,80 @@
             </div>
           </section>
 
+          <!-- ── User Management ── -->
+          <section v-if="activeSec === 'users'" class="dev-section">
+            <h2 class="dev-section-title">User Management</h2>
+            <p class="dev-section-desc">All registered accounts. Password resets invalidate existing sessions. Deletion is permanent and cannot be undone.</p>
+
+            <div class="dev-users-toolbar">
+              <button class="dev-btn dev-btn-sm" @click="loadUsers" :disabled="usersLoading">
+                {{ usersLoading ? 'Loading…' : '↻ Refresh' }}
+              </button>
+              <span v-if="usersError" class="dev-error-msg">{{ usersError }}</span>
+            </div>
+
+            <div v-if="usersLoading" class="dev-users-empty">Loading users…</div>
+            <div v-else-if="!users.length" class="dev-users-empty">No users found.</div>
+            <div v-else class="dev-users-table">
+              <div class="dev-users-header">
+                <span>ID</span>
+                <span>Username</span>
+                <span>Role</span>
+                <span>Character</span>
+                <span>2FA</span>
+                <span>Last seen</span>
+                <span>Actions</span>
+              </div>
+              <div v-for="u in users" :key="u.id" class="dev-user-row">
+                <span class="dev-user-id">#{{ u.id }}</span>
+                <span class="dev-user-name">{{ u.username }}</span>
+                <span :class="u.role === 'gm' ? 'tag-yes' : 'tag-no'">{{ u.role }}</span>
+                <span class="dev-user-char">{{ u.character_name || '—' }}</span>
+                <span :class="u.totp_enabled ? 'tag-yes' : 'tag-no'">{{ u.totp_enabled ? 'on' : 'off' }}</span>
+                <span class="dev-user-seen">{{ u.last_seen ? new Date(u.last_seen).toLocaleDateString() : 'never' }}</span>
+                <span class="dev-user-actions">
+                  <button class="dev-btn dev-btn-xs" @click="openPasswordReset(u)">Reset PW</button>
+                  <button class="dev-btn dev-btn-xs dev-btn-danger" @click="confirmDeleteUser(u)">Remove</button>
+                </span>
+              </div>
+            </div>
+
+            <!-- Password reset inline form -->
+            <div v-if="pwReset.userId" class="dev-pw-form">
+              <div class="dev-pw-form-title">Reset password for <strong>{{ pwReset.username }}</strong></div>
+              <div class="dev-pw-row">
+                <input
+                  v-model="pwReset.password"
+                  type="password"
+                  class="dev-input"
+                  placeholder="New password (min 6 chars)"
+                  @keyup.enter="submitPasswordReset"
+                />
+                <button class="dev-btn dev-btn-primary dev-btn-sm" @click="submitPasswordReset" :disabled="pwReset.busy">
+                  {{ pwReset.busy ? 'Saving…' : 'Set Password' }}
+                </button>
+                <button class="dev-btn dev-btn-ghost dev-btn-sm" @click="pwReset.userId = null">Cancel</button>
+              </div>
+              <div v-if="pwReset.error" class="dev-error-msg">{{ pwReset.error }}</div>
+              <div v-if="pwReset.success" class="dev-saved-badge">✓ Password updated — sessions invalidated</div>
+            </div>
+
+            <!-- Delete confirmation -->
+            <div v-if="deleteConfirm.userId" class="dev-confirm-overlay">
+              <div class="dev-confirm-box">
+                <div class="dev-confirm-title">Remove user <strong>{{ deleteConfirm.username }}</strong>?</div>
+                <div class="dev-confirm-desc">This permanently deletes the account and all associated data. Cannot be undone.</div>
+                <div class="dev-confirm-actions">
+                  <button class="dev-btn dev-btn-danger" @click="submitDeleteUser" :disabled="deleteConfirm.busy">
+                    {{ deleteConfirm.busy ? 'Removing…' : 'Yes, remove' }}
+                  </button>
+                  <button class="dev-btn dev-btn-ghost" @click="deleteConfirm.userId = null">Cancel</button>
+                </div>
+                <div v-if="deleteConfirm.error" class="dev-error-msg">{{ deleteConfirm.error }}</div>
+              </div>
+            </div>
+          </section>
+
           <!-- ── Route Audit ── -->
           <section v-if="activeSec === 'routes'" class="dev-section">
             <h2 class="dev-section-title">Route Access Audit</h2>
@@ -159,7 +233,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 
 // ── Auth gate — isolated from main application auth ──────────────────────────
 // NOTE: Credentials are intentionally hardcoded for a local developer-only tool.
@@ -340,10 +414,89 @@ const routeAudit = [
 const sections = [
   { id: 'assets',  label: 'Immersion Assets', icon: '🖼' },
   { id: 'vars',    label: 'CSS Variables',    icon: '🎨' },
+  { id: 'users',   label: 'User Management',  icon: '👤' },
   { id: 'routes',  label: 'Route Audit',      icon: '🔒' },
   { id: 'session', label: 'Session Info',     icon: '🔑' },
 ]
 const activeSec = ref('assets')
+
+// ── User management ───────────────────────────────────────────────────────────
+const DEV_API_KEY = 'dev-chronicle-admin-Akthos12'
+const users = ref([])
+const usersLoading = ref(false)
+const usersError = ref('')
+
+async function devFetch(path, options = {}) {
+  const r = await fetch(path, {
+    ...options,
+    headers: { 'Content-Type': 'application/json', 'X-Dev-Key': DEV_API_KEY, ...(options.headers || {}) },
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  })
+  if (!r.ok) {
+    const d = await r.json().catch(() => ({}))
+    throw new Error(d.error || `HTTP ${r.status}`)
+  }
+  return r.json()
+}
+
+async function loadUsers() {
+  usersLoading.value = true
+  usersError.value = ''
+  try {
+    const d = await devFetch('/api/dev-admin/users')
+    users.value = d.users
+  } catch (e) {
+    usersError.value = e.message
+  } finally {
+    usersLoading.value = false
+  }
+}
+
+// Password reset
+const pwReset = reactive({ userId: null, username: '', password: '', busy: false, error: '', success: false })
+
+function openPasswordReset(u) {
+  Object.assign(pwReset, { userId: u.id, username: u.username, password: '', busy: false, error: '', success: false })
+  deleteConfirm.userId = null
+}
+
+async function submitPasswordReset() {
+  if (!pwReset.password || pwReset.password.length < 6) { pwReset.error = 'Password must be at least 6 characters'; return }
+  pwReset.busy = true; pwReset.error = ''; pwReset.success = false
+  try {
+    await devFetch(`/api/dev-admin/users/${pwReset.userId}/password`, { method: 'PUT', body: { password: pwReset.password } })
+    pwReset.success = true
+    pwReset.password = ''
+    setTimeout(() => { pwReset.userId = null }, 2000)
+  } catch (e) {
+    pwReset.error = e.message
+  } finally {
+    pwReset.busy = false
+  }
+}
+
+// Delete user
+const deleteConfirm = reactive({ userId: null, username: '', busy: false, error: '' })
+
+function confirmDeleteUser(u) {
+  Object.assign(deleteConfirm, { userId: u.id, username: u.username, busy: false, error: '' })
+  pwReset.userId = null
+}
+
+async function submitDeleteUser() {
+  deleteConfirm.busy = true; deleteConfirm.error = ''
+  try {
+    await devFetch(`/api/dev-admin/users/${deleteConfirm.userId}`, { method: 'DELETE' })
+    users.value = users.value.filter(u => u.id !== deleteConfirm.userId)
+    deleteConfirm.userId = null
+  } catch (e) {
+    deleteConfirm.error = e.message
+    deleteConfirm.busy = false
+  }
+}
+
+// Auto-load users when switching to that section
+watch(activeSec, (sec) => { if (sec === 'users' && !users.value.length) loadUsers() })
 
 onMounted(() => {
   checkSession()
@@ -579,5 +732,112 @@ onMounted(() => {
   font-size: 10px;
   color: #4c9c5c;
   letter-spacing: 0.08em;
+}
+
+/* ── User management ───────────────────────────────────────────────────── */
+.dev-users-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.dev-error-msg {
+  font-size: 11px;
+  color: #c94c4c;
+  letter-spacing: 0.05em;
+}
+.dev-users-empty {
+  font-size: 11px;
+  color: #3a6080;
+  padding: 16px 0;
+}
+.dev-users-table {
+  border: 1px solid #1a2530;
+  margin-bottom: 20px;
+}
+.dev-users-header {
+  display: grid;
+  grid-template-columns: 40px 140px 60px 140px 40px 100px 1fr;
+  gap: 0;
+  padding: 7px 12px;
+  background: #0c1016;
+  color: #3a6080;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-bottom: 1px solid #1a2530;
+}
+.dev-user-row {
+  display: grid;
+  grid-template-columns: 40px 140px 60px 140px 40px 100px 1fr;
+  gap: 0;
+  padding: 8px 12px;
+  border-bottom: 1px solid #0e1520;
+  font-size: 11px;
+  align-items: center;
+}
+.dev-user-row:last-child { border-bottom: none; }
+.dev-user-row:hover { background: rgba(74,122,170,0.04); }
+.dev-user-id   { color: #2a5060; }
+.dev-user-name { color: #8aaac0; font-weight: 600; }
+.dev-user-char { color: #4a7080; }
+.dev-user-seen { color: #3a5060; }
+.dev-user-actions { display: flex; gap: 6px; }
+
+/* Password reset form */
+.dev-pw-form {
+  background: #0c1016;
+  border: 1px solid #2a4060;
+  border-left: 2px solid #4a7aaa;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.dev-pw-form-title {
+  font-size: 11px;
+  color: #5a8aaa;
+  margin-bottom: 10px;
+}
+.dev-pw-form-title strong { color: #8ab0d0; }
+.dev-pw-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.dev-pw-row .dev-input { flex: 1; }
+
+/* Delete confirmation */
+.dev-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.dev-confirm-box {
+  background: #0f1318;
+  border: 1px solid #602020;
+  border-top: 2px solid #c94c4c;
+  padding: 28px 32px;
+  max-width: 400px;
+  width: 100%;
+}
+.dev-confirm-title {
+  font-size: 13px;
+  color: #d08080;
+  margin-bottom: 10px;
+}
+.dev-confirm-title strong { color: #e0a0a0; }
+.dev-confirm-desc {
+  font-size: 11px;
+  color: #5a4040;
+  line-height: 1.6;
+  margin-bottom: 18px;
+}
+.dev-confirm-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 </style>
