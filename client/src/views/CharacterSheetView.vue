@@ -971,19 +971,21 @@ onMounted(() => {
   font-family: 'Courier Prime', 'Courier New', monospace;
   color: var(--ink);
   min-height: 100vh;
-  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
   box-sizing: border-box;
 }
 
 /* ── Tab bar — sits above the document box ──────────────────────────── */
 .doc-tabs-bar {
-  max-width: 1200px;
-  margin: 0 auto;
+  max-width: 100%;
+  margin: 0;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 8px;
-  padding: 0 2px;
+  padding: 12px 12px 0;
 }
 
 .doc-tabs {
@@ -1049,8 +1051,9 @@ onMounted(() => {
 
 /* ── Document box — aged paper with offset shadow ───────────────────── */
 .document-box {
-  max-width: 1200px;
-  margin: 0 auto;
+  flex: 1;
+  max-width: 100%;
+  margin: 0;
   background: var(--paper);
   border: 1px solid var(--border-ink);
   box-shadow: 4px 4px 0 #b8a87a, 8px 8px 0 #a09060;
@@ -1296,6 +1299,8 @@ textarea.form-input { resize: vertical; }
 @media (max-width: 600px) {
   .edit-grid { grid-template-columns: 1fr; }
   .beyond-banner { flex-direction: column; align-items: flex-start; }
+  .document-box { margin: 0; }
+  .doc-tabs-bar { padding: 8px 0 0; }
 }
 
 /* ── CoC skill edit grid ─────────────────────────────── */
