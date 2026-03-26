@@ -2013,8 +2013,6 @@ textarea.form-input { resize: vertical; }
   background: #e7e2d6 !important;
   color: #2a2a2a;
   font-family: Georgia, 'Times New Roman', serif;
-  padding: 16px 24px !important;
-  min-height: 100vh;
   box-sizing: border-box;
 }
 
