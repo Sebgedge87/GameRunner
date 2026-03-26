@@ -1422,118 +1422,54 @@ onMounted(() => {
   overflow: hidden;
 }
 
-/* ── Page flip transition ────────────────────────────────────────────────
- * Improvements over a plain rotateY:
- *  1. perspective() applied per-transform (consistent regardless of container width)
- *  2. ::after gradient overlay sweeps a fold shadow across the leaving page
- *  3. blur() at deep angles — text softens as page disappears "behind" the spine
- *  4. will-change triggers GPU compositing layer
- *  5. Unfold overshoots to +5° then settles — natural paper spring
- *  6. Elevation box-shadow rises at mid-fold (page lifts off the surface)
+/* ── Page slide transition ──────────────────────────────────────────────
+ * Pages slide horizontally like physical document pages being moved across
+ * a desk. The leaving page exits in the direction of travel; the incoming
+ * page enters from the opposite side.
  * ──────────────────────────────────────────────────────────────────────── */
 
-/* GPU layer hint for both active pages */
+/* GPU layer hint — both pages during transition */
 .flip-forward-leave-active,  .flip-forward-enter-active,
 .flip-backward-leave-active, .flip-backward-enter-active {
-  will-change: transform, filter;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+  will-change: transform, opacity;
 }
 
-/* ── Forward (→): spine on left ──────────────────────────── */
+/* ── Forward (→): current slides left, next slides in from right ── */
 .flip-forward-leave-active {
   position: absolute; width: 100%; top: 0; left: 0; z-index: 2;
-  transform-origin: left center;
-  animation: foldLeft 0.48s cubic-bezier(0.6, 0, 0.85, 0.45) forwards;
+  animation: slideOutLeft 0.28s ease-in forwards;
 }
 .flip-forward-enter-active {
   z-index: 1;
-  transform-origin: left center;
-  animation: unfoldLeft 0.42s 0.34s cubic-bezier(0.15, 0.8, 0.35, 1) both;
+  animation: slideInRight 0.28s ease-out both;
 }
 
-/* Fold-shadow gradient: sweeps from the far (right) edge toward the spine */
-.flip-forward-leave-active::after {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(to left, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 60%);
-  pointer-events: none;
-  animation: shadowForward 0.48s cubic-bezier(0.6, 0, 0.85, 0.45) forwards;
-  z-index: 10;
-}
-@keyframes shadowForward {
-  0%   { opacity: 0; }
-  45%  { opacity: 1; }
-  100% { opacity: 0.6; }
-}
-
-/* ── Backward (←): spine on right ───────────────────────── */
+/* ── Backward (←): current slides right, prev slides in from left ── */
 .flip-backward-leave-active {
   position: absolute; width: 100%; top: 0; left: 0; z-index: 2;
-  transform-origin: right center;
-  animation: foldRight 0.48s cubic-bezier(0.6, 0, 0.85, 0.45) forwards;
+  animation: slideOutRight 0.28s ease-in forwards;
 }
 .flip-backward-enter-active {
   z-index: 1;
-  transform-origin: right center;
-  animation: unfoldRight 0.42s 0.34s cubic-bezier(0.15, 0.8, 0.35, 1) both;
+  animation: slideInLeft 0.28s ease-out both;
 }
 
-.flip-backward-leave-active::after {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(to right, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 60%);
-  pointer-events: none;
-  animation: shadowBackward 0.48s cubic-bezier(0.6, 0, 0.85, 0.45) forwards;
-  z-index: 10;
+/* ── Keyframes ─────────────────────────────────────────────────── */
+@keyframes slideOutLeft {
+  from { transform: translateX(0);     opacity: 1; }
+  to   { transform: translateX(-100%); opacity: 0.3; }
 }
-@keyframes shadowBackward {
-  0%   { opacity: 0; }
-  45%  { opacity: 1; }
-  100% { opacity: 0.6; }
+@keyframes slideInRight {
+  from { transform: translateX(100%);  opacity: 0.3; }
+  to   { transform: translateX(0);     opacity: 1; }
 }
-
-/* ── Keyframes ───────────────────────────────────────── */
-@keyframes foldLeft {
-  0%   { transform: perspective(1200px) rotateY(0deg);
-         filter: brightness(1);    box-shadow: 0 2px 0 rgba(0,0,0,0); }
-  20%  { transform: perspective(1200px) rotateY(-22deg);
-         filter: brightness(0.92); box-shadow: 0 8px 24px rgba(0,0,0,0.28); }
-  60%  { transform: perspective(1200px) rotateY(-62deg);
-         filter: brightness(0.5) blur(1.5px); box-shadow: 0 14px 32px rgba(0,0,0,0.18); }
-  100% { transform: perspective(1200px) rotateY(-90deg);
-         filter: brightness(0.12) blur(4px); box-shadow: none; }
+@keyframes slideOutRight {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(100%); opacity: 0.3; }
 }
-@keyframes unfoldLeft {
-  0%   { transform: perspective(1200px) rotateY(-90deg);
-         filter: brightness(0.12); }
-  55%  { transform: perspective(1200px) rotateY(-12deg);
-         filter: brightness(0.9); }
-  80%  { transform: perspective(1200px) rotateY(4deg);    /* spring overshoot */
-         filter: brightness(1.02); }
-  100% { transform: perspective(1200px) rotateY(0deg);
-         filter: brightness(1); }
-}
-
-@keyframes foldRight {
-  0%   { transform: perspective(1200px) rotateY(0deg);
-         filter: brightness(1);    box-shadow: 0 2px 0 rgba(0,0,0,0); }
-  20%  { transform: perspective(1200px) rotateY(22deg);
-         filter: brightness(0.92); box-shadow: 0 8px 24px rgba(0,0,0,0.28); }
-  60%  { transform: perspective(1200px) rotateY(62deg);
-         filter: brightness(0.5) blur(1.5px); box-shadow: 0 14px 32px rgba(0,0,0,0.18); }
-  100% { transform: perspective(1200px) rotateY(90deg);
-         filter: brightness(0.12) blur(4px); box-shadow: none; }
-}
-@keyframes unfoldRight {
-  0%   { transform: perspective(1200px) rotateY(90deg);
-         filter: brightness(0.12); }
-  55%  { transform: perspective(1200px) rotateY(12deg);
-         filter: brightness(0.9); }
-  80%  { transform: perspective(1200px) rotateY(-4deg);   /* spring overshoot */
-         filter: brightness(1.02); }
-  100% { transform: perspective(1200px) rotateY(0deg);
-         filter: brightness(1); }
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); opacity: 0.3; }
+  to   { transform: translateX(0);     opacity: 1; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -1696,27 +1632,24 @@ onMounted(() => {
 .dossier-mode .sheet-save-indicator.saving { color: var(--dos-sepia) !important; }
 .dossier-mode .sheet-save-indicator.error  { color: var(--dos-stamp) !important; }
 
-/* ── Ledger row-grid alignment: 32px atomic unit ─────────────────────── */
+/* ── Ledger row-grid alignment: 32px atomic unit (dossier only) ──────── */
 /*
  * Each field occupies EXACTLY one ruled line (32px):
  *   label (uppercase, left ~42%) + input (right, fills remaining) = 32px row
  * No margin between consecutive fields — they stack flush on the lines.
  * Section subheadings use one blank row (32px) as a visual separator.
  */
-.dossier-mode,
-.coc-mode {
+.dossier-mode {
   --R: 32px;
 }
 
 /* All box-sizing inherited */
-.dossier-mode .sheet-page *,
-.coc-mode    .sheet-page * {
+.dossier-mode .sheet-page * {
   box-sizing: border-box;
 }
 
 /* Field group = one horizontal ruled row */
-.dossier-mode .field-group,
-.coc-mode    .field-group {
+.dossier-mode .field-group {
   display: flex !important;
   flex-direction: row !important;
   align-items: center !important;
@@ -1727,8 +1660,7 @@ onMounted(() => {
 }
 
 /* Label: left 42%, uppercase, vertically centred, no wrap */
-.dossier-mode .field-group > label,
-.coc-mode    .field-group > label {
+.dossier-mode .field-group > label {
   flex: 0 0 42%;
   max-width: 42%;
   height: var(--R);
@@ -1746,9 +1678,7 @@ onMounted(() => {
 
 /* Input / select: fills the right side, exactly one row tall */
 .dossier-mode input,
-.dossier-mode select,
-.coc-mode    input,
-.coc-mode    select {
+.dossier-mode select {
   height: var(--R) !important;
   line-height: var(--R) !important;
   padding-top: 0 !important;
@@ -1757,8 +1687,7 @@ onMounted(() => {
 }
 
 /* Textareas: grow in 32px steps */
-.dossier-mode textarea,
-.coc-mode    textarea {
+.dossier-mode textarea {
   line-height: var(--R) !important;
   padding: calc(var(--R) * 0.25) 4px !important;
   min-height: calc(var(--R) * 2) !important;
@@ -1766,9 +1695,7 @@ onMounted(() => {
 
 /* Section subheadings — one full 32px row, flush margins */
 .dossier-mode [style*="letter-spacing:.05em"],
-.dossier-mode [style*="letter-spacing: .05em"],
-.coc-mode    [style*="letter-spacing:.05em"],
-.coc-mode    [style*="letter-spacing: .05em"] {
+.dossier-mode [style*="letter-spacing: .05em"] {
   height: var(--R) !important;
   line-height: var(--R) !important;
   margin: 0 !important;
@@ -1777,8 +1704,7 @@ onMounted(() => {
   align-items: flex-end !important;
 }
 /* Also target margin-top/bottom inline styles on section headers */
-.dossier-mode [style*="margin:16px 0"],
-.coc-mode    [style*="margin:16px 0"] {
+.dossier-mode [style*="margin:16px 0"] {
   margin: 0 !important;
   height: var(--R) !important;
   line-height: var(--R) !important;
@@ -1787,44 +1713,29 @@ onMounted(() => {
 }
 
 /* edit-stats-grid: stat label sits left, wider label area for short stat names */
-.dossier-mode .edit-stats-grid .field-group > label,
-.coc-mode    .edit-stats-grid .field-group > label {
+.dossier-mode .edit-stats-grid .field-group > label {
   flex: 0 0 55%;
   max-width: 55%;
 }
 
 /* Collapse grid row gaps so rows sit flush on the ruled lines */
 .dossier-mode .edit-grid,
-.dossier-mode .edit-stats-grid,
-.coc-mode    .edit-grid,
-.coc-mode    .edit-stats-grid {
+.dossier-mode .edit-stats-grid {
   row-gap: 0 !important;
 }
 
 /* Remove number-input spinners — they inflate row height above 32px */
-.dossier-mode input[type="number"],
-.coc-mode    input[type="number"] {
+.dossier-mode input[type="number"] {
   -moz-appearance: textfield;
 }
 .dossier-mode input[type="number"]::-webkit-inner-spin-button,
-.dossier-mode input[type="number"]::-webkit-outer-spin-button,
-.coc-mode    input[type="number"]::-webkit-inner-spin-button,
-.coc-mode    input[type="number"]::-webkit-outer-spin-button {
+.dossier-mode input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-/* Skill rows in CoC: let them inherit text colour instead of using accent */
-.coc-mode .coc-view-hard,
-.coc-mode .coc-view-extreme,
-.coc-mode .coc-view-base,
-.coc-mode .coc-skill-base {
-  color: inherit !important;
-}
-
 /* Checkboxes: restore normal inline layout (not flex-row stretch) */
-.dossier-mode .condition-check,
-.coc-mode    .condition-check {
+.dossier-mode .condition-check {
   display: inline-flex !important;
   flex-direction: row !important;
   align-items: center !important;
@@ -1853,54 +1764,72 @@ onMounted(() => {
 .sheet-save-indicator.error  { color: #e74c3c; }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   CoC 2026 — Investigative Ledger Skeuomorphic Standard
+   CoC — Self-Contained Paper Document
+   All colours hardcoded. No CSS custom property inheritance from the app theme.
    ══════════════════════════════════════════════════════════════════════════ */
 
-/* ── CoC mode: override theme variables → aged cream ledger paper ──── */
+/* ── Surround: dark charcoal environment ─────────────────────────────── */
 .coc-mode {
-  /* Remap dark theme tokens → light paper */
-  --bg:       #eee8d8;
-  --bg2:      #e4dcc8;
-  --bg3:      #d8cfbc;
-  --surface:  transparent;
-  --surface2: transparent;
-  --border:   rgba(74, 60, 40, 0.22);
-  --border2:  rgba(74, 60, 40, 0.40);
-  --text:     #0f141a;
-  --text2:    #2c2418;
-  --text3:    #5c3d18;
-  --accent:   #6a4c1a;
-  --accent2:  #8a6c2a;
-  --input-bg: transparent;
-  --hover-glow: none;
-  /* CoC ledger tokens */
-  --coc-ink:      #0f141a;
-  --coc-sepia:    #5c3d18;
-  --coc-graphite: #3a3228;
-  --coc-line:     rgba(74, 60, 40, 0.18);
-  --coc-tab-bg:   #f0ddb0;
-  --coc-moss:     #3a5c18;
-  --coc-blood:    #7a1a10;
-  background: #e4dcc8 !important;
-  color: #0f141a;
-  font-family: 'Special Elite', 'Crimson Pro', Georgia, serif;
+  background: #1c1a14 !important;
+  color: #1a1005;
+  font-family: 'Courier New', 'Special Elite', monospace;
+  padding: 24px 16px !important;
+  min-height: 100vh;
+  box-sizing: border-box;
 }
 
-/* Sheet page — cream with 32px notebook lines */
+/* ── Unified paper card: header + tabs + page all share one cream surface ── */
+.coc-mode .page-header {
+  background: #d4c89a !important;
+  border: 1px solid rgba(60, 40, 10, 0.45) !important;
+  border-bottom: none !important;
+  border-radius: 4px 4px 0 0 !important;
+  margin: 0 !important;
+  padding: 16px 20px 12px !important;
+  box-shadow: none !important;
+}
+
+.coc-mode .dossier-page-nav {
+  background: #cfc39a !important;
+  border-left: 1px solid rgba(60, 40, 10, 0.45) !important;
+  border-right: 1px solid rgba(60, 40, 10, 0.45) !important;
+  border-bottom: none !important;
+  margin: 0 !important;
+  padding: 0 12px !important;
+}
+
+.coc-mode .sheet-page-wrap {
+  background: #d4c89a !important;
+  border: 1px solid rgba(60, 40, 10, 0.45) !important;
+  border-top: none !important;
+  border-radius: 0 0 4px 4px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.55), 0 2px 6px rgba(0,0,0,0.35) !important;
+}
+
+/* ── Sheet page — cream with 36px ruled lines ─────────────────────── */
 .coc-mode .sheet-page {
-  background-color: var(--bg) !important;
+  background-color: #d4c89a !important;
   background-image: repeating-linear-gradient(
     0deg,
     transparent,
-    transparent 31px,
-    var(--coc-line) 31px,
-    var(--coc-line) 32px
+    transparent 35px,
+    rgba(60, 40, 10, 0.18) 35px,
+    rgba(60, 40, 10, 0.18) 36px
   ) !important;
   background-attachment: local !important;
-  color: var(--coc-ink);
+  color: #1a1005;
+  font-family: 'Courier New', 'Special Elite', monospace;
+  padding: 20px 28px;
 }
 
-/* All cards: transparent, no box */
+/* ── All box-sizing ─────────────────────────────────────────────────── */
+.coc-mode .sheet-page * {
+  box-sizing: border-box;
+}
+
+/* ── All cards: transparent, no box ──────────────────────────────── */
 .coc-mode .card,
 .coc-mode .sheet-header-card,
 .coc-mode .beyond-banner,
@@ -1911,101 +1840,254 @@ onMounted(() => {
   box-shadow: none !important;
 }
 
-/* Stat boxes — ruled-line bottom only */
+/* ── Stat boxes — bottom rule only ──────────────────────────────── */
 .coc-mode .stat-box {
   background: transparent !important;
   border: none !important;
-  border-bottom: 1px solid var(--coc-line) !important;
+  border-bottom: 1px solid rgba(60, 40, 10, 0.22) !important;
   border-radius: 0 !important;
 }
 
-/* Inputs / selects — fountain pen on form lines */
+/* ── Ledger alignment: 36px rows (more breathing room) ────────────── */
+.coc-mode {
+  --R: 36px;
+}
+
+.coc-mode .field-group {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  min-height: var(--R);
+  margin: 0 !important;
+  padding: 0 2px !important;
+  gap: 10px;
+  border-bottom: 1px solid rgba(60, 40, 10, 0.12);
+}
+
+.coc-mode .field-group > label {
+  flex: 0 0 38%;
+  max-width: 38%;
+  height: var(--R);
+  line-height: var(--R) !important;
+  display: flex !important;
+  align-items: center !important;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 0.72em !important;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #5c3d18 !important;
+  font-family: 'Courier New', monospace !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-weight: 600;
+}
+
+.coc-mode .edit-stats-grid .field-group > label {
+  flex: 0 0 55%;
+  max-width: 55%;
+}
+
+.coc-mode .edit-grid,
+.coc-mode .edit-stats-grid {
+  row-gap: 0 !important;
+}
+
+.coc-mode [style*="letter-spacing:.05em"],
+.coc-mode [style*="letter-spacing: .05em"] {
+  height: calc(var(--R) * 1.2) !important;
+  line-height: calc(var(--R) * 1.2) !important;
+  margin-top: 8px !important;
+  margin-bottom: 0 !important;
+  padding: 0 2px !important;
+  display: flex !important;
+  align-items: flex-end !important;
+  font-size: 0.68em !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.20em !important;
+  color: #3a2408 !important;
+  border-bottom: 1px solid rgba(60, 40, 10, 0.35) !important;
+  font-weight: 700 !important;
+}
+.coc-mode [style*="margin:16px 0"] {
+  margin-top: 8px !important;
+  margin-bottom: 0 !important;
+  height: calc(var(--R) * 1.2) !important;
+  line-height: calc(var(--R) * 1.2) !important;
+  display: flex !important;
+  align-items: flex-end !important;
+}
+
+/* ── Inputs / selects: typewriter on ruled lines ─────────────────── */
 .coc-mode input,
 .coc-mode select {
   background: transparent !important;
   border: none !important;
-  border-bottom: 1px solid var(--coc-line) !important;
   border-radius: 0 !important;
   box-shadow: none !important;
-  color: var(--coc-ink) !important;
-  font-family: 'Special Elite', 'Crimson Pro', Georgia, serif !important;
-  padding-left: 2px !important;
+  color: #1a1005 !important;
+  font-family: 'Courier New', monospace !important;
+  font-size: 0.92em !important;
+  padding-left: 4px !important;
+  height: var(--R) !important;
+  line-height: var(--R) !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  flex: 1;
 }
 .coc-mode textarea {
   background: transparent !important;
-  border: 1px solid var(--coc-line) !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(60, 40, 10, 0.25) !important;
   border-radius: 0 !important;
   box-shadow: none !important;
-  color: var(--coc-ink) !important;
-  font-family: 'Special Elite', 'Crimson Pro', Georgia, serif !important;
+  color: #1a1005 !important;
+  font-family: 'Courier New', monospace !important;
+  font-size: 0.92em !important;
+  line-height: var(--R) !important;
+  padding: 4px !important;
+  min-height: calc(var(--R) * 2) !important;
+  width: 100% !important;
 }
 .coc-mode input:focus,
 .coc-mode textarea:focus,
 .coc-mode select:focus {
-  border-bottom-color: var(--coc-graphite) !important;
+  border-bottom-color: rgba(60, 40, 10, 0.55) !important;
   outline: none !important;
   box-shadow: none !important;
 }
 .coc-mode input::placeholder,
-.coc-mode textarea::placeholder { color: rgba(74, 60, 40, 0.30) !important; }
+.coc-mode textarea::placeholder { color: rgba(60, 40, 10, 0.30) !important; }
 
-/* Skill rows */
+/* Remove number-input spinners */
+.coc-mode input[type="number"] {
+  -moz-appearance: textfield;
+}
+.coc-mode input[type="number"]::-webkit-inner-spin-button,
+.coc-mode input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* ── Checkboxes ─────────────────────────────────────────────────── */
+.coc-mode .condition-check {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  min-height: unset !important;
+  height: auto !important;
+  gap: 5px;
+  font-size: 0.82em;
+  color: #1a1005 !important;
+}
+
+/* ── Skill rows ─────────────────────────────────────────────────── */
 .coc-mode .coc-view-row,
 .coc-mode .coc-skill-row {
-  border-bottom: 1px solid var(--coc-line) !important;
+  border-bottom: 1px solid rgba(60, 40, 10, 0.20) !important;
+  color: #1a1005 !important;
+}
+.coc-mode .coc-view-hard,
+.coc-mode .coc-view-extreme,
+.coc-mode .coc-view-base,
+.coc-mode .coc-skill-base {
+  color: #3a2408 !important;
 }
 .coc-mode .coc-raised .coc-view-val {
-  color: var(--coc-graphite) !important;
+  color: #1a1005 !important;
   font-weight: 700;
   text-decoration: underline;
-  text-decoration-color: var(--coc-sepia);
+  text-decoration-color: #3a2408;
   text-underline-offset: 3px;
 }
 
-/* Page nav — ledger tabs */
+/* ── Section headers ─────────────────────────────────────────────── */
+.coc-mode .acht-card-header {
+  color: #3a2408 !important;
+  border-bottom: 1px solid rgba(60, 40, 10, 0.25) !important;
+  font-family: 'Courier New', monospace !important;
+  letter-spacing: 0.18em;
+}
+
+/* ── Page nav — ledger tabs ──────────────────────────────────────── */
 .coc-mode .dossier-page-tab {
-  background: var(--coc-tab-bg) !important;
-  border-color: rgba(74, 60, 40, 0.35) !important;
-  color: var(--coc-sepia) !important;
-  font-family: 'Special Elite', 'Crimson Pro', Georgia, serif !important;
+  background: #c8bc8e !important;
+  border-color: rgba(60, 40, 10, 0.35) !important;
+  color: #3a2408 !important;
+  font-family: 'Courier New', monospace !important;
 }
-.coc-mode .dossier-page-tab::after { background: var(--coc-tab-bg) !important; }
+.coc-mode .dossier-page-tab::after { background: #c8bc8e !important; }
 .coc-mode .dossier-page-tab.active {
-  background: var(--bg) !important;
-  border-color: var(--coc-blood) !important;
-  color: var(--coc-blood) !important;
+  background: #d4c89a !important;
+  border-color: #7a1a10 !important;
+  color: #7a1a10 !important;
 }
-.coc-mode .dossier-page-tab.active::after { background: var(--bg) !important; }
+.coc-mode .dossier-page-tab.active::after { background: #d4c89a !important; }
 .coc-mode .dossier-nav-btn {
-  background: var(--coc-tab-bg) !important;
-  border-color: rgba(74, 60, 40, 0.35) !important;
-  color: var(--coc-sepia) !important;
+  background: #c8bc8e !important;
+  border-color: rgba(60, 40, 10, 0.35) !important;
+  color: #3a2408 !important;
   box-shadow: none !important;
 }
 .coc-mode .dossier-nav-btn:hover:not(:disabled) {
-  border-color: var(--coc-blood) !important;
-  color: var(--coc-blood) !important;
+  border-color: #7a1a10 !important;
+  color: #7a1a10 !important;
 }
 
-/* Page title */
+/* ── Page title — typewriter stamp ──────────────────────────────── */
 .coc-mode .page-title {
-  color: var(--coc-ink) !important;
-  font-family: 'Cinzel', Georgia, serif !important;
+  color: #1a1005 !important;
+  font-family: 'Courier New', monospace !important;
+  font-size: 1.5em !important;
+  font-weight: 900 !important;
   letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1.1;
 }
-.coc-mode .page-title::after { background: var(--coc-sepia) !important; opacity: 0.35; }
-.coc-mode .back-link { color: var(--coc-blood) !important; }
+.coc-mode .page-title::after { display: none !important; }
+.coc-mode .back-link {
+  color: #7a1a10 !important;
+  font-family: 'Courier New', monospace !important;
+  font-size: 0.75em !important;
+  letter-spacing: 0.05em;
+}
 
-/* Save indicator */
+/* ── Investigator subheading line below title ─────────────────── */
+.coc-mode .page-header::after {
+  content: 'CALL OF CTHULHU — INVESTIGATOR SHEET';
+  display: block;
+  font-family: 'Courier New', monospace;
+  font-size: 0.65em;
+  letter-spacing: 0.22em;
+  color: #7a5c2a;
+  margin-top: 4px;
+  text-transform: uppercase;
+}
+
+/* ── Base text within the paper ─────────────────────────────────── */
+.coc-mode .sheet-page {
+  color: #1a1005;
+  font-family: 'Courier New', monospace;
+  font-size: 0.92em;
+  line-height: 1;
+}
+
+/* ── Tooltips on the paper ───────────────────────────────────────── */
+.coc-mode .field-help::after {
+  background: #2a1a08 !important;
+  color: #d4c89a !important;
+}
+
+/* ── Save indicator ─────────────────────────────────────────────── */
 .coc-mode .sheet-save-indicator {
-  font-family: 'Special Elite', Georgia, serif !important;
+  font-family: 'Courier New', monospace !important;
   letter-spacing: 0.08em !important;
 }
-.coc-mode .sheet-save-indicator.saving { color: var(--coc-graphite) !important; }
-.coc-mode .sheet-save-indicator.saved  { color: var(--coc-moss) !important; }
-.coc-mode .sheet-save-indicator.error  { color: var(--coc-blood) !important; }
+.coc-mode .sheet-save-indicator.saving { color: #3a2408 !important; }
+.coc-mode .sheet-save-indicator.saved  { color: #3a5c18 !important; }
+.coc-mode .sheet-save-indicator.error  { color: #7a1a10 !important; }
 
-/* ── Mythos glow ── */
+/* ── Mythos glow ─────────────────────────────────────────────────── */
 .mythos-glow { animation: mythos-pulse 3.5s ease-in-out infinite; }
 @keyframes mythos-pulse {
   0%, 100% { text-shadow: none; opacity: 1; }
