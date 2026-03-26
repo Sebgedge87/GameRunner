@@ -1470,170 +1470,165 @@ onMounted(() => {
   100% { transform: rotateY(0deg); }
 }
 
-/* ── WW2 Dossier / Achtung! Cthulhu mode ─────────────────────────── */
-/*
- * Palette:
- *   Paper bg:  #e8d5a3  (warm manila)
- *   Card bg:   #d4be87  (aged tan)
- *   Dark card: #c4a96a  (deeper tan crease)
- *   Text:      #1a0d04  (near-black ink)
- *   Muted txt: #5a3e22  (dark sepia)
- *   Border:    #8b6210  (dark golden-brown)
- *   Stamp red: #8b1a1a  (military stamp)
- */
+/* ══════════════════════════════════════════════════════════════════════════
+   WW2 Dossier — Achtung! Cthulhu / CoC shared light-paper foundation
+   ══════════════════════════════════════════════════════════════════════════
+   STRATEGY: override ALL CSS custom properties at the mode root.
+   Every child element using var(--text), var(--surface), var(--border), etc.
+   automatically picks up the correct light-paper colours.
+   ══════════════════════════════════════════════════════════════════════════ */
 
-/* Page background — aged manila paper */
+/* ── Dossier (Achtung!) ── aged manila military document ─────────────── */
 .dossier-mode {
-  background: #d9c48a;
-  --dossier-paper:   #e8d5a3;
-  --dossier-card:    #d4be87;
-  --dossier-deep:    #c4a96a;
-  --dossier-ink:     #1a0d04;
-  --dossier-sepia:   #5a3e22;
-  --dossier-border:  #8b6210;
-  --dossier-stamp:   #8b1a1a;
+  /* Remap theme tokens → light-paper equivalents */
+  --bg:       #e8d5a3;
+  --bg2:      #dcc88a;
+  --bg3:      #d0bc76;
+  --surface:  transparent;
+  --surface2: transparent;
+  --border:   rgba(90, 55, 10, 0.22);
+  --border2:  rgba(90, 55, 10, 0.40);
+  --text:     #1a0d04;
+  --text2:    #3d2008;
+  --text3:    #6a4418;
+  --accent:   #8b1a1a;
+  --accent2:  #a82222;
+  --accent-yellow: #5a3e22;
+  --input-bg: transparent;
+  --hover-glow: none;
+  /* Local palette shorthand */
+  --dos-paper: #e8d5a3;
+  --dos-ink:   #1a0d04;
+  --dos-sepia: #4a2c08;
+  --dos-rule:  rgba(90, 55, 10, 0.20);
+  --dos-stamp: #8b1a1a;
+  --dos-tab:   #d4bc7a;
+  background: #d9c48a !important;
+  color: #1a0d04;
+  font-family: 'Special Elite', 'Courier New', monospace;
 }
 
-.dossier-mode .page-content {
-  background: #d9c48a;
-}
+/* Sheet page — manila with 32px ruled lines */
 .dossier-mode .sheet-page {
-  background-color: var(--dossier-paper);
+  background-color: var(--dos-paper) !important;
   background-image: repeating-linear-gradient(
     0deg,
     transparent,
     transparent 31px,
-    rgba(139, 98, 16, 0.10) 31px,
-    rgba(139, 98, 16, 0.10) 32px
-  );
-  background-attachment: local;
+    rgba(90, 55, 10, 0.12) 31px,
+    rgba(90, 55, 10, 0.12) 32px
+  ) !important;
+  background-attachment: local !important;
+  color: var(--dos-ink);
 }
 
-.dossier-mode .card,
-.dossier-mode .sheet-header-card {
-  background: transparent !important;
-  border: none !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  color: var(--dossier-ink) !important;
-}
-
-/* Inner cards — same, no nesting depth */
-.dossier-mode .card .card,
-.dossier-mode .card > div[style*="background"] {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-
+/* Page title — typewriter / stamp style, dark ink */
 .dossier-mode .page-title {
-  font-family: 'Special Elite', 'Courier New', monospace;
-  letter-spacing: 0.08em;
-  color: var(--dossier-ink);
+  font-family: 'Special Elite', 'Courier New', monospace !important;
+  color: var(--dos-ink) !important;
+  letter-spacing: 0.14em;
 }
+.dossier-mode .page-title::after { background: var(--dos-sepia) !important; opacity: 0.3; }
+.dossier-mode .back-link { color: var(--dos-stamp) !important; }
 
-.dossier-mode .stat-box {
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid var(--dossier-border);
-  border-radius: 0;
-  box-shadow: none;
-}
-
-.dossier-mode .stat-value {
-  font-family: 'Special Elite', 'Courier New', monospace;
-  color: var(--dossier-stamp);
-}
-
-.dossier-mode .stat-label {
-  color: var(--dossier-sepia);
-}
-
-/* Section dividers — underline rule instead of box */
-.dossier-mode .acht-card-header,
-.dossier-mode .acht-sheet-card {
+/* All cards and surfaces — transparent, no box */
+.dossier-mode .card,
+.dossier-mode .sheet-header-card,
+.dossier-mode .beyond-banner,
+.dossier-mode .beyond-placeholder {
   background: transparent !important;
   border: none !important;
-  border-bottom: 1px solid var(--dossier-border) !important;
   border-radius: 0 !important;
   box-shadow: none !important;
-  padding-left: 0 !important;
 }
 
-.dossier-mode [style*="letter-spacing:1px"],
-.dossier-mode [style*="letter-spacing:.05em"] {
-  font-family: 'Special Elite', 'Courier New', monospace !important;
-  color: var(--dossier-sepia) !important;
+/* Stat boxes — ruled-line bottom only */
+.dossier-mode .stat-box {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--dos-rule) !important;
+  border-radius: 0 !important;
 }
 
-/* Inputs — paper form lines (bottom border only, no box) */
+/* Inputs / selects — form line style (bottom border only) */
 .dossier-mode input,
 .dossier-mode select {
   background: transparent !important;
   border: none !important;
-  border-bottom: 1px solid var(--dossier-border) !important;
+  border-bottom: 1px solid var(--dos-rule) !important;
   border-radius: 0 !important;
   box-shadow: none !important;
-  color: var(--dossier-ink) !important;
+  color: var(--dos-ink) !important;
+  font-family: 'Special Elite', 'Courier New', monospace !important;
   padding-left: 2px !important;
 }
 .dossier-mode textarea {
   background: transparent !important;
-  border: 1px solid var(--dossier-border) !important;
-  border-radius: 2px !important;
+  border: 1px solid var(--dos-rule) !important;
+  border-radius: 0 !important;
   box-shadow: none !important;
-  color: var(--dossier-ink) !important;
+  color: var(--dos-ink) !important;
+  font-family: 'Special Elite', 'Courier New', monospace !important;
 }
 .dossier-mode input:focus,
 .dossier-mode textarea:focus,
 .dossier-mode select:focus {
-  border-bottom-color: var(--dossier-stamp) !important;
-  outline: none;
+  border-bottom-color: var(--dos-stamp) !important;
+  outline: none !important;
   box-shadow: none !important;
 }
+.dossier-mode input::placeholder,
+.dossier-mode textarea::placeholder { color: rgba(90, 55, 10, 0.30) !important; }
 
-/* Page navigation tabs — manila folder tabs */
+/* Section headers (Achtung card headers) */
+.dossier-mode .acht-card-header {
+  color: var(--dos-sepia) !important;
+  border-bottom: 1px solid var(--dos-rule) !important;
+  font-family: 'Special Elite', 'Courier New', monospace !important;
+  letter-spacing: 0.14em;
+}
+.dossier-mode .acht-table th {
+  color: var(--dos-sepia) !important;
+  border-bottom: 1px solid var(--dos-rule) !important;
+  font-family: 'Special Elite', 'Courier New', monospace !important;
+}
+.dossier-mode .acht-table td {
+  color: var(--dos-ink) !important;
+  border-bottom: 1px solid var(--dos-rule) !important;
+}
+
+/* Page navigation — manila folder tabs */
 .dossier-mode .dossier-page-tab {
-  background: var(--dossier-deep);
-  border-color: var(--dossier-border);
-  color: var(--dossier-sepia);
-  font-family: 'Special Elite', 'Courier New', monospace;
+  background: var(--dos-tab) !important;
+  border-color: rgba(90, 55, 10, 0.35) !important;
+  color: var(--dos-sepia) !important;
+  font-family: 'Special Elite', 'Courier New', monospace !important;
   letter-spacing: 0.08em;
 }
-.dossier-mode .dossier-page-tab::after { background: var(--dossier-deep); }
-.dossier-mode .dossier-page-tab:hover { color: var(--dossier-ink); }
+.dossier-mode .dossier-page-tab::after { background: var(--dos-tab) !important; }
 .dossier-mode .dossier-page-tab.active {
-  background: var(--dossier-paper);
-  border-color: var(--dossier-stamp);
-  color: var(--dossier-stamp);
+  background: var(--dos-paper) !important;
+  border-color: var(--dos-stamp) !important;
+  color: var(--dos-stamp) !important;
 }
-.dossier-mode .dossier-page-tab.active::after { background: var(--dossier-paper); }
+.dossier-mode .dossier-page-tab.active::after { background: var(--dos-paper) !important; }
 .dossier-mode .dossier-nav-btn {
-  border-color: var(--dossier-border);
-  color: var(--dossier-sepia);
+  background: var(--dos-tab) !important;
+  border-color: rgba(90, 55, 10, 0.35) !important;
+  color: var(--dos-sepia) !important;
 }
 .dossier-mode .dossier-nav-btn:hover:not(:disabled) {
-  border-color: var(--dossier-stamp);
-  color: var(--dossier-stamp);
+  border-color: var(--dos-stamp) !important;
+  color: var(--dos-stamp) !important;
 }
 
-/* Character name — dark ink, not accent colour */
-.dossier-mode .sheet-header-card [style*="color:var(--accent)"] {
-  color: var(--dossier-stamp) !important;
+/* Save indicator */
+.dossier-mode .sheet-save-indicator {
+  font-family: 'Special Elite', 'Courier New', monospace !important;
 }
-
-/* Labels and helper text */
-.dossier-mode label,
-.dossier-mode .field-label {
-  color: var(--dossier-sepia) !important;
-}
-
-/* Save indicator on manila bg */
-.dossier-mode .sheet-save-indicator.saved  { color: #2e5c1a; }
-.dossier-mode .sheet-save-indicator.saving { color: var(--dossier-sepia); }
-.dossier-mode .sheet-save-indicator.error  { color: var(--dossier-stamp); }
-
-/* (ruled lines are now on .sheet-page background-image directly, scrolls with content) */
+.dossier-mode .sheet-save-indicator.saved  { color: #2e5c1a !important; }
+.dossier-mode .sheet-save-indicator.saving { color: var(--dos-sepia) !important; }
+.dossier-mode .sheet-save-indicator.error  { color: var(--dos-stamp) !important; }
 
 /* ── Ledger row-grid alignment: 32px atomic unit ─────────────────────── */
 /*
@@ -1725,204 +1720,162 @@ onMounted(() => {
    CoC 2026 — Investigative Ledger Skeuomorphic Standard
    ══════════════════════════════════════════════════════════════════════════ */
 
-/* Notebook grid lines — exactly 32px to match --R row unit */
+/* ── CoC mode: override theme variables → aged cream ledger paper ──── */
+.coc-mode {
+  /* Remap dark theme tokens → light paper */
+  --bg:       #eee8d8;
+  --bg2:      #e4dcc8;
+  --bg3:      #d8cfbc;
+  --surface:  transparent;
+  --surface2: transparent;
+  --border:   rgba(74, 60, 40, 0.22);
+  --border2:  rgba(74, 60, 40, 0.40);
+  --text:     #0f141a;
+  --text2:    #2c2418;
+  --text3:    #5c3d18;
+  --accent:   #6a4c1a;
+  --accent2:  #8a6c2a;
+  --input-bg: transparent;
+  --hover-glow: none;
+  /* CoC ledger tokens */
+  --coc-ink:      #0f141a;
+  --coc-sepia:    #5c3d18;
+  --coc-graphite: #3a3228;
+  --coc-line:     rgba(74, 60, 40, 0.18);
+  --coc-tab-bg:   #f0ddb0;
+  --coc-moss:     #3a5c18;
+  --coc-blood:    #7a1a10;
+  background: #e4dcc8 !important;
+  color: #0f141a;
+  font-family: 'Special Elite', 'Crimson Pro', Georgia, serif;
+}
+
+/* Sheet page — cream with 32px notebook lines */
 .coc-mode .sheet-page {
-  background-image:
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 31px,
-      var(--coc-line, rgba(74, 60, 40, 0.18)) 31px,
-      var(--coc-line, rgba(74, 60, 40, 0.18)) 32px
-    );
-  background-attachment: local;
+  background-color: var(--bg) !important;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 31px,
+    var(--coc-line) 31px,
+    var(--coc-line) 32px
+  ) !important;
+  background-attachment: local !important;
+  color: var(--coc-ink);
 }
 
-/* Fountain pen ink on user-entered text */
-.coc-mode input,
-.coc-mode textarea {
-  color: var(--coc-ink, #0f141a) !important;
-  background: transparent !important;
-  border-color: transparent !important;
-  border-bottom: 1px solid var(--coc-line, rgba(74, 60, 40, 0.35)) !important;
-  border-radius: 0 !important;
-  font-family: var(--font-body, 'Special Elite', Georgia, serif);
-  filter: contrast(1.1) brightness(0.92);
-  text-shadow:
-    0 0 0.5px var(--coc-ink, #0f141a),
-    0.3px 0.3px 0.8px rgba(15, 20, 26, 0.35);
-}
-
-.coc-mode input:focus,
-.coc-mode textarea:focus {
-  border-bottom-color: var(--coc-graphite, #3a3228) !important;
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-/* Card surfaces: plain paper, no box borders */
-.coc-mode .card {
+/* All cards: transparent, no box */
+.coc-mode .card,
+.coc-mode .sheet-header-card,
+.coc-mode .beyond-banner,
+.coc-mode .beyond-placeholder {
   background: transparent !important;
   border: none !important;
+  border-radius: 0 !important;
   box-shadow: none !important;
 }
 
-/* Labels in fountain pen colour */
-.coc-mode label,
-.coc-mode .field-label,
-.coc-mode .stat-label {
-  color: var(--coc-sepia, #5c3d18) !important;
-  font-family: var(--font-body, 'Special Elite', Georgia, serif);
-  letter-spacing: 0.04em;
-}
-
-/* Stat values — dark ink, not gold */
-.coc-mode .stat-value {
-  color: var(--coc-ink, #0f141a) !important;
-}
-
-/* Stat boxes — bottom rule only, no box */
+/* Stat boxes — ruled-line bottom only */
 .coc-mode .stat-box {
   background: transparent !important;
   border: none !important;
-  border-bottom: 1px solid var(--coc-line, rgba(74, 60, 40, 0.3)) !important;
+  border-bottom: 1px solid var(--coc-line) !important;
   border-radius: 0 !important;
 }
 
-/* Skill rows — notebook line separator */
+/* Inputs / selects — fountain pen on form lines */
+.coc-mode input,
+.coc-mode select {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--coc-line) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  color: var(--coc-ink) !important;
+  font-family: 'Special Elite', 'Crimson Pro', Georgia, serif !important;
+  padding-left: 2px !important;
+}
+.coc-mode textarea {
+  background: transparent !important;
+  border: 1px solid var(--coc-line) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  color: var(--coc-ink) !important;
+  font-family: 'Special Elite', 'Crimson Pro', Georgia, serif !important;
+}
+.coc-mode input:focus,
+.coc-mode textarea:focus,
+.coc-mode select:focus {
+  border-bottom-color: var(--coc-graphite) !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+.coc-mode input::placeholder,
+.coc-mode textarea::placeholder { color: rgba(74, 60, 40, 0.30) !important; }
+
+/* Skill rows */
 .coc-mode .coc-view-row,
 .coc-mode .coc-skill-row {
-  border-bottom: 1px solid var(--coc-line, rgba(74, 60, 40, 0.15)) !important;
+  border-bottom: 1px solid var(--coc-line) !important;
 }
-
-/* Raised skill — pencil-underline rather than gold */
 .coc-mode .coc-raised .coc-view-val {
-  color: var(--coc-graphite, #2a2218) !important;
+  color: var(--coc-graphite) !important;
   font-weight: 700;
   text-decoration: underline;
-  text-decoration-color: var(--coc-sepia, #5c3d18);
+  text-decoration-color: var(--coc-sepia);
   text-underline-offset: 3px;
 }
 
-/* ── Tally / pencil-scribble Sanity + MP bars ────────────────────────── */
-.coc-mode .progress-bar {
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  height: auto;
-  overflow: visible;
-  position: relative;
+/* Page nav — ledger tabs */
+.coc-mode .dossier-page-tab {
+  background: var(--coc-tab-bg) !important;
+  border-color: rgba(74, 60, 40, 0.35) !important;
+  color: var(--coc-sepia) !important;
+  font-family: 'Special Elite', 'Crimson Pro', Georgia, serif !important;
+}
+.coc-mode .dossier-page-tab::after { background: var(--coc-tab-bg) !important; }
+.coc-mode .dossier-page-tab.active {
+  background: var(--bg) !important;
+  border-color: var(--coc-blood) !important;
+  color: var(--coc-blood) !important;
+}
+.coc-mode .dossier-page-tab.active::after { background: var(--bg) !important; }
+.coc-mode .dossier-nav-btn {
+  background: var(--coc-tab-bg) !important;
+  border-color: rgba(74, 60, 40, 0.35) !important;
+  color: var(--coc-sepia) !important;
+  box-shadow: none !important;
+}
+.coc-mode .dossier-nav-btn:hover:not(:disabled) {
+  border-color: var(--coc-blood) !important;
+  color: var(--coc-blood) !important;
 }
 
-/* Replace the fill with tally marks rendered via background-image */
-.coc-mode .progress-fill {
-  display: none; /* hidden — we use ::after on the wrapper for tally */
+/* Page title */
+.coc-mode .page-title {
+  color: var(--coc-ink) !important;
+  font-family: 'Cinzel', Georgia, serif !important;
+  letter-spacing: 0.12em;
 }
+.coc-mode .page-title::after { background: var(--coc-sepia) !important; opacity: 0.35; }
+.coc-mode .back-link { color: var(--coc-blood) !important; }
 
-/* Tally mark track: groups of IIII/ rendered as repeating SVG-like pattern */
-.coc-mode .progress-bar::after {
-  content: '';
-  display: block;
-  height: 14px;
-  background-image: repeating-linear-gradient(
-    90deg,
-    var(--coc-graphite, #3a3228) 0px,   1px,
-    transparent                  1px,   5px,
-    var(--coc-graphite, #3a3228) 5px,   6px,
-    transparent                  6px,  10px,
-    var(--coc-graphite, #3a3228) 10px, 11px,
-    transparent                 11px,  15px,
-    var(--coc-graphite, #3a3228) 15px, 16px,
-    transparent                 16px,  20px,
-    /* diagonal fifth tally */
-    linear-gradient(135deg,
-      transparent 0%, transparent 40%,
-      var(--coc-graphite, #3a3228) 40%, var(--coc-graphite, #3a3228) 60%,
-      transparent 60%) 18px 0 / 6px 14px no-repeat
-  );
-  background-size: 24px 14px;
-  width: calc(var(--coc-fill-pct, 100%) * 1%);
-  max-width: 100%;
-  opacity: 0.65;
+/* Save indicator */
+.coc-mode .sheet-save-indicator {
+  font-family: 'Special Elite', Georgia, serif !important;
+  letter-spacing: 0.08em !important;
 }
+.coc-mode .sheet-save-indicator.saving { color: var(--coc-graphite) !important; }
+.coc-mode .sheet-save-indicator.saved  { color: var(--coc-moss) !important; }
+.coc-mode .sheet-save-indicator.error  { color: var(--coc-blood) !important; }
 
-/* Bind the fill percentage via inline style on the fill element,
-   read back via CSS custom property on parent */
-.coc-mode .progress-bar { --coc-fill-pct: 100; }
-
-/* ── Adhesive-tab Add buttons ────────────────────────────────────────── */
-.coc-mode .btn-ghost,
-.coc-mode [class*="add-btn"],
-.coc-mode button[style*="dashed"] {
-  background: var(--coc-tab-bg, #f5e6c0) !important;
-  border: 1px solid var(--coc-sepia, #5c3d18) !important;
-  border-top: 3px solid var(--coc-sepia, #5c3d18) !important;
-  border-radius: 0 0 3px 3px !important;
-  color: var(--coc-ink, #0f141a) !important;
-  font-family: var(--font-body, 'Special Elite', Georgia, serif) !important;
-  font-size: 0.78em !important;
-  padding: 4px 14px 5px !important;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.18) !important;
-  letter-spacing: 0.08em;
-  position: relative;
-}
-.coc-mode .btn-ghost::before,
-.coc-mode [class*="add-btn"]::before {
-  content: '+ ';
-  font-weight: 700;
-}
-
-/* ── Mythos glow — faint sickly pulse on Sanity labels ──────────────── */
-.mythos-glow {
-  animation: mythos-pulse 3.5s ease-in-out infinite;
-}
-
+/* ── Mythos glow ── */
+.mythos-glow { animation: mythos-pulse 3.5s ease-in-out infinite; }
 @keyframes mythos-pulse {
   0%, 100% { text-shadow: none; opacity: 1; }
   50% {
-    text-shadow:
-      0 0 6px rgba(80, 180, 80, 0.35),
-      0 0 14px rgba(60, 160, 60, 0.18);
+    text-shadow: 0 0 6px rgba(80,180,80,0.35), 0 0 14px rgba(60,160,60,0.18);
     opacity: 0.82;
   }
-}
-
-/* Apply mythos-glow automatically to Sanity heading in CoC mode */
-.coc-mode .sheet-section-title:has(+ * .progress-bar):first-of-type,
-.coc-mode [data-field="sanity_max"] ~ label,
-.coc-mode label[for*="sanity"] {
-  animation: mythos-pulse 3.5s ease-in-out infinite;
-}
-
-/* ── CoC save indicator — graphite pencil / dried ink ───────────────── */
-.coc-mode .sheet-save-indicator {
-  font-family: var(--font-body, 'Special Elite', Georgia, serif) !important;
-  font-size: 0.72em !important;
-  letter-spacing: 0.08em !important;
-}
-.coc-mode .sheet-save-indicator.saving { color: var(--coc-graphite, #3a3228) !important; }
-.coc-mode .sheet-save-indicator.saved  { color: var(--coc-moss, #3a5c18) !important; }
-.coc-mode .sheet-save-indicator.error  { color: var(--coc-blood, #7a1a10) !important; }
-
-/* Navigation buttons in ledger style */
-.coc-mode .dossier-nav-btn {
-  background: var(--coc-tab-bg, #f0ddb0) !important;
-  border-color: var(--coc-sepia, #5c3d18) !important;
-  color: var(--coc-ink, #0f141a) !important;
-  font-family: var(--font-body, 'Special Elite', Georgia, serif) !important;
-  border-radius: 2px !important;
-  box-shadow: 1px 1px 3px rgba(0,0,0,0.2) !important;
-}
-.coc-mode .dossier-nav-btn:hover:not(:disabled) {
-  background: var(--coc-sepia, #5c3d18) !important;
-  color: var(--coc-tab-bg, #f0ddb0) !important;
-}
-
-/* Page header title — typewriter stamp feel */
-.coc-mode .page-title {
-  font-family: var(--font-header, 'Cinzel', Georgia, serif);
-  color: var(--coc-ink, #0f141a);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
 }
 </style>
