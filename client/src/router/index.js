@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { nextTick } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useCampaignStore } from '@/stores/campaign'
 
@@ -31,6 +32,8 @@ const routes = [
   { path: '/combat', component: () => import('@/views/CombatView.vue'), meta: { auth: true, requiresCampaign: C, gm: true } },
   { path: '/good-boy-cards', component: () => import('@/views/GoodBoyCardsView.vue'), meta: { auth: true, requiresCampaign: C } },
   { path: '/settings', component: () => import('@/views/SettingsView.vue'), meta: { auth: true } },
+  // Developer admin — isolated from standard auth, not linked in any nav
+  { path: '/dev-admin', component: () => import('@/views/DeveloperConfigView.vue'), meta: { devOnly: true } },
 ]
 
 const router = createRouter({
@@ -38,13 +41,25 @@ const router = createRouter({
   routes,
 })
 
-router.beforeEach((to) => {
+router.beforeEach((to, from) => {
   if (to.meta.auth) {
     const auth = useAuthStore()
     if (!auth.token) return '/login'
     const campaign = useCampaignStore()
     if (to.meta.requiresCampaign && !campaign.activeCampaign) return '/home'
     if (to.meta.gm && !campaign.isGm) return '/home'
+  }
+
+  // Native View Transitions API — simulate physical page turns
+  if (
+    document.startViewTransition &&
+    from.name !== undefined &&
+    !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  ) {
+    const transition = document.startViewTransition(async () => {
+      await nextTick()
+    })
+    return transition.ready.catch(() => {}) // non-blocking — navigation proceeds regardless
   }
 })
 

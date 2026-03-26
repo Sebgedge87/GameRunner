@@ -51,8 +51,10 @@
     <ConfirmDialog />
     <!-- Toast container -->
     <ToastContainer />
-  <!-- Timer widget (always on top, all users) -->
-  <TimerWidget />
+    <!-- Per-system immersive VFX overlay -->
+    <ImmersionOverlay />
+    <!-- Timer widget (always on top, all users) -->
+    <TimerWidget />
   </div>
 </template>
 
@@ -77,6 +79,7 @@ import ShareModal from './ShareModal.vue'
 import OnboardingWizard from './OnboardingWizard.vue'
 import ConfirmDialog from './ConfirmDialog.vue'
 import ToastContainer from './ToastContainer.vue'
+import ImmersionOverlay from './ImmersionOverlay.vue'
 import TimerWidget from './TimerWidget.vue'
 
 const auth = useAuthStore()
