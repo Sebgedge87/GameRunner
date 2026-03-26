@@ -1,12 +1,5 @@
 <template>
   <div class="page-content" :class="{ 'dossier-mode': dossierMode, 'coc-mode': cocMode }">
-    <div class="page-header">
-      <div style="display:flex;align-items:center;gap:12px">
-        <a v-if="characterId" class="back-link" @click="router.push('/characters')">← Characters</a>
-        <div class="page-title">{{ sheet?.name || 'Character' }}</div>
-      </div>
-      <div class="classified-stamp" aria-hidden="true">Classified</div>
-    </div>
 
     <!-- GM: player selector (only when not viewing a specific character by id) -->
     <div v-if="campaign.isGm && !characterId" class="gm-only" style="margin-bottom:16px;max-width:280px">
@@ -37,25 +30,6 @@
     <!-- ── VIEW MODE (always editable) ──────────────────────────────────── -->
     <template v-else>
 
-      <!-- Page navigation (built-in sheet only) -->
-      <div v-if="hasBuiltinSheet" class="dossier-page-nav">
-        <button class="dossier-nav-btn dossier-nav-prev" :disabled="pageIndex === 0" @click="prevPage" aria-label="Previous page">&#8249;</button>
-        <div class="dossier-page-tabs">
-          <button v-for="(p, i) in pages" :key="p.id"
-            class="dossier-page-tab"
-            :class="{ active: activePage === p.id }"
-            @click="goToPage(i)">
-            <span class="dossier-tab-label">{{ p.label }}</span>
-          </button>
-        </div>
-        <button class="dossier-nav-btn dossier-nav-next" :disabled="pageIndex === pages.length - 1" @click="nextPage" aria-label="Next page">&#8250;</button>
-        <span class="sheet-save-indicator" :class="saveStatus">
-          <span v-if="saveStatus === 'saving'">Saving…</span>
-          <span v-else-if="saveStatus === 'saved'">Saved ✓</span>
-          <span v-else-if="saveStatus === 'error'" :title="saveError">Error ✗</span>
-        </span>
-      </div>
-
       <!-- D&D Beyond banner (5e with URL set) -->
       <div v-if="hasDndBeyond && sheet.dnd_beyond_url" class="beyond-banner">
         <div class="beyond-banner-info">
@@ -73,6 +47,39 @@
 
       <!-- Built-in sheet for other systems -->
       <template v-if="hasBuiltinSheet">
+
+        <!-- Tabs above document box -->
+        <div class="doc-tabs-bar">
+          <div class="doc-tabs">
+            <button v-for="(p, i) in pages" :key="p.id"
+              class="doc-tab"
+              :class="{ active: activePage === p.id }"
+              @click="goToPage(i)">
+              {{ p.label }}
+            </button>
+          </div>
+          <div class="doc-tabs-right">
+            <button class="doc-nav-btn" :disabled="pageIndex === 0" @click="prevPage" aria-label="Previous page">&#8249;</button>
+            <button class="doc-nav-btn" :disabled="pageIndex === pages.length - 1" @click="nextPage" aria-label="Next page">&#8250;</button>
+            <span class="sheet-save-indicator" :class="saveStatus">
+              <span v-if="saveStatus === 'saving'">Saving…</span>
+              <span v-else-if="saveStatus === 'saved'">Saved ✓</span>
+              <span v-else-if="saveStatus === 'error'" :title="saveError">Error ✗</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Document box — paper surface with offset shadow -->
+        <div class="document-box">
+
+          <!-- Box header: title left, CLASSIFIED stamp right -->
+          <div class="doc-box-header">
+            <div class="doc-box-title">
+              <a v-if="characterId" class="back-link" @click="router.push('/characters')">← Characters</a>
+              <div class="page-title">{{ sheet?.name || 'Character' }}</div>
+            </div>
+            <div class="classified-stamp" aria-hidden="true">Classified</div>
+          </div>
 
         <!-- Page flip container -->
         <div class="sheet-page-wrap">
@@ -477,10 +484,12 @@
         </Transition>
         </div><!-- /sheet-page-wrap -->
 
-        <div v-if="hasBuiltinSheet" class="sheet-footer" aria-hidden="true">
-          <span class="footer-caption">For authorised eyes only</span>
-          <span class="footer-stamp">Classified</span>
-        </div>
+          <div class="doc-footer" aria-hidden="true">
+            <span class="footer-caption">For authorised eyes only</span>
+            <span class="footer-stamp">Classified</span>
+          </div>
+
+        </div><!-- /document-box -->
 
         <!-- Ships / Vehicles (shown on all pages) -->
         <template v-if="ships.length">
@@ -958,25 +967,128 @@ onMounted(() => {
   --stamp-red:  #8b1a1a;
   --paper-fill: rgba(180, 160, 100, 0.20);
 
-  background: #d0c08a;
+  background: #c8b882;
   font-family: 'Courier Prime', 'Courier New', monospace;
   color: var(--ink);
   min-height: 100vh;
-  padding: 24px 16px;
+  padding: 16px;
   box-sizing: border-box;
 }
 
-/* ── Page header bar ─────────────────────────────────────────────────── */
-.page-header {
-  background: var(--header-bar) !important;
-  border: 1px solid var(--border-ink) !important;
-  border-bottom: 2px solid var(--border-ink) !important;
-  border-radius: 4px 4px 0 0 !important;
-  padding: 10px 20px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  box-shadow: none !important;
+/* ── Tab bar — sits above the document box ──────────────────────────── */
+.doc-tabs-bar {
+  max-width: 880px;
+  margin: 0 auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 2px;
+}
+
+.doc-tabs {
+  display: flex;
+  gap: 3px;
+  align-items: flex-end;
+}
+
+/* Folder tabs — sit above the document box top border */
+.doc-tab {
+  background: #b8a86a;
+  border: 1px solid var(--border-ink);
+  border-bottom: none;
+  border-radius: 3px 3px 0 0;
+  color: rgba(42, 30, 10, 0.72);
+  font-family: 'Courier Prime', monospace;
+  font-size: 0.70em;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 5px 20px 6px;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.12s, color 0.12s;
+}
+.doc-tab:hover { color: var(--ink); background: #c8b882; }
+.doc-tab.active {
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 700;
+  z-index: 2;
+}
+/* Active tab covers the document box top border seam */
+.doc-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 0; right: 0;
+  height: 1px;
+  background: var(--paper);
+}
+
+.doc-tabs-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 4px;
+}
+
+.doc-nav-btn {
+  background: transparent;
+  border: 1px solid var(--border-ink);
+  border-radius: 3px;
+  width: 28px; height: 28px;
+  cursor: pointer;
+  font-size: 1.2em;
+  line-height: 1;
+  color: var(--ink);
+  display: flex; align-items: center; justify-content: center;
+  transition: color 0.12s, border-color 0.12s;
+  flex-shrink: 0;
+}
+.doc-nav-btn:hover:not(:disabled) { border-color: var(--stamp-red); color: var(--stamp-red); }
+.doc-nav-btn:disabled { opacity: 0.25; cursor: default; }
+
+/* ── Document box — aged paper with offset shadow ───────────────────── */
+.document-box {
+  max-width: 880px;
+  margin: 0 auto;
+  background: var(--paper);
+  border: 1px solid var(--border-ink);
+  box-shadow: 4px 4px 0 #b8a87a, 8px 8px 0 #a09060;
+  position: relative;
+}
+
+/* Lined paper texture across the full document */
+.document-box::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent 0,
+    transparent 31px,
+    rgba(120, 100, 60, 0.07) 31px,
+    rgba(120, 100, 60, 0.07) 32px
+  );
+  z-index: 0;
+}
+
+/* ── Box header — title left, CLASSIFIED stamp right ─────────────────── */
+.doc-box-header {
+  background: var(--header-bar);
+  border-bottom: 2px solid var(--border-ink);
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+}
+
+.doc-box-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .page-title {
@@ -995,95 +1107,26 @@ onMounted(() => {
   font-size: 0.8em !important;
 }
 
-/* ── CLASSIFIED stamp (header) ───────────────────────────────────────── */
+/* ── CLASSIFIED stamp ────────────────────────────────────────────────── */
 .classified-stamp {
   font-family: 'Special Elite', cursive;
   font-size: 1.0em;
   color: var(--stamp-red);
-  border: 2px solid var(--stamp-red);
-  outline: 1px solid var(--stamp-red);
-  outline-offset: 3px;
-  padding: 2px 14px;
+  border: 3px double var(--stamp-red);
+  padding: 3px 14px;
   letter-spacing: 0.28em;
   text-transform: uppercase;
   transform: rotate(-2deg);
-  opacity: 0.80;
+  opacity: 0.85;
   mix-blend-mode: multiply;
   user-select: none;
   flex-shrink: 0;
 }
 
-/* ── Tab navigation bar ──────────────────────────────────────────────── */
-.dossier-page-nav {
-  background: var(--header-bar) !important;
-  border-left: 1px solid var(--border-ink) !important;
-  border-right: 1px solid var(--border-ink) !important;
-  border-bottom: none !important;
-  border-top: none !important;
-  margin: 0 !important;
-  padding: 0 16px !important;
-}
-
-/* Folder tabs — paper tabs with no rounded bottom on active */
-.dossier-page-tab {
-  background: #d4c07a !important;
-  border: 1px solid var(--border-ink) !important;
-  border-bottom: none !important;
-  border-radius: 3px 3px 0 0 !important;
-  color: rgba(42, 30, 10, 0.75) !important;
-  font-family: 'Courier Prime', monospace !important;
-  font-size: 0.70em !important;
-  letter-spacing: 0.14em !important;
-  text-transform: uppercase !important;
-  padding: 5px 18px !important;
-}
-.dossier-page-tab::after {
-  background: #d4c07a !important;
-  bottom: -1px !important;
-}
-.dossier-page-tab:hover { color: var(--ink) !important; }
-.dossier-page-tab.active {
-  background: var(--paper) !important;
-  color: var(--ink) !important;
-  border-color: var(--border-ink) !important;
-  z-index: 2;
-}
-.dossier-page-tab.active::after { background: var(--paper) !important; }
-
-.dossier-nav-btn {
-  background: transparent !important;
-  border-color: var(--border-ink) !important;
-  color: var(--ink) !important;
-  box-shadow: none !important;
-}
-.dossier-nav-btn:hover:not(:disabled) {
-  border-color: var(--stamp-red) !important;
-  color: var(--stamp-red) !important;
-}
-
-/* ── Sheet page wrap — paper surface with lined texture ──────────────── */
+/* ── Sheet page wrap — inside the document box ───────────────────────── */
 .sheet-page-wrap {
-  background: var(--paper) !important;
-  border: 1px solid var(--border-ink) !important;
-  border-top: none !important;
-  border-radius: 0 !important;
   position: relative;
-}
-
-/* Lined paper via ::before pseudo on the wrap */
-.sheet-page-wrap::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image: repeating-linear-gradient(
-    to bottom,
-    transparent 0,
-    transparent 31px,
-    var(--rule) 31px,
-    var(--rule) 32px
-  );
-  z-index: 0;
+  z-index: 1;
 }
 
 .sheet-page {
@@ -1165,12 +1208,10 @@ textarea.form-input { resize: vertical; }
   color: var(--ink) !important;
 }
 
-/* ── Sheet footer ────────────────────────────────────────────────────── */
-.sheet-footer {
+/* ── Doc footer — inside document box ───────────────────────────────── */
+.doc-footer {
   background: var(--header-bar);
-  border: 1px solid var(--border-ink);
-  border-top: 1px solid var(--border-ink);
-  border-radius: 0 0 4px 4px;
+  border-top: 2px solid var(--border-ink);
   padding: 6px 20px;
   display: flex;
   align-items: center;
@@ -1180,6 +1221,8 @@ textarea.form-input { resize: vertical; }
   color: rgba(42, 30, 10, 0.60);
   letter-spacing: 0.16em;
   text-transform: uppercase;
+  position: relative;
+  z-index: 1;
 }
 .footer-stamp {
   font-family: 'Special Elite', cursive;
@@ -1606,65 +1649,6 @@ textarea.form-input { resize: vertical; }
   font-family: 'JetBrains Mono', monospace;
 }
 
-/* ── Dossier page navigation ─────────────────────────────── */
-.dossier-page-nav {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 18px;
-}
-.dossier-page-tabs {
-  display: flex;
-  gap: 4px;
-  flex: 1;
-  justify-content: center;
-}
-.dossier-page-tab {
-  background: var(--surface2, #20202e);
-  border: 1px solid var(--border);
-  border-bottom: none;
-  padding: 6px 20px 5px;
-  cursor: pointer;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.7em;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text3);
-  border-radius: 4px 4px 0 0;
-  position: relative;
-  transition: color 0.15s, background 0.15s, border-color 0.15s;
-}
-.dossier-page-tab::after {
-  content: '';
-  position: absolute;
-  bottom: -1px; left: 0; right: 0;
-  height: 1px;
-  background: var(--surface2, #20202e);
-}
-.dossier-page-tab:hover { color: var(--text); }
-.dossier-page-tab.active {
-  color: var(--accent);
-  background: var(--surface, #18181f);
-  border-color: var(--accent);
-  z-index: 1;
-}
-.dossier-page-tab.active::after { background: var(--surface, #18181f); }
-.dossier-nav-btn {
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  width: 32px; height: 32px;
-  cursor: pointer;
-  font-size: 1.3em;
-  line-height: 1;
-  color: var(--text3);
-  display: flex; align-items: center; justify-content: center;
-  transition: color 0.15s, border-color 0.15s;
-  flex-shrink: 0;
-}
-.dossier-nav-btn:hover:not(:disabled) { color: var(--text); border-color: var(--accent); }
-.dossier-nav-btn:disabled { opacity: 0.25; cursor: default; }
-
 /* ── Page flip container ─────────────────────────────────── */
 .sheet-page-wrap {
   position: relative;
@@ -1849,26 +1833,26 @@ textarea.form-input { resize: vertical; }
 }
 
 /* Page navigation — manila folder tabs */
-.dossier-mode .dossier-page-tab {
+.dossier-mode .doc-tab {
   background: var(--dos-tab) !important;
   border-color: rgba(90, 55, 10, 0.35) !important;
   color: var(--dos-sepia) !important;
   font-family: 'Special Elite', 'Courier New', monospace !important;
   letter-spacing: 0.08em;
 }
-.dossier-mode .dossier-page-tab::after { background: var(--dos-tab) !important; }
-.dossier-mode .dossier-page-tab.active {
+.dossier-mode .doc-tab::after { background: var(--dos-paper) !important; }
+.dossier-mode .doc-tab.active {
   background: var(--dos-paper) !important;
   border-color: var(--dos-stamp) !important;
   color: var(--dos-stamp) !important;
 }
-.dossier-mode .dossier-page-tab.active::after { background: var(--dos-paper) !important; }
-.dossier-mode .dossier-nav-btn {
+.dossier-mode .doc-tab.active::after { background: var(--dos-paper) !important; }
+.dossier-mode .doc-nav-btn {
   background: var(--dos-tab) !important;
   border-color: rgba(90, 55, 10, 0.35) !important;
   color: var(--dos-sepia) !important;
 }
-.dossier-mode .dossier-nav-btn:hover:not(:disabled) {
+.dossier-mode .doc-nav-btn:hover:not(:disabled) {
   border-color: var(--dos-stamp) !important;
   color: var(--dos-stamp) !important;
 }
@@ -2024,46 +2008,51 @@ textarea.form-input { resize: vertical; }
   background: #e7e2d6 !important;
   color: #2a2a2a;
   font-family: Georgia, 'Times New Roman', serif;
-  padding: 32px 24px !important;
+  padding: 16px 24px !important;
   min-height: 100vh;
   box-sizing: border-box;
 }
 
-/* ── Paper card: header + nav + page share one cream surface ────────── */
-/* A4 at 96 dpi = 794px. Fixed width to simulate a physical sheet.        */
-.coc-mode .page-header {
+/* ── Tab bar — cream-paper tint ─────────────────────────────────────── */
+.coc-mode .doc-tabs-bar {
+  max-width: 794px !important;
+}
+
+/* ── Document box — cream paper, drop shadow ─────────────────────────── */
+.coc-mode .document-box {
+  max-width: 794px !important;
   background: #f4efe4 !important;
   border: 1px solid #cfc7b7 !important;
-  border-bottom: none !important;
-  border-radius: 4px 4px 0 0 !important;
-  margin: 0 auto !important;
-  width: 794px !important;
-  max-width: 100% !important;
-  padding: 12px 40px !important;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.14) !important;
+}
+.coc-mode .document-box::before {
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent 0,
+    transparent 31px,
+    rgba(0, 0, 0, 0.09) 31px,
+    rgba(0, 0, 0, 0.09) 32px
+  ) !important;
+}
+
+/* ── Box header ─────────────────────────────────────────────────────── */
+.coc-mode .doc-box-header {
+  background: #ece8df !important;
+  border-bottom: 2px solid #cfc7b7 !important;
+}
+
+/* ── Sheet page inside doc box ───────────────────────────────────────── */
+.coc-mode .sheet-page-wrap {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
   box-shadow: none !important;
 }
 
-.coc-mode .dossier-page-nav {
+/* ── Doc footer ─────────────────────────────────────────────────────── */
+.coc-mode .doc-footer {
   background: #ece8df !important;
-  border-left: 1px solid #cfc7b7 !important;
-  border-right: 1px solid #cfc7b7 !important;
-  border-bottom: 1px solid #cfc7b7 !important;
-  margin: 0 auto !important;
-  width: 794px !important;
-  max-width: 100% !important;
-  padding: 0 40px !important;
-}
-
-.coc-mode .sheet-page-wrap {
-  background: #f4efe4 !important;
-  border: 1px solid #cfc7b7 !important;
-  border-top: none !important;
-  border-radius: 0 0 4px 4px !important;
-  margin: 0 auto !important;
-  width: 794px !important;
-  max-width: 100% !important;
-  padding: 0 !important;
-  box-shadow: 0 4px 18px rgba(0,0,0,0.14) !important;
+  border-top: 2px solid #cfc7b7 !important;
 }
 
 /* ── Sheet page — light cream with 32px ruled lines ─────────────────── */
@@ -2098,16 +2087,23 @@ textarea.form-input { resize: vertical; }
   box-shadow: none !important;
 }
 
-/* ── Page header: hide the app-style title — stamp is the header ─── */
+/* ── Back-link / title in CoC box header ─────────────────────────── */
 .coc-mode .page-title {
-  display: none !important;
+  font-family: Georgia, 'Times New Roman', serif !important;
+  font-size: 1.1em !important;
+  letter-spacing: 0.06em !important;
+  color: #2a2a2a !important;
 }
 .coc-mode .back-link {
   color: #8b1e1e !important;
   font-family: Georgia, serif !important;
   font-size: 0.82em !important;
 }
-.coc-mode .page-header::after { display: none !important; }
+.coc-mode .classified-stamp {
+  font-family: Georgia, serif !important;
+  color: #8b1e1e !important;
+  border-color: #8b1e1e !important;
+}
 
 /* ── Stamp circle ──────────────────────────────────────────────── */
 .coc-stamp-wrap {
@@ -2314,28 +2310,28 @@ textarea.form-input { resize: vertical; }
 }
 
 /* ── Page nav tabs ───────────────────────────────────────────────── */
-.coc-mode .dossier-page-tab {
-  background: transparent !important;
-  border-color: rgba(0,0,0,0.15) !important;
+.coc-mode .doc-tab {
+  background: #e0dbd1 !important;
+  border-color: #cfc7b7 !important;
   color: #666 !important;
   font-family: Georgia, serif !important;
   font-size: 0.78em !important;
   letter-spacing: 0.08em !important;
 }
-.coc-mode .dossier-page-tab::after { background: #ece8df !important; }
-.coc-mode .dossier-page-tab.active {
+.coc-mode .doc-tab::after { background: #f4efe4 !important; }
+.coc-mode .doc-tab.active {
   background: #f4efe4 !important;
   border-color: #8b1e1e !important;
   color: #8b1e1e !important;
 }
-.coc-mode .dossier-page-tab.active::after { background: #f4efe4 !important; }
-.coc-mode .dossier-nav-btn {
+.coc-mode .doc-tab.active::after { background: #f4efe4 !important; }
+.coc-mode .doc-nav-btn {
   background: transparent !important;
   border-color: rgba(0,0,0,0.18) !important;
   color: #666 !important;
   box-shadow: none !important;
 }
-.coc-mode .dossier-nav-btn:hover:not(:disabled) {
+.coc-mode .doc-nav-btn:hover:not(:disabled) {
   border-color: #8b1e1e !important;
   color: #8b1e1e !important;
 }
