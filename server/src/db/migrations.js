@@ -336,6 +336,19 @@ function runMigrations() {
       UNIQUE(user_id, campaign_id)
     );
 
+    -- ── Characters (multi-character per user per campaign) ─────────────────────
+    CREATE TABLE IF NOT EXISTS characters (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      campaign_id INTEGER REFERENCES campaigns(id) ON DELETE CASCADE,
+      name TEXT NOT NULL DEFAULT 'New Character',
+      system TEXT DEFAULT 'dnd5e',
+      portrait_url TEXT,
+      sheet_data TEXT DEFAULT '{}',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
     -- ── Ship / Vehicle ─────────────────────────────────────────────────────────
     CREATE TABLE IF NOT EXISTS ship_sheets (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -474,6 +487,13 @@ function runMigrations() {
   try { db.exec('ALTER TABLE jobs ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
   try { db.exec('ALTER TABLE bestiary ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
   try { db.exec('ALTER TABLE rumours ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
+  // Maps: GM notes, linked location, mindmap connections
+  try { db.exec('ALTER TABLE maps ADD COLUMN gm_notes TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE maps ADD COLUMN linked_location_id INTEGER REFERENCES vault_files(id)'); } catch (_) {}
+  try { db.exec('ALTER TABLE maps ADD COLUMN connected_to TEXT'); } catch (_) {}
+
+  // campaign scoping for messages
+  try { db.exec('ALTER TABLE messages ADD COLUMN campaign_id INTEGER REFERENCES campaigns(id)'); } catch (_) {}
   // reply_to_id for message threading
   try { db.exec('ALTER TABLE messages ADD COLUMN reply_to_id INTEGER REFERENCES messages(id)'); } catch (_) {}
   // title label for scheduling entries
@@ -498,9 +518,283 @@ function runMigrations() {
     awarded_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 
+  // Death saves columns on combat_combatants
+  try { db.exec('ALTER TABLE combat_combatants ADD COLUMN death_saves_success INTEGER DEFAULT 0'); } catch (_) {}
+  try { db.exec('ALTER TABLE combat_combatants ADD COLUMN death_saves_failure INTEGER DEFAULT 0'); } catch (_) {}
+  try { db.exec('ALTER TABLE combat_combatants ADD COLUMN is_stable INTEGER DEFAULT 0'); } catch (_) {}
+
+  // NPC relationships table
+  db.exec(`CREATE TABLE IF NOT EXISTS npc_relationships (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    npc_id INTEGER NOT NULL REFERENCES vault_files(id) ON DELETE CASCADE,
+    related_npc_id INTEGER NOT NULL REFERENCES vault_files(id) ON DELETE CASCADE,
+    relationship_type TEXT DEFAULT 'associated',
+    notes TEXT,
+    campaign_id INTEGER REFERENCES campaigns(id),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(npc_id, related_npc_id)
+  )`);
+
+  // Profile columns on users (guard for DBs created before these were in the schema)
+  try { db.exec('ALTER TABLE users ADD COLUMN character_name TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE users ADD COLUMN character_class TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE users ADD COLUMN character_level INTEGER DEFAULT 1'); } catch (_) {}
+
+  // TOTP secret column on users
+  try { db.exec('ALTER TABLE users ADD COLUMN totp_secret TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE users ADD COLUMN totp_enabled INTEGER DEFAULT 0'); } catch (_) {}
+
+  // Quest chain: parent_quest_id on vault_files
+  try { db.exec('ALTER TABLE vault_files ADD COLUMN parent_quest_id INTEGER REFERENCES vault_files(id)'); } catch (_) {}
+
   // Bestiary gm_notes and player_notes columns (added with bestiary redesign)
   try { db.exec('ALTER TABLE bestiary ADD COLUMN gm_notes TEXT'); } catch (_) {}
   try { db.exec('ALTER TABLE bestiary ADD COLUMN player_notes TEXT'); } catch (_) {}
+
+  // ── World-Engine Phase 1: Relational schema additions ──────────────────────
+
+  // vault_files: ownership + relational FK columns for npcs and locations
+  try { db.exec('ALTER TABLE vault_files ADD COLUMN created_by INTEGER REFERENCES users(id)'); } catch (_) {}
+  try { db.exec('ALTER TABLE vault_files ADD COLUMN gm_notes TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE vault_files ADD COLUMN player_notes TEXT'); } catch (_) {}
+  // NPC-specific
+  try { db.exec('ALTER TABLE vault_files ADD COLUMN race TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE vault_files ADD COLUMN disposition TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE vault_files ADD COLUMN faction_id INTEGER REFERENCES factions(id)'); } catch (_) {}
+  try { db.exec('ALTER TABLE vault_files ADD COLUMN home_location_id INTEGER REFERENCES vault_files(id)'); } catch (_) {}
+  // Location-specific
+  try { db.exec('ALTER TABLE vault_files ADD COLUMN danger_level INTEGER DEFAULT 0'); } catch (_) {}
+  try { db.exec('ALTER TABLE vault_files ADD COLUMN location_type TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE vault_files ADD COLUMN parent_location_id INTEGER REFERENCES vault_files(id)'); } catch (_) {}
+
+  // factions: relational + standing/influence
+  try { db.exec('ALTER TABLE factions ADD COLUMN standing INTEGER DEFAULT 0'); } catch (_) {}
+  try { db.exec('ALTER TABLE factions ADD COLUMN influence INTEGER DEFAULT 3'); } catch (_) {}
+  try { db.exec('ALTER TABLE factions ADD COLUMN leader_npc_id INTEGER REFERENCES vault_files(id)'); } catch (_) {}
+  try { db.exec('ALTER TABLE factions ADD COLUMN hq_location_id INTEGER REFERENCES vault_files(id)'); } catch (_) {}
+  try { db.exec('ALTER TABLE factions ADD COLUMN gm_notes TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE factions ADD COLUMN player_notes TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE factions ADD COLUMN created_by INTEGER REFERENCES users(id)'); } catch (_) {}
+
+  // faction_members junction table
+  db.exec(`CREATE TABLE IF NOT EXISTS faction_members (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    faction_id INTEGER NOT NULL REFERENCES factions(id) ON DELETE CASCADE,
+    npc_id INTEGER NOT NULL REFERENCES vault_files(id) ON DELETE CASCADE,
+    campaign_id INTEGER REFERENCES campaigns(id),
+    added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(faction_id, npc_id)
+  )`);
+
+  // jobs: source location FK + acceptance tracking
+  try { db.exec('ALTER TABLE jobs ADD COLUMN source_location_id INTEGER REFERENCES vault_files(id)'); } catch (_) {}
+  try { db.exec('ALTER TABLE jobs ADD COLUMN accepted_by_id INTEGER REFERENCES users(id)'); } catch (_) {}
+  try { db.exec('ALTER TABLE jobs ADD COLUMN accepted_at DATETIME'); } catch (_) {}
+  try { db.exec('ALTER TABLE jobs ADD COLUMN job_type TEXT DEFAULT \'bounty\''); } catch (_) {}
+  try { db.exec('ALTER TABLE jobs ADD COLUMN gm_notes TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE jobs ADD COLUMN player_notes TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE jobs ADD COLUMN created_by INTEGER REFERENCES users(id)'); } catch (_) {}
+
+  // inventory: ownership tracking
+  try { db.exec('ALTER TABLE inventory ADD COLUMN owner_id INTEGER REFERENCES users(id)'); } catch (_) {}
+  try { db.exec('ALTER TABLE inventory ADD COLUMN created_by INTEGER REFERENCES users(id)'); } catch (_) {}
+
+  // key_items: ownership
+  try { db.exec('ALTER TABLE key_items ADD COLUMN created_by INTEGER REFERENCES users(id)'); } catch (_) {}
+
+  // campaigns: party location tracking
+  try { db.exec("ALTER TABLE campaigns ADD COLUMN current_party_location_id TEXT DEFAULT NULL"); } catch (_) {}
+
+  // timeline_events: significance + notes + creator
+  try { db.exec('ALTER TABLE timeline_events ADD COLUMN significance TEXT DEFAULT \'minor\''); } catch (_) {}
+  try { db.exec('ALTER TABLE timeline_events ADD COLUMN gm_notes TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE timeline_events ADD COLUMN player_notes TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE timeline_events ADD COLUMN created_by INTEGER REFERENCES users(id)'); } catch (_) {}
+
+  // timeline_entity_links: multi-entity connections for timeline events
+  db.exec(`CREATE TABLE IF NOT EXISTS timeline_entity_links (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id INTEGER NOT NULL REFERENCES timeline_events(id) ON DELETE CASCADE,
+    entity_type TEXT NOT NULL,
+    entity_id INTEGER NOT NULL,
+    campaign_id INTEGER REFERENCES campaigns(id),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(event_id, entity_type, entity_id)
+  )`);
+
+  // ── Session timer (GM-settable, all-visible) ───────────────────────────────
+  try { db.exec('ALTER TABLE campaigns ADD COLUMN timer_label TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE campaigns ADD COLUMN timer_end INTEGER DEFAULT NULL'); } catch (_) {}
+  try { db.exec('ALTER TABLE campaigns ADD COLUMN timer_remaining INTEGER DEFAULT 0'); } catch (_) {}
+  try { db.exec('ALTER TABLE campaigns ADD COLUMN timer_running INTEGER DEFAULT 0'); } catch (_) {}
+
+  // ── Calendar system ────────────────────────────────────────────────────────
+  db.exec(`CREATE TABLE IF NOT EXISTS campaign_calendars (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    campaign_id INTEGER NOT NULL UNIQUE REFERENCES campaigns(id) ON DELETE CASCADE,
+    config TEXT NOT NULL DEFAULT '{}',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+
+  db.exec(`CREATE TABLE IF NOT EXISTS calendar_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    campaign_id INTEGER NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+    era_index INTEGER NOT NULL DEFAULT 0,
+    year INTEGER NOT NULL,
+    month INTEGER NOT NULL,
+    day INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    type TEXT DEFAULT 'event',
+    color TEXT DEFAULT '#c9a84c',
+    weather_icon TEXT,
+    is_gm_only INTEGER DEFAULT 0,
+    created_by INTEGER REFERENCES users(id),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+
+  // ── Good Boy / Bad Boy Cards ───────────────────────────────────────────────
+  db.exec(`CREATE TABLE IF NOT EXISTS good_boy_card_defs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL CHECK(type IN ('good', 'bad')),
+    tier TEXT NOT NULL CHECK(tier IN ('low', 'mid', 'high', 'huge')),
+    name TEXT NOT NULL,
+    effect TEXT NOT NULL
+  )`);
+
+  db.exec(`CREATE TABLE IF NOT EXISTS player_good_boy_cards (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    campaign_id INTEGER NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    card_def_id INTEGER NOT NULL REFERENCES good_boy_card_defs(id),
+    awarded_by INTEGER REFERENCES users(id),
+    awarded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    played_at DATETIME,
+    played_note TEXT
+  )`);
+
+  // Seed card definitions (idempotent — only inserts if table is empty)
+  const cardCount = db.prepare('SELECT COUNT(*) as n FROM good_boy_card_defs').get();
+  if (cardCount.n === 0) {
+    const ins = db.prepare('INSERT INTO good_boy_card_defs (type, tier, name, effect) VALUES (?, ?, ?, ?)');
+    const CARDS = [
+      // ── GOOD — low ─────────────────────────────────────────────────────────
+      ['good','low','Lucky Charm',          'Add +1 to your next ability check.'],
+      ['good','low','Swift Feet',           'Your movement speed increases by 10ft for one turn.'],
+      ['good','low','Fortified',            'Gain 5 temporary hit points immediately.'],
+      ['good','low','Keen Eye',             'Advantage on your next Perception check.'],
+      ['good','low','Silver Tongue',        'Add +2 to your next Persuasion or Deception check.'],
+      ['good','low','Quick Draw',           'Add +2 to your next Initiative roll.'],
+      ['good','low','Steady Nerves',        'Advantage on your next Constitution saving throw.'],
+      ['good','low','Nimble Dodge',         'Advantage on your next Dexterity saving throw.'],
+      ['good','low','Ironclad Stomach',     'Immune to the poisoned condition until your next short rest.'],
+      ['good','low','Hunter\'s Mark',       'Advantage on your next Survival or Tracking check.'],
+      ['good','low','Scholar\'s Glance',    'Automatically succeed on your next History or Arcana check (DC 12 or lower).'],
+      ['good','low','Battlefield Awareness','You cannot be surprised until the end of your next long rest.'],
+      ['good','low','Careful Step',         'You leave no tracks and make no sound for the next hour.'],
+      ['good','low','Lucky Break',          'Ignore one instance of disadvantage on any single roll.'],
+      ['good','low','Taunt',                'One enemy within 30ft must make a DC 13 Wisdom save or target only you on their next turn.'],
+      // ── GOOD — mid ─────────────────────────────────────────────────────────
+      ['good','mid','Second Chance',        'Reroll any one die you just rolled and take the better result.'],
+      ['good','mid','Adrenaline Rush',      'Take one additional bonus action on your next turn.'],
+      ['good','mid','Spell Reserve',        'Recover one expended 1st-level spell slot.'],
+      ['good','mid','Battle Cry',           'All allies within 30ft gain +1 to their next attack roll and damage roll.'],
+      ['good','mid','Arcane Surge',         'Maximise the damage dice of your next spell (before modifiers).'],
+      ['good','mid','Shield of Fate',       'The next attack that would hit you misses instead (declare after hit is announced).'],
+      ['good','mid','Healing Word',         'Heal one creature within 60ft for 2d6+4 HP as a bonus action (no spell slot required).'],
+      ['good','mid','Momentary Invincibility','Damage from the next single hit you take is reduced to 1.'],
+      ['good','mid','True Strike',          'Your next attack roll is made with advantage and the hit counts as magical.'],
+      ['good','mid','Bless',                'Gain +1d4 to all attack rolls and saving throws until the end of your next turn.'],
+      ['good','mid','Phantom Step',         'Move up to 15ft without triggering opportunity attacks (once).'],
+      ['good','mid','Counterstroke',        'Immediately after an enemy misses you, make one free weapon attack as a reaction.'],
+      ['good','mid','War Cry',              'One ally you can see may immediately use their reaction to make one weapon attack.'],
+      ['good','mid','Arcane Shield',        'Gain resistance to the next instance of spell damage you take.'],
+      ['good','mid','Rapid Recovery',       'Remove one level of exhaustion immediately.'],
+      // ── GOOD — high ────────────────────────────────────────────────────────
+      ['good','high','Echo Spell',          'Cast any spell you know of 2nd level or lower without expending a spell slot (once).'],
+      ['good','high','Unstoppable',         'You cannot be reduced below 1 HP by any single attack until the end of your next turn.'],
+      ['good','high','Warpstep',            'Teleport to any unoccupied space within 60ft you can see as a bonus action.'],
+      ['good','high','Turn the Tide',       'Up to three allies within 30ft each regain 1d8+4 HP immediately.'],
+      ['good','high','Champion\'s Surge',   'Make one additional weapon attack as part of your Attack action on your next turn.'],
+      ['good','high','Moment of Clarity',   'Remove one condition from yourself: frightened, charmed, stunned, or paralysed.'],
+      ['good','high','Arcane Mastery',      'Your next spell is cast as if using a spell slot two levels higher (no extra slot required).'],
+      ['good','high','Divine Ward',         'You and all allies within 15ft have advantage on all saving throws until the start of your next turn.'],
+      ['good','high','Tactical Genius',     'Your side wins the next Initiative contest automatically; all allies act before all enemies.'],
+      ['good','high','Resilience',          'Regain one expended use of any class feature that recharges on a short rest.'],
+      ['good','high','Legendary Luck',      'Add 1d10 to any single d20 roll this session (declare after seeing the result, before outcome is described).'],
+      ['good','high','Inspiration',         'You and one ally of your choice each gain a Bardic Inspiration die (d8) immediately.'],
+      // ── GOOD — huge ────────────────────────────────────────────────────────
+      ['good','huge','Phoenix Heart',       'The next time you drop to 0 HP this session, you drop to 1 HP instead.'],
+      ['good','huge','Critical Surge',      'Your next attack is automatically a critical hit (roll damage dice twice).'],
+      ['good','huge','Ascendant Moment',    'Gain the full benefits of a Short Rest instantly.'],
+      ['good','huge','Fated Negation',      'Completely negate any one spell or effect targeting you (no reaction required, declare after target is announced).'],
+      ['good','huge','Dragon\'s Fortune',   'Roll all dice with advantage for the next 3 rounds.'],
+      ['good','huge','Hero\'s Moment',      'Automatically succeed on any one ability check, attack roll, or saving throw (declare before rolling).'],
+      ['good','huge','Gift of the Gods',    'Regain one expended use of your most powerful once-per-long-rest class feature.'],
+      ['good','huge','Mythic Surge',        'Double your proficiency bonus on all rolls for the duration of the current encounter.'],
+      // ── BAD — low ──────────────────────────────────────────────────────────
+      ['bad','low','Butterfingers',         'Drop whatever you\'re holding; retrieving it costs your bonus action next turn.'],
+      ['bad','low','Stumble',               'Your speed is reduced by 10ft on your next turn.'],
+      ['bad','low','Rattled',               '-1 to your next ability check.'],
+      ['bad','low','Stubbed Toe',           'Take 1 point of bludgeoning damage. It\'s embarrassing.'],
+      ['bad','low','Clumsy Oaf',            'Disadvantage on your next Dexterity check.'],
+      ['bad','low','Loose Lips',            'DC 12 Stealth check or your group\'s position is revealed to nearby enemies.'],
+      ['bad','low','Bad Hair Day',          'Disadvantage on your next Persuasion or Performance check.'],
+      ['bad','low','Distracted',            'You cannot use your reaction until the start of your next turn.'],
+      ['bad','low','Twisted Ankle',         'Your movement speed is halved until the end of your next turn.'],
+      ['bad','low','Bad Omen',              'The next ally who uses the Help action to assist you rolls with disadvantage instead.'],
+      ['bad','low','Overconfident',         'You must attempt the most direct, least cautious approach to the next obstacle you face.'],
+      ['bad','low','Spooked',               'Disadvantage on your next saving throw against the frightened condition.'],
+      ['bad','low','Wet Boots',             'All Stealth checks you make for the next hour are made at disadvantage.'],
+      ['bad','low','Muscle Cramp',          'Your next melee attack is made at a -2 penalty.'],
+      ['bad','low','Blurry Vision',         'All ranged attacks you make until the end of your next turn are made at disadvantage.'],
+      // ── BAD — mid ──────────────────────────────────────────────────────────
+      ['bad','mid','Fumble',                'Reroll your next attack roll and take the lower result.'],
+      ['bad','mid','Spell Fizzle',          'Your next spell fails and the spell slot is wasted anyway.'],
+      ['bad','mid','Off Balance',           'You are knocked prone. Standing up costs half your movement.'],
+      ['bad','mid','Cursed Dice',           'Disadvantage on all Initiative rolls until your next long rest.'],
+      ['bad','mid','Wild Magic Surge',      'Roll on the Wild Magic Surge table (or DM improvises something appropriately chaotic).'],
+      ['bad','mid','Fumbled Weapon',        'Your weapon skitters 10ft in a random direction (d8 × 45°); retrieving it costs your movement.'],
+      ['bad','mid','Haunted Hands',         'A minor spirit interferes; disadvantage on all Sleight of Hand and thieves\' tools checks until next short rest.'],
+      ['bad','mid','Backlash',              'Your next spell deals half its rolled damage to you as psychic damage.'],
+      ['bad','mid','Brittle Guard',         'Your armour or shield\'s AC bonus is reduced by 1 until repaired (long rest).'],
+      ['bad','mid','Loudmouth',             'All creatures within 60ft are aware of your exact location until the end of your next turn.'],
+      ['bad','mid','Marked',               'One enemy of the DM\'s choice has advantage on their next attack against you.'],
+      ['bad','mid','Shaken',               'Disadvantage on your next saving throw against being stunned or paralysed.'],
+      ['bad','mid','Rattling Bones',        'Undead creatures within 30ft sense your presence for the next hour.'],
+      ['bad','mid','Sticky Fingers',        'The next potion or item you attempt to use takes twice as long (costs both action and bonus action).'],
+      ['bad','mid','Exposed Flank',         'The next attack against you has advantage and ignores your shield bonus (if any).'],
+      // ── BAD — high ─────────────────────────────────────────────────────────
+      ['bad','high','Open Wound',           'You are bleeding; lose 1d4 HP at the start of each of your turns until a DC 12 Medicine check or magic heals you.'],
+      ['bad','high','Shattered Focus',      'Any concentration spell you are maintaining ends immediately.'],
+      ['bad','high','Drained',              'Lose one 2nd-level (or lower) spell slot until your next long rest.'],
+      ['bad','high','Sapped',               'Lose one use of a class feature that recharges on a short rest.'],
+      ['bad','high','Compelled',            'You must move toward the nearest enemy on your next turn and make a melee attack if possible.'],
+      ['bad','high','Friends to Enemies',   'One friendly NPC present becomes hostile; their attitude drops to unfriendly until you make amends.'],
+      ['bad','high','Cruel Fate',           'The DM may immediately change one environmental detail to your disadvantage.'],
+      ['bad','high','Unlucky Star',         'Disadvantage on all ability checks for the next hour.'],
+      ['bad','high','Chain Fumble',         'The fumble cascades; one ally within 5ft must make a DC 12 Dex save or take 1d6 bludgeoning damage.'],
+      ['bad','high','Bad Dream',            'The next time you take a long rest, you recover no HP and cannot recover spell slots above 1st level.'],
+      ['bad','high','Villain\'s Fortune',   'The primary antagonist gains one extra legendary action or lair action of the DM\'s choosing this session.'],
+      ['bad','high','Cosmic Debt',          'The next natural 20 you roll is treated as an 18 instead (still a hit, just not a critical).'],
+      // ── BAD — huge ─────────────────────────────────────────────────────────
+      ['bad','huge','Nemesis Born',         'A recurring enemy targeting you personally is introduced or significantly empowered by the DM.'],
+      ['bad','huge','Cursed Touch',         'The next magical item you touch becomes cursed until end of session (DM\'s choice of curse).'],
+      ['bad','huge','Divine Displeasure',   'Your deity or patron is displeased; lose access to one class feature until you complete an in-game act of atonement.'],
+      ['bad','huge','Catastrophic Failure', 'Your action not only fails but makes the situation demonstrably worse; DM determines the full consequence.'],
+      ['bad','huge','Sunder',               'One non-plot-critical item you carry is destroyed outright (DM\'s choice).'],
+      ['bad','huge','Doomed',               'Disadvantage on all death saving throws until your next long rest.'],
+      ['bad','huge','Mark of Shame',        'All enemies within 30ft sense your misfortune and gain 5 temporary HP (they are emboldened).'],
+      ['bad','huge','The Worst Timing',     'The DM may interrupt your next successful plan with a narrative complication of their choosing.'],
+    ];
+    for (const [type, tier, name, effect] of CARDS) ins.run(type, tier, name, effect);
+  }
+
+  // Token revocation: increment to invalidate all issued JWTs for a user
+  try { db.exec('ALTER TABLE users ADD COLUMN token_version INTEGER DEFAULT 0'); } catch (_) {}
+  // User preferences (theme, custom colors, etc.) persisted server-side
+  try { db.exec('ALTER TABLE users ADD COLUMN preferences TEXT'); } catch (_) {}
 
   console.log('✅ Migrations complete.');
 }

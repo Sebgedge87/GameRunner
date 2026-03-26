@@ -17,20 +17,20 @@ router.get('/', requireAuth, (req, res) => {
 makeHiddenToggle(router, 'inventory');
 
 router.post('/', requireGm, (req, res) => {
-  const { name, description, quantity = 1, holder = 'party', image_path } = req.body;
+  const { name, description, quantity = 1, holder = 'party', image_path, owner_id } = req.body;
   if (!name) return res.status(400).json({ error: 'name is required' });
   const db = getDb();
   const campId = getCampaignId(req);
   const result = db.prepare(`
-    INSERT INTO inventory (campaign_id, name, description, quantity, holder, image_path)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `).run(campId || null, name, description || null, quantity, holder, image_path || null);
+    INSERT INTO inventory (campaign_id, name, description, quantity, holder, image_path, owner_id, created_by)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(campId || null, name, description || null, quantity, holder, image_path || null, owner_id || null, req.user.id);
   const item = db.prepare('SELECT * FROM inventory WHERE id = ?').get(result.lastInsertRowid);
   res.status(201).json({ item });
 });
 
 router.put('/:id', requireGm, (req, res) => {
-  const { name, description, quantity, holder, image_path } = req.body;
+  const { name, description, quantity, holder, image_path, owner_id } = req.body;
   const db = getDb();
   db.prepare(`
     UPDATE inventory SET
@@ -39,11 +39,30 @@ router.put('/:id', requireGm, (req, res) => {
       quantity = COALESCE(?, quantity),
       holder = COALESCE(?, holder),
       image_path = COALESCE(?, image_path),
+      owner_id = COALESCE(?, owner_id),
       updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
-  `).run(name, description, quantity, holder, image_path, req.params.id);
+  `).run(name, description, quantity, holder, image_path, owner_id, req.params.id);
   const item = db.prepare('SELECT * FROM inventory WHERE id = ?').get(req.params.id);
   res.json({ item });
+});
+
+// PUT /api/inventory/:id/transfer — player gives item to another user
+router.put('/:id/transfer', requireAuth, (req, res) => {
+  const { target_user_id } = req.body;
+  if (!target_user_id) return res.status(400).json({ error: 'target_user_id required' });
+  const db = getDb();
+  const item = db.prepare('SELECT * FROM inventory WHERE id = ?').get(req.params.id);
+  if (!item) return res.status(404).json({ error: 'Item not found' });
+  // Only the owner or GM can transfer
+  if (!req.user.isGm && item.owner_id !== req.user.id) {
+    return res.status(403).json({ error: 'You can only transfer items you own' });
+  }
+  const target = db.prepare('SELECT id, username FROM users WHERE id = ?').get(target_user_id);
+  if (!target) return res.status(404).json({ error: 'Target user not found' });
+  db.prepare(`UPDATE inventory SET owner_id = ?, holder = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`)
+    .run(target_user_id, target.username, req.params.id);
+  res.json({ success: true, new_owner: target.username });
 });
 
 router.delete('/:id', requireGm, (req, res) => {

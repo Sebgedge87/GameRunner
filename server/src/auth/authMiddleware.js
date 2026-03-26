@@ -21,10 +21,20 @@ function requireAuth(req, res, next) {
   }
 
   const user = getDb()
-    .prepare('SELECT id, username, character_name, character_class, character_level, role FROM users WHERE id = ?')
+    .prepare('SELECT id, username, character_name, character_class, character_level, role, token_version FROM users WHERE id = ?')
     .get(payload.userId);
 
   if (!user) return res.status(401).json({ error: 'User not found' });
+
+  // Reject tokens issued before the last token invalidation (logout/password change)
+  if ((user.token_version ?? 0) !== (payload.tv ?? 0)) {
+    return res.status(401).json({ error: 'Session expired, please log in again' });
+  }
+
+  // Update last_seen (fire and forget)
+  try {
+    getDb().prepare('UPDATE users SET last_seen = CURRENT_TIMESTAMP WHERE id = ?').run(user.id);
+  } catch (_) {}
 
   // Determine per-campaign GM status from X-Campaign-Id header.
   // Global role='gm' always wins; otherwise check campaign_members.

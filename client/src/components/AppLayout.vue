@@ -1,5 +1,5 @@
 <template>
-  <div id="app-shell">
+  <div id="app-shell" :class="{ 'sidebar-icon-only': ui.sidebarCollapsed }">
     <!-- Sidebar overlay for mobile -->
     <div id="sidebar-overlay"
       :class="{ open: ui.sidebarOpen }"
@@ -11,6 +11,15 @@
     <!-- Main area -->
     <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
       <AppTopbar />
+      <!-- Update available banner -->
+      <div v-if="updateAvailable"
+           style="background:var(--accent);color:#1a1008;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:12px;flex-shrink:0">
+        <span>⚡ A new version is available.</span>
+        <button @click="() => window.location.reload()"
+                style="background:rgba(0,0,0,0.2);border:none;border-radius:4px;padding:4px 12px;cursor:pointer;color:inherit;font-family:inherit;font-size:12px;font-weight:700">
+          Refresh now
+        </button>
+      </div>
       <div id="main" ref="mainEl">
         <RouterView v-slot="{ Component }">
           <Transition name="fade" mode="out-in">
@@ -42,11 +51,15 @@
     <ConfirmDialog />
     <!-- Toast container -->
     <ToastContainer />
+    <!-- Per-system immersive VFX overlay -->
+    <ImmersionOverlay />
+    <!-- Timer widget (always on top, all users) -->
+    <TimerWidget />
   </div>
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, watch } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useCampaignStore } from '@/stores/campaign'
@@ -66,6 +79,8 @@ import ShareModal from './ShareModal.vue'
 import OnboardingWizard from './OnboardingWizard.vue'
 import ConfirmDialog from './ConfirmDialog.vue'
 import ToastContainer from './ToastContainer.vue'
+import ImmersionOverlay from './ImmersionOverlay.vue'
+import TimerWidget from './TimerWidget.vue'
 
 const auth = useAuthStore()
 const campaign = useCampaignStore()
@@ -90,9 +105,28 @@ async function handleSseEvent(d) {
     await data.loadHandouts()
     ui.showToast(d.title || 'New Handout', '', '📄')
   }
+  if (d.type === 'timer_update' && d.campaign_id === campaign.activeCampaign?.id) {
+    campaign.setTimer(d.timer)
+  }
+  if (d.type === 'calendar_update' && d.campaign_id === campaign.activeCampaign?.id) {
+    campaign.calendarVersion++
+  }
   if (d.type === 'agenda_revealed') {
     await data.loadAgenda()
     ui.showToast('Secret Objective', 'Your agenda has been updated', '🎯')
+  }
+  if (d.type === 'card_awarded') {
+    ui.cardBadge = (ui.cardBadge || 0) + 1
+    const icon = d.card?.type === 'good' ? '🐶' : '😈'
+    ui.showToast(d.message || 'You received a card!', d.card?.effect || '', icon)
+  }
+  if (d.type === 'card_played') {
+    const icon = d.card_type === 'good' ? '🐶' : '😈'
+    ui.showToast(
+      `${d.player_name} played: ${d.card_name}`,
+      d.card_effect || '',
+      icon,
+    )
   }
   if (d.type === 'new_message') {
     await refreshMessages()
@@ -119,16 +153,34 @@ watch(() => auth.token, (token) => {
   if (!token) disconnect()
 })
 
+// ── Update detection ──────────────────────────────────────────────────────────
+const updateAvailable = ref(false)
+let startupVersion = null
+let versionPollTimer = null
+
+async function checkVersion() {
+  try {
+    const r = await fetch('/api/version')
+    if (!r.ok) return
+    const { version } = await r.json()
+    if (startupVersion === null) { startupVersion = version; return }
+    if (version !== startupVersion) updateAvailable.value = true
+  } catch (_) {}
+}
+
 onMounted(async () => {
   connect()
   await campaign.loadCampaigns()
   await data.loadAll()
   await refreshMessages()
   await refreshNotifications()
+  await checkVersion()
+  versionPollTimer = setInterval(checkVersion, 5 * 60 * 1000)
 })
 
 onUnmounted(() => {
   disconnect()
+  clearInterval(versionPollTimer)
 })
 </script>
 

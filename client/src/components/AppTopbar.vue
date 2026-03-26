@@ -18,8 +18,15 @@
             @click="switchTo(c.id)"
           >
             <span :class="c.id === campaign.activeCampaign?.id ? 'dot' : 'dot-empty'"></span>
-            {{ c.name }}
-            <span v-if="c.my_role === 'gm'" style="font-size:10px;color:var(--accent);margin-left:auto">GM</span>
+            <span style="flex:1">{{ c.name }}</span>
+            <span v-if="c.my_role === 'gm'" style="font-size:10px;color:var(--accent)">GM</span>
+          </div>
+          <!-- Invite code for active GM campaign -->
+          <div v-if="campaign.activeCampaign && campaign.isGm && campaign.activeCampaign.invite_code"
+               style="border-top:1px solid var(--border);margin-top:4px;padding:8px 12px;display:flex;align-items:center;gap:8px">
+            <span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace">INVITE</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.1em;color:var(--accent);font-weight:700">{{ campaign.activeCampaign.invite_code }}</span>
+            <button class="btn btn-sm" style="margin-left:auto;padding:2px 8px;font-size:10px" @click.stop="copyCode">Copy</button>
           </div>
         </div>
       </div>
@@ -90,6 +97,12 @@ const searchResults = ref([])
 const searchDropOpen = ref(false)
 let searchTimer = null
 
+function copyCode() {
+  const code = campaign.activeCampaign?.invite_code
+  if (!code) return
+  navigator.clipboard.writeText(code).then(() => ui.showToast(`Invite code copied: ${code}`, '', '✓'))
+}
+
 async function switchTo(id) {
   campDropOpen.value = false
   try {
@@ -121,11 +134,33 @@ const PAGE_MAP = {
   quest: 'quests', npc: 'npcs', location: 'locations', hook: 'hooks',
   inventory: 'inventory', 'key-item': 'inventory', faction: 'factions',
   note: 'notes', session: 'sessions', job: 'jobs',
+  bestiary: 'bestiary', map: 'maps', rumour: 'rumours', handout: 'handouts',
+}
+
+// Types that have a detail modal — look up the full entity and open it directly
+const DETAIL_STORE = {
+  quest:     () => data.quests,
+  npc:       () => data.npcs,
+  location:  () => data.locations,
+  hook:      () => data.hooks,
+  faction:   () => data.factions,
+  inventory: () => data.inventory,
+  'key-item':() => data.keyItems,
+  job:       () => data.jobs,
+  bestiary:  () => data.bestiary,
+  map:       () => data.maps,
+  rumour:    () => data.rumours,
 }
 
 function searchNav(result) {
   searchDropOpen.value = false
   searchQ.value = ''
+  const store = DETAIL_STORE[result.type]
+  if (store) {
+    const entity = store().find(e => String(e.id) === String(result.id))
+    if (entity) { ui.openDetail(result.type, entity); return }
+  }
+  // Fallback: navigate to list page (notes, sessions, etc.)
   const page = PAGE_MAP[result.type] || result.type
   router.push(`/${page}`)
 }

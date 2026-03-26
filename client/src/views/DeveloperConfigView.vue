@@ -1,0 +1,583 @@
+<template>
+  <div class="dev-root" data-theme="dev">
+    <!-- ── Auth Gate ──────────────────────────────────────────────────── -->
+    <div v-if="!authed" class="dev-login-wrap">
+      <form class="dev-login-form" @submit.prevent="attemptLogin">
+        <div class="dev-login-header">
+          <span class="dev-login-icon">⬡</span>
+          <div class="dev-login-title">SYSTEM CONFIGURATION</div>
+          <div class="dev-login-sub">Developer Access Only</div>
+        </div>
+        <label class="dev-field-label">Username</label>
+        <input
+          v-model="loginUser"
+          class="dev-input"
+          type="text"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="system administrator"
+        />
+        <label class="dev-field-label">Password</label>
+        <input
+          v-model="loginPass"
+          class="dev-input"
+          type="password"
+          autocomplete="off"
+        />
+        <div v-if="loginError" class="dev-login-error">{{ loginError }}</div>
+        <button type="submit" class="dev-btn dev-btn-primary" :disabled="loginBusy">
+          {{ loginBusy ? 'Verifying…' : 'Authenticate' }}
+        </button>
+      </form>
+    </div>
+
+    <!-- ── Configurator ───────────────────────────────────────────────── -->
+    <div v-else class="dev-shell">
+      <header class="dev-header">
+        <span class="dev-header-icon">⬡</span>
+        <span class="dev-header-title">CHRONICLE · DEV CONFIG</span>
+        <span class="dev-header-build">build {{ buildStamp }}</span>
+        <button class="dev-btn dev-btn-ghost dev-logout" @click="logout">⇥ End Session</button>
+      </header>
+
+      <div class="dev-body">
+        <!-- Left: section nav -->
+        <nav class="dev-sidenav">
+          <button
+            v-for="sec in sections"
+            :key="sec.id"
+            class="dev-sidenav-item"
+            :class="{ active: activeSec === sec.id }"
+            @click="activeSec = sec.id"
+          >
+            <span class="dev-sidenav-icon">{{ sec.icon }}</span>{{ sec.label }}
+          </button>
+        </nav>
+
+        <!-- Right: panels -->
+        <main class="dev-panel">
+
+          <!-- ── Immersion Assets ── -->
+          <section v-if="activeSec === 'assets'" class="dev-section">
+            <h2 class="dev-section-title">Immersion Layer Assets</h2>
+            <p class="dev-section-desc">Update file paths or raw SVG strings for per-system VFX elements. Changes are persisted to localStorage and picked up by ImmersionOverlay on next mount.</p>
+
+            <div v-for="asset in assetDefs" :key="asset.key" class="dev-asset-block">
+              <div class="dev-asset-header">
+                <span class="dev-asset-system">{{ asset.system }}</span>
+                <span class="dev-asset-name">{{ asset.name }}</span>
+                <span class="dev-asset-type">{{ asset.type }}</span>
+              </div>
+              <textarea
+                class="dev-textarea"
+                rows="3"
+                :placeholder="asset.placeholder"
+                :value="assetValues[asset.key]"
+                @input="assetValues[asset.key] = $event.target.value"
+              />
+              <div class="dev-asset-actions">
+                <button class="dev-btn dev-btn-sm" @click="saveAsset(asset.key)">Save</button>
+                <button class="dev-btn dev-btn-sm dev-btn-ghost" @click="clearAsset(asset.key)">Clear</button>
+                <span v-if="savedKeys.has(asset.key)" class="dev-saved-badge">✓ Saved</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- ── CSS Variables ── -->
+          <section v-if="activeSec === 'vars'" class="dev-section">
+            <h2 class="dev-section-title">Global CSS Variables</h2>
+            <p class="dev-section-desc">Tweak design tokens live. Changes apply immediately to <code>document.documentElement</code> and are persisted to localStorage.</p>
+
+            <div class="dev-vars-grid">
+              <div v-for="v in cssVarDefs" :key="v.prop" class="dev-var-row">
+                <label class="dev-var-label">{{ v.label }}</label>
+                <code class="dev-var-prop">{{ v.prop }}</code>
+                <div class="dev-var-controls">
+                  <input
+                    v-if="v.type === 'color'"
+                    type="color"
+                    class="dev-color-picker"
+                    :value="liveVars[v.prop] || v.default"
+                    @input="setLiveVar(v.prop, $event.target.value)"
+                  />
+                  <input
+                    class="dev-var-input"
+                    type="text"
+                    :value="liveVars[v.prop] || v.default"
+                    @input="setLiveVar(v.prop, $event.target.value)"
+                    :placeholder="v.default"
+                  />
+                </div>
+                <button class="dev-btn dev-btn-xs dev-btn-ghost" @click="resetVar(v.prop, v.default)">Reset</button>
+              </div>
+            </div>
+
+            <div class="dev-vars-actions">
+              <button class="dev-btn dev-btn-primary" @click="persistVars">Persist All</button>
+              <button class="dev-btn dev-btn-ghost" @click="resetAllVars">Reset All</button>
+              <span v-if="varsSaved" class="dev-saved-badge">✓ Persisted to localStorage</span>
+            </div>
+          </section>
+
+          <!-- ── Route Audit ── -->
+          <section v-if="activeSec === 'routes'" class="dev-section">
+            <h2 class="dev-section-title">Route Access Audit</h2>
+            <p class="dev-section-desc">Confirms that <code>/dev-admin</code> is not discoverable via standard navigation. This route has no <code>meta.auth</code>, is absent from AppSidebar, and is not linked anywhere in the application UI.</p>
+            <div class="dev-audit-table">
+              <div class="dev-audit-row dev-audit-header">
+                <span>Path</span><span>Auth Required</span><span>GM Only</span><span>Sidebar</span><span>Status</span>
+              </div>
+              <div v-for="r in routeAudit" :key="r.path" class="dev-audit-row" :class="{ 'audit-warn': r.warn }">
+                <code>{{ r.path }}</code>
+                <span :class="r.auth ? 'tag-yes' : 'tag-no'">{{ r.auth ? 'yes' : 'no' }}</span>
+                <span :class="r.gm ? 'tag-yes' : 'tag-no'">{{ r.gm ? 'yes' : 'no' }}</span>
+                <span :class="r.sidebar ? 'tag-yes' : 'tag-no'">{{ r.sidebar ? 'yes' : 'no' }}</span>
+                <span :class="r.status === 'OK' ? 'tag-ok' : 'tag-warn'">{{ r.status }}</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- ── Session Info ── -->
+          <section v-if="activeSec === 'session'" class="dev-section">
+            <h2 class="dev-section-title">Dev Session Info</h2>
+            <p class="dev-section-desc">This session is stored under a separate localStorage key (<code>chronicle_dev_session</code>) and is completely isolated from the main application auth token (<code>chronicle_token</code>). Ending this session does not affect logged-in users.</p>
+            <div class="dev-kv-list">
+              <div class="dev-kv-row"><span class="dev-kv-key">Session key</span><code class="dev-kv-val">chronicle_dev_session</code></div>
+              <div class="dev-kv-row"><span class="dev-kv-key">Session issued</span><code class="dev-kv-val">{{ sessionIssued }}</code></div>
+              <div class="dev-kv-row"><span class="dev-kv-key">Isolation</span><code class="dev-kv-val">Full — no shared Pinia stores, no SSE connection</code></div>
+              <div class="dev-kv-row"><span class="dev-kv-key">Route meta</span><code class="dev-kv-val">{ devOnly: true } — no meta.auth, no meta.gm</code></div>
+              <div class="dev-kv-row"><span class="dev-kv-key">AppLayout</span><code class="dev-kv-val">Not used — renders outside AppLayout/AppSidebar</code></div>
+              <div class="dev-kv-row"><span class="dev-kv-key">Standard app token</span><code class="dev-kv-val">{{ mainTokenPresent ? 'Present (unmodified)' : 'Not present' }}</code></div>
+            </div>
+            <button class="dev-btn dev-btn-danger" style="margin-top:20px" @click="clearDevSession">Clear Dev Session</button>
+          </section>
+
+        </main>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, reactive, computed, onMounted } from 'vue'
+
+// ── Auth gate — isolated from main application auth ──────────────────────────
+// NOTE: Credentials are intentionally hardcoded for a local developer-only tool.
+// This view is not linked from any standard navigation and is not indexed by the
+// application router guard (meta.auth is absent). Do not expose this to end users.
+const DEV_USER = 'system administrator'
+const DEV_PASS = 'Akthos12@'
+const SESSION_KEY = 'chronicle_dev_session'
+
+const authed = ref(false)
+const loginUser = ref('')
+const loginPass = ref('')
+const loginError = ref('')
+const loginBusy = ref(false)
+const sessionIssued = ref('')
+
+function checkSession() {
+  const s = localStorage.getItem(SESSION_KEY)
+  if (s) {
+    try {
+      const parsed = JSON.parse(s)
+      if (parsed.valid) {
+        authed.value = true
+        sessionIssued.value = parsed.issued || '—'
+        return
+      }
+    } catch { /* invalid */ }
+  }
+  authed.value = false
+}
+
+async function attemptLogin() {
+  loginError.value = ''
+  loginBusy.value = true
+  // Simulate a brief auth delay for UX
+  await new Promise(r => setTimeout(r, 420))
+  if (loginUser.value === DEV_USER && loginPass.value === DEV_PASS) {
+    const issued = new Date().toISOString()
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ valid: true, issued }))
+    sessionIssued.value = issued
+    authed.value = true
+  } else {
+    loginError.value = 'Invalid credentials'
+  }
+  loginBusy.value = false
+}
+
+function logout() {
+  localStorage.removeItem(SESSION_KEY)
+  authed.value = false
+  loginUser.value = ''
+  loginPass.value = ''
+}
+
+function clearDevSession() {
+  logout()
+}
+
+const mainTokenPresent = computed(() => !!localStorage.getItem('chronicle_token'))
+const buildStamp = computed(() => new Date().toISOString().slice(0, 10))
+
+// ── Asset configurator ────────────────────────────────────────────────────────
+const ASSET_STORAGE_KEY = 'chronicle_dev_assets'
+
+const assetDefs = [
+  { key: 'alien_slime_svg',    system: 'Alien',    name: 'Slime Drip SVG',         type: 'SVG string / URL', placeholder: '<svg…> or /assets/slime.svg' },
+  { key: 'alien_scanline_url', system: 'Alien',    name: 'Scanline Overlay PNG',    type: 'URL',              placeholder: '/assets/scanline.png' },
+  { key: 'coriolis_hud_svg',   system: 'Coriolis', name: 'Tactical HUD Schematic',  type: 'SVG string / URL', placeholder: '<svg…> or /assets/hud.svg' },
+  { key: 'dune_sand_url',      system: 'Dune',     name: 'Sand Particle PNG',       type: 'URL',              placeholder: '/assets/sand-particle.png' },
+  { key: 'dune_banner_svg',    system: 'Dune',     name: 'House Banner SVG',        type: 'SVG string / URL', placeholder: '<svg…> or /assets/banner.svg' },
+  { key: 'coc_rune_font_url',  system: 'CoC',      name: 'Mythos Rune Font URL',    type: 'URL',              placeholder: 'https://…/rune-font.woff2' },
+  { key: 'achtung_knife_svg',  system: 'Achtung!', name: 'Fairbairn-Sykes Knife SVG', type: 'SVG string',    placeholder: '<svg…>' },
+  { key: 'achtung_manual_url', system: 'Achtung!', name: 'OSS Manual Cover PNG',    type: 'URL',              placeholder: '/assets/oss-manual.png' },
+]
+
+const assetValues = reactive({})
+const savedKeys = reactive(new Set())
+
+function loadAssets() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(ASSET_STORAGE_KEY) || '{}')
+    for (const def of assetDefs) {
+      assetValues[def.key] = stored[def.key] || ''
+    }
+  } catch { /* ignore */ }
+}
+
+function saveAsset(key) {
+  const stored = JSON.parse(localStorage.getItem(ASSET_STORAGE_KEY) || '{}')
+  stored[key] = assetValues[key]
+  localStorage.setItem(ASSET_STORAGE_KEY, JSON.stringify(stored))
+  savedKeys.add(key)
+  setTimeout(() => savedKeys.delete(key), 2000)
+}
+
+function clearAsset(key) {
+  assetValues[key] = ''
+  saveAsset(key)
+}
+
+// ── CSS Variable live editor ──────────────────────────────────────────────────
+const CSS_VAR_STORAGE_KEY = 'chronicle_dev_vars'
+const varsSaved = ref(false)
+
+const cssVarDefs = [
+  { prop: '--line-height',  label: 'Baseline Line Height', type: 'text',  default: '32px' },
+  { prop: '--accent',       label: 'Accent Colour',        type: 'color', default: '#c5a059' },
+  { prop: '--accent2',      label: 'Accent Highlight',     type: 'color', default: '#e8c97a' },
+  { prop: '--bg',           label: 'Background',           type: 'color', default: '#0f0d0a' },
+  { prop: '--surface',      label: 'Surface',              type: 'color', default: '#221b12' },
+  { prop: '--text',         label: 'Text',                 type: 'color', default: '#f0e8d0' },
+  { prop: '--text2',        label: 'Text (secondary)',     type: 'color', default: '#b0a080' },
+  { prop: '--border',       label: 'Border',               type: 'color', default: '#2a241e' },
+  { prop: '--ink-color',    label: 'Ink Input Colour',     type: 'color', default: '#1A237E' },
+  { prop: '--ink-blur',     label: 'Ink Blur Radius',      type: 'text',  default: '0.5px' },
+  { prop: '--radius',       label: 'Border Radius',        type: 'text',  default: '4px' },
+  { prop: '--font-header',  label: 'Header Font',          type: 'text',  default: "'Cinzel', Georgia, serif" },
+  { prop: '--font-body',    label: 'Body Font',            type: 'text',  default: "'Crimson Pro', Georgia, serif" },
+  { prop: '--anim-speed',   label: 'Animation Speed',      type: 'text',  default: '0.25s' },
+]
+
+const liveVars = reactive({})
+
+function loadVars() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(CSS_VAR_STORAGE_KEY) || '{}')
+    for (const v of cssVarDefs) {
+      const saved = stored[v.prop]
+      liveVars[v.prop] = saved || ''
+      if (saved) document.documentElement.style.setProperty(v.prop, saved)
+    }
+  } catch { /* ignore */ }
+}
+
+function setLiveVar(prop, value) {
+  liveVars[prop] = value
+  document.documentElement.style.setProperty(prop, value)
+}
+
+function resetVar(prop, defaultVal) {
+  liveVars[prop] = ''
+  document.documentElement.style.removeProperty(prop)
+  const stored = JSON.parse(localStorage.getItem(CSS_VAR_STORAGE_KEY) || '{}')
+  delete stored[prop]
+  localStorage.setItem(CSS_VAR_STORAGE_KEY, JSON.stringify(stored))
+}
+
+function persistVars() {
+  const stored = {}
+  for (const v of cssVarDefs) {
+    if (liveVars[v.prop]) stored[v.prop] = liveVars[v.prop]
+  }
+  localStorage.setItem(CSS_VAR_STORAGE_KEY, JSON.stringify(stored))
+  varsSaved.value = true
+  setTimeout(() => { varsSaved.value = false }, 2500)
+}
+
+function resetAllVars() {
+  for (const v of cssVarDefs) {
+    liveVars[v.prop] = ''
+    document.documentElement.style.removeProperty(v.prop)
+  }
+  localStorage.removeItem(CSS_VAR_STORAGE_KEY)
+}
+
+// ── Route audit ───────────────────────────────────────────────────────────────
+const routeAudit = [
+  { path: '/home',           auth: true,  gm: false, sidebar: true,  status: 'OK',   warn: false },
+  { path: '/dashboard',      auth: true,  gm: false, sidebar: true,  status: 'OK',   warn: false },
+  { path: '/gm-dashboard',   auth: true,  gm: true,  sidebar: true,  status: 'OK',   warn: false },
+  { path: '/combat',         auth: true,  gm: true,  sidebar: true,  status: 'OK',   warn: false },
+  { path: '/settings',       auth: true,  gm: false, sidebar: true,  status: 'OK',   warn: false },
+  { path: '/login',          auth: false, gm: false, sidebar: false, status: 'OK',   warn: false },
+  { path: '/dev-admin',      auth: false, gm: false, sidebar: false, status: 'HIDDEN — Dev Only', warn: false },
+]
+
+// ── Section nav ───────────────────────────────────────────────────────────────
+const sections = [
+  { id: 'assets',  label: 'Immersion Assets', icon: '🖼' },
+  { id: 'vars',    label: 'CSS Variables',    icon: '🎨' },
+  { id: 'routes',  label: 'Route Audit',      icon: '🔒' },
+  { id: 'session', label: 'Session Info',     icon: '🔑' },
+]
+const activeSec = ref('assets')
+
+onMounted(() => {
+  checkSession()
+  loadAssets()
+  loadVars()
+})
+</script>
+
+<style scoped>
+/* ── Developer shell — standalone dark terminal aesthetic ──────────────── */
+.dev-root {
+  min-height: 100vh;
+  background: #0a0c0e;
+  color: #c8d0d8;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 13px;
+}
+
+/* ── Login ─────────────────────────────────────────────────────────────── */
+.dev-login-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+.dev-login-form {
+  width: 100%;
+  max-width: 360px;
+  background: #0f1318;
+  border: 1px solid #1e2830;
+  border-top: 2px solid #2a4060;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dev-login-header {
+  text-align: center;
+  margin-bottom: 14px;
+}
+.dev-login-icon { font-size: 28px; opacity: 0.6; display: block; margin-bottom: 8px; }
+.dev-login-title { font-size: 12px; letter-spacing: 0.22em; color: #4a7aaa; text-transform: uppercase; }
+.dev-login-sub   { font-size: 10px; color: #3a5060; letter-spacing: 0.12em; margin-top: 4px; }
+.dev-login-error { color: #c94c4c; font-size: 11px; padding: 4px 0; }
+.dev-field-label { font-size: 10px; letter-spacing: 0.14em; color: #3a6080; text-transform: uppercase; }
+
+/* ── Shell header ──────────────────────────────────────────────────────── */
+.dev-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  background: #0c1016;
+  border-bottom: 1px solid #1a2530;
+}
+.dev-header-icon  { font-size: 16px; opacity: 0.5; }
+.dev-header-title { font-size: 11px; letter-spacing: 0.2em; color: #4a7aaa; flex: 1; }
+.dev-header-build { font-size: 10px; color: #2a4050; }
+.dev-logout { margin-left: auto; font-size: 11px; }
+
+/* ── Body layout ───────────────────────────────────────────────────────── */
+.dev-body {
+  display: flex;
+  height: calc(100vh - 42px);
+}
+
+/* ── Sidenav ───────────────────────────────────────────────────────────── */
+.dev-sidenav {
+  width: 180px;
+  flex-shrink: 0;
+  background: #0c1016;
+  border-right: 1px solid #1a2530;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 0;
+  gap: 2px;
+}
+.dev-sidenav-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  color: #3a5870;
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s, color 0.12s;
+}
+.dev-sidenav-item:hover  { background: rgba(74,122,170,0.06); color: #5a90c0; }
+.dev-sidenav-item.active { background: rgba(74,122,170,0.12); color: #6aaad0; border-left: 2px solid #4a7aaa; }
+.dev-sidenav-icon { font-size: 13px; }
+
+/* ── Panel ─────────────────────────────────────────────────────────────── */
+.dev-panel {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 28px;
+}
+.dev-section-title {
+  font-size: 13px;
+  letter-spacing: 0.16em;
+  color: #4a7aaa;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.dev-section-desc {
+  font-size: 11px;
+  color: #3a5060;
+  line-height: 1.6;
+  margin-bottom: 20px;
+  max-width: 640px;
+}
+.dev-section-desc code { color: #5a8aaa; background: rgba(74,122,170,0.08); padding: 1px 4px; }
+
+/* ── Asset blocks ──────────────────────────────────────────────────────── */
+.dev-asset-block {
+  background: #0f1318;
+  border: 1px solid #1a2530;
+  border-left: 2px solid #2a4060;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+}
+.dev-asset-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.dev-asset-system { font-size: 9px; letter-spacing: 0.15em; color: #3a6080; text-transform: uppercase; background: rgba(74,122,170,0.1); padding: 2px 6px; }
+.dev-asset-name   { font-size: 11px; color: #8aa8c0; }
+.dev-asset-type   { font-size: 9px; color: #2a4050; margin-left: auto; }
+.dev-asset-actions { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+
+/* ── CSS vars grid ─────────────────────────────────────────────────────── */
+.dev-vars-grid { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+.dev-var-row {
+  display: grid;
+  grid-template-columns: 180px 200px 1fr 60px;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  background: #0f1318;
+  border: 1px solid #1a2530;
+}
+.dev-var-label { font-size: 11px; color: #6a8aaa; }
+.dev-var-prop  { font-size: 10px; color: #3a6080; }
+.dev-var-controls { display: flex; align-items: center; gap: 6px; }
+.dev-color-picker {
+  width: 28px; height: 22px;
+  border: 1px solid #2a4060;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+}
+.dev-var-input { flex: 1; }
+.dev-vars-actions { display: flex; align-items: center; gap: 10px; }
+
+/* ── Route audit table ─────────────────────────────────────────────────── */
+.dev-audit-table { border: 1px solid #1a2530; }
+.dev-audit-row {
+  display: grid;
+  grid-template-columns: 180px 120px 80px 80px 1fr;
+  gap: 0;
+  padding: 8px 12px;
+  border-bottom: 1px solid #111820;
+  font-size: 11px;
+  align-items: center;
+}
+.dev-audit-row:last-child { border-bottom: none; }
+.dev-audit-header { background: #0c1016; color: #3a6080; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; }
+.audit-warn { background: rgba(201,168,76,0.04); }
+.tag-yes { color: #4c9c5c; }
+.tag-no  { color: #6a4040; }
+.tag-ok  { color: #4a7aaa; }
+.tag-warn { color: #c9a84c; }
+
+/* ── KV list ───────────────────────────────────────────────────────────── */
+.dev-kv-list { display: flex; flex-direction: column; gap: 0; border: 1px solid #1a2530; }
+.dev-kv-row  { display: flex; align-items: flex-start; gap: 16px; padding: 8px 14px; border-bottom: 1px solid #111820; font-size: 11px; }
+.dev-kv-row:last-child { border-bottom: none; }
+.dev-kv-key { color: #3a6080; width: 160px; flex-shrink: 0; }
+.dev-kv-val { color: #6aaad0; word-break: break-all; }
+
+/* ── Shared controls ───────────────────────────────────────────────────── */
+.dev-input, .dev-textarea, .dev-var-input {
+  width: 100%;
+  background: #080c10;
+  border: 1px solid #1a2530;
+  color: #8aaac0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  padding: 7px 10px;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.15s;
+}
+.dev-input:focus, .dev-textarea:focus, .dev-var-input:focus {
+  border-color: #2a5080;
+}
+.dev-input::placeholder, .dev-textarea::placeholder {
+  color: #2a4050;
+}
+.dev-textarea { min-height: 80px; }
+
+.dev-btn {
+  background: #0f1318;
+  border: 1px solid #2a4060;
+  color: #5a8aaa;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  padding: 7px 16px;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.dev-btn:hover { background: rgba(74,122,170,0.12); border-color: #3a6090; color: #7ab0d0; }
+.dev-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.dev-btn-primary { border-color: #4a7aaa; color: #6aaad0; }
+.dev-btn-primary:hover { background: rgba(74,122,170,0.2); color: #8ac0e0; }
+.dev-btn-ghost { border-color: transparent; color: #3a6080; background: transparent; }
+.dev-btn-ghost:hover { color: #5a8aaa; background: rgba(74,122,170,0.06); }
+.dev-btn-danger { border-color: #602020; color: #c94c4c; }
+.dev-btn-danger:hover { background: rgba(201,76,76,0.1); border-color: #903030; }
+.dev-btn-sm { padding: 4px 10px; font-size: 10px; }
+.dev-btn-xs { padding: 2px 8px; font-size: 10px; }
+
+.dev-saved-badge {
+  font-size: 10px;
+  color: #4c9c5c;
+  letter-spacing: 0.08em;
+}
+</style>

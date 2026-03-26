@@ -5,14 +5,32 @@ const { createNotification } = require('../services/notifications');
 
 const router = express.Router();
 
-// XP level thresholds (D&D 5e defaults — system-agnostic label used otherwise)
-const XP_THRESHOLDS = [0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000,
-  85000, 100000, 120000, 140000, 165000, 195000, 225000, 265000, 305000, 355000];
+// XP level thresholds per system
+const XP_THRESHOLDS = {
+  // D&D 5e — 20 levels
+  dnd5e: [0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000,
+    85000, 100000, 120000, 140000, 165000, 195000, 225000, 265000, 305000, 355000],
+  // Call of Cthulhu — advances via percentile skill checks, no XP levels; approximate milestones
+  coc: [0, 10, 25, 50, 80, 120, 170, 230, 300, 380, 470],
+  // Alien RPG — uses career rank (1-5), thresholds are approximate XP milestones
+  alien: [0, 50, 150, 300, 500],
+  // Coriolis — same 5-rank structure
+  coriolis: [0, 50, 150, 300, 500],
+  // Dune Adventures in the Imperium — 5 ranks
+  dune: [0, 50, 150, 300, 500],
+  // Default fallback (generic)
+  default: [0, 100, 300, 600, 1000, 1500, 2100, 2800, 3600, 4500],
+};
 
-function levelFor(xp) {
+function thresholdsFor(system) {
+  return XP_THRESHOLDS[system] || XP_THRESHOLDS.default;
+}
+
+function levelFor(xp, system) {
+  const thresholds = thresholdsFor(system);
   let level = 1;
-  for (let i = 1; i < XP_THRESHOLDS.length; i++) {
-    if (xp >= XP_THRESHOLDS[i]) level = i + 1; else break;
+  for (let i = 1; i < thresholds.length; i++) {
+    if (xp >= thresholds[i]) level = i + 1; else break;
   }
   return level;
 }
@@ -31,13 +49,17 @@ router.get('/', requireAuth, (req, res) => {
     ORDER BY xa.awarded_at DESC
   `).all(campId);
 
+  // Determine campaign system for level calculation
+  const campaign = campId ? db.prepare('SELECT system FROM campaigns WHERE id = ?').get(campId) : null;
+  const system = campaign?.system || 'default';
+
   // Build per-player totals
   const totals = {};
   awards.forEach(a => {
     if (!totals[a.awarded_to]) totals[a.awarded_to] = { user_id: a.awarded_to, username: a.username, character_name: a.character_name, total: 0 };
     totals[a.awarded_to].total += a.amount;
   });
-  Object.values(totals).forEach(t => { t.level = levelFor(t.total); });
+  Object.values(totals).forEach(t => { t.level = levelFor(t.total, system); });
 
   res.json({
     totals: Object.values(totals),
@@ -64,10 +86,14 @@ router.post('/', requireGm, (req, res) => {
       createNotification(db, uid, 'xp', `+${amount} XP awarded${reason ? `: ${reason}` : ''}`, '', '');
     } catch (_) {}
     // Check level-up: get total for this player
+    const campSys = campId ? (db.prepare('SELECT system FROM campaigns WHERE id = ?').get(campId)?.system || 'default') : 'default';
     const total = db.prepare('SELECT COALESCE(SUM(amount),0) as t FROM xp_awards WHERE awarded_to = ? AND campaign_id = ?').get(uid, campId).t;
     const prev = total - Number(amount);
-    if (levelFor(total) > levelFor(prev)) {
-      try { createNotification(db, uid, 'xp', `Level up! You are now level ${levelFor(total)}`, '', ''); } catch (_) {}
+    const newLevel = levelFor(total, campSys);
+    // Keep users.character_level in sync with XP-computed level
+    try { db.prepare('UPDATE users SET character_level = ? WHERE id = ?').run(newLevel, uid); } catch (_) {}
+    if (newLevel > levelFor(prev, campSys)) {
+      try { createNotification(db, uid, 'xp', `Level up! You are now level ${newLevel}`, '', ''); } catch (_) {}
     }
   }
   res.status(201).json({ awards });

@@ -2,6 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const { getDb } = require('../db/database');
 const { requireAuth, requireGm } = require('../auth/authMiddleware');
+const { broadcastSSE } = require('../services/notifications');
 
 const router = express.Router();
 
@@ -128,6 +129,16 @@ router.put('/:id', requireGm, (req, res) => {
   res.json({ campaign });
 });
 
+// DELETE /api/campaigns/:id — GM deletes a campaign and all its members
+router.delete('/:id', requireGm, (req, res) => {
+  const db = getDb();
+  const campaign = db.prepare('SELECT id FROM campaigns WHERE id = ?').get(req.params.id);
+  if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
+  db.prepare('DELETE FROM campaign_members WHERE campaign_id = ?').run(req.params.id);
+  db.prepare('DELETE FROM campaigns WHERE id = ?').run(req.params.id);
+  res.json({ success: true });
+});
+
 // PUT /api/campaigns/:id/activate
 router.put('/:id/activate', requireGm, (req, res) => {
   const db = getDb();
@@ -135,6 +146,34 @@ router.put('/:id/activate', requireGm, (req, res) => {
   db.prepare('UPDATE campaigns SET active = 1 WHERE id = ?').run(req.params.id);
   const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(req.params.id);
   res.json({ campaign });
+});
+
+// GET /api/campaigns/:id/stats — GM overview stats
+router.get('/:id/stats', requireGm, (req, res) => {
+  const db = getDb();
+  const id = req.params.id;
+  const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(id);
+  if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
+
+  const playerCount = db.prepare("SELECT COUNT(*) as n FROM campaign_members WHERE campaign_id = ? AND role = 'player'").get(id).n;
+  const sessionCount = db.prepare('SELECT COUNT(*) as n FROM sessions WHERE campaign_id = ?').get(id).n;
+  const handoutCount = db.prepare('SELECT COUNT(*) as n FROM handouts WHERE campaign_id = ?').get(id).n;
+  const messageCount = db.prepare('SELECT COUNT(*) as n FROM messages WHERE campaign_id = ?').get(id).n;
+  const xpTotal = db.prepare('SELECT COALESCE(SUM(amount),0) as t FROM xp_awards WHERE campaign_id = ?').get(id).t;
+  const questCount = db.prepare("SELECT COUNT(*) as n FROM vault_files WHERE campaign_id = ? AND type = 'quest'").get(id).n;
+  const activeQuestCount = db.prepare("SELECT COUNT(*) as n FROM vault_files WHERE campaign_id = ? AND type = 'quest' AND json_extract(frontmatter,'$.status') = 'active'").get(id).n;
+
+  res.json({
+    stats: {
+      player_count: playerCount,
+      session_count: sessionCount,
+      handout_count: handoutCount,
+      message_count: messageCount,
+      xp_total: xpTotal,
+      quest_count: questCount,
+      active_quest_count: activeQuestCount,
+    }
+  });
 });
 
 // GET /api/campaigns/:id/members
@@ -166,6 +205,69 @@ router.delete('/:id/members/:userId', requireGm, (req, res) => {
   const db = getDb();
   db.prepare('DELETE FROM campaign_members WHERE campaign_id=? AND user_id=?').run(req.params.id, req.params.userId);
   res.json({ success: true });
+});
+
+// PUT /api/campaigns/:id/timer — GM sets/starts/pauses/resets the session timer
+// Body: { action: 'set'|'start'|'pause'|'reset', label?: string, duration?: number (seconds) }
+router.put('/:id/timer', requireGm, (req, res) => {
+  const db = getDb();
+  const { action, label, duration } = req.body;
+  const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(req.params.id);
+  if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
+
+  let timer_label = campaign.timer_label;
+  let timer_end = campaign.timer_end;
+  let timer_remaining = campaign.timer_remaining;
+  let timer_running = campaign.timer_running;
+
+  if (action === 'set') {
+    // Set new timer without starting it
+    timer_label = label ?? timer_label;
+    timer_remaining = duration != null ? duration : timer_remaining;
+    timer_end = null;
+    timer_running = 0;
+  } else if (action === 'start') {
+    // Start or resume from remaining
+    if (label != null) timer_label = label;
+    if (duration != null) timer_remaining = duration;
+    const secs = timer_running ? (timer_end - Math.floor(Date.now() / 1000)) : timer_remaining;
+    timer_end = Math.floor(Date.now() / 1000) + Math.max(secs, 0);
+    timer_running = 1;
+  } else if (action === 'pause') {
+    if (timer_running) {
+      timer_remaining = Math.max((timer_end || 0) - Math.floor(Date.now() / 1000), 0);
+    }
+    timer_end = null;
+    timer_running = 0;
+  } else if (action === 'reset') {
+    timer_end = null;
+    timer_remaining = duration != null ? duration : 0;
+    timer_running = 0;
+    if (label != null) timer_label = label;
+  }
+
+  db.prepare(`
+    UPDATE campaigns SET timer_label=?, timer_end=?, timer_remaining=?, timer_running=?, updated_at=CURRENT_TIMESTAMP
+    WHERE id=?
+  `).run(timer_label, timer_end, timer_remaining, timer_running, req.params.id);
+
+  // Broadcast to all campaign members via SSE
+  const members = db.prepare('SELECT user_id FROM campaign_members WHERE campaign_id=?').all(req.params.id);
+  const payload = { type: 'timer_update', campaign_id: Number(req.params.id), timer: { label: timer_label, end: timer_end, remaining: timer_remaining, running: !!timer_running } };
+  for (const m of members) broadcastSSE(m.user_id, payload);
+
+  res.json({ timer: payload.timer });
+});
+
+// PUT /api/campaigns/:id/party-location — any member sets current party location
+// Body: { location_id: <number|"TRAVELING"> }
+router.put('/:id/party-location', requireAuth, (req, res) => {
+  const { location_id } = req.body;
+  if (location_id === undefined) return res.status(400).json({ error: 'location_id required' });
+  const value = location_id === 'TRAVELING' || location_id === null ? String(location_id ?? 'TRAVELING') : String(location_id);
+  const db = getDb();
+  db.prepare('UPDATE campaigns SET current_party_location_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(value, req.params.id);
+  res.json({ success: true, current_party_location_id: value });
 });
 
 module.exports = router;

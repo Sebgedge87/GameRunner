@@ -8,7 +8,7 @@
     <!-- Navigation -->
     <nav class="sidebar-nav">
       <!-- Lobby -->
-      <RouterLink to="/home" class="nav-item" active-class="active" @click="ui.closeSidebar()">
+      <RouterLink to="/home" class="nav-item" active-class="active" @click="goHome">
         <span class="nav-icon">⌂</span>Home
       </RouterLink>
 
@@ -48,6 +48,9 @@
           <RouterLink to="/timeline" class="nav-item" active-class="active" @click="ui.closeSidebar()">
             <span class="nav-icon">⏳</span>Timeline
           </RouterLink>
+          <RouterLink to="/calendar" class="nav-item" active-class="active" @click="ui.closeSidebar()">
+            <span class="nav-icon">📅</span>Calendar
+          </RouterLink>
           <RouterLink to="/maps" class="nav-item" active-class="active" @click="ui.closeSidebar()">
             <span class="nav-icon">🗾</span>Maps
           </RouterLink>
@@ -76,14 +79,18 @@
           <RouterLink to="/sessions" class="nav-item" active-class="active" @click="ui.closeSidebar()">
             <span class="nav-icon">🎲</span>Sessions
           </RouterLink>
+          <RouterLink to="/good-boy-cards" class="nav-item" active-class="active" @click="ui.closeSidebar(); ui.cardBadge = 0">
+            <span class="nav-icon">🃏</span>Cards
+            <span v-if="ui.cardBadge > 0" class="nav-badge">{{ ui.cardBadge }}</span>
+          </RouterLink>
         </div>
 
         <div class="nav-section" :class="{ collapsed: collapsed.tools }" @click="toggle('tools')">
           Tools
         </div>
         <div class="nav-group" :class="{ collapsed: collapsed.tools }">
-          <RouterLink to="/character-sheet" class="nav-item" active-class="active" @click="ui.closeSidebar()">
-            <span class="nav-icon">🧙</span>Sheet
+          <RouterLink to="/characters" class="nav-item" active-class="active" @click="ui.closeSidebar()">
+            <span class="nav-icon">🧙</span>Characters
           </RouterLink>
           <RouterLink to="/notes" class="nav-item" active-class="active" @click="ui.closeSidebar()">
             <span class="nav-icon">📝</span>Notes
@@ -115,15 +122,32 @@
       </RouterLink>
 
       <!-- Logout -->
-      <div class="nav-item" style="margin-top:auto;color:var(--text3)" @click="logout">
+      <div class="nav-item" style="margin-top:auto;color:var(--text3)" @click="confirmLogout">
         <span class="nav-icon">⇥</span>Logout
       </div>
+
+      <!-- Logout confirmation dialog -->
+      <div v-if="showLogoutConfirm" class="logout-confirm-overlay" @click.self="showLogoutConfirm = false">
+        <div class="logout-confirm-box">
+          <div class="logout-confirm-title">Log out?</div>
+          <div class="logout-confirm-sub">Your session will be invalidated on the server.</div>
+          <div class="logout-confirm-actions">
+            <button class="btn btn-danger" @click="logout">Log Out</button>
+            <button class="btn" @click="showLogoutConfirm = false">Cancel</button>
+          </div>
+        </div>
+      </div>
     </nav>
+    <!-- Sidebar collapse toggle -->
+    <div class="sidebar-collapse-btn" @click="ui.toggleSidebarCollapse()" :title="ui.sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+      <span class="sidebar-collapse-icon">{{ ui.sidebarCollapsed ? '›' : '‹' }}</span>
+      <span class="sidebar-collapse-label">Collapse</span>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { computed, reactive } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useCampaignStore } from '@/stores/campaign'
@@ -158,8 +182,54 @@ function toggle(section) {
   localStorage.setItem('nav_collapsed', JSON.stringify(state))
 }
 
-function logout() {
-  auth.logout()
+function goHome() {
+  campaign.leaveCampaign()
+  ui.closeSidebar()
+}
+
+const showLogoutConfirm = ref(false)
+
+function confirmLogout() {
+  showLogoutConfirm.value = true
+}
+
+async function logout() {
+  showLogoutConfirm.value = false
+  await auth.logout()
   router.push('/login')
 }
 </script>
+
+<style scoped>
+.logout-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.logout-confirm-box {
+  background: var(--surface, #1a1a24);
+  border: 1px solid var(--border, #2a2a3a);
+  border-radius: 8px;
+  padding: 24px;
+  min-width: 260px;
+  max-width: 320px;
+}
+.logout-confirm-title {
+  font-size: 1.1em;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.logout-confirm-sub {
+  font-size: 0.82em;
+  opacity: 0.6;
+  margin-bottom: 18px;
+}
+.logout-confirm-actions {
+  display: flex;
+  gap: 10px;
+}
+</style>

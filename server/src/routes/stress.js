@@ -1,6 +1,16 @@
 const express = require('express');
-const { getDb } = require('../db/database');
+const { getDb, getCampaignId } = require('../db/database');
 const { requireAuth, requireGm } = require('../auth/authMiddleware');
+
+// Field labels / relevance by game system
+const SYSTEM_STRESS_CONFIG = {
+  coc:      { label: 'Sanity', fields: ['sanity', 'sanity_max', 'indefinite_insanity'], primaryField: 'sanity' },
+  alien:    { label: 'Stress', fields: ['stress', 'stress_max', 'panic_threshold'], primaryField: 'stress' },
+  dune:     { label: 'Composure', fields: ['stress', 'stress_max'], primaryField: 'stress' },
+  coriolis: { label: 'Darkness Points', fields: ['stress', 'stress_max'], primaryField: 'stress' },
+  dnd5e:    { label: 'Exhaustion', fields: ['exhaustion'], primaryField: 'exhaustion' },
+  default:  { label: 'Stress', fields: ['stress', 'stress_max', 'sanity', 'sanity_max', 'exhaustion'], primaryField: 'stress' },
+};
 
 const router = express.Router();
 
@@ -10,7 +20,11 @@ router.get('/', requireAuth, (req, res) => {
   const rows = req.user.isGm
     ? db.prepare('SELECT s.*, u.username, u.character_name FROM stress_sanity s JOIN users u ON s.user_id = u.id').all()
     : db.prepare('SELECT * FROM stress_sanity WHERE user_id = ?').all(req.user.id);
-  res.json({ stress: rows });
+  // Include system config so the frontend can show relevant labels
+  const campId = getCampaignId(req);
+  const campaign = campId ? db.prepare('SELECT system FROM campaigns WHERE id = ?').get(campId) : null;
+  const systemConfig = SYSTEM_STRESS_CONFIG[campaign?.system] || SYSTEM_STRESS_CONFIG.default;
+  res.json({ stress: rows, system_config: systemConfig });
 });
 
 // PUT /api/stress/:userId — upsert stress/sanity for a user

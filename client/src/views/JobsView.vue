@@ -4,102 +4,62 @@
       <div class="page-title">Job Board</div>
       <div class="page-sub">Contracts &amp; bounties</div>
     </div>
-
     <div class="search-row" style="margin-bottom:12px">
-      <input
-        v-model="search"
-        class="form-input"
-        placeholder="Search jobs…"
-        style="max-width:320px"
-      />
+      <input v-model="search" class="form-input" placeholder="Search jobs…" style="max-width:320px" />
     </div>
-
     <div class="filter-tabs">
-      <button
-        v-for="tab in tabs"
-        :key="tab.value"
-        class="filter-tab"
-        :class="{ active: activeTab === tab.value }"
-        @click="activeTab = tab.value"
-      >
-        {{ tab.label }}
-      </button>
+      <button v-for="tab in tabs" :key="tab.value" class="filter-tab" :class="{ active: activeTab === tab.value }" @click="activeTab = tab.value">{{ tab.label }}</button>
     </div>
-
     <div class="card-grid">
       <div v-if="campaign.isGm" class="add-tile" @click="ui.openGmEdit('job', null, {})">
-        <div class="add-tile-icon">+</div>
-        <div class="add-tile-label">Post Job</div>
+        <div class="add-tile-icon">+</div><div class="add-tile-label">Add Job</div>
       </div>
-
-      <div
-        v-for="job in filteredJobs"
-        :key="job.id"
-        class="card"
-        :class="{ hidden: job.hidden }"
-        @click="ui.openDetail('job', job)"
+      <EntityCard
+        v-for="job in filteredJobs" :key="job.id"
+        :entity="job" type="job" :title="job.title" icon="💼"
+        :expanded="expandedId === job.id" :reload-fn="data.loadJobs"
+        @toggle="toggleExpand(job.id)"
       >
-        <div class="card-body">
-          <div class="card-title">{{ job.title }}</div>
-          <div class="card-meta">
-            <span v-if="job.type" class="tag">{{ job.type }}</span>
-            <span v-if="job.status" class="tag" :class="statusClass(job.status)">{{ job.status }}</span>
-            <span v-if="job.danger" class="tag tag-inactive">{{ job.danger }}</span>
-          </div>
-          <div v-if="job.description" class="card-overview">{{ job.description }}</div>
-          <div v-if="job.reward" class="card-meta" style="font-size:0.85em;opacity:0.75;margin-top:6px">
-            🎁 {{ job.reward }}
-          </div>
-          <div v-if="job.location" class="card-meta" style="font-size:0.8em;opacity:0.6;margin-top:4px">
-            📍 {{ job.location }}
-          </div>
-          <div v-if="job.employer" class="card-meta" style="font-size:0.8em;opacity:0.6;margin-top:4px">
-            Employer: {{ job.employer }}
-          </div>
-          <div v-if="job.connected_to?.length" class="card-meta" style="font-size:0.75em;opacity:0.5;margin-top:6px">
-            Linked: {{ job.connected_to.join(', ') }}
-          </div>
-        </div>
-        <div class="card-actions" @click.stop>
-          <button class="btn btn-sm" title="Pin" @click="data.addPin('job', job.id, job.title)">📌</button>
-          <template v-if="campaign.isGm">
-            <button
-              class="btn btn-sm"
-              :title="job.hidden ? 'Reveal' : 'Hide'"
-              @click="toggleHidden(job.id)"
-            >{{ job.hidden ? '👁' : '🙈' }}</button>
-            <button
-              v-if="!job.promoted_quest_id"
-              class="btn btn-sm"
-              title="Promote to Quest"
-              @click="promoteToQuest(job.id)"
-            >→ Quest</button>
-            <button class="btn btn-sm" title="Share" @click="ui.openShare('job', job.id, job.title)">🔗</button>
-            <button class="btn btn-sm" title="Edit" @click="ui.openGmEdit('job', job.id, job)">✏️</button>
-            <button class="btn btn-sm btn-danger" title="Delete" @click="deleteItem(job.id)">🗑</button>
-          </template>
-        </div>
-      </div>
+        <template #badges>
+          <span v-if="job.type" class="tag">{{ job.type }}</span>
+          <span v-if="job.status" class="tag" :class="statusClass(job.status)">{{ job.status }}</span>
+          <span v-if="job.danger" class="tag tag-inactive">{{ job.danger }}</span>
+        </template>
+        <template #body>
+          <div v-if="job.description" class="card-overview">{{ stripMd(job.description) }}</div>
+          <div v-if="job.reward" class="card-meta">🎁 {{ job.reward }}</div>
+          <div v-if="job.location" class="card-meta">📍 {{ job.location }}</div>
+          <div v-if="job.employer" class="card-meta">Employer: {{ job.employer }}</div>
+          <div v-if="job.connected_to?.length" class="card-meta">Linked: {{ job.connected_to.join(', ') }}</div>
+        </template>
+        <template #actions>
+          <button v-if="job.status === 'open' && !campaign.isGm" class="btn btn-sm btn-primary" @click.stop="acceptJob(job)">Accept</button>
+          <button v-if="campaign.isGm && !job.promoted_quest_id" class="btn btn-sm" @click.stop="promoteToQuest(job.id)">→ Quest</button>
+        </template>
+      </EntityCard>
     </div>
-
     <div v-if="filteredJobs.length === 0" class="empty-state">
-      No jobs found.
+      <span class="empty-state-icon">📋</span>
+      <div class="empty-state-title">{{ data.jobs.length ? 'No Matches' : 'Notice Board Empty' }}</div>
+      <div class="empty-state-hint">{{ data.jobs.length ? 'Try a different search or filter.' : 'GM: post available work for hire — bounties, escorts, investigations.' }}</div>
     </div>
   </div>
 </template>
 
 <script setup>
+import { stripMd } from '@/utils/markdown'
 import { ref, computed, onMounted } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
+import EntityCard from '@/components/EntityCard.vue'
 
 const data = useDataStore()
 const campaign = useCampaignStore()
 const ui = useUiStore()
-
 const search = ref('')
 const activeTab = ref('all')
+const expandedId = ref(null)
 
 const tabs = [
   { value: 'all', label: 'All' },
@@ -123,41 +83,34 @@ const filteredJobs = computed(() => {
   return list
 })
 
-function statusClass(status) {
-  const s = status?.toLowerCase()
-  if (s === 'open') return 'tag-active'
-  if (s === 'active') return 'tag-info'
-  if (s === 'completed') return 'tag-completed'
-  if (s === 'failed' || s === 'expired') return 'tag-inactive'
+function toggleExpand(id) { expandedId.value = expandedId.value === id ? null : id }
+
+function statusClass(s) {
+  const v = s?.toLowerCase()
+  if (v === 'open') return 'tag-active'
+  if (v === 'active') return 'tag-info'
+  if (v === 'completed') return 'tag-completed'
+  if (v === 'failed' || v === 'expired') return 'tag-inactive'
   return ''
 }
 
-async function promoteToQuest(jobId) {
-  const r = await data.apif(`/api/jobs/${jobId}`, {
-    method: 'PUT',
-    body: JSON.stringify({ status: 'taken', promoted_quest_id: -1 }),
-  })
+async function acceptJob(job) {
+  const r = await data.apif(`/api/jobs/${job.id}/accept`, { method: 'PUT' })
   if (r.ok) {
-    ui.showToast('Job promoted to quest', '', '✓')
+    ui.showToast('Job accepted!', job.title, '✓')
     await data.loadJobs()
-    await data.loadQuests()
   } else {
-    ui.showToast('Promote failed', '', '✕')
+    const d = await r.json().catch(() => ({}))
+    ui.showToast('Could not accept', d.error || '', '✗')
   }
 }
 
-async function toggleHidden(id) {
-  await data.toggleHidden('job', id)
+async function promoteToQuest(jobId) {
+  await data.apif(`/api/jobs/${jobId}`, { method: 'PUT', body: JSON.stringify({ status: 'taken', promoted_quest_id: -1 }) })
+  ui.showToast('Job promoted to Quest', '', '→')
   await data.loadJobs()
+  await data.loadQuests()
 }
 
-async function deleteItem(id) {
-  if (!await ui.confirm('Delete this job?')) return
-  await data.deleteItem('job', id)
-  await data.loadJobs()
-}
-
-onMounted(() => {
-  if (!data.jobs.length) data.loadJobs()
-})
+onMounted(() => { if (!data.jobs.length) data.loadJobs() })
 </script>
