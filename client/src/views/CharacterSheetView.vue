@@ -1788,13 +1788,15 @@ onMounted(() => {
 }
 
 /* ── Paper card: header + nav + page share one cream surface ────────── */
+/* A4 at 96 dpi = 794px. Fixed width to simulate a physical sheet.        */
 .coc-mode .page-header {
   background: #f4efe4 !important;
   border: 1px solid #cfc7b7 !important;
   border-bottom: none !important;
   border-radius: 4px 4px 0 0 !important;
   margin: 0 auto !important;
-  max-width: 900px !important;
+  width: 794px !important;
+  max-width: 100% !important;
   padding: 12px 40px !important;
   box-shadow: none !important;
 }
@@ -1805,7 +1807,8 @@ onMounted(() => {
   border-right: 1px solid #cfc7b7 !important;
   border-bottom: 1px solid #cfc7b7 !important;
   margin: 0 auto !important;
-  max-width: 900px !important;
+  width: 794px !important;
+  max-width: 100% !important;
   padding: 0 40px !important;
 }
 
@@ -1815,7 +1818,8 @@ onMounted(() => {
   border-top: none !important;
   border-radius: 0 0 4px 4px !important;
   margin: 0 auto !important;
-  max-width: 900px !important;
+  width: 794px !important;
+  max-width: 100% !important;
   padding: 0 !important;
   box-shadow: 0 4px 18px rgba(0,0,0,0.14) !important;
 }
