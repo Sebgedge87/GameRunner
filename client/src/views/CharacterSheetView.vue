@@ -48,6 +48,8 @@
       <!-- Built-in sheet for other systems -->
       <template v-if="hasBuiltinSheet">
 
+        <div class="a4-wrap">
+
         <!-- Tabs above document box -->
         <div class="doc-tabs-bar">
           <div class="doc-tabs">
@@ -490,6 +492,8 @@
           </div>
 
         </div><!-- /document-box -->
+
+        </div><!-- /a4-wrap -->
 
         <!-- Ships / Vehicles (shown on all pages) -->
         <template v-if="ships.length">
@@ -967,25 +971,52 @@ onMounted(() => {
   --stamp-red:  #8b1a1a;
   --paper-fill: rgba(180, 160, 100, 0.20);
 
-  background: #c8b882;
+  background: transparent;
   font-family: 'Courier Prime', 'Courier New', monospace;
   color: var(--ink);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 0;
+  align-items: center;
+  padding: 32px 24px 48px;
   box-sizing: border-box;
+}
+
+/* ── A4 wrap — the tilted document + tabs container ─────────────────── */
+.a4-wrap {
+  width: 100%;
+  max-width: 720px;
+  position: relative;
+  transform: rotate(-0.6deg);
+  transform-origin: center top;
+  box-shadow:
+    0 2px 4px rgba(0,0,0,.15),
+    3px 3px 0 rgba(0,0,0,.2),
+    6px 6px 0 rgba(0,0,0,.15),
+    8px 12px 28px rgba(0,0,0,.55),
+    -2px -1px 8px rgba(0,0,0,.2);
+}
+
+/* Paper curl at bottom-right corner */
+.a4-wrap::after {
+  content: '';
+  position: absolute;
+  bottom: 0; right: 0;
+  width: 28px; height: 28px;
+  background: linear-gradient(225deg, #b8a87a 45%, rgba(140,110,60,.4) 100%);
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  z-index: 10;
+  pointer-events: none;
 }
 
 /* ── Tab bar — sits above the document box ──────────────────────────── */
 .doc-tabs-bar {
-  max-width: 100%;
-  margin: 0;
+  width: 100%;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 8px;
-  padding: 12px 12px 0;
+  padding: 0 2px;
 }
 
 .doc-tabs {
@@ -1010,7 +1041,7 @@ onMounted(() => {
   position: relative;
   transition: background 0.12s, color 0.12s;
 }
-.doc-tab:hover { color: var(--ink); background: #c8b882; }
+.doc-tab:hover { color: var(--ink); background: #c8b068; }
 .doc-tab.active {
   background: var(--paper);
   color: var(--ink);
@@ -1049,14 +1080,11 @@ onMounted(() => {
 .doc-nav-btn:hover:not(:disabled) { border-color: var(--stamp-red); color: var(--stamp-red); }
 .doc-nav-btn:disabled { opacity: 0.25; cursor: default; }
 
-/* ── Document box — aged paper with offset shadow ───────────────────── */
+/* ── Document box — paper surface ───────────────────────────────────── */
 .document-box {
-  flex: 1;
-  max-width: 100%;
-  margin: 0;
+  width: 100%;
   background: var(--paper);
   border: 1px solid var(--border-ink);
-  box-shadow: 4px 4px 0 #b8a87a, 8px 8px 0 #a09060;
   position: relative;
 }
 
@@ -1296,11 +1324,17 @@ textarea.form-input { resize: vertical; }
   gap: 8px;
 }
 
+@media (max-width: 800px) {
+  .page-content { padding: 20px 12px 36px; }
+  .a4-wrap { transform: rotate(-0.4deg); }
+}
+@media (max-width: 500px) {
+  .page-content { padding: 12px 8px 24px; }
+  .a4-wrap { transform: rotate(-0.2deg); }
+}
 @media (max-width: 600px) {
   .edit-grid { grid-template-columns: 1fr; }
   .beyond-banner { flex-direction: column; align-items: flex-start; }
-  .document-box { margin: 0; }
-  .doc-tabs-bar { padding: 8px 0 0; }
 }
 
 /* ── CoC skill edit grid ─────────────────────────────── */
@@ -1743,7 +1777,6 @@ textarea.form-input { resize: vertical; }
   --dos-rule:  rgba(90, 55, 10, 0.20);
   --dos-stamp: #8b1a1a;
   --dos-tab:   #d4bc7a;
-  background: #d9c48a !important;
   color: #1a0d04;
   font-family: 'Special Elite', 'Courier New', monospace;
 }
@@ -2008,19 +2041,16 @@ textarea.form-input { resize: vertical; }
    All colours hardcoded — no theme variable inheritance.
    ══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Surround ─────────────────────────────────────────────────────────── */
+/* ── CoC type overrides (font / colour on the .page-content root) ──── */
 .coc-mode {
-  background: #e7e2d6 !important;
   color: #2a2a2a;
   font-family: Georgia, 'Times New Roman', serif;
-  box-sizing: border-box;
 }
 
 /* ── Document box — cream paper, drop shadow ─────────────────────────── */
 .coc-mode .document-box {
   background: #f4efe4 !important;
   border: 1px solid #cfc7b7 !important;
-  box-shadow: 0 4px 18px rgba(0,0,0,0.14) !important;
 }
 .coc-mode .document-box::before {
   background-image: repeating-linear-gradient(
