@@ -1419,68 +1419,121 @@ onMounted(() => {
 /* ── Page flip container ─────────────────────────────────── */
 .sheet-page-wrap {
   position: relative;
-  perspective: 2200px;
-  transform-style: preserve-3d;
-  overflow: hidden; /* clip folding page at the spine */
+  overflow: hidden;
 }
 
 /* ── Page flip transition ────────────────────────────────────────────────
- * The outgoing page folds away (spine fixed, far edge swings back).
- * filter:brightness() darkens the surface as it rotates, simulating
- * real paper catching / losing light through the fold.
- * backface-visibility:hidden stops content showing through the back.
- * Entering page is delayed until the fold reaches ~90° (hidden behind spine).
+ * Improvements over a plain rotateY:
+ *  1. perspective() applied per-transform (consistent regardless of container width)
+ *  2. ::after gradient overlay sweeps a fold shadow across the leaving page
+ *  3. blur() at deep angles — text softens as page disappears "behind" the spine
+ *  4. will-change triggers GPU compositing layer
+ *  5. Unfold overshoots to +5° then settles — natural paper spring
+ *  6. Elevation box-shadow rises at mid-fold (page lifts off the surface)
  * ──────────────────────────────────────────────────────────────────────── */
 
-/* ── Forward: spine on left ──────────────────────────── */
+/* GPU layer hint for both active pages */
+.flip-forward-leave-active,  .flip-forward-enter-active,
+.flip-backward-leave-active, .flip-backward-enter-active {
+  will-change: transform, filter;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* ── Forward (→): spine on left ──────────────────────────── */
 .flip-forward-leave-active {
   position: absolute; width: 100%; top: 0; left: 0; z-index: 2;
   transform-origin: left center;
-  backface-visibility: hidden;
-  animation: foldLeft 0.42s cubic-bezier(0.55, 0, 0.9, 0.5) forwards;
+  animation: foldLeft 0.48s cubic-bezier(0.6, 0, 0.85, 0.45) forwards;
 }
 .flip-forward-enter-active {
   z-index: 1;
   transform-origin: left center;
-  backface-visibility: hidden;
-  animation: unfoldLeft 0.38s 0.30s cubic-bezier(0.1, 0.5, 0.45, 1) both;
+  animation: unfoldLeft 0.42s 0.34s cubic-bezier(0.15, 0.8, 0.35, 1) both;
 }
 
-/* ── Backward: spine on right ────────────────────────── */
+/* Fold-shadow gradient: sweeps from the far (right) edge toward the spine */
+.flip-forward-leave-active::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(to left, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 60%);
+  pointer-events: none;
+  animation: shadowForward 0.48s cubic-bezier(0.6, 0, 0.85, 0.45) forwards;
+  z-index: 10;
+}
+@keyframes shadowForward {
+  0%   { opacity: 0; }
+  45%  { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+/* ── Backward (←): spine on right ───────────────────────── */
 .flip-backward-leave-active {
   position: absolute; width: 100%; top: 0; left: 0; z-index: 2;
   transform-origin: right center;
-  backface-visibility: hidden;
-  animation: foldRight 0.42s cubic-bezier(0.55, 0, 0.9, 0.5) forwards;
+  animation: foldRight 0.48s cubic-bezier(0.6, 0, 0.85, 0.45) forwards;
 }
 .flip-backward-enter-active {
   z-index: 1;
   transform-origin: right center;
-  backface-visibility: hidden;
-  animation: unfoldRight 0.38s 0.30s cubic-bezier(0.1, 0.5, 0.45, 1) both;
+  animation: unfoldRight 0.42s 0.34s cubic-bezier(0.15, 0.8, 0.35, 1) both;
+}
+
+.flip-backward-leave-active::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(to right, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 60%);
+  pointer-events: none;
+  animation: shadowBackward 0.48s cubic-bezier(0.6, 0, 0.85, 0.45) forwards;
+  z-index: 10;
+}
+@keyframes shadowBackward {
+  0%   { opacity: 0; }
+  45%  { opacity: 1; }
+  100% { opacity: 0.6; }
 }
 
 /* ── Keyframes ───────────────────────────────────────── */
 @keyframes foldLeft {
-  0%   { transform: rotateY(0deg);   filter: brightness(1);    box-shadow: none; }
-  40%  { transform: rotateY(-50deg); filter: brightness(0.65); box-shadow: -18px 0 38px rgba(0,0,0,0.38); }
-  100% { transform: rotateY(-90deg); filter: brightness(0.3);  box-shadow: none; }
+  0%   { transform: perspective(1200px) rotateY(0deg);
+         filter: brightness(1);    box-shadow: 0 2px 0 rgba(0,0,0,0); }
+  20%  { transform: perspective(1200px) rotateY(-22deg);
+         filter: brightness(0.92); box-shadow: 0 8px 24px rgba(0,0,0,0.28); }
+  60%  { transform: perspective(1200px) rotateY(-62deg);
+         filter: brightness(0.5) blur(1.5px); box-shadow: 0 14px 32px rgba(0,0,0,0.18); }
+  100% { transform: perspective(1200px) rotateY(-90deg);
+         filter: brightness(0.12) blur(4px); box-shadow: none; }
 }
 @keyframes unfoldLeft {
-  0%   { transform: rotateY(-90deg); filter: brightness(0.3);  }
-  60%  { transform: rotateY(-18deg); filter: brightness(0.82); }
-  100% { transform: rotateY(0deg);   filter: brightness(1);    }
+  0%   { transform: perspective(1200px) rotateY(-90deg);
+         filter: brightness(0.12); }
+  55%  { transform: perspective(1200px) rotateY(-12deg);
+         filter: brightness(0.9); }
+  80%  { transform: perspective(1200px) rotateY(4deg);    /* spring overshoot */
+         filter: brightness(1.02); }
+  100% { transform: perspective(1200px) rotateY(0deg);
+         filter: brightness(1); }
 }
 
 @keyframes foldRight {
-  0%   { transform: rotateY(0deg);  filter: brightness(1);    box-shadow: none; }
-  40%  { transform: rotateY(50deg); filter: brightness(0.65); box-shadow: 18px 0 38px rgba(0,0,0,0.38); }
-  100% { transform: rotateY(90deg); filter: brightness(0.3);  box-shadow: none; }
+  0%   { transform: perspective(1200px) rotateY(0deg);
+         filter: brightness(1);    box-shadow: 0 2px 0 rgba(0,0,0,0); }
+  20%  { transform: perspective(1200px) rotateY(22deg);
+         filter: brightness(0.92); box-shadow: 0 8px 24px rgba(0,0,0,0.28); }
+  60%  { transform: perspective(1200px) rotateY(62deg);
+         filter: brightness(0.5) blur(1.5px); box-shadow: 0 14px 32px rgba(0,0,0,0.18); }
+  100% { transform: perspective(1200px) rotateY(90deg);
+         filter: brightness(0.12) blur(4px); box-shadow: none; }
 }
 @keyframes unfoldRight {
-  0%   { transform: rotateY(90deg);  filter: brightness(0.3);  }
-  60%  { transform: rotateY(18deg);  filter: brightness(0.82); }
-  100% { transform: rotateY(0deg);   filter: brightness(1);    }
+  0%   { transform: perspective(1200px) rotateY(90deg);
+         filter: brightness(0.12); }
+  55%  { transform: perspective(1200px) rotateY(12deg);
+         filter: brightness(0.9); }
+  80%  { transform: perspective(1200px) rotateY(-4deg);   /* spring overshoot */
+         filter: brightness(1.02); }
+  100% { transform: perspective(1200px) rotateY(0deg);
+         filter: brightness(1); }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
