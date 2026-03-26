@@ -1171,6 +1171,16 @@ onMounted(() => {
 }
 .field-help:hover::after { opacity: 1; }
 
+/* Tooltip colours in dossier / CoC light-paper modes */
+.dossier-mode .field-help::after,
+.coc-mode .field-help::after {
+  background: #2a1a08;
+  color: #e8d5a3;
+  border-color: rgba(90, 55, 10, 0.50);
+  box-shadow: 2px 2px 8px rgba(0,0,0,0.40);
+  font-family: 'Special Elite', 'Courier New', monospace;
+}
+
 /* ── Derived-stat auto-fill hint ─────────────────────── */
 .derive-hint {
   font-size: 0.72em;
@@ -1632,51 +1642,73 @@ onMounted(() => {
 
 /* ── Ledger row-grid alignment: 32px atomic unit ─────────────────────── */
 /*
- * Every element height, line-height, padding, and margin must be
- * exact multiples of 32px so text baselines land on the ruled lines.
+ * Each field occupies EXACTLY one ruled line (32px):
+ *   label (uppercase, left ~42%) + input (right, fills remaining) = 32px row
+ * No margin between consecutive fields — they stack flush on the lines.
+ * Section subheadings use one blank row (32px) as a visual separator.
  */
 .dossier-mode,
 .coc-mode {
-  --R: 32px; /* row unit */
+  --R: 32px;
 }
 
-/* All text inside the sheet page inherits the grid line-height */
+/* All box-sizing inherited */
 .dossier-mode .sheet-page *,
 .coc-mode    .sheet-page * {
-  line-height: var(--R);
   box-sizing: border-box;
 }
 
-/* Single-line inputs sit in exactly one row */
-.dossier-mode input,
-.dossier-mode select,
-.coc-mode input,
-.coc-mode select {
-  height: var(--R) !important;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-  line-height: var(--R) !important;
-}
-
-/* Labels are half a row so label+input together = one full row */
-.dossier-mode label,
-.coc-mode label {
-  display: block;
-  line-height: calc(var(--R) * 0.75) !important;
-  margin-bottom: 0 !important;
-  font-size: 0.68em;
-  text-transform: uppercase;
-  letter-spacing: 0.10em;
-}
-
-/* Field groups snap to whole-row multiples */
+/* Field group = one horizontal ruled row */
 .dossier-mode .field-group,
 .coc-mode    .field-group {
-  margin-bottom: var(--R) !important;
-  padding-bottom: 0 !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  min-height: var(--R);
+  margin: 0 !important;
+  padding: 0 !important;
+  gap: 8px;
 }
 
-/* Section subheadings (the small ALL CAPS dividers) — one full row */
+/* Label: left 42%, uppercase, vertically centred, no wrap */
+.dossier-mode .field-group > label,
+.coc-mode    .field-group > label {
+  flex: 0 0 42%;
+  max-width: 42%;
+  height: var(--R);
+  line-height: var(--R) !important;
+  display: flex !important;
+  align-items: center !important;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 0.60em !important;
+  text-transform: uppercase;
+  letter-spacing: 0.10em;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Input / select: fills the right side, exactly one row tall */
+.dossier-mode input,
+.dossier-mode select,
+.coc-mode    input,
+.coc-mode    select {
+  height: var(--R) !important;
+  line-height: var(--R) !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  flex: 1;
+}
+
+/* Textareas: grow in 32px steps */
+.dossier-mode textarea,
+.coc-mode    textarea {
+  line-height: var(--R) !important;
+  padding: calc(var(--R) * 0.25) 4px !important;
+  min-height: calc(var(--R) * 2) !important;
+}
+
+/* Section subheadings — one full 32px row, flush margins */
 .dossier-mode [style*="letter-spacing:.05em"],
 .dossier-mode [style*="letter-spacing: .05em"],
 .coc-mode    [style*="letter-spacing:.05em"],
@@ -1685,17 +1717,24 @@ onMounted(() => {
   line-height: var(--R) !important;
   margin: 0 !important;
   padding: 0 !important;
-  display: flex;
-  align-items: flex-end;
+  display: flex !important;
+  align-items: flex-end !important;
+}
+/* Also target margin-top/bottom inline styles on section headers */
+.dossier-mode [style*="margin:16px 0"],
+.coc-mode    [style*="margin:16px 0"] {
+  margin: 0 !important;
+  height: var(--R) !important;
+  line-height: var(--R) !important;
+  display: flex !important;
+  align-items: flex-end !important;
 }
 
-/* Textareas grow in whole-row steps */
-.dossier-mode textarea,
-.coc-mode textarea {
-  line-height: var(--R) !important;
-  padding-top: calc(var(--R) * 0.25) !important;
-  padding-bottom: calc(var(--R) * 0.25) !important;
-  min-height: calc(var(--R) * 2) !important;
+/* edit-stats-grid: stat label sits left, wider label area for short stat names */
+.dossier-mode .edit-stats-grid .field-group > label,
+.coc-mode    .edit-stats-grid .field-group > label {
+  flex: 0 0 55%;
+  max-width: 55%;
 }
 
 /* ── Save status indicator ───────────────────────────── */
