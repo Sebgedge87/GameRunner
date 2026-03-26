@@ -741,7 +741,8 @@ watch(() => ui.gmEditModal, (modal) => {
   if (!modal) return
   // Reset
   Object.keys(f).forEach(k => {
-    if (typeof f[k] === 'number') f[k] = 0
+    if (Array.isArray(f[k])) f[k] = []
+    else if (typeof f[k] === 'number') f[k] = 0
     else if (typeof f[k] === 'boolean') f[k] = false
     else f[k] = ''
   })
