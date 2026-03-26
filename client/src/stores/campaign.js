@@ -89,6 +89,8 @@ export const useCampaignStore = defineStore('campaign', () => {
       isGm.value = myCamp ? myCamp.my_role === 'gm' : false
       if (activeCampaign.value?.system) {
         applyTheme(activeCampaign.value.system)
+      } else {
+        applyTheme('default')
       }
       applyBgImage(activeCampaign.value?.bg_image || null)
       // Hydrate timer from campaign row
@@ -154,6 +156,8 @@ export const useCampaignStore = defineStore('campaign', () => {
   function leaveCampaign() {
     activeCampaign.value = null
     isGm.value = false
+    applyTheme('default')
+    applyBgImage(null)
   }
 
   return {
