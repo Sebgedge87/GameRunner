@@ -5,6 +5,7 @@
         <a v-if="characterId" class="back-link" @click="router.push('/characters')">← Characters</a>
         <div class="page-title">{{ sheet?.name || 'Character' }}</div>
       </div>
+      <div class="classified-stamp" aria-hidden="true">Classified</div>
     </div>
 
     <!-- GM: player selector (only when not viewing a specific character by id) -->
@@ -476,6 +477,11 @@
         </Transition>
         </div><!-- /sheet-page-wrap -->
 
+        <div v-if="hasBuiltinSheet" class="sheet-footer" aria-hidden="true">
+          <span class="footer-caption">For authorised eyes only</span>
+          <span class="footer-stamp">Classified</span>
+        </div>
+
         <!-- Ships / Vehicles (shown on all pages) -->
         <template v-if="ships.length">
           <div class="section-divider" style="margin-top:24px">Ships &amp; Vehicles</div>
@@ -935,29 +941,263 @@ onMounted(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
+/* ══════════════════════════════════════════════════════════════════════════
+   CHARACTER SHEET — Aged wartime document aesthetic
+   Paper: #e8dfc0  |  Header bar: #c8b882  |  Border/ink: #8a7240
+   Typeface: Courier Prime (body) + Special Elite (stamps)
+   ══════════════════════════════════════════════════════════════════════════ */
 
-/* Stat display boxes */
+/* ── Colour tokens (inherited by all children via cascade) ───────────── */
+.page-content {
+  --paper:      #e8dfc0;
+  --header-bar: #c8b882;
+  --border-ink: #8a7240;
+  --ink:        #2a1e0a;
+  --muted:      rgba(42, 30, 10, 0.55);
+  --rule:       rgba(138, 114, 64, 0.20);
+  --stamp-red:  #8b1a1a;
+  --paper-fill: rgba(180, 160, 100, 0.20);
+
+  background: #d0c08a;
+  font-family: 'Courier Prime', 'Courier New', monospace;
+  color: var(--ink);
+  min-height: 100vh;
+  padding: 24px 16px;
+  box-sizing: border-box;
+}
+
+/* ── Page header bar ─────────────────────────────────────────────────── */
+.page-header {
+  background: var(--header-bar) !important;
+  border: 1px solid var(--border-ink) !important;
+  border-bottom: 2px solid var(--border-ink) !important;
+  border-radius: 4px 4px 0 0 !important;
+  padding: 10px 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  box-shadow: none !important;
+}
+
+.page-title {
+  font-family: 'Courier Prime', 'Courier New', monospace !important;
+  font-size: 1.3em !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  color: var(--ink) !important;
+}
+.page-title::after { display: none !important; }
+
+.back-link {
+  color: var(--stamp-red) !important;
+  font-family: 'Courier Prime', monospace !important;
+  font-size: 0.8em !important;
+}
+
+/* ── CLASSIFIED stamp (header) ───────────────────────────────────────── */
+.classified-stamp {
+  font-family: 'Special Elite', cursive;
+  font-size: 1.0em;
+  color: var(--stamp-red);
+  border: 2px solid var(--stamp-red);
+  outline: 1px solid var(--stamp-red);
+  outline-offset: 3px;
+  padding: 2px 14px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  transform: rotate(-2deg);
+  opacity: 0.80;
+  mix-blend-mode: multiply;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+/* ── Tab navigation bar ──────────────────────────────────────────────── */
+.dossier-page-nav {
+  background: var(--header-bar) !important;
+  border-left: 1px solid var(--border-ink) !important;
+  border-right: 1px solid var(--border-ink) !important;
+  border-bottom: none !important;
+  border-top: none !important;
+  margin: 0 !important;
+  padding: 0 16px !important;
+}
+
+/* Folder tabs — paper tabs with no rounded bottom on active */
+.dossier-page-tab {
+  background: #d4c07a !important;
+  border: 1px solid var(--border-ink) !important;
+  border-bottom: none !important;
+  border-radius: 3px 3px 0 0 !important;
+  color: rgba(42, 30, 10, 0.75) !important;
+  font-family: 'Courier Prime', monospace !important;
+  font-size: 0.70em !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+  padding: 5px 18px !important;
+}
+.dossier-page-tab::after {
+  background: #d4c07a !important;
+  bottom: -1px !important;
+}
+.dossier-page-tab:hover { color: var(--ink) !important; }
+.dossier-page-tab.active {
+  background: var(--paper) !important;
+  color: var(--ink) !important;
+  border-color: var(--border-ink) !important;
+  z-index: 2;
+}
+.dossier-page-tab.active::after { background: var(--paper) !important; }
+
+.dossier-nav-btn {
+  background: transparent !important;
+  border-color: var(--border-ink) !important;
+  color: var(--ink) !important;
+  box-shadow: none !important;
+}
+.dossier-nav-btn:hover:not(:disabled) {
+  border-color: var(--stamp-red) !important;
+  color: var(--stamp-red) !important;
+}
+
+/* ── Sheet page wrap — paper surface with lined texture ──────────────── */
+.sheet-page-wrap {
+  background: var(--paper) !important;
+  border: 1px solid var(--border-ink) !important;
+  border-top: none !important;
+  border-radius: 0 !important;
+  position: relative;
+}
+
+/* Lined paper via ::before pseudo on the wrap */
+.sheet-page-wrap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 31px,
+    var(--rule) 31px,
+    var(--rule) 32px
+  );
+  z-index: 0;
+}
+
+.sheet-page {
+  position: relative;
+  z-index: 1;
+  background: transparent !important;
+  padding: 20px 32px 32px !important;
+  font-family: 'Courier Prime', 'Courier New', monospace;
+  color: var(--ink);
+}
+
+/* ── All inputs/selects/textareas: transparent, border-bottom only ────── */
+.form-input {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(138, 114, 64, 0.45) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  color: var(--ink) !important;
+  font-family: 'Courier Prime', 'Courier New', monospace !important;
+  font-size: 0.97em !important;
+  padding: 2px 0 1px !important;
+  width: 100%;
+}
+.form-input:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  border-bottom-color: var(--border-ink) !important;
+}
+.form-input::placeholder { color: rgba(42, 30, 10, 0.32) !important; }
+textarea.form-input { resize: vertical; }
+
+/* ── Field group labels: small-caps ──────────────────────────────────── */
+.field-group > label {
+  font-family: 'Courier Prime', monospace !important;
+  font-size: 0.76em !important;
+  font-variant: small-caps !important;
+  letter-spacing: 0.08em !important;
+  color: rgba(42, 30, 10, 0.72) !important;
+  font-weight: 700 !important;
+}
+
+/* ── Section sub-headers (inline-styled divs with text-transform/letter-spacing) */
+.sheet-page > [style*="letter-spacing"],
+.sheet-page > div > [style*="letter-spacing"] {
+  font-family: 'Courier Prime', monospace !important;
+  font-variant: small-caps !important;
+  font-size: 0.74em !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.14em !important;
+  color: var(--ink) !important;
+  opacity: 1 !important;
+  border-left: 3px solid var(--border-ink) !important;
+  padding-left: 7px !important;
+  margin-top: 14px !important;
+  margin-bottom: 6px !important;
+}
+
+/* ── Stat display boxes ──────────────────────────────────────────────── */
 .stat-box {
-  background: var(--surface2, #20202e);
-  border: 1px solid var(--border, #2a2a3a);
-  border-radius: 6px;
+  background: var(--paper-fill) !important;
+  border: 1px solid var(--border-ink) !important;
+  border-radius: 2px !important;
   padding: 10px;
   text-align: center;
 }
 .stat-label {
   font-size: 0.65em;
   letter-spacing: 1px;
-  color: var(--text3, #6a6460);
-  font-family: 'JetBrains Mono', monospace;
+  color: var(--muted) !important;
+  font-family: 'Courier Prime', monospace;
   text-transform: uppercase;
+  font-variant: small-caps;
   margin-bottom: 4px;
 }
 .stat-value {
   font-size: 1.4em;
   font-weight: 700;
-  color: var(--accent, #c9a84c);
+  color: var(--ink) !important;
 }
+
+/* ── Sheet footer ────────────────────────────────────────────────────── */
+.sheet-footer {
+  background: var(--header-bar);
+  border: 1px solid var(--border-ink);
+  border-top: 1px solid var(--border-ink);
+  border-radius: 0 0 4px 4px;
+  padding: 6px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: 'Courier Prime', monospace;
+  font-size: 0.65em;
+  color: rgba(42, 30, 10, 0.60);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.footer-stamp {
+  font-family: 'Special Elite', cursive;
+  font-size: 1.3em;
+  color: var(--stamp-red);
+  opacity: 0.65;
+  letter-spacing: 0.22em;
+}
+
+/* ── Save indicator ──────────────────────────────────────────────────── */
+.sheet-save-indicator {
+  font-family: 'Courier Prime', monospace !important;
+  font-size: 0.7em;
+  letter-spacing: 0.06em;
+}
+.sheet-save-indicator.saving { color: var(--muted) !important; }
+.sheet-save-indicator.saved  { color: #3a5c18 !important; }
+.sheet-save-indicator.error  { color: var(--stamp-red) !important; }
 
 /* HP/stress progress bars */
 .progress-bar {
@@ -1118,14 +1358,16 @@ onMounted(() => {
   font-size: 0.72em;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  opacity: 0.45;
+  font-variant: small-caps;
+  color: var(--muted, rgba(42,30,10,.55));
   padding: 4px 6px 6px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-ink, #8a7240);
 }
 .weapons-table td {
   padding: 4px 6px;
-  border-bottom: 1px solid var(--border, rgba(255,255,255,.05));
+  border-bottom: 1px solid rgba(138, 114, 64, 0.25);
   vertical-align: middle;
+  color: var(--ink, #2a1e0a);
 }
 .weapons-table--view td { opacity: 0.85; }
 .weapons-table .form-input { padding: 3px 6px !important; font-size: 0.9em; }
