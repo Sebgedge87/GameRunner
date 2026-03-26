@@ -2,7 +2,7 @@
   <!-- Dev admin is a completely standalone view — bypasses auth/layout system -->
   <DeveloperConfigView v-if="isDevAdmin" />
 
-  <div v-else id="chronicle-root" :data-theme="currentTheme" :class="bodyClasses">
+  <div v-else id="chronicle-root" :class="bodyClasses">
     <div class="scanline-overlay"></div>
     <LoginView v-if="!isAuthenticated" />
     <AppLayout v-else />
@@ -14,6 +14,7 @@
 import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+
 import LoginView from '@/views/LoginView.vue'
 import AppLayout from '@/components/AppLayout.vue'
 import ToastContainer from '@/components/ToastContainer.vue'
@@ -24,10 +25,6 @@ const route = useRoute()
 
 const isDevAdmin = computed(() => route.path === '/dev-admin')
 const isAuthenticated = computed(() => auth.isAuthenticated)
-
-const currentTheme = computed(() => {
-  return document.documentElement.getAttribute('data-theme') || 'dnd5e'
-})
 
 const bodyClasses = computed(() => {
   const a11y = JSON.parse(localStorage.getItem('chronicle_a11y') || '{}')
@@ -49,14 +46,6 @@ onMounted(async () => {
   if (a11y.effects) document.body.classList.add('no-effects')
   const sz = localStorage.getItem('chronicle_font_size') || 'medium'
   document.body.setAttribute('data-font-size', sz)
-  const bgUrl = localStorage.getItem('chronicle_bg_image')
-  if (bgUrl) {
-    const main = document.getElementById('main')
-    if (main) {
-      main.style.backgroundImage = `url(${JSON.stringify(bgUrl)})`
-      main.classList.add('has-bg-image')
-    }
-  }
   // Restore session
   await auth.restoreSession()
 })

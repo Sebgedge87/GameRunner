@@ -8,13 +8,18 @@ export const useCampaignStore = defineStore('campaign', () => {
   const activeCampaign = ref(null)
   const allCampaigns = ref([])
   const isGm = ref(false)
+  const timer = ref({ label: '', end: null, remaining: 0, running: false })
+  const calendarVersion = ref(0)
+
+  function setTimer(t) { timer.value = { ...timer.value, ...t } }
 
   const SYSTEM_THEME_MAP = {
-    dnd5e: 'dnd5e', coc: 'coc', alien: 'alien',
+    default: 'default', dnd5e: 'dnd5e', coc: 'coc', alien: 'alien',
     coriolis: 'coriolis', dune: 'dune', achtung: 'achtung', custom: 'custom',
   }
 
   const SYSTEM_META = {
+    default: { label: 'Default', icon: '◈', color: '#6b8cff' },
     dnd5e: { label: 'D&D 5e', icon: '⚔', color: '#c9a84c' },
     coc: { label: 'Call of Cthulhu', icon: '🐙', color: '#b8a060' },
     alien: { label: 'Alien RPG', icon: '👾', color: '#4caf50' },
@@ -24,8 +29,20 @@ export const useCampaignStore = defineStore('campaign', () => {
     custom: { label: 'Custom', icon: '🎨', color: '#c9a84c' },
   }
 
+  function applyBgImage(url) {
+    const main = document.getElementById('main')
+    if (!main) return
+    if (url) {
+      main.style.backgroundImage = `url(${JSON.stringify(url)})`
+      main.classList.add('has-bg-image')
+    } else {
+      main.style.backgroundImage = ''
+      main.classList.remove('has-bg-image')
+    }
+  }
+
   function applyTheme(system) {
-    const theme = SYSTEM_THEME_MAP[system] || 'dnd5e'
+    const theme = SYSTEM_THEME_MAP[system] || 'default'
     document.documentElement.setAttribute('data-theme', theme)
     localStorage.setItem('chronicle_theme', system)
     if (theme === 'custom') applyCustomTheme()
@@ -73,6 +90,17 @@ export const useCampaignStore = defineStore('campaign', () => {
       if (activeCampaign.value?.system) {
         applyTheme(activeCampaign.value.system)
       }
+      applyBgImage(activeCampaign.value?.bg_image || null)
+      // Hydrate timer from campaign row
+      const ac = activeCampaign.value
+      if (ac) {
+        timer.value = {
+          label: ac.timer_label || '',
+          end: ac.timer_end || null,
+          remaining: ac.timer_remaining || 0,
+          running: !!ac.timer_running,
+        }
+      }
     } catch (e) {
       console.error('[loadCampaigns]', e)
     }
@@ -91,6 +119,7 @@ export const useCampaignStore = defineStore('campaign', () => {
     activeCampaign.value = campaign
     isGm.value = campaign.my_role === 'gm'
     if (campaign.system) applyTheme(campaign.system)
+    applyBgImage(campaign.bg_image || null)
   }
 
   async function createCampaign(body) {
@@ -109,10 +138,28 @@ export const useCampaignStore = defineStore('campaign', () => {
     return d.campaign
   }
 
+  const currentPartyLocationId = computed(() => activeCampaign.value?.current_party_location_id || null)
+
+  async function setPartyLocation(locId) {
+    if (!activeCampaign.value?.id) return
+    const r = await apif(`/api/campaigns/${activeCampaign.value.id}/party-location`, {
+      method: 'PUT',
+      body: JSON.stringify({ location_id: locId }),
+    })
+    if (r.ok) {
+      activeCampaign.value = { ...activeCampaign.value, current_party_location_id: locId ? String(locId) : null }
+    }
+  }
+
+  function leaveCampaign() {
+    activeCampaign.value = null
+    isGm.value = false
+  }
+
   return {
-    activeCampaign, allCampaigns, isGm,
+    activeCampaign, allCampaigns, isGm, currentPartyLocationId, timer, calendarVersion,
     SYSTEM_META, SYSTEM_THEME_MAP,
-    applyTheme, applyCustomTheme,
-    loadCampaigns, switchCampaign, createCampaign, joinCampaign,
+    applyTheme, applyCustomTheme, applyBgImage,
+    loadCampaigns, switchCampaign, createCampaign, joinCampaign, setPartyLocation, leaveCampaign, setTimer,
   }
 })

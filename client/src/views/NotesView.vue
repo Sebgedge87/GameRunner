@@ -18,7 +18,11 @@
         </div>
 
         <div class="msg-list">
-          <div v-if="!filteredNotes.length" class="empty-state">No notes yet.</div>
+          <div v-if="!filteredNotes.length" class="empty-state">
+            <span class="empty-state-icon">📝</span>
+            <div class="empty-state-title">No Notes Yet</div>
+            <div class="empty-state-hint">Click New Note to start writing. Notes can be private or shared with the GM.</div>
+          </div>
           <div v-for="n in filteredNotes" :key="n.id" class="note-card" style="cursor:pointer" @click="selectNote(n)">
             <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
               <div class="note-card-title" style="flex:1">{{ n.title }}</div>
@@ -29,7 +33,7 @@
               <span v-if="n.category" class="tag">{{ n.category }}</span>
               <span v-if="n.shared_with_gm" style="font-size:10px;color:var(--text3)">shared w/GM</span>
             </div>
-            <div class="note-card-body">{{ (n.body || '').slice(0, 120) }}{{ (n.body || '').length > 120 ? '…' : '' }}</div>
+            <div class="note-card-body">{{ stripMd(n.body, 120) }}</div>
             <div class="note-card-footer">
               <span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace">{{ fmt(n.updated_at) }}</span>
               <button class="delete-btn" @click.stop="deleteNote(n.id)">DELETE</button>
@@ -74,6 +78,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { stripMd } from '@/utils/markdown'
 import { useDataStore } from '@/stores/data'
 import MarkdownEditor from '@/components/MarkdownEditor.vue'
 

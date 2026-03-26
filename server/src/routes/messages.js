@@ -1,13 +1,28 @@
 const express = require('express');
-const { getDb } = require('../db/database');
+const { getDb, getCampaignId } = require('../db/database');
 const { requireAuth, requireGm } = require('../auth/authMiddleware');
 const { createNotification, broadcastSSE } = require('../services/notifications');
 
 const router = express.Router();
 
-// GET /api/messages — inbox + sent for current user
+// GET /api/messages — inbox + sent for current user, scoped to active campaign
+// GM sees all campaign messages; players see only their own + broadcasts.
+// ?unread=true filters to messages with no read_at timestamp.
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
+  const campId = getCampaignId(req);
+  const unreadOnly = req.query.unread === 'true';
+
+  let where, params;
+  if (req.user.isGm) {
+    where = 'WHERE m.campaign_id = ?';
+    params = [campId];
+  } else {
+    where = 'WHERE (m.to_user_id = ? OR m.from_user_id = ? OR m.to_user_id IS NULL) AND m.campaign_id = ?';
+    params = [req.user.id, req.user.id, campId];
+  }
+  if (unreadOnly) where += ' AND m.read_at IS NULL';
+
   const rows = db.prepare(`
     SELECT m.*,
            fu.username AS from_username,
@@ -17,11 +32,11 @@ router.get('/', requireAuth, (req, res) => {
     FROM messages m
     LEFT JOIN users fu ON m.from_user_id = fu.id
     LEFT JOIN users tu ON m.to_user_id = tu.id
-    WHERE m.to_user_id = ? OR m.from_user_id = ? OR m.to_user_id IS NULL
+    ${where}
     ORDER BY m.created_at DESC
-  `).all(req.user.id, req.user.id);
+  `).all(...params);
 
-  // Strip secret flag body from players if they are not the recipient
+  // Strip body of secret messages from players who aren't the recipient
   const filtered = rows.map(m => {
     if (m.is_secret && !req.user.isGm && m.to_user_id !== req.user.id) {
       return { ...m, body: '[secret]' };
@@ -55,6 +70,7 @@ router.post('/', requireAuth, (req, res) => {
   }
 
   const db = getDb();
+  const campId = getCampaignId(req);
   let recipientId = to_user_id || null;
 
   if (!recipientId && to_username) {
@@ -64,9 +80,9 @@ router.post('/', requireAuth, (req, res) => {
   }
 
   const result = db.prepare(`
-    INSERT INTO messages (from_user_id, to_user_id, subject, body, is_secret, requires_ack, reply_to_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(req.user.id, recipientId, subject, body, is_secret ? 1 : 0, requires_ack ? 1 : 0, reply_to_id || null);
+    INSERT INTO messages (from_user_id, to_user_id, subject, body, is_secret, requires_ack, reply_to_id, campaign_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(req.user.id, recipientId, subject, body, is_secret ? 1 : 0, requires_ack ? 1 : 0, reply_to_id || null, campId);
 
   const msg = db.prepare('SELECT * FROM messages WHERE id = ?').get(result.lastInsertRowid);
 

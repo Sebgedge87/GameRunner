@@ -1,81 +1,61 @@
 <template>
   <div class="page-content">
-    <div class="page-header">
-      <div class="page-title">Bestiary</div>
-    </div>
-
+    <div class="page-header"><div class="page-title">Bestiary</div></div>
     <div class="search-row" style="margin-bottom:16px">
-      <input
-        v-model="search"
-        class="form-input"
-        placeholder="Search creatures…"
-        style="max-width:320px"
-      />
+      <input v-model="search" class="form-input" placeholder="Search creatures…" style="max-width:320px" />
     </div>
-
-    <div class="card-grid">
+    <div v-if="data.loading && !data.bestiary.length" class="card-grid">
+      <div v-for="n in 6" :key="n" class="skeleton-card">
+        <div class="skeleton-line skeleton-img"></div>
+        <div class="skeleton-line skeleton-title"></div>
+        <div class="skeleton-line skeleton-body"></div>
+      </div>
+    </div>
+    <div v-else class="card-grid">
       <div v-if="campaign.isGm" class="add-tile" @click="ui.openGmEdit('bestiary', null, {})">
-        <div class="add-tile-icon">+</div>
-        <div class="add-tile-label">Add Creature</div>
+        <div class="add-tile-icon">+</div><div class="add-tile-label">Add Creature</div>
       </div>
-
-      <div
-        v-for="creature in filteredBestiary"
-        :key="creature.id"
-        class="card"
-        :class="{ hidden: creature.hidden }"
-        @click="ui.openDetail('bestiary', creature)"
+      <EntityCard
+        v-for="creature in filteredBestiary" :key="creature.id"
+        :entity="creature" type="bestiary" :title="creature.name" icon="🐉"
+        :image="creature.image_path || null"
+        :expanded="expandedId === creature.id" :reload-fn="data.loadBestiary"
+        @toggle="toggleExpand(creature.id)"
       >
-        <div v-if="creature.image_path" class="card-img">
-          <img :src="creature.image_path" :alt="creature.name" style="width:100%;height:120px;object-fit:cover;border-radius:4px 4px 0 0" />
-        </div>
-        <div class="card-body">
-          <div class="card-title">{{ creature.name }}</div>
-          <div class="card-meta" style="flex-wrap:wrap;gap:4px">
-            <span v-if="creature.stats?.cr != null" class="tag">CR {{ creature.stats.cr }}</span>
-            <span v-if="creature.stats?.ac != null" class="tag">AC {{ creature.stats.ac }}</span>
-            <span v-if="creature.stats?.hp != null" class="tag">HP {{ creature.stats.hp }}</span>
-          </div>
-          <div v-if="creature.description" class="card-overview">{{ creature.description }}</div>
-        </div>
-        <div class="card-actions" @click.stop>
-          <button class="btn btn-sm" title="Pin" @click="data.addPin('bestiary', creature.id, creature.name)">📌</button>
-          <template v-if="campaign.isGm">
-            <button
-              class="btn btn-sm"
-              :title="creature.revealed ? 'Hide from players' : 'Reveal to players'"
-              @click="revealCreature(creature.id, !creature.revealed)"
-            >{{ creature.revealed ? '👁' : '⭐' }}</button>
-            <button
-              class="btn btn-sm"
-              :title="creature.hidden ? 'Unhide' : 'Hide (vault)'"
-              @click="toggleHidden('bestiary', creature.id)"
-            >{{ creature.hidden ? '👁' : '🙈' }}</button>
-            <button class="btn btn-sm" title="Share" @click="ui.openShare('bestiary', creature.id, creature.name)">🔗</button>
-            <button class="btn btn-sm" title="Edit" @click="ui.openGmEdit('bestiary', creature.id, creature)">✏️</button>
-            <button class="btn btn-sm btn-danger" title="Delete" @click="deleteItem('bestiary', creature.id)">🗑</button>
-          </template>
-        </div>
-      </div>
+        <template #badges>
+          <span v-if="creature.stats?.cr != null" class="tag">CR {{ creature.stats.cr }}</span>
+          <span v-if="creature.stats?.ac != null" class="tag">AC {{ creature.stats.ac }}</span>
+          <span v-if="creature.stats?.hp != null" class="tag">HP {{ creature.stats.hp }}</span>
+        </template>
+        <template #body>
+          <div v-if="creature.description" class="card-overview">{{ stripMd(creature.description) }}</div>
+        </template>
+        <template #actions>
+          <button v-if="campaign.isGm" class="btn btn-sm" @click.stop="revealCreature(creature.id, !creature.revealed)">{{ creature.revealed ? '👁 Hide' : '⭐ Reveal' }}</button>
+        </template>
+      </EntityCard>
     </div>
-
-    <div v-if="filteredBestiary.length === 0" class="empty-state">
-      No creatures found.
+    <div v-if="!data.loading && filteredBestiary.length === 0" class="empty-state">
+      <span class="empty-state-icon">🐉</span>
+      <div class="empty-state-title">{{ data.bestiary.length ? 'No Matches' : 'Bestiary Empty' }}</div>
+      <div class="empty-state-hint">{{ data.bestiary.length ? 'Try a different search or filter.' : 'GM: catalogue the creatures your party may encounter.' }}</div>
     </div>
   </div>
 </template>
 
 <script setup>
+import { stripMd } from '@/utils/markdown'
 import { ref, computed, onMounted } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
+import EntityCard from '@/components/EntityCard.vue'
 
 const data = useDataStore()
 const campaign = useCampaignStore()
 const ui = useUiStore()
-
 const search = ref('')
+const expandedId = ref(null)
 
 const filteredBestiary = computed(() => {
   if (!search.value.trim()) return data.bestiary
@@ -86,24 +66,13 @@ const filteredBestiary = computed(() => {
   )
 })
 
+function toggleExpand(id) { expandedId.value = expandedId.value === id ? null : id }
+
 async function revealCreature(id, val) {
   await data.apif(`/api/bestiary/${id}/reveal`, { method: 'PUT', body: JSON.stringify({ revealed: val }) })
-  ui.showToast(val ? 'Creature revealed to players' : 'Creature hidden', '', val ? '⭐' : '👁')
+  ui.showToast(val ? 'Creature revealed' : 'Creature hidden', '', val ? '⭐' : '👁')
   await data.loadBestiary()
 }
 
-async function toggleHidden(type, id) {
-  await data.toggleHidden(type, id)
-  await data.loadBestiary()
-}
-
-async function deleteItem(type, id) {
-  if (!await ui.confirm('Delete this creature?')) return
-  await data.deleteItem(type, id)
-  await data.loadBestiary()
-}
-
-onMounted(() => {
-  if (!data.bestiary.length) data.loadBestiary()
-})
+onMounted(() => { if (!data.bestiary.length) data.loadBestiary() })
 </script>

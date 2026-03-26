@@ -6,7 +6,7 @@
     <div v-if="campaign.activeCampaign" class="campaign-banner">
       <div>
         <div class="campaign-name">{{ campaign.activeCampaign.name }}</div>
-        <div v-if="campaign.activeCampaign.subtitle" style="font-size:12px;color:var(--text3);margin-top:2px">
+        <div v-if="campaign.activeCampaign.subtitle" class="campaign-subtitle">
           {{ campaign.activeCampaign.subtitle }}
         </div>
       </div>
@@ -26,6 +26,35 @@
     <!-- Playlist player -->
     <PlaylistPlayer :url="playlistUrl" />
 
+    <!-- Character shortcut (player only) -->
+    <div v-if="!campaign.isGm" class="char-shortcut-row">
+      <div v-if="myCharacters.length === 0" class="char-shortcut-new" @click="router.push('/characters')">
+        <span class="char-shortcut-plus">+</span>
+        <span>Create your character</span>
+      </div>
+      <template v-else>
+        <div
+          v-for="c in myCharacters"
+          :key="c.id"
+          class="char-shortcut-tile"
+          @click="router.push(`/character-sheet?id=${c.id}`)"
+        >
+          <div class="char-shortcut-portrait">
+            <img v-if="c.portrait_url" :src="c.portrait_url" :alt="c.name" class="char-shortcut-img" />
+            <div v-else class="char-shortcut-initials">{{ initials(c.name) }}</div>
+          </div>
+          <div class="char-shortcut-details">
+            <div class="char-shortcut-name">{{ c.name }}</div>
+            <div v-if="c.sheet_data?.class" class="char-shortcut-class">{{ c.sheet_data.class }}</div>
+          </div>
+          <div class="char-shortcut-arrow">→</div>
+        </div>
+        <div class="char-shortcut-add" @click="router.push('/characters')" title="Manage characters">
+          <span class="nav-icon">🧙</span> Characters
+        </div>
+      </template>
+    </div>
+
     <!-- Agenda card (player only) -->
     <div v-if="data.agenda && !campaign.isGm" class="agenda-card">
       <div class="agenda-card-title">SECRET OBJECTIVE</div>
@@ -33,39 +62,33 @@
       <div v-else class="agenda-body">{{ data.agenda.body || data.agenda.title }}</div>
     </div>
 
-    <!-- Stress/Sanity bar (player only) -->
-    <div v-if="data.stress && !campaign.isGm" style="margin-bottom:18px">
-      <div style="display:flex;gap:16px;flex-wrap:wrap">
-        <template v-if="['alien','coriolis'].includes(campaign.activeCampaign?.system)">
-          <div style="min-width:180px">
-            <div class="stress-bar-label">
-              <span>Stress</span>
-              <span>{{ data.stress.stress }}/{{ data.stress.stress_max }}</span>
-            </div>
-            <div class="stress-track">
-              <div class="stress-fill" :style="`width:${stressPct}%;background:${stressPct > 70 ? 'var(--red)' : stressPct > 40 ? '#c9a84c' : 'var(--green)'}`"></div>
-            </div>
-          </div>
-        </template>
-        <template v-if="['coc','achtung'].includes(campaign.activeCampaign?.system)">
-          <div style="min-width:180px">
-            <div class="stress-bar-label">
-              <span>Sanity</span>
-              <span>{{ data.stress.sanity }}/{{ data.stress.sanity_max }}
-                <span v-if="data.stress.indefinite_insanity" style="color:var(--red)"> INDEFINITE</span>
-              </span>
-            </div>
-            <div class="stress-track">
-              <div class="stress-fill" :style="`width:${sanityPct}%;background:${sanityPct > 60 ? 'var(--green)' : sanityPct > 30 ? '#c9a84c' : 'var(--red)'}`"></div>
-            </div>
-          </div>
-        </template>
+    <!-- Stress/Sanity bar (player only, system-dependent) -->
+    <div v-if="data.stress && !campaign.isGm && (hasStress || hasSanity)" class="stress-wrap">
+      <div v-if="hasStress" class="stress-col">
+        <div class="stress-bar-label">
+          <span>Stress</span>
+          <span>{{ data.stress.stress }}/{{ data.stress.stress_max }}</span>
+        </div>
+        <div class="stress-track">
+          <div class="stress-fill" :style="`width:${stressPct}%;background:${stressPct > 70 ? 'var(--red)' : stressPct > 40 ? '#c9a84c' : 'var(--green)'}`"></div>
+        </div>
+      </div>
+      <div v-if="hasSanity" class="stress-col">
+        <div class="stress-bar-label">
+          <span>Sanity</span>
+          <span>{{ data.stress.sanity }}/{{ data.stress.sanity_max }}
+            <span v-if="data.stress.indefinite_insanity" class="sanity-critical">INDEFINITE</span>
+          </span>
+        </div>
+        <div class="stress-track">
+          <div class="stress-fill" :style="`width:${sanityPct}%;background:${sanityPct > 60 ? 'var(--green)' : sanityPct > 30 ? '#c9a84c' : 'var(--red)'}`"></div>
+        </div>
       </div>
     </div>
 
     <!-- Pinned items -->
-    <div v-if="data.pins.length" style="margin-bottom:18px">
-      <div class="dash-section" style="margin-top:0;margin-bottom:8px">Pinned</div>
+    <div v-if="data.pins.length" class="pins-section">
+      <div class="dash-section">Pinned</div>
       <div class="pins-row">
         <div
           v-for="p in data.pins"
@@ -75,101 +98,163 @@
         >
           <div class="type-dot" :style="`background:${TYPE_COLORS[p.item_type] || '#888'}`"></div>
           {{ p.item_title || p.item_type + ' #' + p.item_id }}
-          <button style="background:none;border:none;color:var(--text3);font-size:11px;padding:0 0 0 4px" @click.stop="data.removePin(p.id)">✕</button>
+          <button class="pin-remove" @click.stop="data.removePin(p.id)">✕</button>
         </div>
       </div>
     </div>
 
-    <!-- Stats row — clickable -->
+    <!-- Stats row -->
     <div class="dash-grid">
-      <div class="stat-card" style="cursor:pointer" @click="router.push('/quests')">
+      <div class="stat-card stat-card-link" @click="router.push('/quests')">
         <div class="stat-num">{{ data.quests.length }}</div>
         <div class="stat-label">Quests</div>
       </div>
-      <div class="stat-card" style="cursor:pointer" @click="router.push('/quests')">
+      <div class="stat-card stat-card-link" @click="router.push('/quests')">
         <div class="stat-num">{{ activeQuests.length }}</div>
         <div class="stat-label">Active</div>
       </div>
-      <div class="stat-card" style="cursor:pointer" @click="router.push('/npcs')">
+      <div class="stat-card stat-card-link" @click="router.push('/npcs')">
         <div class="stat-num">{{ data.npcs.length }}</div>
         <div class="stat-label">NPCs</div>
       </div>
-      <div class="stat-card" style="cursor:pointer" @click="router.push('/hooks')">
+      <div class="stat-card stat-card-link" @click="router.push('/hooks')">
         <div class="stat-num">{{ openHooks }}</div>
         <div class="stat-label">Open Hooks</div>
       </div>
     </div>
 
-    <!-- Active quests list -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px">
-      <div class="dash-section" style="margin:0;flex:1">Active Quests</div>
-      <router-link to="/quests" style="font-size:11px;color:var(--accent);font-family:'JetBrains Mono',monospace;margin-bottom:10px">View all →</router-link>
-    </div>
-    <div class="card-grid">
-      <div
-        v-for="q in activeQuests.slice(0, 6)"
-        :key="q.id"
-        class="card"
-        style="cursor:pointer"
-        @click="ui.openDetail('quest', q)"
-      >
-        <div class="card-title">{{ q.title }}</div>
-        <div class="card-meta">
-          <span :class="`tag tag-${q.type || 'side'}`">{{ q.type || 'side' }}</span>
+    <!-- ── 2-column lower dashboard ─────────────────────── -->
+    <div class="dash-lower">
+
+      <!-- LEFT: Active Quests -->
+      <div class="dash-lower-col">
+        <div class="dash-section-row">
+          <div class="dash-section">Active Quests</div>
+          <router-link to="/quests" class="dash-view-all">View all →</router-link>
         </div>
-        <div v-if="q.progress != null" class="progress-bar">
-          <div class="progress-fill" :style="`width:${q.progress}%`"></div>
+        <div class="card-grid">
+          <QuestCard
+            v-for="q in activeQuests.slice(0, 6)"
+            :key="q.id"
+            :quest="q"
+            :expanded="expandedId === q.id"
+            @toggle="toggleExpand(q.id)"
+          />
+          <div v-if="activeQuests.length === 0" class="empty-state dash-empty">No active quests.</div>
         </div>
       </div>
-      <div v-if="activeQuests.length === 0" class="empty-state" style="padding:12px 0">No active quests.</div>
-    </div>
 
-    <!-- Recent messages -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px">
-      <div class="dash-section" style="margin:0;flex:1">Recent Messages</div>
-    </div>
-    <div>
-      <div v-if="!ui.messages.length" class="empty-state" style="padding:12px">No messages.</div>
-      <div
-        v-for="m in ui.messages.slice(0, 3)"
-        :key="m.id"
-        class="msg-item"
-        :class="{ unread: !m.read_at }"
-        @click="openMessage(m)"
-      >
-        <div class="msg-header">
-          <div class="msg-subject">{{ m.subject }}</div>
-          <div class="msg-meta">{{ fmt(m.created_at) }}</div>
+      <!-- RIGHT: Messages, Handouts, Next Session -->
+      <div class="dash-lower-col">
+
+        <!-- Recent messages -->
+        <div class="dash-section-row">
+          <div class="dash-section">
+            Recent Messages
+            <span v-if="ui.unreadMsgCount" class="dash-badge">{{ ui.unreadMsgCount }} unread</span>
+          </div>
+          <a class="dash-view-all" @click="ui.openFlyout('msgs')">View all →</a>
         </div>
-        <div class="msg-preview">{{ (m.body || '').slice(0, 80) }}</div>
-      </div>
-    </div>
+        <div>
+          <div v-if="!ui.messages.length" class="empty-state dash-empty">No messages.</div>
+          <div
+            v-for="m in ui.messages.slice(0, 3)"
+            :key="m.id"
+            class="msg-item"
+            :class="{ unread: !m.read_at }"
+            @click="openMessage(m)"
+          >
+            <div class="msg-header">
+              <div class="msg-subject">{{ m.subject }}</div>
+              <div class="msg-meta">{{ fmt(m.created_at) }}</div>
+            </div>
+            <div class="msg-preview">{{ (m.body || '').slice(0, 80) }}</div>
+          </div>
+        </div>
 
-    <!-- Next session -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px">
-      <div class="dash-section" style="margin:0;flex:1">Next Session</div>
-      <router-link to="/sessions" style="font-size:11px;color:var(--accent);font-family:'JetBrains Mono',monospace;margin-bottom:10px">View all →</router-link>
-    </div>
-    <div v-if="nextSession" class="card">
-      <div class="card-title">{{ nextSession.title || 'Proposed date' }}</div>
-      <div class="card-meta" style="color:var(--text3)">{{ fmtTime(nextSession.proposed_date) }}</div>
-    </div>
-    <div v-else class="empty-state" style="padding:12px">No upcoming session scheduled.</div>
+        <!-- Recent handouts -->
+        <div class="dash-section-row" style="margin-top:20px">
+          <div class="dash-section">
+            Recent Handouts
+            <span v-if="ui.unreadHandoutCount" class="dash-badge">{{ ui.unreadHandoutCount }} new</span>
+          </div>
+          <router-link to="/handouts" class="dash-view-all">View all →</router-link>
+        </div>
+        <div>
+          <div v-if="!recentHandouts.length" class="empty-state dash-empty">No handouts.</div>
+          <div
+            v-for="h in recentHandouts"
+            :key="h.id"
+            class="msg-item msg-item-link"
+            @click="ui.openHandout(h)"
+          >
+            <div class="msg-header">
+              <div class="msg-subject">{{ h.title }}</div>
+              <div class="msg-meta">{{ fmt(h.created_at) }}</div>
+            </div>
+            <div v-if="h.description" class="msg-preview">{{ h.description.slice(0, 80) }}</div>
+          </div>
+        </div>
+
+        <!-- Next session -->
+        <div class="dash-section-row" style="margin-top:20px">
+          <div class="dash-section">Next Session</div>
+          <router-link to="/sessions" class="dash-view-all">View all →</router-link>
+        </div>
+        <div v-if="nextSession" class="card">
+          <div class="card-title">{{ nextSession.title || 'Proposed date' }}</div>
+          <div class="card-meta next-session-date">{{ fmtTime(nextSession.proposed_date) }}</div>
+        </div>
+        <div v-else class="empty-state dash-empty">No upcoming session scheduled.</div>
+
+      </div>
+    </div><!-- /dash-lower -->
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
 import { useDataStore } from '@/stores/data'
+import { useAuthStore } from '@/stores/auth'
+import { useSystemFeatures } from '@/composables/useSystemFeatures'
 import PlaylistPlayer from '@/components/PlaylistPlayer.vue'
+import QuestCard from '@/components/QuestCard.vue'
 
 const campaign = useCampaignStore()
 const ui = useUiStore()
 const data = useDataStore()
+const auth = useAuthStore()
 const router = useRouter()
+const { hasStress, hasSanity } = useSystemFeatures()
+
+// Characters for the current player
+const myCharacters = ref([])
+
+async function loadMyCharacters() {
+  if (campaign.isGm) return
+  try {
+    const headers = {
+      Authorization: `Bearer ${auth.token}`,
+      'Content-Type': 'application/json',
+    }
+    if (campaign.activeCampaign?.id) headers['X-Campaign-Id'] = campaign.activeCampaign.id
+    const r = await fetch('/api/characters', { headers })
+    if (r.ok) {
+      const d = await r.json()
+      myCharacters.value = d.characters || []
+    }
+  } catch (_) {}
+}
+
+function initials(name) {
+  return (name || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+}
+
+const expandedId = ref(null)
+function toggleExpand(id) { expandedId.value = expandedId.value === id ? null : id }
 
 const TYPE_COLORS = {
   quest: '#c9a84c', npc: '#4c7ac9', location: '#4caf7d', hook: '#8b4cc9',
@@ -186,6 +271,9 @@ const PIN_ROUTES = {
 
 const activeQuests = computed(() => data.quests.filter(q => q.status === 'active'))
 const openHooks = computed(() => data.hooks.filter(h => h.status === 'active').length)
+const recentHandouts = computed(() =>
+  [...data.handouts].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 3)
+)
 
 const stressPct = computed(() => {
   if (!data.stress) return 0
@@ -218,11 +306,106 @@ function fmtTime(ts) {
   return new Date(ts).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
-function openMessage(m) {
-  ui.openMessage(m)
-}
+function openMessage(m) { ui.openMessage(m) }
 
 onMounted(async () => {
   if (!data.scheduling.length) await data.loadSessions()
+  await loadMyCharacters()
 })
 </script>
+
+<style scoped>
+.campaign-subtitle { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+/* Character shortcut row */
+.char-shortcut-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; align-items: center; }
+.char-shortcut-tile {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius, 6px); padding: 8px 12px;
+  cursor: pointer; transition: border-color 0.15s;
+  min-width: 180px;
+}
+.char-shortcut-tile:hover { border-color: var(--accent); }
+.char-shortcut-portrait {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--surface2, #2a2a3a); overflow: hidden;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.char-shortcut-img { width: 100%; height: 100%; object-fit: cover; }
+.char-shortcut-initials { font-size: 0.9em; font-weight: 700; opacity: 0.3; font-family: 'JetBrains Mono', monospace; }
+.char-shortcut-details { flex: 1; min-width: 0; }
+.char-shortcut-name { font-weight: 600; font-size: 0.9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.char-shortcut-class { font-size: 0.75em; opacity: 0.5; }
+.char-shortcut-arrow { opacity: 0.3; font-size: 0.9em; }
+.char-shortcut-new {
+  display: flex; align-items: center; gap: 8px;
+  border: 1px dashed var(--border); border-radius: var(--radius, 6px);
+  padding: 8px 16px; cursor: pointer; font-size: 0.82em; opacity: 0.6;
+  transition: opacity 0.15s, border-color 0.15s;
+}
+.char-shortcut-new:hover { opacity: 1; border-color: var(--accent); }
+.char-shortcut-plus { font-size: 1.2em; opacity: 0.7; }
+.char-shortcut-add {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.75em; opacity: 0.45; cursor: pointer;
+  font-family: 'JetBrains Mono', monospace; padding: 4px 8px;
+}
+.char-shortcut-add:hover { opacity: 0.8; }
+
+/* Stress bars */
+.stress-wrap { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.stress-col { min-width: 180px; }
+.sanity-critical { color: var(--red); }
+
+/* Pins */
+.pins-section { margin-bottom: 18px; }
+.pin-remove { background: none; border: none; color: var(--text3); font-size: 11px; padding: 0 0 0 4px; cursor: pointer; }
+
+/* Stat cards */
+.stat-card-link { cursor: pointer; }
+
+/* Section headers */
+.dash-section-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  margin-bottom: 10px;
+}
+.dash-section { margin: 0; flex: 1; }
+.dash-view-all {
+  font-size: 11px;
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.dash-badge {
+  font-size: 11px;
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  margin-left: 8px;
+}
+.dash-empty { padding: 12px 0; }
+
+/* Handout items are clickable */
+.msg-item-link { cursor: pointer; }
+
+/* Next session */
+.next-session-date { color: var(--text3); }
+
+/* 2-column lower layout */
+.dash-lower {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  align-items: start;
+  margin-top: 8px;
+}
+
+@media (max-width: 860px) {
+  .dash-lower { grid-template-columns: 1fr; }
+}
+</style>

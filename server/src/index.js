@@ -44,6 +44,11 @@ const backupRoutes = require('./routes/backup');
 const vaultRoutes = require('./routes/vault');
 const xpRoutes = require('./routes/xp');
 const sharesRoutes = require('./routes/shares');
+const calendarRoutes = require('./routes/calendar');
+const goodBoyCardsRoutes = require('./routes/goodBoyCards');
+const charactersRoutes = require('./routes/characters');
+
+const SERVER_STARTUP_ID = Date.now().toString();
 
 const app = express();
 app.set('trust proxy', 1);
@@ -78,7 +83,7 @@ app.use(cors({
 
 // ── Middleware ─────────────────────────────────────────────────────────────────
 app.use(express.json({ limit: '1mb' }));
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/uploads', express.static(require('./config').uploadsPath));
 // Serve the single-file client portal from /client (works standalone without Caddy)
 const clientPath = path.join(__dirname, '../../client/dist');
 app.use(express.static(clientPath));
@@ -88,6 +93,9 @@ app.use((req, _res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
   next();
 });
+
+// ── Version endpoint (no auth — used for update detection) ────────────────────
+app.get('/api/version', (_req, res) => res.json({ version: SERVER_STARTUP_ID }));
 
 // ── SSE endpoint ──────────────────────────────────────────────────────────────
 app.get('/api/events', requireAuth, (req, res) => {
@@ -142,6 +150,9 @@ app.use('/api/backup', backupRoutes);
 app.use('/api/vault', vaultRoutes);
 app.use('/api/xp', xpRoutes);
 app.use('/api/shares', sharesRoutes);
+app.use('/api/calendar', calendarRoutes);
+app.use('/api/good-boy-cards', goodBoyCardsRoutes);
+app.use('/api/characters', charactersRoutes);
 
 // ── Health check ───────────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => {
@@ -167,7 +178,8 @@ runMigrations();
 startVaultWatcher();
 
 app.listen(port, () => {
-  console.log(`\n⚔️  The Chronicle API running at http://localhost:${port}`);
-  console.log(`📖  Health: http://localhost:${port}/api/health`);
-  console.log(`📡  SSE:    http://localhost:${port}/api/events\n`);
+  const host = process.env.PUBLIC_HOST || `localhost:${port}`
+  console.log(`\n⚔️  The Chronicle API running at http://${host}`);
+  console.log(`📖  Health: http://${host}/api/health`);
+  console.log(`📡  SSE:    http://${host}/api/events\n`);
 });

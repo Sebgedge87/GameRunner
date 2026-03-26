@@ -5,12 +5,10 @@
       <div class="wizard-sub">Let's set up your campaign</div>
 
       <div class="wizard-steps-indicator">
-        <div
-          v-for="i in 3"
-          :key="i"
-          class="wizard-step-dot"
-          :class="{ active: step === i - 1 }"
-        ></div>
+        <div v-for="(label, i) in ['Campaign', 'Players', 'Ready']" :key="i" class="wizard-step-item">
+          <div class="wizard-step-dot" :class="{ active: step === i, done: step > i }"></div>
+          <div class="wizard-step-label" :class="{ active: step === i }">{{ label }}</div>
+        </div>
       </div>
 
       <!-- Step 0: Campaign -->
@@ -21,16 +19,18 @@
         </div>
         <div class="field-group">
           <label>System</label>
-          <select v-model="campSystem" class="form-input">
+          <select v-model="campSystem" class="form-input" @change="previewTheme">
+            <option value="default">Default (no system)</option>
             <option value="dnd5e">D&amp;D 5e</option>
             <option value="coc">Call of Cthulhu</option>
-            <option value="alien">Alien</option>
+            <option value="alien">Alien RPG</option>
             <option value="coriolis">Coriolis</option>
             <option value="dune">Dune</option>
             <option value="achtung">Achtung! Cthulhu</option>
             <option value="custom">Custom</option>
           </select>
         </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">Theme preview applied — you can change it later in Settings.</div>
       </div>
 
       <!-- Step 1: First player -->
@@ -50,8 +50,12 @@
 
       <!-- Step 2: Ready -->
       <div v-else>
-        <p style="color:var(--text2);font-size:14px;line-height:1.7;margin-bottom:14px">
-          Your campaign is ready. Players can log in with their credentials and access the portal immediately.
+        <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:14px 16px;margin-bottom:16px">
+          <div style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:4px">CAMPAIGN</div>
+          <div style="font-size:16px;color:var(--accent);font-family:var(--font-header,'Cinzel',serif)">{{ campName }}</div>
+        </div>
+        <p style="color:var(--text2);font-size:13px;line-height:1.7;margin-bottom:14px">
+          Your campaign is ready. Share your server address with players so they can log in.
         </p>
         <div style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace">
           Server: <b style="color:var(--accent)">{{ serverUrl }}</b>
@@ -83,7 +87,7 @@ const auth = useAuthStore()
 const show = ref(false)
 const step = ref(0)
 const campName = ref('')
-const campSystem = ref('dnd5e')
+const campSystem = ref('default')
 const playerName = ref('')
 const playerPwd = ref('')
 const busy = ref(false)
@@ -105,6 +109,10 @@ watch(
   { immediate: true }
 )
 
+function previewTheme() {
+  campaign.applyTheme(campSystem.value)
+}
+
 async function next() {
   errMsg.value = ''
   busy.value = true
@@ -117,6 +125,7 @@ async function next() {
       })
       if (!r.ok) { errMsg.value = 'Failed to create campaign.'; return }
       await campaign.loadCampaigns()
+      campaign.applyTheme(campSystem.value)
       step.value++
     } else if (step.value === 1) {
       if (playerName.value.trim() && playerPwd.value.trim()) {
@@ -178,19 +187,48 @@ function back() {
 }
 .wizard-steps-indicator {
   display: flex;
-  gap: 8px;
-  margin-bottom: 24px;
+  gap: 0;
+  margin-bottom: 28px;
+  align-items: center;
+}
+.wizard-step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  position: relative;
+}
+.wizard-step-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  width: 100%;
+  height: 2px;
+  background: var(--border2);
+  z-index: 0;
 }
 .wizard-step-dot {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: var(--border2);
   transition: background 0.2s;
+  z-index: 1;
+  position: relative;
 }
-.wizard-step-dot.active {
-  background: var(--accent);
+.wizard-step-dot.active { background: var(--accent); }
+.wizard-step-dot.done { background: var(--accent); opacity: 0.5; }
+.wizard-step-label {
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text3);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: color 0.2s;
 }
+.wizard-step-label.active { color: var(--accent); }
 .wizard-nav {
   display: flex;
   justify-content: flex-end;

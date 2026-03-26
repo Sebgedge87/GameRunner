@@ -22,6 +22,12 @@ export const useUiStore = defineStore('ui', () => {
   function toggleSidebar() { sidebarOpen.value = !sidebarOpen.value }
   function closeSidebar() { sidebarOpen.value = false }
 
+  const sidebarCollapsed = ref(localStorage.getItem('sidebar_collapsed') === '1')
+  function toggleSidebarCollapse() {
+    sidebarCollapsed.value = !sidebarCollapsed.value
+    localStorage.setItem('sidebar_collapsed', sidebarCollapsed.value ? '1' : '0')
+  }
+
   // Notifications
   const notifications = ref([])
   const unreadNotifCount = ref(0)
@@ -29,6 +35,7 @@ export const useUiStore = defineStore('ui', () => {
   function setNotifications(notifs) {
     notifications.value = notifs
     unreadNotifCount.value = notifs.filter(n => !n.read_at).length
+    unreadHandoutCount.value = notifs.filter(n => !n.read_at && n.type === 'handout').length
   }
 
   // Messages
@@ -43,10 +50,21 @@ export const useUiStore = defineStore('ui', () => {
   // Handouts badge
   const unreadHandoutCount = ref(0)
 
+  // Good Boy Cards badge (unplayed cards awarded to this user)
+  const cardBadge = ref(0)
+
   // Active flyout
   const activeFlyout = ref(null)
+  const pendingReply = ref(null) // { toUserId, toName, subject }
   function openFlyout(name) { activeFlyout.value = name }
-  function closeFlyout() { activeFlyout.value = null }
+  function openReplyFlyout(toUserId, toName, subject) {
+    pendingReply.value = { toUserId, toName, subject }
+    activeFlyout.value = 'msgs'
+  }
+  function closeFlyout() {
+    activeFlyout.value = null
+    pendingReply.value = null
+  }
 
   // Message viewer
   const viewingMessage = ref(null)
@@ -110,10 +128,11 @@ export const useUiStore = defineStore('ui', () => {
   return {
     toasts, showToast, dismissToast,
     sidebarOpen, toggleSidebar, closeSidebar,
+    sidebarCollapsed, toggleSidebarCollapse,
     notifications, unreadNotifCount, setNotifications,
     messages, unreadMsgCount, setMessages,
-    unreadHandoutCount,
-    activeFlyout, openFlyout, closeFlyout,
+    unreadHandoutCount, cardBadge,
+    activeFlyout, pendingReply, openFlyout, openReplyFlyout, closeFlyout,
     viewingMessage, openMessage, closeMessage,
     viewingHandout, openHandout, closeHandout,
     detailModal, openDetail, closeDetail,

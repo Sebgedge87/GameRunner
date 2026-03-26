@@ -60,8 +60,11 @@ async function ack() {
 
 function reply() {
   if (!msg.value) return
+  const toId = msg.value.from_user_id
+  const toName = msg.value.from_character || msg.value.from_username || ''
+  const reSubject = msg.value.subject.startsWith('Re: ') ? msg.value.subject : `Re: ${msg.value.subject}`
   close()
-  ui.openFlyout('msgs')
+  ui.openReplyFlyout(toId, toName, reSubject)
 }
 
 async function del() {

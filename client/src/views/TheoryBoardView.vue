@@ -45,6 +45,7 @@
 
 <script setup>
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import * as d3 from 'd3'
 import { useDataStore } from '@/stores/data'
 import { useUiStore } from '@/stores/ui'
 
@@ -52,7 +53,6 @@ const data = useDataStore()
 const ui = useUiStore()
 
 const svgEl = ref(null)
-let d3 = null
 let simulation = null
 
 const form = reactive({ label: '', type: 'theory', notes: '' })
@@ -119,7 +119,7 @@ function startLinkMode() {
 }
 
 function renderBoard() {
-  if (!svgEl.value || !d3) return
+  if (!svgEl.value) return
   if (simulation) simulation.stop()
 
   const svg = d3.select(svgEl.value)
@@ -195,15 +195,7 @@ function renderBoard() {
 }
 
 onMounted(async () => {
-  if (typeof window.d3 === 'undefined') {
-    const script = document.createElement('script')
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js'
-    script.onload = () => { d3 = window.d3; loadBoard() }
-    document.head.appendChild(script)
-  } else {
-    d3 = window.d3
-    await loadBoard()
-  }
+  await loadBoard()
 })
 
 onUnmounted(() => {

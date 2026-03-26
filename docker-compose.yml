@@ -8,6 +8,7 @@ services:
       ALLOWED_ORIGINS: "${ALLOWED_ORIGINS:-https://chronicle.local}"
       DB_PATH: /data/chronicle.db
       VAULT_PATH: /data/vault
+      UPLOADS_PATH: /data/uploads
       GM_USERNAME: "${GM_USERNAME:-dungeonmaster}"
     volumes:
       - chronicle-data:/data
