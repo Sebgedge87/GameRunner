@@ -167,6 +167,14 @@
   --font-body: 'Special Elite', 'Crimson Pro', Georgia, serif;
   --radius: 2px;
   --h-spacing: 0.1em;
+  /* CoC Investigative Ledger tokens */
+  --coc-ink:      #0f141a;
+  --coc-sepia:    #5c3d18;
+  --coc-graphite: #3a3228;
+  --coc-line:     rgba(74, 60, 40, 0.15);
+  --coc-tab-bg:   #f0ddb0;
+  --coc-moss:     #3a5c18;
+  --coc-blood:    #7a1a10;
 }
 
 /* ── Achtung! Cthulhu — The Secret War ───────────────────────────────────── */
