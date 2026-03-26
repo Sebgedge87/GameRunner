@@ -31,6 +31,7 @@ const routes = [
   { path: '/combat', component: () => import('@/views/CombatView.vue'), meta: { auth: true, requiresCampaign: C, gm: true } },
   { path: '/good-boy-cards', component: () => import('@/views/GoodBoyCardsView.vue'), meta: { auth: true, requiresCampaign: C } },
   { path: '/settings', component: () => import('@/views/SettingsView.vue'), meta: { auth: true } },
+  { path: '/dev-admin', component: () => import('@/views/DeveloperConfigView.vue'), meta: { isDevAdmin: true } },
 ]
 
 const router = createRouter({
@@ -39,6 +40,9 @@ const router = createRouter({
 })
 
 router.beforeEach((to) => {
+  // Dev admin: always allow access — the view itself renders the login gate.
+  // meta.isDevAdmin just marks the route so it is excluded from normal auth/nav.
+  if (to.meta.isDevAdmin) return
   if (to.meta.auth) {
     const auth = useAuthStore()
     if (!auth.token) return '/login'

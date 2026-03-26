@@ -1,5 +1,8 @@
 <template>
   <div id="app-shell" :class="{ 'sidebar-icon-only': ui.sidebarCollapsed }">
+    <!-- Global immersion texture overlay (reads media_config from localStorage) -->
+    <ImmersionOverlay />
+
     <!-- Sidebar overlay for mobile -->
     <div id="sidebar-overlay"
       :class="{ open: ui.sidebarOpen }"
@@ -78,6 +81,7 @@ import OnboardingWizard from './OnboardingWizard.vue'
 import ConfirmDialog from './ConfirmDialog.vue'
 import ToastContainer from './ToastContainer.vue'
 import TimerWidget from './TimerWidget.vue'
+import ImmersionOverlay from './ImmersionOverlay.vue'
 
 const auth = useAuthStore()
 const campaign = useCampaignStore()
