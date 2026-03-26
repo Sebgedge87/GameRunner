@@ -1737,6 +1737,47 @@ onMounted(() => {
   max-width: 55%;
 }
 
+/* Collapse grid row gaps so rows sit flush on the ruled lines */
+.dossier-mode .edit-grid,
+.dossier-mode .edit-stats-grid,
+.coc-mode    .edit-grid,
+.coc-mode    .edit-stats-grid {
+  row-gap: 0 !important;
+}
+
+/* Remove number-input spinners — they inflate row height above 32px */
+.dossier-mode input[type="number"],
+.coc-mode    input[type="number"] {
+  -moz-appearance: textfield;
+}
+.dossier-mode input[type="number"]::-webkit-inner-spin-button,
+.dossier-mode input[type="number"]::-webkit-outer-spin-button,
+.coc-mode    input[type="number"]::-webkit-inner-spin-button,
+.coc-mode    input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Skill rows in CoC: let them inherit text colour instead of using accent */
+.coc-mode .coc-view-hard,
+.coc-mode .coc-view-extreme,
+.coc-mode .coc-view-base,
+.coc-mode .coc-skill-base {
+  color: inherit !important;
+}
+
+/* Checkboxes: restore normal inline layout (not flex-row stretch) */
+.dossier-mode .condition-check,
+.coc-mode    .condition-check {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  min-height: unset !important;
+  height: auto !important;
+  gap: 5px;
+  font-size: 0.82em;
+}
+
 /* ── Save status indicator ───────────────────────────── */
 .sheet-save-indicator {
   font-size: 0.7em;
