@@ -81,6 +81,13 @@
         <!-- ── IDENTITY ──────────────────────────────────── -->
         <template v-if="activePage === 'identity'">
 
+        <!-- CoC investigator stamp -->
+        <div v-if="cocMode" class="coc-stamp-wrap" aria-hidden="true">
+          <div class="coc-stamp-circle">
+            <span class="coc-stamp-text">Investigator<br/>File</span>
+          </div>
+        </div>
+
         <!-- Portrait URL field + inline preview -->
         <div class="field-group" style="margin-bottom:12px">
           <label>Portrait URL <span style="opacity:.5;font-weight:400">(optional)</span></label>
@@ -1764,328 +1771,342 @@ onMounted(() => {
 .sheet-save-indicator.error  { color: #e74c3c; }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   CoC — Self-Contained Paper Document
-   All colours hardcoded. No CSS custom property inheritance from the app theme.
+   CoC — Investigator File Paper Document
+   Matches reference design: Georgia serif, vertical fields, taupe surround,
+   light cream paper (#f4efe4), red stamp header, subtle ruled lines.
+   All colours hardcoded — no theme variable inheritance.
    ══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Surround: dark charcoal environment ─────────────────────────────── */
+/* ── Surround ─────────────────────────────────────────────────────────── */
 .coc-mode {
-  background: #1c1a14 !important;
-  color: #1a1005;
-  font-family: 'Courier New', 'Special Elite', monospace;
-  padding: 24px 16px !important;
+  background: #e7e2d6 !important;
+  color: #2a2a2a;
+  font-family: Georgia, 'Times New Roman', serif;
+  padding: 32px 24px !important;
   min-height: 100vh;
   box-sizing: border-box;
 }
 
-/* ── Unified paper card: header + tabs + page all share one cream surface ── */
+/* ── Paper card: header + nav + page share one cream surface ────────── */
 .coc-mode .page-header {
-  background: #d4c89a !important;
-  border: 1px solid rgba(60, 40, 10, 0.45) !important;
+  background: #f4efe4 !important;
+  border: 1px solid #cfc7b7 !important;
   border-bottom: none !important;
   border-radius: 4px 4px 0 0 !important;
-  margin: 0 !important;
-  padding: 16px 20px 12px !important;
+  margin: 0 auto !important;
+  max-width: 900px !important;
+  padding: 12px 40px !important;
   box-shadow: none !important;
 }
 
 .coc-mode .dossier-page-nav {
-  background: #cfc39a !important;
-  border-left: 1px solid rgba(60, 40, 10, 0.45) !important;
-  border-right: 1px solid rgba(60, 40, 10, 0.45) !important;
-  border-bottom: none !important;
-  margin: 0 !important;
-  padding: 0 12px !important;
+  background: #ece8df !important;
+  border-left: 1px solid #cfc7b7 !important;
+  border-right: 1px solid #cfc7b7 !important;
+  border-bottom: 1px solid #cfc7b7 !important;
+  margin: 0 auto !important;
+  max-width: 900px !important;
+  padding: 0 40px !important;
 }
 
 .coc-mode .sheet-page-wrap {
-  background: #d4c89a !important;
-  border: 1px solid rgba(60, 40, 10, 0.45) !important;
+  background: #f4efe4 !important;
+  border: 1px solid #cfc7b7 !important;
   border-top: none !important;
   border-radius: 0 0 4px 4px !important;
-  margin: 0 !important;
+  margin: 0 auto !important;
+  max-width: 900px !important;
   padding: 0 !important;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.55), 0 2px 6px rgba(0,0,0,0.35) !important;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.14) !important;
 }
 
-/* ── Sheet page — cream with 36px ruled lines ─────────────────────── */
+/* ── Sheet page — light cream with 32px ruled lines ─────────────────── */
 .coc-mode .sheet-page {
-  background-color: #d4c89a !important;
+  background-color: #f4efe4 !important;
   background-image: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 35px,
-    rgba(60, 40, 10, 0.18) 35px,
-    rgba(60, 40, 10, 0.18) 36px
+    to bottom,
+    transparent 0,
+    transparent 31px,
+    rgba(0, 0, 0, 0.13) 31px,
+    rgba(0, 0, 0, 0.13) 32px
   ) !important;
   background-attachment: local !important;
-  color: #1a1005;
-  font-family: 'Courier New', 'Special Elite', monospace;
-  padding: 20px 28px;
-}
-
-/* ── All box-sizing ─────────────────────────────────────────────────── */
-.coc-mode .sheet-page * {
+  color: #2a2a2a;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1rem;
+  padding: 0 40px 40px;
   box-sizing: border-box;
 }
 
-/* ── All cards: transparent, no box ──────────────────────────────── */
+.coc-mode .sheet-page * { box-sizing: border-box; }
+
+/* ── Cards: transparent ──────────────────────────────────────────── */
 .coc-mode .card,
 .coc-mode .sheet-header-card,
 .coc-mode .beyond-banner,
-.coc-mode .beyond-placeholder {
-  background: transparent !important;
-  border: none !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-}
-
-/* ── Stat boxes — bottom rule only ──────────────────────────────── */
+.coc-mode .beyond-placeholder,
 .coc-mode .stat-box {
   background: transparent !important;
   border: none !important;
-  border-bottom: 1px solid rgba(60, 40, 10, 0.22) !important;
   border-radius: 0 !important;
+  box-shadow: none !important;
 }
 
-/* ── Ledger alignment: 36px rows (more breathing room) ────────────── */
-.coc-mode {
-  --R: 36px;
+/* ── Page header: hide the app-style title — stamp is the header ─── */
+.coc-mode .page-title {
+  display: none !important;
+}
+.coc-mode .back-link {
+  color: #8b1e1e !important;
+  font-family: Georgia, serif !important;
+  font-size: 0.82em !important;
+}
+.coc-mode .page-header::after { display: none !important; }
+
+/* ── Stamp circle ──────────────────────────────────────────────── */
+.coc-stamp-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: calc(32px * 7);
+  margin-bottom: 32px;
 }
 
+.coc-stamp-circle {
+  width: 220px;
+  height: 220px;
+  border: 4px solid #8b1e1e;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transform: rotate(-8deg);
+  color: #8b1e1e;
+  font-weight: bold;
+  text-align: center;
+  mix-blend-mode: multiply;
+  opacity: 0.85;
+  background: transparent;
+}
+
+.coc-stamp-circle::before {
+  content: '';
+  position: absolute;
+  inset: 12px;
+  border: 2px dashed #8b1e1e;
+  border-radius: 50%;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.coc-stamp-circle::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(139, 30, 30, 0.08),
+    rgba(139, 30, 30, 0.08) 2px,
+    transparent 2px,
+    transparent 5px
+  );
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.coc-stamp-text {
+  position: relative;
+  z-index: 1;
+  font-family: Georgia, serif;
+  font-size: 1.1rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  line-height: 1.5;
+}
+
+/* ── Ruled field layout ────────────────────────────────────────── */
+/* --R matches the 32px ruled-line period of the sheet background  */
+.coc-mode { --R: 32px; }
+
+/* Field: label on one line, input on the next */
 .coc-mode .field-group {
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: center !important;
-  min-height: var(--R);
-  margin: 0 !important;
-  padding: 0 2px !important;
-  gap: 10px;
-  border-bottom: 1px solid rgba(60, 40, 10, 0.12);
+  display: block !important;
+  margin: 0 0 var(--R) !important;
+  padding: 0 !important;
 }
 
 .coc-mode .field-group > label {
-  flex: 0 0 38%;
-  max-width: 38%;
+  display: block !important;
+  width: 100% !important;
   height: var(--R);
   line-height: var(--R) !important;
-  display: flex !important;
-  align-items: center !important;
-  overflow: hidden;
-  white-space: nowrap;
-  font-size: 0.72em !important;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #5c3d18 !important;
-  font-family: 'Courier New', monospace !important;
+  font-family: Georgia, 'Times New Roman', serif !important;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  color: #2a2a2a !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
   margin: 0 !important;
   padding: 0 !important;
-  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
-.coc-mode .edit-stats-grid .field-group > label {
-  flex: 0 0 55%;
-  max-width: 55%;
-}
-
-.coc-mode .edit-grid,
-.coc-mode .edit-stats-grid {
-  row-gap: 0 !important;
-}
-
+/* Section sub-headings */
 .coc-mode [style*="letter-spacing:.05em"],
-.coc-mode [style*="letter-spacing: .05em"] {
-  height: calc(var(--R) * 1.2) !important;
-  line-height: calc(var(--R) * 1.2) !important;
-  margin-top: 8px !important;
-  margin-bottom: 0 !important;
-  padding: 0 2px !important;
-  display: flex !important;
-  align-items: flex-end !important;
-  font-size: 0.68em !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.20em !important;
-  color: #3a2408 !important;
-  border-bottom: 1px solid rgba(60, 40, 10, 0.35) !important;
-  font-weight: 700 !important;
-}
+.coc-mode [style*="letter-spacing: .05em"],
 .coc-mode [style*="margin:16px 0"] {
-  margin-top: 8px !important;
-  margin-bottom: 0 !important;
-  height: calc(var(--R) * 1.2) !important;
-  line-height: calc(var(--R) * 1.2) !important;
-  display: flex !important;
-  align-items: flex-end !important;
-}
-
-/* ── Inputs / selects: typewriter on ruled lines ─────────────────── */
-.coc-mode input,
-.coc-mode select {
-  background: transparent !important;
-  border: none !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  color: #1a1005 !important;
-  font-family: 'Courier New', monospace !important;
-  font-size: 0.92em !important;
-  padding-left: 4px !important;
+  display: block !important;
   height: var(--R) !important;
   line-height: var(--R) !important;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-  flex: 1;
+  margin: 0 0 var(--R) !important;
+  font-family: Georgia, serif !important;
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.14em !important;
+  color: #666 !important;
 }
-.coc-mode textarea {
-  background: transparent !important;
-  border: none !important;
-  border-bottom: 1px solid rgba(60, 40, 10, 0.25) !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  color: #1a1005 !important;
-  font-family: 'Courier New', monospace !important;
-  font-size: 0.92em !important;
-  line-height: var(--R) !important;
-  padding: 4px !important;
-  min-height: calc(var(--R) * 2) !important;
+
+/* ── Inputs & selects: sit on the ruled line, no border ─────────── */
+.coc-mode input,
+.coc-mode select {
+  display: block !important;
   width: 100% !important;
+  height: var(--R) !important;
+  line-height: var(--R) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  outline: none !important;
+  background: transparent !important;
+  color: #2a2a2a !important;
+  font-family: Georgia, 'Times New Roman', serif !important;
+  font-size: 1.05rem !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  flex: unset !important;
+  -webkit-appearance: none;
 }
+
+.coc-mode textarea {
+  display: block !important;
+  width: 100% !important;
+  min-height: calc(var(--R) * 4) !important;
+  line-height: var(--R) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  outline: none !important;
+  background: transparent !important;
+  color: #2a2a2a !important;
+  font-family: Georgia, 'Times New Roman', serif !important;
+  font-size: 1.05rem !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  resize: vertical;
+}
+
+.coc-mode input::placeholder,
+.coc-mode textarea::placeholder { color: #7a7a7a !important; }
 .coc-mode input:focus,
 .coc-mode textarea:focus,
-.coc-mode select:focus {
-  border-bottom-color: rgba(60, 40, 10, 0.55) !important;
-  outline: none !important;
-  box-shadow: none !important;
-}
-.coc-mode input::placeholder,
-.coc-mode textarea::placeholder { color: rgba(60, 40, 10, 0.30) !important; }
+.coc-mode select:focus { outline: none !important; box-shadow: none !important; }
 
-/* Remove number-input spinners */
-.coc-mode input[type="number"] {
-  -moz-appearance: textfield;
-}
+/* Remove number spinners */
+.coc-mode input[type="number"] { -moz-appearance: textfield; }
 .coc-mode input[type="number"]::-webkit-inner-spin-button,
-.coc-mode input[type="number"]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
+.coc-mode input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* Grids: no column gap interference */
+.coc-mode .edit-grid,
+.coc-mode .edit-stats-grid { row-gap: 0 !important; }
+
+/* ── Skill rows ──────────────────────────────────────────────────── */
+.coc-mode .coc-view-row,
+.coc-mode .coc-skill-row {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.13) !important;
+  font-family: Georgia, serif !important;
+  color: #2a2a2a !important;
+}
+.coc-mode .coc-view-hard,
+.coc-mode .coc-view-extreme,
+.coc-mode .coc-view-base,
+.coc-mode .coc-skill-base { color: #666 !important; }
+.coc-mode .coc-raised .coc-view-val {
+  color: #2a2a2a !important;
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-color: #8b1e1e;
+  text-underline-offset: 3px;
 }
 
-/* ── Checkboxes ─────────────────────────────────────────────────── */
+/* ── Section card headers ────────────────────────────────────────── */
+.coc-mode .acht-card-header {
+  font-family: Georgia, serif !important;
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.14em !important;
+  color: #666 !important;
+  border-bottom: 1px solid rgba(0,0,0,0.15) !important;
+}
+
+/* ── Checkboxes ──────────────────────────────────────────────────── */
 .coc-mode .condition-check {
   display: inline-flex !important;
   flex-direction: row !important;
   align-items: center !important;
   min-height: unset !important;
   height: auto !important;
-  gap: 5px;
-  font-size: 0.82em;
-  color: #1a1005 !important;
+  gap: 6px;
+  font-family: Georgia, serif !important;
+  font-size: 0.9rem !important;
+  color: #2a2a2a !important;
 }
 
-/* ── Skill rows ─────────────────────────────────────────────────── */
-.coc-mode .coc-view-row,
-.coc-mode .coc-skill-row {
-  border-bottom: 1px solid rgba(60, 40, 10, 0.20) !important;
-  color: #1a1005 !important;
-}
-.coc-mode .coc-view-hard,
-.coc-mode .coc-view-extreme,
-.coc-mode .coc-view-base,
-.coc-mode .coc-skill-base {
-  color: #3a2408 !important;
-}
-.coc-mode .coc-raised .coc-view-val {
-  color: #1a1005 !important;
-  font-weight: 700;
-  text-decoration: underline;
-  text-decoration-color: #3a2408;
-  text-underline-offset: 3px;
-}
-
-/* ── Section headers ─────────────────────────────────────────────── */
-.coc-mode .acht-card-header {
-  color: #3a2408 !important;
-  border-bottom: 1px solid rgba(60, 40, 10, 0.25) !important;
-  font-family: 'Courier New', monospace !important;
-  letter-spacing: 0.18em;
-}
-
-/* ── Page nav — ledger tabs ──────────────────────────────────────── */
+/* ── Page nav tabs ───────────────────────────────────────────────── */
 .coc-mode .dossier-page-tab {
-  background: #c8bc8e !important;
-  border-color: rgba(60, 40, 10, 0.35) !important;
-  color: #3a2408 !important;
-  font-family: 'Courier New', monospace !important;
+  background: transparent !important;
+  border-color: rgba(0,0,0,0.15) !important;
+  color: #666 !important;
+  font-family: Georgia, serif !important;
+  font-size: 0.78em !important;
+  letter-spacing: 0.08em !important;
 }
-.coc-mode .dossier-page-tab::after { background: #c8bc8e !important; }
+.coc-mode .dossier-page-tab::after { background: #ece8df !important; }
 .coc-mode .dossier-page-tab.active {
-  background: #d4c89a !important;
-  border-color: #7a1a10 !important;
-  color: #7a1a10 !important;
+  background: #f4efe4 !important;
+  border-color: #8b1e1e !important;
+  color: #8b1e1e !important;
 }
-.coc-mode .dossier-page-tab.active::after { background: #d4c89a !important; }
+.coc-mode .dossier-page-tab.active::after { background: #f4efe4 !important; }
 .coc-mode .dossier-nav-btn {
-  background: #c8bc8e !important;
-  border-color: rgba(60, 40, 10, 0.35) !important;
-  color: #3a2408 !important;
+  background: transparent !important;
+  border-color: rgba(0,0,0,0.18) !important;
+  color: #666 !important;
   box-shadow: none !important;
 }
 .coc-mode .dossier-nav-btn:hover:not(:disabled) {
-  border-color: #7a1a10 !important;
-  color: #7a1a10 !important;
+  border-color: #8b1e1e !important;
+  color: #8b1e1e !important;
 }
 
-/* ── Page title — typewriter stamp ──────────────────────────────── */
-.coc-mode .page-title {
-  color: #1a1005 !important;
-  font-family: 'Courier New', monospace !important;
-  font-size: 1.5em !important;
-  font-weight: 900 !important;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  line-height: 1.1;
-}
-.coc-mode .page-title::after { display: none !important; }
-.coc-mode .back-link {
-  color: #7a1a10 !important;
-  font-family: 'Courier New', monospace !important;
-  font-size: 0.75em !important;
-  letter-spacing: 0.05em;
-}
-
-/* ── Investigator subheading line below title ─────────────────── */
-.coc-mode .page-header::after {
-  content: 'CALL OF CTHULHU — INVESTIGATOR SHEET';
-  display: block;
-  font-family: 'Courier New', monospace;
-  font-size: 0.65em;
-  letter-spacing: 0.22em;
-  color: #7a5c2a;
-  margin-top: 4px;
-  text-transform: uppercase;
-}
-
-/* ── Base text within the paper ─────────────────────────────────── */
-.coc-mode .sheet-page {
-  color: #1a1005;
-  font-family: 'Courier New', monospace;
-  font-size: 0.92em;
-  line-height: 1;
-}
-
-/* ── Tooltips on the paper ───────────────────────────────────────── */
+/* ── Tooltips ────────────────────────────────────────────────────── */
 .coc-mode .field-help::after {
-  background: #2a1a08 !important;
-  color: #d4c89a !important;
+  background: #2a2a2a !important;
+  color: #f4efe4 !important;
 }
 
-/* ── Save indicator ─────────────────────────────────────────────── */
+/* ── Save indicator ──────────────────────────────────────────────── */
 .coc-mode .sheet-save-indicator {
-  font-family: 'Courier New', monospace !important;
-  letter-spacing: 0.08em !important;
+  font-family: Georgia, serif !important;
 }
-.coc-mode .sheet-save-indicator.saving { color: #3a2408 !important; }
-.coc-mode .sheet-save-indicator.saved  { color: #3a5c18 !important; }
-.coc-mode .sheet-save-indicator.error  { color: #7a1a10 !important; }
+.coc-mode .sheet-save-indicator.saving { color: #666 !important; }
+.coc-mode .sheet-save-indicator.saved  { color: #3a6b1e !important; }
+.coc-mode .sheet-save-indicator.error  { color: #8b1e1e !important; }
 
 /* ── Mythos glow ─────────────────────────────────────────────────── */
 .mythos-glow { animation: mythos-pulse 3.5s ease-in-out infinite; }
