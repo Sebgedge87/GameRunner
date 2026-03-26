@@ -1937,7 +1937,7 @@ onMounted(() => {
 /* Field: label on one line, input on the next */
 .coc-mode .field-group {
   display: block !important;
-  margin: 0 0 var(--R) !important;
+  margin: 0 0 calc(var(--R) / 2) !important;
   padding: 0 !important;
 }
 
