@@ -3,6 +3,7 @@
   /* Layout */
   --sidebar-w: 220px;
   --topbar-h: 52px;
+  --line-height: 32px;
 
   /* Fallback palette (dnd5e-like) */
   --bg: #0f0d0a;
