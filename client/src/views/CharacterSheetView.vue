@@ -984,8 +984,7 @@ onMounted(() => {
 
 /* ── A4 wrap — the tilted document + tabs container ─────────────────── */
 .a4-wrap {
-  width: 100%;
-  max-width: 720px;
+  width: min(720px, 90vw);
   position: relative;
   transform: rotate(-0.6deg);
   transform-origin: center top;
@@ -1324,6 +1323,20 @@ textarea.form-input { resize: vertical; }
   gap: 8px;
 }
 
+/* ── Large screen scaling ────────────────────────────────────────────── */
+@media (min-width: 1280px) {
+  .a4-wrap { width: min(900px, 75vw); }
+  .page-content { padding: 40px 48px 60px; }
+}
+@media (min-width: 1600px) {
+  .a4-wrap { width: min(1060px, 70vw); }
+  .page-content { padding: 48px 80px 80px; }
+}
+@media (min-width: 1920px) {
+  .a4-wrap { width: min(1200px, 65vw); }
+}
+
+/* ── Small screen scaling ────────────────────────────────────────────── */
 @media (max-width: 800px) {
   .page-content { padding: 20px 12px 36px; }
   .a4-wrap { transform: rotate(-0.4deg); }
