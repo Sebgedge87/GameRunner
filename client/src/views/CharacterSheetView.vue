@@ -1171,6 +1171,16 @@ onMounted(() => {
 }
 .field-help:hover::after { opacity: 1; }
 
+/* Tooltip colours in dossier / CoC light-paper modes */
+.dossier-mode .field-help::after,
+.coc-mode .field-help::after {
+  background: #2a1a08;
+  color: #e8d5a3;
+  border-color: rgba(90, 55, 10, 0.50);
+  box-shadow: 2px 2px 8px rgba(0,0,0,0.40);
+  font-family: 'Special Elite', 'Courier New', monospace;
+}
+
 /* ── Derived-stat auto-fill hint ─────────────────────── */
 .derive-hint {
   font-size: 0.72em;
