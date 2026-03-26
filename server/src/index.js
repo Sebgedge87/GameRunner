@@ -47,6 +47,7 @@ const sharesRoutes = require('./routes/shares');
 const calendarRoutes = require('./routes/calendar');
 const goodBoyCardsRoutes = require('./routes/goodBoyCards');
 const charactersRoutes = require('./routes/characters');
+const devAdminRoutes = require('./routes/devAdmin');
 
 const SERVER_STARTUP_ID = Date.now().toString();
 
@@ -153,6 +154,7 @@ app.use('/api/shares', sharesRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/good-boy-cards', goodBoyCardsRoutes);
 app.use('/api/characters', charactersRoutes);
+app.use('/api/dev-admin', devAdminRoutes);
 
 // ── Health check ───────────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => {
