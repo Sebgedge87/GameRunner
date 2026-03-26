@@ -119,6 +119,56 @@
             </div>
           </section>
 
+          <!-- ── Database Inspector ── -->
+          <section v-if="activeSec === 'db'" class="dev-section">
+            <h2 class="dev-section-title">Database Inspector</h2>
+            <p class="dev-section-desc">Read-only <code>SELECT</code> queries against the live SQLite database. Write statements are blocked server-side.</p>
+
+            <!-- Quick queries -->
+            <div class="dev-quick-queries">
+              <span class="dev-quick-label">Quick:</span>
+              <button v-for="q in quickQueries" :key="q.label" class="dev-btn dev-btn-xs dev-btn-ghost" @click="runQuick(q.sql)">{{ q.label }}</button>
+            </div>
+
+            <!-- Editor -->
+            <div class="dev-db-editor">
+              <textarea
+                v-model="dbQuery"
+                class="dev-textarea dev-db-input"
+                spellcheck="false"
+                placeholder="SELECT * FROM users LIMIT 20;"
+                @keydown.ctrl.enter.prevent="runQuery"
+                @keydown.meta.enter.prevent="runQuery"
+              />
+              <div class="dev-db-toolbar">
+                <button class="dev-btn dev-btn-primary dev-btn-sm" @click="runQuery" :disabled="dbLoading">
+                  {{ dbLoading ? 'Running…' : '▶ Run' }}
+                </button>
+                <span class="dev-db-hint">Ctrl+Enter to run</span>
+                <span v-if="dbError" class="dev-error-msg">{{ dbError }}</span>
+              </div>
+            </div>
+
+            <!-- Results -->
+            <div v-if="dbResult" class="dev-db-results">
+              <div class="dev-db-results-meta">{{ dbResult.count }} row{{ dbResult.count !== 1 ? 's' : '' }}</div>
+              <div class="dev-db-table-wrap">
+                <table class="dev-db-table">
+                  <thead>
+                    <tr>
+                      <th v-for="col in dbResult.columns" :key="col">{{ col }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, i) in dbResult.rows" :key="i">
+                      <td v-for="col in dbResult.columns" :key="col">{{ row[col] ?? 'NULL' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
           <!-- ── User Management ── -->
           <section v-if="activeSec === 'users'" class="dev-section">
             <h2 class="dev-section-title">User Management</h2>
@@ -414,10 +464,46 @@ const routeAudit = [
 const sections = [
   { id: 'assets',  label: 'Immersion Assets', icon: '🖼' },
   { id: 'vars',    label: 'CSS Variables',    icon: '🎨' },
+  { id: 'db',      label: 'Database',         icon: '🗄' },
   { id: 'users',   label: 'User Management',  icon: '👤' },
   { id: 'routes',  label: 'Route Audit',      icon: '🔒' },
   { id: 'session', label: 'Session Info',     icon: '🔑' },
 ]
+
+// ── Database inspector ────────────────────────────────────────────────────────
+const dbQuery  = ref('SELECT id, username, role, created_at FROM users ORDER BY id;')
+const dbResult = ref(null)
+const dbLoading = ref(false)
+const dbError  = ref('')
+
+const quickQueries = [
+  { label: 'Users',      sql: 'SELECT id, username, role, character_name, last_seen, created_at FROM users ORDER BY id;' },
+  { label: 'Campaigns',  sql: 'SELECT id, name, system, active, created_at FROM campaigns ORDER BY id;' },
+  { label: 'Characters', sql: 'SELECT id, user_id, name, class, level, created_at FROM characters ORDER BY id;' },
+  { label: 'Audit log',  sql: 'SELECT al.id, u.username, al.action, al.target_type, al.detail, al.ip, al.created_at FROM audit_log al LEFT JOIN users u ON u.id = al.user_id ORDER BY al.id DESC LIMIT 50;' },
+  { label: 'Tables',     sql: "SELECT name, type FROM sqlite_master WHERE type IN ('table','view') ORDER BY name;" },
+  { label: 'Schema',     sql: "SELECT name, sql FROM sqlite_master WHERE type='table' ORDER BY name;" },
+]
+
+function runQuick(sql) {
+  dbQuery.value = sql
+  runQuery()
+}
+
+async function runQuery() {
+  if (!dbQuery.value.trim()) return
+  dbLoading.value = true
+  dbError.value = ''
+  dbResult.value = null
+  try {
+    const d = await devFetch('/api/dev-admin/query', { method: 'POST', body: { sql: dbQuery.value } })
+    dbResult.value = d
+  } catch (e) {
+    dbError.value = e.message
+  } finally {
+    dbLoading.value = false
+  }
+}
 const activeSec = ref('assets')
 
 // ── User management ───────────────────────────────────────────────────────────
@@ -840,4 +926,87 @@ onMounted(() => {
   gap: 10px;
   margin-bottom: 10px;
 }
+
+/* ── Database inspector ─────────────────────────────────────────────────── */
+.dev-quick-queries {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.dev-quick-label {
+  font-size: 10px;
+  color: #3a6080;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.dev-db-editor {
+  margin-bottom: 14px;
+}
+.dev-db-input {
+  width: 100%;
+  min-height: 80px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  resize: vertical;
+}
+.dev-db-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+.dev-db-hint {
+  font-size: 10px;
+  color: #2a4050;
+  letter-spacing: 0.08em;
+}
+.dev-db-results-meta {
+  font-size: 10px;
+  color: #3a6080;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.dev-db-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #1a2530;
+  max-height: 420px;
+  overflow-y: auto;
+}
+.dev-db-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.dev-db-table thead {
+  position: sticky;
+  top: 0;
+  background: #0c1016;
+  z-index: 1;
+}
+.dev-db-table th {
+  padding: 7px 12px;
+  text-align: left;
+  color: #3a6080;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-bottom: 1px solid #1a2530;
+  white-space: nowrap;
+}
+.dev-db-table td {
+  padding: 6px 12px;
+  color: #7aaac0;
+  border-bottom: 1px solid #0e1520;
+  white-space: nowrap;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dev-db-table tr:hover td { background: rgba(74,122,170,0.04); }
+.dev-db-table td:first-child { color: #2a5060; }
 </style>
