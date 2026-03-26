@@ -1,5 +1,8 @@
 <template>
-  <div id="chronicle-root" :data-theme="currentTheme" :class="bodyClasses">
+  <!-- Dev admin is a completely standalone view — bypasses auth/layout system -->
+  <DeveloperConfigView v-if="isDevAdmin" />
+
+  <div v-else id="chronicle-root" :data-theme="currentTheme" :class="bodyClasses">
     <div class="scanline-overlay"></div>
     <LoginView v-if="!isAuthenticated" />
     <AppLayout v-else />
@@ -8,16 +11,18 @@
 </template>
 
 <script setup>
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { useCampaignStore } from '@/stores/campaign'
 import LoginView from '@/views/LoginView.vue'
 import AppLayout from '@/components/AppLayout.vue'
 import ToastContainer from '@/components/ToastContainer.vue'
+import DeveloperConfigView from '@/views/DeveloperConfigView.vue'
 
 const auth = useAuthStore()
-const campaign = useCampaignStore()
+const route = useRoute()
 
+const isDevAdmin = computed(() => route.path === '/dev-admin')
 const isAuthenticated = computed(() => auth.isAuthenticated)
 
 const currentTheme = computed(() => {
@@ -34,6 +39,9 @@ const bodyClasses = computed(() => {
 })
 
 onMounted(async () => {
+  // Skip full app init when on dev-admin route
+  if (isDevAdmin.value) return
+
   // Apply a11y and font size on boot
   const a11y = JSON.parse(localStorage.getItem('chronicle_a11y') || '{}')
   if (a11y.contrast) document.body.classList.add('high-contrast')

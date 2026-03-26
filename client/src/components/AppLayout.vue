@@ -42,6 +42,8 @@
     <ConfirmDialog />
     <!-- Toast container -->
     <ToastContainer />
+    <!-- Per-system immersive VFX overlay -->
+    <ImmersionOverlay />
   </div>
 </template>
 
@@ -66,6 +68,7 @@ import ShareModal from './ShareModal.vue'
 import OnboardingWizard from './OnboardingWizard.vue'
 import ConfirmDialog from './ConfirmDialog.vue'
 import ToastContainer from './ToastContainer.vue'
+import ImmersionOverlay from './ImmersionOverlay.vue'
 
 const auth = useAuthStore()
 const campaign = useCampaignStore()
