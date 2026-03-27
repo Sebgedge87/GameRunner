@@ -151,10 +151,13 @@
   /* ── Urgency ───────────────────────────────────────────────────────────── */
   --color-urgency-medium:    #e0a840;
 
+  /* ── Hover surface overlay — used on dark cards/items ────────────────── */
+  --color-bg-hover-surface:  rgba(255, 255, 255, 0.06);
+
   /* ── Danger (delete / destructive actions) ────────────────────────────── */
   --color-danger:            #e05040;
   --color-danger-border:     rgba(220, 80, 60, 0.50);
-  --color-danger-bg-hover:   rgba(160, 50, 30, 0.18);
+  --color-danger-bg-hover:   rgba(220, 80, 60, 0.12);
 
   /* TODO Task 11: tag palette tokens */
   /* TODO Task 14: per-theme title colour tokens */
