@@ -41,7 +41,7 @@
       </div>
 
       <!-- Create new campaign -->
-      <div class="camp-lobby-card camp-lobby-card-create" @click="router.push('/campaigns/new')">
+      <div class="camp-lobby-card camp-lobby-card-create" @click="showWizard = true">
         <div class="camp-lobby-create-icon">+</div>
         <div class="camp-lobby-create-label">Create a Campaign</div>
       </div>
@@ -63,7 +63,10 @@
       </div>
     </div>
 
-    <!-- Campaign Create Modal -->
+    <!-- Campaign Wizard -->
+    <CampaignWizardModal v-if="showWizard" @close="showWizard = false" />
+
+    <!-- Campaign Create Modal (legacy — kept for reference) -->
     <div v-if="showCreateModal" class="modal-overlay open" @click.self="showCreateModal = false">
       <div class="modal" style="max-width:560px">
         <div class="modal-title">Create Campaign</div>
@@ -126,6 +129,7 @@ import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
 import { useDataStore } from '@/stores/data'
 import { COC_ERAS } from '@/composables/useSystemFeatures'
+import CampaignWizardModal from '@/components/CampaignWizardModal.vue'
 
 const campaign = useCampaignStore()
 const ui = useUiStore()
@@ -133,6 +137,7 @@ const data = useDataStore()
 const router = useRouter()
 
 const joinCode = ref('')
+const showWizard = ref(false)
 
 const showCreateModal = ref(false)
 const creating = ref(false)
