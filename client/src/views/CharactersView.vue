@@ -57,9 +57,9 @@
         </div>
         <div v-if="createError" class="status-msg status-err">{{ createError }}</div>
         <div class="modal-actions">
-          <button class="modal-close" @click="showCreate = false">CANCEL</button>
+          <button class="modal-close" @click="showCreate = false">Cancel</button>
           <button class="submit-btn" :disabled="creating" @click="createCharacter">
-            {{ creating ? 'CREATING…' : 'CREATE' }}
+            {{ creating ? 'Creating…' : 'Create' }}
           </button>
         </div>
       </div>
@@ -288,6 +288,5 @@ onMounted(loadCharacters)
   opacity: 0.4;
   font-family: 'JetBrains Mono', monospace;
   letter-spacing: 0.1em;
-  text-transform: uppercase;
 }
 </style>

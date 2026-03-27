@@ -102,7 +102,7 @@ async function doDelete() {
   font-size: 13px;
   color: var(--text);
   letter-spacing: 0.05em;
-  text-transform: uppercase;
+  text-transform: none;
   flex: 1;
   line-height: 1.3;
 }

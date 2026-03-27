@@ -69,7 +69,7 @@
                 rows="2"
                 placeholder="Your note…"
               ></textarea>
-              <button class="submit-btn" style="align-self:flex-end" @click="addSessionNote(s.id)">SAVE</button>
+              <button class="submit-btn" style="align-self:flex-end" @click="addSessionNote(s.id)">Save</button>
             </div>
           </div>
 
@@ -122,7 +122,7 @@
     <div v-for="d in data.scheduling" :key="d.id" class="sched-item">
       <div class="sched-date">
         {{ formatSchedDate(d.proposed_date) }}{{ d.title ? ` — ${d.title}` : '' }}
-        <span v-if="d.confirmed" class="tag tag-active" style="margin-left:8px;font-size:9px">CONFIRMED</span>
+        <span v-if="d.confirmed" class="tag tag-active" style="margin-left:8px;font-size:9px">Confirmed</span>
       </div>
       <div class="sched-responses">
         <span v-for="r in (d.responses || [])" :key="r.user_id" class="sched-resp" :class="`sched-${r.availability}`">{{ r.character_name || r.username }}: {{ r.availability }}</span>
@@ -256,7 +256,6 @@ onMounted(async () => {
 .session-section-label {
   font-size: 10px;
   font-family: 'JetBrains Mono', monospace;
-  text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text3);
   margin: 10px 0 5px;

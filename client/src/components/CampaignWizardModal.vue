@@ -35,6 +35,124 @@ const entityForm   = reactive({
   type: 'NPC', name: '', role: '', location: '', description: '', notes: '',
 })
 
+/* ── Paste parser ──────────────────────────────────────── */
+const pasteRaw      = ref('')
+const parseWarnings = ref([])  // field names that were inferred, not explicit
+
+// Field name aliases → canonical field
+const FIELD_ALIASES = {
+  name:        ['name', 'title', 'character', 'character_name', 'entity'],
+  role:        ['role', 'type', 'class', 'occupation', 'job', 'rank', 'position', 'archetype'],
+  location:    ['location', 'home', 'hometown', 'place', 'region', 'base', 'area', 'origin'],
+  description: ['description', 'summary', 'overview', 'appearance', 'bio', 'profile', 'about', 'desc'],
+  notes:       ['notes', 'gm_notes', 'background', 'backstory', 'history', 'secrets', 'details', 'info'],
+}
+
+function aliasToField(key) {
+  const k = key.toLowerCase().trim().replace(/[\s_-]+/g, '_')
+  for (const [field, aliases] of Object.entries(FIELD_ALIASES)) {
+    if (aliases.includes(k)) return field
+  }
+  return null
+}
+
+function parseEntityText(raw) {
+  const result   = { name: '', role: '', location: '', description: '', notes: '' }
+  const warnings = []
+
+  // ── Try JSON ────────────────────────────────────────────
+  const trimmed = raw.trim()
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    try {
+      const obj = JSON.parse(trimmed.startsWith('[') ? trimmed[0] : trimmed)
+      const src = Array.isArray(obj) ? obj[0] : obj
+      for (const [key, val] of Object.entries(src)) {
+        if (typeof val !== 'string' && typeof val !== 'number') continue
+        const field = aliasToField(key)
+        if (field && !result[field]) result[field] = String(val)
+      }
+      // Flag fields that were filled from a non-obvious alias
+      for (const [key, val] of Object.entries(src)) {
+        if (typeof val !== 'string' && typeof val !== 'number') continue
+        const field = aliasToField(key)
+        if (field && !FIELD_ALIASES[field][0].includes(key.toLowerCase())) {
+          warnings.push(field)
+        }
+      }
+      return { result, warnings, format: 'json' }
+    } catch { /* fall through to markdown */ }
+  }
+
+  // ── Markdown / plain text ───────────────────────────────
+  const lines = raw.split('\n')
+  const notesLines = []
+  let inNotesBlock = false
+  let descLines    = []
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    const stripped = line.trim()
+    if (!stripped) continue
+
+    // # H1 → name (inferred)
+    if (/^#\s+/.test(stripped) && !result.name) {
+      result.name = stripped.replace(/^#+\s+/, '')
+      warnings.push('name')
+      continue
+    }
+
+    // ## Notes / ## Background etc. → start notes block
+    if (/^##\s+(notes?|background|backstory|secrets?|gm.?notes?|details?)/i.test(stripped)) {
+      inNotesBlock = true; continue
+    }
+    // Any other ## heading ends notes block back to desc
+    if (/^##\s+/.test(stripped)) {
+      inNotesBlock = false; continue
+    }
+
+    if (inNotesBlock) { notesLines.push(stripped); continue }
+
+    // **Key:** Value  or  *Key:* Value  or  Key: Value (at line start)
+    const kvMatch =
+      stripped.match(/^\*{1,2}([^*:]+)\*{0,2}:\*{0,2}\s+(.+)$/) ||
+      stripped.match(/^([A-Za-z][A-Za-z _/-]{1,24}):\s+(.+)$/)
+
+    if (kvMatch) {
+      const field = aliasToField(kvMatch[1])
+      const val   = kvMatch[2].replace(/\*\*/g, '').trim()
+      if (field && !result[field]) {
+        result[field] = val
+        // flag if alias was indirect
+        if (!FIELD_ALIASES[field][0].includes(kvMatch[1].toLowerCase().trim())) {
+          warnings.push(field)
+        }
+      }
+      continue
+    }
+
+    // Plain paragraph → candidate for description
+    if (stripped.length > 10) descLines.push(stripped)
+  }
+
+  if (!result.notes && notesLines.length) result.notes = notesLines.join('\n')
+  if (!result.description && descLines.length) {
+    result.description = descLines[0]
+    if (!result.name && descLines.length > 1) {
+      warnings.push('description')
+    }
+  }
+
+  return { result, warnings: [...new Set(warnings)], format: 'markdown' }
+}
+
+function runPaste() {
+  if (!pasteRaw.value.trim()) return
+  const { result, warnings } = parseEntityText(pasteRaw.value)
+  Object.assign(entityForm, result)
+  parseWarnings.value = warnings
+  importTab.value = 0  // switch to guided to review
+}
+
 /* ─────────────────────────────────────────────────────────
    System preview data
    ───────────────────────────────────────────────────────── */
@@ -325,7 +443,7 @@ function skipEntity() {
             <div class="wiz-preview-grid">
               <div class="wiz-preview-item">
                 <div class="wiz-preview-label">Name</div>
-                <div class="wiz-preview-val" style="font-weight:500;color:rgba(255,255,255,.9)">{{ nameForm.name }}</div>
+                <div class="wiz-preview-val" style="font-weight:500;color:var(--color-text-primary)">{{ nameForm.name }}</div>
               </div>
               <div class="wiz-preview-item">
                 <div class="wiz-preview-label">System</div>
@@ -394,6 +512,19 @@ function skipEntity() {
 
           <!-- Guided -->
           <div v-if="importTab === 0">
+            <!-- Parse warnings banner -->
+            <div v-if="parseWarnings.length" class="wiz-parse-notice">
+              <svg viewBox="0 0 16 16" width="13" height="13" fill="none" style="flex-shrink:0">
+                <path d="M8 2L14 13H2L8 2Z" stroke="#EF9F27" stroke-width="1.4" stroke-linejoin="round"/>
+                <line x1="8" y1="7" x2="8" y2="10" stroke="#EF9F27" stroke-width="1.4" stroke-linecap="round"/>
+                <circle cx="8" cy="12" r=".6" fill="#EF9F27"/>
+              </svg>
+              <span>
+                Fields marked <span class="wiz-inferred-badge">inferred</span> were guessed from your text — please confirm they're correct.
+              </span>
+              <button class="wiz-reparse-btn" @click="importTab = 1; parseWarnings = []">Re-paste</button>
+            </div>
+
             <div class="wiz-field-row">
               <div class="wiz-field">
                 <label>Entity type</label>
@@ -402,42 +533,79 @@ function skipEntity() {
                 </select>
               </div>
               <div class="wiz-field">
-                <label>Name <span class="wiz-req">*</span></label>
-                <input v-model="entityForm.name" type="text" placeholder="e.g. Ezekiel Marsh…" />
+                <label>
+                  Name <span class="wiz-req">*</span>
+                  <span v-if="parseWarnings.includes('name')" class="wiz-inferred-badge">inferred</span>
+                </label>
+                <input v-model="entityForm.name" type="text" placeholder="e.g. Ezekiel Marsh…"
+                  :class="{ 'wiz-inferred': parseWarnings.includes('name') }" />
               </div>
             </div>
             <div v-if="entityForm.type === 'NPC'" class="wiz-field-row">
               <div class="wiz-field">
-                <label>Role</label>
-                <select v-model="entityForm.role">
-                  <option value="">— select —</option>
-                  <option v-for="r in preview.npc_roles" :key="r">{{ r }}</option>
-                </select>
+                <label>
+                  Role
+                  <span v-if="parseWarnings.includes('role')" class="wiz-inferred-badge">inferred</span>
+                </label>
+                <input v-model="entityForm.role" type="text" placeholder="e.g. Cultist…"
+                  :class="{ 'wiz-inferred': parseWarnings.includes('role') }" />
               </div>
               <div class="wiz-field">
-                <label>Location</label>
-                <input v-model="entityForm.location" type="text" placeholder="e.g. Innsmouth, MA…" />
+                <label>
+                  Location
+                  <span v-if="parseWarnings.includes('location')" class="wiz-inferred-badge">inferred</span>
+                </label>
+                <input v-model="entityForm.location" type="text" placeholder="e.g. Innsmouth, MA…"
+                  :class="{ 'wiz-inferred': parseWarnings.includes('location') }" />
               </div>
             </div>
             <div class="wiz-field-row wiz-full">
               <div class="wiz-field">
-                <label>Description</label>
-                <input v-model="entityForm.description" type="text" placeholder="One-line summary…" />
+                <label>
+                  Description
+                  <span v-if="parseWarnings.includes('description')" class="wiz-inferred-badge">inferred</span>
+                </label>
+                <input v-model="entityForm.description" type="text" placeholder="One-line summary…"
+                  :class="{ 'wiz-inferred': parseWarnings.includes('description') }" />
               </div>
             </div>
             <div class="wiz-field-row wiz-full">
               <div class="wiz-field">
-                <label>GM Notes</label>
-                <textarea v-model="entityForm.notes" placeholder="Background, secrets, connections…" />
+                <label>
+                  GM Notes
+                  <span v-if="parseWarnings.includes('notes')" class="wiz-inferred-badge">inferred</span>
+                </label>
+                <textarea v-model="entityForm.notes" placeholder="Background, secrets, connections…"
+                  :class="{ 'wiz-inferred': parseWarnings.includes('notes') }" />
               </div>
             </div>
           </div>
 
           <!-- Paste -->
           <div v-if="importTab === 1">
-            <div class="wiz-warning">
-              <div class="wiz-warning-dot" />
-              <span>Paste import is coming soon — use the guided wizard for now.</span>
+            <div class="wiz-field-row" style="margin-bottom:10px">
+              <div class="wiz-field">
+                <label>Entity type</label>
+                <select v-model="entityForm.type">
+                  <option v-for="t in ENTITY_TYPES" :key="t">{{ t }}</option>
+                </select>
+              </div>
+            </div>
+            <div class="wiz-field" style="margin-bottom:10px">
+              <label>Paste JSON or Markdown</label>
+              <textarea
+                v-model="pasteRaw"
+                class="wiz-paste-area"
+                placeholder="# Ezekiel Marsh&#10;**Role:** Cultist&#10;**Location:** Innsmouth, MA&#10;**Description:** Old fisherman with unsettling eyes&#10;&#10;## Notes&#10;Knows about the Deep Ones. Avoid contact after dark."
+              />
+            </div>
+            <div class="wiz-paste-hint">
+              Supports JSON objects and Markdown with <code>**Field:** value</code> or <code>## Notes</code> sections.
+            </div>
+            <div style="display:flex;justify-content:flex-end;margin-top:10px">
+              <button class="wiz-parse-btn-main" :disabled="!pasteRaw.trim()" @click="runPaste">
+                Parse and prefill fields →
+              </button>
             </div>
           </div>
 
@@ -482,7 +650,7 @@ function skipEntity() {
   position: fixed;
   inset: 0;
   z-index: 300;
-  background: rgba(0,0,0,.65);
+  background: var(--color-bg-overlay-medium);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   display: flex;
@@ -494,14 +662,14 @@ function skipEntity() {
 .wiz-card {
   position: relative;
   background: var(--surface2, #1e2120);
-  border: 0.5px solid rgba(255,255,255,.12);
+  border: 0.5px solid var(--color-border-default);
   border-radius: 12px;
   width: 100%;
   max-width: 780px;
   max-height: calc(100vh - 48px);
   overflow-y: auto;
   padding: 32px;
-  box-shadow: 0 24px 80px rgba(0,0,0,.6), 0 4px 16px rgba(0,0,0,.4);
+  box-shadow: 0 24px 80px var(--color-bg-overlay-medium), 0 4px 16px var(--color-shadow-menu);
 }
 
 /* ── Close ────────────────────────────────────────────── */
@@ -512,16 +680,16 @@ function skipEntity() {
   width: 28px;
   height: 28px;
   border-radius: 6px;
-  border: 0.5px solid rgba(255,255,255,.1);
+  border: 0.5px solid var(--color-border-default);
   background: transparent;
-  color: rgba(255,255,255,.35);
+  color: var(--color-text-hint);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all .15s;
 }
-.wiz-close:hover { background: rgba(255,255,255,.07); color: rgba(255,255,255,.7); }
+.wiz-close:hover { background: var(--color-bg-elevated); color: var(--color-text-primary); }
 
 /* ── Step bar ─────────────────────────────────────────── */
 .wiz-step-bar {
@@ -535,29 +703,29 @@ function skipEntity() {
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: rgba(255,255,255,.28);
+  color: var(--color-text-hint);
   letter-spacing: .5px;
   white-space: nowrap;
 }
-.wiz-step.active { color: var(--accent, #a8c080); }
-.wiz-step.done   { color: rgba(255,255,255,.5); }
+.wiz-step.active { color: var(--accent); }
+.wiz-step.done   { color: var(--color-text-secondary); }
 
 .wiz-step-num {
   width: 24px; height: 24px;
   border-radius: 50%;
-  border: 1.5px solid rgba(255,255,255,.15);
+  border: 1.5px solid var(--color-border-default);
   display: flex; align-items: center; justify-content: center;
   font-size: 11px; font-weight: 500; flex-shrink: 0;
 }
 .wiz-step.active .wiz-step-num {
-  border-color: var(--accent, #a8c080);
-  background: rgba(168,192,128,.15);
-  color: var(--accent, #a8c080);
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
 }
 .wiz-step.done .wiz-step-num {
-  border-color: rgba(255,255,255,.3);
-  background: rgba(255,255,255,.06);
-  color: rgba(255,255,255,.5);
+  border-color: var(--color-border-hover);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-secondary);
 }
 
 .wiz-step-label { display: none; }
@@ -566,7 +734,7 @@ function skipEntity() {
 .wiz-step-line {
   flex: 1;
   height: 1px;
-  background: rgba(255,255,255,.08);
+  background: var(--border);
   margin: 0 8px;
   min-width: 8px;
 }
@@ -575,15 +743,15 @@ function skipEntity() {
 .wiz-title {
   font-size: 20px; font-weight: 500;
   margin-bottom: 4px;
-  color: rgba(255,255,255,.9);
+  color: var(--color-text-primary);
 }
 .wiz-sub {
   font-size: 13px;
-  color: rgba(255,255,255,.4);
+  color: var(--color-text-hint);
   margin-bottom: 22px;
 }
-.wiz-req { color: var(--accent, #a8c080); }
-.wiz-opt { color: rgba(255,255,255,.25); font-size: 10px; font-weight: 400; }
+.wiz-req { color: var(--accent); }
+.wiz-opt { color: var(--color-text-hint); font-size: 10px; font-weight: 400; }
 
 /* ── Fields ───────────────────────────────────────────── */
 .wiz-field-group { display: flex; flex-direction: column; gap: 12px; margin-bottom: 22px; }
@@ -592,14 +760,14 @@ function skipEntity() {
 .wiz-full { grid-template-columns: 1fr; }
 
 .wiz-field { display: flex; flex-direction: column; gap: 4px; }
-.wiz-field label { font-size: 11px; letter-spacing: .5px; text-transform: uppercase; color: rgba(255,255,255,.35); }
+.wiz-field label { font-size: 11px; letter-spacing: .5px; color: var(--color-text-hint); }
 .wiz-field input,
 .wiz-field select,
 .wiz-field textarea {
-  background: rgba(255,255,255,.05);
-  border: 0.5px solid rgba(255,255,255,.12);
+  background: var(--color-bg-input);
+  border: 0.5px solid var(--color-border-default);
   border-radius: 8px;
-  color: rgba(255,255,255,.8);
+  color: var(--color-text-primary);
   font-size: 13px;
   padding: 8px 10px;
   outline: none;
@@ -609,9 +777,9 @@ function skipEntity() {
 }
 .wiz-field input:focus,
 .wiz-field select:focus,
-.wiz-field textarea:focus { border-color: rgba(168,192,128,.5); }
+.wiz-field textarea:focus { border-color: var(--color-border-active); }
 .wiz-field input::placeholder,
-.wiz-field textarea::placeholder { color: rgba(255,255,255,.2); }
+.wiz-field textarea::placeholder { color: var(--color-text-disabled); }
 .wiz-field textarea { resize: vertical; min-height: 80px; font-family: monospace; font-size: 12px; }
 .wiz-field select option { background: var(--bg, #1c1f1a); }
 
@@ -623,62 +791,60 @@ function skipEntity() {
   margin-bottom: 20px;
 }
 .wiz-sys-card {
-  border: 1.5px solid rgba(255,255,255,.1);
+  border: 1.5px solid var(--color-border-default);
   border-radius: 8px;
   padding: 12px;
   cursor: pointer;
   transition: border-color .15s, background .15s;
-  background: rgba(255,255,255,.03);
+  background: var(--color-bg-card);
 }
-.wiz-sys-card:hover   { border-color: rgba(168,192,128,.4); background: rgba(168,192,128,.05); }
-.wiz-sys-card.selected { border-color: var(--accent, #a8c080); background: rgba(168,192,128,.1); }
+.wiz-sys-card:hover   { border-color: var(--color-border-hover); background: var(--accent-dim); }
+.wiz-sys-card.selected { border-color: var(--accent); background: var(--accent-dim); }
 .wiz-sys-card.custom  { border-style: dashed; }
 .wiz-sys-icon {
   width: 30px; height: 30px;
   border-radius: 6px;
-  background: rgba(255,255,255,.07);
+  background: var(--color-bg-elevated);
   display: flex; align-items: center; justify-content: center;
   margin-bottom: 8px;
   font-size: 15px;
 }
-.wiz-sys-name { font-size: 12px; font-weight: 500; color: rgba(255,255,255,.85); margin-bottom: 2px; }
-.wiz-sys-desc { font-size: 10px; color: rgba(255,255,255,.35); }
+.wiz-sys-name { font-size: 12px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 2px; }
+.wiz-sys-desc { font-size: 10px; color: var(--color-text-hint); }
 
 /* ── Preview box ──────────────────────────────────────── */
 .wiz-preview-box {
-  border: 0.5px solid rgba(255,255,255,.1);
+  border: 0.5px solid var(--color-border-default);
   border-radius: 8px;
-  background: rgba(255,255,255,.02);
+  background: var(--color-bg-subtle);
   padding: 14px;
   margin-bottom: 14px;
 }
 .wiz-preview-title {
   font-size: 10px;
   letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: rgba(255,255,255,.25);
+  color: var(--color-text-hint);
   margin-bottom: 10px;
 }
 .wiz-preview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .wiz-preview-item {
   padding: 8px 10px;
   border-radius: 6px;
-  background: rgba(255,255,255,.04);
-  border: 0.5px solid rgba(255,255,255,.06);
+  background: var(--color-bg-card);
+  border: 0.5px solid var(--color-bg-elevated);
 }
 .wiz-preview-label {
   font-size: 10px; letter-spacing: .5px;
-  color: rgba(255,255,255,.28);
+  color: var(--color-text-hint);
   margin-bottom: 3px;
-  text-transform: uppercase;
 }
-.wiz-preview-val { font-size: 12px; color: rgba(255,255,255,.7); line-height: 1.6; }
+.wiz-preview-val { font-size: 12px; color: var(--color-text-primary); line-height: 1.6; }
 
 .wiz-tag {
   display: inline-block;
   font-size: 10px;
-  background: rgba(168,192,128,.12);
-  color: var(--accent, #a8c080);
+  background: var(--accent-dim);
+  color: var(--accent);
   border-radius: 4px;
   padding: 2px 5px;
   margin: 2px 2px 0 0;
@@ -693,29 +859,29 @@ function skipEntity() {
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  border: 1.5px solid rgba(255,255,255,.15);
+  border: 1.5px solid var(--color-border-default);
   background: transparent;
-  color: rgba(255,255,255,.6);
+  color: var(--color-text-secondary);
   transition: all .15s;
   font-family: inherit;
 }
-.wiz-btn:hover:not(:disabled) { background: rgba(255,255,255,.06); color: rgba(255,255,255,.9); }
+.wiz-btn:hover:not(:disabled) { background: var(--color-bg-elevated); color: var(--color-text-primary); }
 .wiz-btn:disabled { opacity: .4; cursor: default; }
-.wiz-btn.primary { background: var(--accent, #a8c080); border-color: var(--accent, #a8c080); color: #1c1f1a; }
+.wiz-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--color-bg-card); }
 .wiz-btn.primary:hover:not(:disabled) { filter: brightness(1.1); }
-.wiz-btn.ghost { border-color: transparent; color: rgba(255,255,255,.3); }
-.wiz-btn.ghost:hover:not(:disabled) { color: rgba(255,255,255,.55); background: transparent; }
+.wiz-btn.ghost { border-color: transparent; color: var(--color-text-hint); }
+.wiz-btn.ghost:hover:not(:disabled) { color: var(--color-text-secondary); background: transparent; }
 
 /* ── Import tabs ──────────────────────────────────────── */
 .wiz-import-tabs {
   display: flex;
-  border-bottom: 0.5px solid rgba(255,255,255,.1);
+  border-bottom: 0.5px solid var(--color-border-default);
   margin-bottom: 16px;
 }
 .wiz-itab {
   padding: 7px 14px;
   font-size: 12px; font-weight: 500;
-  color: rgba(255,255,255,.35);
+  color: var(--color-text-hint);
   cursor: pointer;
   border: none; background: transparent;
   border-bottom: 2px solid transparent;
@@ -723,48 +889,142 @@ function skipEntity() {
   transition: color .15s;
   font-family: inherit;
 }
-.wiz-itab.active { color: var(--accent, #a8c080); border-bottom-color: var(--accent, #a8c080); }
-.wiz-itab:hover:not(.active) { color: rgba(255,255,255,.6); }
+.wiz-itab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.wiz-itab:hover:not(.active) { color: var(--color-text-secondary); }
 
 /* ── Warning / error ──────────────────────────────────── */
 .wiz-warning {
   display: flex; align-items: center; gap: 6px;
   padding: 8px 10px; border-radius: 8px;
-  background: rgba(186,117,23,.1);
-  border: 0.5px solid rgba(186,117,23,.3);
+  background: var(--gold-dim);
+  border: 0.5px solid var(--gold-dim);
   margin-bottom: 10px;
-  font-size: 11px; color: #EF9F27;
+  font-size: 11px; color: var(--gold2);
 }
-.wiz-warning-dot { width: 6px; height: 6px; border-radius: 50%; background: #BA7517; flex-shrink: 0; }
+.wiz-warning-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); flex-shrink: 0; }
 
 .wiz-error {
-  color: var(--red, #e74c3c);
+  color: var(--red);
   font-size: 12px;
   margin-bottom: 8px;
   padding: 6px 10px;
   border-radius: 6px;
-  background: rgba(231,76,60,.1);
-  border: 0.5px solid rgba(231,76,60,.25);
+  background: var(--color-hostile-bg);
+  border: 0.5px solid var(--color-border-danger);
 }
 
 /* ── Upload zone ──────────────────────────────────────── */
 .wiz-upload-zone {
-  border: 1.5px dashed rgba(255,255,255,.12);
+  border: 1.5px dashed var(--color-border-default);
   border-radius: 8px;
   padding: 28px;
   text-align: center;
   cursor: pointer;
   transition: border-color .15s;
-  color: rgba(255,255,255,.3);
+  color: var(--color-text-hint);
 }
-.wiz-upload-label { font-size: 13px; color: rgba(255,255,255,.5); margin-bottom: 4px; }
-.wiz-upload-hint  { font-size: 11px; color: rgba(255,255,255,.25); margin-bottom: 10px; }
+.wiz-upload-label { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 4px; }
+.wiz-upload-hint  { font-size: 11px; color: var(--color-text-hint); margin-bottom: 10px; }
 .wiz-file-badges  { display: flex; justify-content: center; gap: 6px; }
 .wiz-file-badge {
   font-size: 10px; padding: 2px 8px; border-radius: 4px;
-  background: rgba(255,255,255,.06); color: rgba(255,255,255,.4);
-  border: 0.5px solid rgba(255,255,255,.1);
+  background: var(--color-bg-elevated); color: var(--color-text-hint);
+  border: 0.5px solid var(--color-border-default);
 }
+
+/* ── Paste tab ────────────────────────────────────────── */
+.wiz-paste-area {
+  background: var(--color-bg-card);
+  border: 0.5px solid var(--color-border-default);
+  border-radius: 8px;
+  color: var(--color-text-primary);
+  font-size: 12px;
+  font-family: 'Courier New', monospace;
+  padding: 10px 12px;
+  outline: none;
+  width: 100%;
+  min-height: 140px;
+  resize: vertical;
+  line-height: 1.6;
+  transition: border-color .15s;
+}
+.wiz-paste-area:focus { border-color: var(--color-border-active); }
+.wiz-paste-area::placeholder { color: var(--color-text-disabled); }
+
+.wiz-paste-hint {
+  font-size: 11px;
+  color: var(--color-text-hint);
+  margin-top: 5px;
+}
+.wiz-paste-hint code {
+  font-family: 'Courier New', monospace;
+  background: var(--color-bg-elevated);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 10px;
+}
+
+.wiz-parse-btn-main {
+  padding: 7px 16px;
+  font-size: 12px; font-weight: 500;
+  border: 0.5px solid var(--color-border-active);
+  border-radius: 8px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s;
+}
+.wiz-parse-btn-main:hover:not(:disabled) { background: var(--accent-dim); }
+.wiz-parse-btn-main:disabled { opacity: .35; cursor: default; }
+
+/* ── Parse warnings on guided form ───────────────────── */
+.wiz-parse-notice {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: var(--gold-dim);
+  border: 0.5px solid var(--gold-dim);
+  margin-bottom: 12px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  flex-wrap: wrap;
+}
+
+.wiz-inferred-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: .4px;
+  background: var(--gold-dim);
+  color: var(--gold2);
+  border-radius: 3px;
+  padding: 1px 5px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.wiz-inferred {
+  border-color: var(--color-border-bracket) !important;
+  background: var(--gold-dim) !important;
+}
+.wiz-inferred:focus { border-color: var(--color-border-active) !important; }
+
+.wiz-reparse-btn {
+  margin-left: auto;
+  font-size: 11px;
+  background: transparent;
+  border: 0.5px solid var(--color-border-default);
+  border-radius: 5px;
+  color: var(--color-text-hint);
+  padding: 2px 8px;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.wiz-reparse-btn:hover { color: var(--color-text-primary); }
 
 /* ── Responsive ───────────────────────────────────────── */
 @media (max-width: 600px) {

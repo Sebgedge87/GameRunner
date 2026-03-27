@@ -11,7 +11,7 @@
         </div>
 
         <div style="margin-bottom:16px">
-          <label style="font-size:0.75em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;display:block;margin-bottom:6px">PLAYERS</label>
+          <label style="font-size:0.75em;letter-spacing:1px;color:var(--text3);font-family:var(--font-sans);display:block;margin-bottom:6px">Players</label>
           <select
             v-model="selectedIds"
             multiple

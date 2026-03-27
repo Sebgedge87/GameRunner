@@ -5,7 +5,7 @@
       <form class="dev-login-form" @submit.prevent="attemptLogin">
         <div class="dev-login-header">
           <span class="dev-login-icon">⬡</span>
-          <div class="dev-login-title">SYSTEM CONFIGURATION</div>
+          <div class="dev-login-title">System configuration</div>
           <div class="dev-login-sub">Developer Access Only</div>
         </div>
         <label class="dev-field-label">Username</label>
@@ -625,10 +625,10 @@ onMounted(() => {
   margin-bottom: 14px;
 }
 .dev-login-icon { font-size: 28px; opacity: 0.6; display: block; margin-bottom: 8px; }
-.dev-login-title { font-size: 12px; letter-spacing: 0.22em; color: #4a7aaa; text-transform: uppercase; }
+.dev-login-title { font-size: 12px; letter-spacing: 0.22em; color: #4a7aaa; }
 .dev-login-sub   { font-size: 10px; color: #3a5060; letter-spacing: 0.12em; margin-top: 4px; }
 .dev-login-error { color: #c94c4c; font-size: 11px; padding: 4px 0; }
-.dev-field-label { font-size: 10px; letter-spacing: 0.14em; color: #3a6080; text-transform: uppercase; }
+.dev-field-label { font-size: 10px; letter-spacing: 0.14em; color: #3a6080; }
 
 /* ── Shell header ──────────────────────────────────────────────────────── */
 .dev-header {
@@ -690,7 +690,6 @@ onMounted(() => {
   font-size: 13px;
   letter-spacing: 0.16em;
   color: #4a7aaa;
-  text-transform: uppercase;
   margin-bottom: 8px;
 }
 .dev-section-desc {
@@ -716,7 +715,7 @@ onMounted(() => {
   gap: 10px;
   margin-bottom: 8px;
 }
-.dev-asset-system { font-size: 9px; letter-spacing: 0.15em; color: #3a6080; text-transform: uppercase; background: rgba(74,122,170,0.1); padding: 2px 6px; }
+.dev-asset-system { font-size: 9px; letter-spacing: 0.15em; color: #3a6080; background: rgba(74,122,170,0.1); padding: 2px 6px; }
 .dev-asset-name   { font-size: 11px; color: #8aa8c0; }
 .dev-asset-type   { font-size: 9px; color: #2a4050; margin-left: auto; }
 .dev-asset-actions { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
@@ -757,7 +756,7 @@ onMounted(() => {
   align-items: center;
 }
 .dev-audit-row:last-child { border-bottom: none; }
-.dev-audit-header { background: #0c1016; color: #3a6080; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; }
+.dev-audit-header { background: #0c1016; color: #3a6080; font-size: 10px; letter-spacing: 0.1em; }
 .audit-warn { background: rgba(201,168,76,0.04); }
 .tag-yes { color: #4c9c5c; }
 .tag-no  { color: #6a4040; }
@@ -850,7 +849,6 @@ onMounted(() => {
   color: #3a6080;
   font-size: 10px;
   letter-spacing: 0.1em;
-  text-transform: uppercase;
   border-bottom: 1px solid #1a2530;
 }
 .dev-user-row {
@@ -895,7 +893,7 @@ onMounted(() => {
 .dev-confirm-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.7);
+  background: var(--color-bg-overlay-medium);
   display: flex;
   align-items: center;
   justify-content: center;

@@ -274,7 +274,6 @@ button.add-btn {
   font-family: var(--font-header, 'Cinzel', serif);
   font-size: 11px;
   letter-spacing: 0.18em;
-  text-transform: uppercase;
   color: var(--accent);
   background: transparent;
   border: 2px solid var(--accent);

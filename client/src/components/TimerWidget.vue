@@ -148,7 +148,7 @@ watch(() => timer.value.end, () => { localHide.value = false })
   padding: 14px 18px;
   min-width: 200px;
   max-width: 280px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+  box-shadow: 0 4px 24px var(--color-shadow-menu);
   font-family: 'JetBrains Mono', monospace;
   transition: border-color 0.3s;
   user-select: none;
@@ -162,12 +162,12 @@ watch(() => timer.value.end, () => { localHide.value = false })
   background: rgba(224,82,82,0.15);
 }
 @keyframes timer-pulse {
-  0%, 100% { box-shadow: 0 4px 24px rgba(0,0,0,0.5); }
+  0%, 100% { box-shadow: 0 4px 24px var(--color-shadow-menu); }
   50% { box-shadow: 0 4px 32px rgba(224,82,82,0.5); }
 }
 .timer-label {
   font-size: 10px;
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: .12em;
   color: var(--text3, #888);
   margin-bottom: 2px;

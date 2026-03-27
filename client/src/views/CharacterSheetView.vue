@@ -160,7 +160,7 @@
 
           <!-- Relationships (Coriolis buddy slots) -->
           <template v-if="activeSys === 'coriolis'">
-            <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Relationships</div>
+            <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em">Relationships</div>
             <div class="edit-grid">
               <div v-for="n in [1,2,3,4]" :key="n" class="field-group">
                 <label>PC {{ n }}<span class="field-help" data-tooltip="Name of a crew member you have a bond or history with.">?</span></label>
@@ -170,7 +170,7 @@
           </template>
 
           <!-- Core stats (system-specific) -->
-          <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Core Stats</div>
+          <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em">Core Stats</div>
           <div class="edit-stats-grid">
             <div v-for="stat in coreStats" :key="stat.key" class="field-group">
               <label>{{ stat.label }}<span v-if="stat.help" class="field-help" :data-tooltip="stat.help">?</span></label>
@@ -179,7 +179,7 @@
           </div>
 
           <!-- HP / Condition -->
-          <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Condition</div>
+          <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em">Condition</div>
           <div class="edit-grid">
             <div class="field-group">
               <label>HP (Current)<span class="field-help" :data-tooltip="conditionHelp.hp">?</span></label>
@@ -229,7 +229,7 @@
 
           <!-- Conditions (ALIEN) -->
           <template v-if="hasConditions">
-            <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Conditions</div>
+            <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em">Conditions</div>
             <div style="display:flex;flex-wrap:wrap;gap:12px">
               <label v-for="c in conditions" :key="c" class="condition-check">
                 <input type="checkbox" v-model="ef['cond_' + c]" />
@@ -240,7 +240,7 @@
 
           <!-- Status flags (boolean extra fields — CoC wound/insanity) -->
           <template v-if="extraFields.some(f => f.type === 'boolean')">
-            <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Status</div>
+            <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em">Status</div>
             <div style="display:flex;flex-wrap:wrap;gap:12px">
               <label v-for="f in extraFields.filter(f => f.type === 'boolean')" :key="f.key" class="condition-check">
                 <input type="checkbox" v-model="ef[f.key]" />
@@ -251,7 +251,7 @@
 
           <!-- ALIEN Consumables section -->
           <template v-if="activeSys === 'alien'">
-            <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Consumables</div>
+            <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em">Consumables</div>
             <div class="edit-stats-grid">
               <div v-for="k in ['cons_air','cons_food','cons_water','cons_power']" :key="k" class="field-group">
                 <label>{{ k.split('_')[1].charAt(0).toUpperCase() + k.split('_')[1].slice(1) }}<span class="field-help" :data-tooltip="consumableHelp[k]">?</span></label>
@@ -268,7 +268,7 @@
 
         <!-- System Skills -->
         <template v-if="systemSkills.length">
-          <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Skills</div>
+          <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em">Skills</div>
 
           <!-- CoC: % skills in compact 3-col grid -->
           <template v-if="activeSys === 'coc'">
@@ -284,7 +284,7 @@
           <!-- YZE dice skills (ALIEN / Coriolis) -->
           <template v-else-if="activeSys === 'alien' || activeSys === 'coriolis'">
             <template v-if="hasSkillGroups">
-              <div style="font-size:0.72em;opacity:0.45;margin-bottom:6px">GENERAL</div>
+              <div style="font-size:0.72em;opacity:0.45;margin-bottom:6px">General</div>
             </template>
             <div class="skills-yze-grid">
               <div v-for="sk in (hasSkillGroups ? generalSkills : systemSkills)" :key="sk.key" class="yze-skill-row">
@@ -293,7 +293,7 @@
               </div>
             </div>
             <template v-if="hasSkillGroups">
-              <div style="font-size:0.72em;opacity:0.45;margin:12px 0 6px">ADVANCED</div>
+              <div style="font-size:0.72em;opacity:0.45;margin:12px 0 6px">Advanced</div>
               <div class="skills-yze-grid">
                 <div v-for="sk in advancedSkills" :key="sk.key" class="yze-skill-row">
                   <span class="yze-skill-label">{{ sk.label }}<span v-if="sk.attr" class="yze-attr"> ({{ sk.attr }})</span></span>
@@ -314,7 +314,7 @@
             </div>
             <!-- Drives -->
             <div v-if="hasDrives" style="margin-top:14px">
-              <div style="font-size:0.75em;opacity:0.55;margin-bottom:8px;letter-spacing:.05em;text-transform:uppercase">Drives</div>
+              <div style="font-size:0.75em;opacity:0.55;margin-bottom:8px;letter-spacing:.05em">Drives</div>
               <div class="edit-stats-grid">
                 <div v-for="d in drives" :key="d" class="field-group">
                   <label>{{ d.charAt(0).toUpperCase() + d.slice(1) }}<span class="field-help" :data-tooltip="driveHelp[d]">?</span></label>
@@ -355,16 +355,16 @@
 
         <!-- Textarea extra fields (Gear, Equipment of Note, Tiny Items) -->
         <template v-for="f in extraFields.filter(f => f.type === 'textarea' && !f.section)" :key="f.key">
-          <div style="font-size:0.75em;opacity:0.55;margin:16px 0 6px;letter-spacing:.05em;text-transform:uppercase">{{ f.label }}<span v-if="f.help" class="field-help" style="font-size:0.85em;opacity:1" :data-tooltip="f.help">?</span></div>
+          <div style="font-size:0.75em;opacity:0.55;margin:16px 0 6px;letter-spacing:.05em">{{ f.label }}<span v-if="f.help" class="field-help" style="font-size:0.85em;opacity:1" :data-tooltip="f.help">?</span></div>
           <textarea v-model="ef[f.key]" class="form-input" style="min-height:64px;resize:vertical;width:100%"></textarea>
         </template>
 
         <!-- CoC: My Story, Backstory grid, Fellow Investigators -->
         <template v-if="activeSys === 'coc'">
-          <div style="font-size:0.75em;opacity:0.55;margin:20px 0 8px;letter-spacing:.05em;text-transform:uppercase">My Story</div>
+          <div style="font-size:0.75em;opacity:0.55;margin:20px 0 8px;letter-spacing:.05em">My Story</div>
           <textarea v-model="ef.story" class="form-input" style="min-height:72px;resize:vertical;width:100%" placeholder="The narrative of your investigator's life…"></textarea>
 
-          <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Backstory</div>
+          <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em">Backstory</div>
           <div class="coc-backstory-grid">
             <template v-for="f in extraFields.filter(f => f.section === 'backstory' && f.type !== 'textarea')" :key="f.key">
               <div class="field-group">
@@ -375,7 +375,7 @@
           </div>
 
           <!-- Fellow Investigators -->
-          <div style="font-size:0.75em;opacity:0.55;margin:20px 0 8px;letter-spacing:.05em;text-transform:uppercase">Fellow Investigators</div>
+          <div style="font-size:0.75em;opacity:0.55;margin:20px 0 8px;letter-spacing:.05em">Fellow Investigators</div>
           <div class="coc-fellow-grid">
             <template v-for="n in [1,2,3,4]" :key="n">
               <div class="field-group">
@@ -404,11 +404,11 @@
 
         <!-- Achtung! Cthulhu: Biography, Talents table, Spells table -->
         <template v-if="activeSys === 'achtung'">
-          <div style="font-size:0.75em;opacity:0.55;margin:20px 0 6px;letter-spacing:.05em;text-transform:uppercase">Biography</div>
+          <div style="font-size:0.75em;opacity:0.55;margin:20px 0 6px;letter-spacing:.05em">Biography</div>
           <textarea v-model="ef.biography" class="form-input" style="min-height:80px;resize:vertical;width:100%"
                     placeholder="Your character's history, background and motivations…"></textarea>
 
-          <div style="font-size:0.75em;opacity:0.55;margin:20px 0 8px;letter-spacing:.05em;text-transform:uppercase">Talents</div>
+          <div style="font-size:0.75em;opacity:0.55;margin:20px 0 8px;letter-spacing:.05em">Talents</div>
           <div style="overflow-x:auto">
             <table class="weapons-table" v-if="ef.acht_talents?.length">
               <thead><tr><th>Name</th><th>Archetype</th><th>Effect</th><th></th></tr></thead>
@@ -425,7 +425,7 @@
           <button class="btn" style="margin-top:6px;font-size:0.82em"
                   @click="ef.acht_talents = [...(ef.acht_talents||[]), {name:'',archetype:'',effect:''}]">+ Add Talent</button>
 
-          <div style="font-size:0.75em;opacity:0.55;margin:20px 0 8px;letter-spacing:.05em;text-transform:uppercase">Spells</div>
+          <div style="font-size:0.75em;opacity:0.55;margin:20px 0 8px;letter-spacing:.05em">Spells</div>
           <div style="overflow-x:auto">
             <table class="weapons-table" v-if="ef.acht_spells?.length">
               <thead><tr><th>Name</th><th>Skill</th><th>Difficulty</th><th>Cost</th><th>Duration</th><th>Effect</th><th>Momentum</th><th></th></tr></thead>
@@ -449,7 +449,7 @@
 
         <!-- Weapons table (for systems with hasWeaponsSection) -->
         <template v-if="hasBuiltinSheet && hasWeaponsSection">
-          <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em;text-transform:uppercase">Weapons</div>
+          <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em">Weapons</div>
           <div style="overflow-x:auto">
             <table class="weapons-table" v-if="ef.weapons?.length">
               <thead>
@@ -473,7 +473,7 @@
 
         <!-- Critical Injuries textarea (ALIEN / Coriolis) -->
         <template v-if="activeSys === 'alien' || activeSys === 'coriolis'">
-          <div style="font-size:0.75em;opacity:0.55;margin:16px 0 6px;letter-spacing:.05em;text-transform:uppercase">Critical Injuries</div>
+          <div style="font-size:0.75em;opacity:0.55;margin:16px 0 6px;letter-spacing:.05em">Critical Injuries</div>
           <textarea v-model="ef.critical_injuries" class="form-input" style="min-height:60px;resize:vertical;width:100%"
                     placeholder="List critical injuries…"></textarea>
         </template>
@@ -1034,7 +1034,6 @@ onMounted(() => {
   font-family: 'Courier Prime', monospace;
   font-size: 0.70em;
   letter-spacing: 0.14em;
-  text-transform: uppercase;
   padding: 5px 20px 6px;
   cursor: pointer;
   position: relative;
@@ -1126,7 +1125,7 @@ onMounted(() => {
   font-size: 1.3em !important;
   font-weight: 700 !important;
   letter-spacing: 0.12em !important;
-  text-transform: uppercase !important;
+  text-transform: none;
   color: var(--ink) !important;
 }
 .page-title::after { display: none !important; }
@@ -1145,7 +1144,6 @@ onMounted(() => {
   border: 3px double var(--stamp-red);
   padding: 3px 14px;
   letter-spacing: 0.28em;
-  text-transform: uppercase;
   transform: rotate(-2deg);
   opacity: 0.85;
   mix-blend-mode: multiply;
@@ -1228,7 +1226,6 @@ textarea.form-input { resize: vertical; }
   letter-spacing: 1px;
   color: var(--muted) !important;
   font-family: 'Courier Prime', monospace;
-  text-transform: uppercase;
   font-variant: small-caps;
   margin-bottom: 4px;
 }
@@ -1250,7 +1247,6 @@ textarea.form-input { resize: vertical; }
   font-size: 0.65em;
   color: rgba(42, 30, 10, 0.60);
   letter-spacing: 0.16em;
-  text-transform: uppercase;
   position: relative;
   z-index: 1;
 }
@@ -1452,7 +1448,6 @@ textarea.form-input { resize: vertical; }
   text-align: left;
   font-size: 0.72em;
   letter-spacing: 0.06em;
-  text-transform: uppercase;
   font-variant: small-caps;
   color: var(--muted, rgba(42,30,10,.55));
   padding: 4px 6px 6px;
@@ -1550,7 +1545,6 @@ textarea.form-input { resize: vertical; }
 .coc-era-banner {
   font-size: 0.68em;
   letter-spacing: 0.12em;
-  text-transform: uppercase;
   color: var(--accent, #b8a060);
   border-bottom: 1px solid var(--border);
   padding-bottom: 8px;
@@ -1591,7 +1585,6 @@ textarea.form-input { resize: vertical; }
 .coc-bv-item { display: flex; flex-direction: column; gap: 2px; }
 .coc-bv-label {
   font-size: 0.68em;
-  text-transform: uppercase;
   letter-spacing: 0.06em;
   opacity: 0.45;
 }
@@ -1618,7 +1611,6 @@ textarea.form-input { resize: vertical; }
 .acht-card-header {
   font-size: 0.68em;
   letter-spacing: 0.14em;
-  text-transform: uppercase;
   font-family: 'JetBrains Mono', monospace;
   color: var(--accent-yellow, #e9c46a);
   border-bottom: 1px solid var(--border2, #6a7258);
@@ -1635,7 +1627,6 @@ textarea.form-input { resize: vertical; }
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.78em;
   letter-spacing: 0.08em;
-  text-transform: uppercase;
   color: var(--accent-yellow, #e9c46a);
   border-bottom: 1px solid var(--border2, #6a7258);
   padding: 4px 8px;
@@ -1954,7 +1945,6 @@ textarea.form-input { resize: vertical; }
   overflow: hidden;
   white-space: nowrap;
   font-size: 0.60em !important;
-  text-transform: uppercase;
   letter-spacing: 0.10em;
   margin: 0 !important;
   padding: 0 !important;
@@ -2189,7 +2179,6 @@ textarea.form-input { resize: vertical; }
   z-index: 1;
   font-size: 1.1rem;
   letter-spacing: 2px;
-  text-transform: uppercase;
   line-height: 1.5;
 }
 
@@ -2206,7 +2195,6 @@ textarea.form-input { resize: vertical; }
   font-size: 8px !important;
   font-weight: 700 !important;
   letter-spacing: 2px !important;
-  text-transform: uppercase !important;
   color: #6a5428 !important;
   margin: 0 0 2px !important;
   padding: 0 !important;
@@ -2222,7 +2210,6 @@ textarea.form-input { resize: vertical; }
   margin: 0 0 6px !important;
   font-size: 9px !important;
   font-weight: 700 !important;
-  text-transform: uppercase !important;
   letter-spacing: 3px !important;
   color: #4a3a18 !important;
   background: #c8b882 !important;
@@ -2305,7 +2292,6 @@ textarea.form-input { resize: vertical; }
 .coc-mode .acht-card-header {
   font-size: 9px !important;
   font-weight: 700 !important;
-  text-transform: uppercase !important;
   letter-spacing: 3px !important;
   color: #4a3a18 !important;
   background: #c8b882 !important;

@@ -605,7 +605,7 @@ async function deleteEvent() {
   background: var(--surface2);
   text-align: center; padding: 6px 4px;
   font-size: 11px; font-weight: 600;
-  color: var(--text3); text-transform: uppercase; letter-spacing: .06em;
+  color: var(--text3); letter-spacing: .06em;
 }
 .cal-blank { background: var(--surface); min-height: 80px; }
 .cal-cell {
@@ -663,14 +663,14 @@ async function deleteEvent() {
 
 .cfg-section { display: flex; flex-direction: column; gap: 10px; padding: 4px 0; }
 .cfg-row { display: flex; flex-direction: column; gap: 4px; }
-.cfg-row label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .07em; }
+.cfg-row label { font-size: 11px; color: var(--text3); letter-spacing: .07em; }
 .cfg-inline { display: flex; gap: 8px; flex-wrap: wrap; }
 .cfg-labeled-input { display: flex; flex-direction: column; gap: 2px; }
 .cfg-labeled-input span { font-size: 10px; color: var(--text3); }
 
 .cfg-list-row { display: flex; gap: 6px; align-items: center; }
 .cfg-col-heads { display: flex; gap: 6px; padding: 0 2px; }
-.cfg-col-heads span { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .07em; flex: 1; }
+.cfg-col-heads span { font-size: 10px; color: var(--text3); letter-spacing: .07em; flex: 1; }
 .cfg-col-heads span:last-child { flex: 0 0 24px; }
 
 .cfg-sm { width: 80px; flex-shrink: 0; }
@@ -708,13 +708,13 @@ async function deleteEvent() {
 
 /* ── Modal ── */
 .modal-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  position: fixed; inset: 0; background: var(--color-bg-overlay-medium);
   z-index: 800; display: flex; align-items: center; justify-content: center;
 }
 .modal-box {
   background: var(--surface2); border: 1px solid var(--border);
   border-radius: 10px; width: 360px; max-width: 94vw;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  box-shadow: 0 8px 32px var(--color-shadow-menu);
 }
 .modal-header {
   display: flex; justify-content: space-between; align-items: center;
@@ -724,6 +724,6 @@ async function deleteEvent() {
 .modal-close { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 14px; }
 .modal-body { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
 .modal-footer { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
-.form-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; }
+.form-label { font-size: 11px; color: var(--text3); letter-spacing: .08em; }
 .cal-color-pick { height: 36px; padding: 2px; cursor: pointer; }
 </style>

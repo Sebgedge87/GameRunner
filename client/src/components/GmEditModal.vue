@@ -628,9 +628,9 @@
       <div v-if="saveError" class="status-msg status-err" style="margin-bottom:8px">{{ saveError }}</div>
 
       <div class="modal-actions">
-        <button class="modal-close" @click="ui.closeGmEdit()">CANCEL</button>
+        <button class="modal-close" @click="ui.closeGmEdit()">Cancel</button>
         <button class="submit-btn" @click="save" :disabled="saving">
-          {{ saving ? 'SAVING…' : (isEdit ? 'UPDATE' : 'CREATE') }}
+          {{ saving ? 'Saving…' : (isEdit ? 'Update' : 'Create') }}
         </button>
       </div>
     </div>
@@ -1009,7 +1009,6 @@ async function save() {
   display: block;
   font-size: 10px;
   font-family: 'JetBrains Mono', monospace;
-  text-transform: uppercase;
   letter-spacing: .06em;
   color: var(--text3);
   margin-bottom: 5px;
@@ -1144,7 +1143,6 @@ async function save() {
 .bst-gm-badge {
   font-size: 9px;
   font-family: 'JetBrains Mono', monospace;
-  text-transform: uppercase;
   letter-spacing: .06em;
   color: var(--red);
   background: rgba(201, 76, 76, .14);
@@ -1248,7 +1246,6 @@ async function save() {
   display: block;
   font-size: 10px;
   font-family: 'JetBrains Mono', monospace;
-  text-transform: uppercase;
   letter-spacing: .06em;
   color: var(--text3);
   margin-bottom: 5px;

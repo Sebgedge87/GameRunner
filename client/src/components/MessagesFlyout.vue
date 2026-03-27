@@ -8,7 +8,7 @@
     <div class="flyout-body">
       <!-- Compose -->
       <div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border)">
-        <div style="font-size:10px;color:var(--text3);letter-spacing:.08em;margin-bottom:8px">SEND MESSAGE</div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:.08em;margin-bottom:8px;font-family:var(--font-sans)">Send message</div>
         <div v-if="toUserLocked" class="form-input" style="margin-bottom:6px;opacity:0.7;cursor:default">
           To: {{ toUserLockedName }}
         </div>
@@ -24,7 +24,7 @@
           <label><input type="checkbox" v-model="isSecret" style="margin-right:4px" />Secret</label>
           <label><input type="checkbox" v-model="requiresAck" style="margin-right:4px" />Needs ack</label>
         </div>
-        <button class="submit-btn" @click="sendMessage">SEND</button>
+        <button class="submit-btn" @click="sendMessage">Send</button>
         <div v-if="sendStatus" :class="['status-msg', sendOk ? 'status-ok' : 'status-err']">{{ sendStatus }}</div>
       </div>
       <!-- Search + filter -->

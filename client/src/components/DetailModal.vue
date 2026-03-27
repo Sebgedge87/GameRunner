@@ -8,7 +8,7 @@
       <div class="flyout-body" @click="handleModalClick" v-html="renderedContent"></div>
       <div class="flyout-compose">
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="modal-close" @click="ui.closeDetail()">CLOSE</button>
+          <button class="modal-close" @click="ui.closeDetail()">Close</button>
           <button class="btn btn-sm" title="Pin" @click="pinItem">📌 Pin</button>
           <template v-if="campaign.isGm">
             <button class="btn btn-sm" @click="toggleHiddenItem">{{ ui.detailModal?.item?.hidden ? '👁 Reveal' : '🙈 Hide' }}</button>
@@ -111,14 +111,14 @@ const renderedContent = computed(() => {
         ${d.description?`<div class="detail-body">${md(d.description)}</div>`:''}
         ${d.player_notes?`<div class="detail-body" style="margin-top:8px">${md(d.player_notes)}</div>`:''}
         ${dfLinks('Location', d.location, 'location')}
-        ${isGm&&d.gm_notes?`<div class="detail-gm-box"><div class="detail-gm-label">GM NOTES</div><div class="detail-body" style="margin:0">${md(d.gm_notes)}</div></div>`:''}`
+        ${isGm&&d.gm_notes?`<div class="detail-gm-box"><div class="detail-gm-label">GM notes</div><div class="detail-body" style="margin:0">${md(d.gm_notes)}</div></div>`:''}`
     case 'location':
       return `${img(d)}<div class="detail-title">${esc(title)}</div>
         <div class="detail-meta"><span class="tag tag-${esc(d.status||'unvisited')}">${esc(d.status||'unvisited')}</span>${d.danger?`<span class="tag tag-${esc(d.danger)}">${esc(d.danger)}</span>`:''}</div>
         ${d.description?`<div class="detail-body">${md(d.description)}</div>`:''}
         ${d.player_notes?`<div class="detail-body" style="margin-top:8px">${md(d.player_notes)}</div>`:''}
         ${dfLinks('Connected To', d.connected_to, 'location')}${df('Visited Session', d.visited_session)}
-        ${isGm&&d.gm_notes?`<div class="detail-gm-box"><div class="detail-gm-label">GM NOTES</div><div class="detail-body" style="margin:0">${md(d.gm_notes)}</div></div>`:''}`
+        ${isGm&&d.gm_notes?`<div class="detail-gm-box"><div class="detail-gm-label">GM notes</div><div class="detail-body" style="margin:0">${md(d.gm_notes)}</div></div>`:''}`
     case 'hook':
       return `<div class="detail-title">${esc(title)}</div>
         <div class="detail-meta"><span class="tag tag-${esc(d.type||'clue')}">${esc(d.type||'clue')}</span><span class="tag tag-${esc(d.status||'active')}">${esc(d.status||'active')}</span></div>
@@ -128,7 +128,7 @@ const renderedContent = computed(() => {
       return `${img(d)}<div class="detail-title">${esc(title)}</div>
         ${d.description?`<div class="detail-body">${md(d.description)}</div>`:''}
         ${dfMd('Goals', d.goals)}
-        ${isGm&&d.gm_notes?`<div class="detail-gm-box"><div class="detail-gm-label">GM NOTES</div><div class="detail-body" style="margin:0">${md(d.gm_notes)}</div></div>`:''}`
+        ${isGm&&d.gm_notes?`<div class="detail-gm-box"><div class="detail-gm-label">GM notes</div><div class="detail-body" style="margin:0">${md(d.gm_notes)}</div></div>`:''}`
     case 'timeline':
       return `<div class="detail-title">${esc(title)}</div>
         <div class="detail-grid">
@@ -139,8 +139,8 @@ const renderedContent = computed(() => {
           </div>
           <div class="detail-body-col">
             ${d.description?`<div class="detail-body" style="margin:0">${md(d.description)}</div>`:`<div style="color:var(--text3);font-size:13px;font-style:italic">No description recorded.</div>`}
-            ${d.linked_quest?`<div class="detail-field"><div class="detail-field-label">LINKED QUEST</div>${dfLinks('',d.linked_quest,'quest')}</div>`:''}
-            ${isGm&&d.gm_notes?`<div class="detail-gm-box"><div class="detail-gm-label">GM NOTES</div><div class="detail-body" style="margin:0">${md(d.gm_notes)}</div></div>`:''}
+            ${d.linked_quest?`<div class="detail-field"><div class="detail-field-label">Linked quest</div>${dfLinks('',d.linked_quest,'quest')}</div>`:''}
+            ${isGm&&d.gm_notes?`<div class="detail-gm-box"><div class="detail-gm-label">GM notes</div><div class="detail-body" style="margin:0">${md(d.gm_notes)}</div></div>`:''}
           </div>
         </div>`
     case 'inventory':
@@ -156,7 +156,7 @@ const renderedContent = computed(() => {
         <div class="detail-meta"><span class="tag tag-${esc(d.difficulty||'medium')}">${esc(d.difficulty||'medium')}</span><span class="tag tag-${esc(d.status||'open')}">${esc(d.status||'open')}</span></div>
         ${d.description?`<div class="detail-body">${md(d.description)}</div>`:''}
         ${df('Reward',d.reward)}${df('Posted By',d.posted_by)}
-        ${isGm&&d.gm_notes?`<div class="detail-gm-box"><div class="detail-gm-label">GM NOTES</div><div class="detail-body" style="margin:0">${md(d.gm_notes)}</div></div>`:''}`
+        ${isGm&&d.gm_notes?`<div class="detail-gm-box"><div class="detail-gm-label">GM notes</div><div class="detail-body" style="margin:0">${md(d.gm_notes)}</div></div>`:''}`
     case 'bestiary': {
       const st = d.stats || {}
       return `${img(d)}<div class="detail-title">${esc(title)}</div>
@@ -167,7 +167,7 @@ const renderedContent = computed(() => {
         </div>`:''}
         ${d.description?`<div class="detail-body">${md(d.description)}</div>`:''}
         ${d.player_notes?`<div class="detail-body">${md(d.player_notes)}</div>`:''}
-        ${isGm&&d.gm_notes?`<div class="detail-gm-box"><div class="detail-gm-label">GM NOTES</div><div class="detail-body" style="margin:0">${md(d.gm_notes)}</div></div>`:''}`
+        ${isGm&&d.gm_notes?`<div class="detail-gm-box"><div class="detail-gm-label">GM notes</div><div class="detail-body" style="margin:0">${md(d.gm_notes)}</div></div>`:''}`
     }
     case 'rumour':
       return `<div class="detail-title" style="font-size:16px">${esc(d.text||title)}</div>

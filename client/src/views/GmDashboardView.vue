@@ -31,11 +31,11 @@
               <table class="players-table">
                 <thead>
                   <tr>
-                    <th>PLAYER</th>
-                    <th>ROLE</th>
-                    <th>{{ usesMilestone ? 'LEVEL' : 'XP' }}</th>
-                    <th v-if="hasStress || hasSanity">{{ hasStress && hasSanity ? 'STRESS / SANITY' : hasStress ? 'STRESS' : 'SANITY' }}</th>
-                    <th>ACTIONS</th>
+                    <th>Player</th>
+                    <th>Role</th>
+                    <th>{{ usesMilestone ? 'Level' : 'XP' }}</th>
+                    <th v-if="hasStress || hasSanity">{{ hasStress && hasSanity ? 'Stress / Sanity' : hasStress ? 'Stress' : 'Sanity' }}</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>

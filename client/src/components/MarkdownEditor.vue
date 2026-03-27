@@ -273,7 +273,7 @@ function insertLine(prefix) {
   background: var(--surface, #1a1a24);
   border: 1px solid var(--border2, #333348);
   border-radius: 6px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+  box-shadow: 0 8px 20px var(--color-shadow-menu);
   min-width: 200px;
   overflow: hidden;
 }

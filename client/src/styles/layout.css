@@ -85,7 +85,7 @@
 .topbar-icon-btn:hover { color: var(--text); border-color: var(--border2); }
 .topbar-icon-btn .badge {
   background: var(--red);
-  color: #fff;
+  color: var(--color-text-primary);
   font-size: 9px;
   padding: 1px 5px;
   border-radius: 8px;
@@ -142,7 +142,7 @@
   background: var(--bg2);
   border: 1px solid var(--border2);
   border-radius: var(--radius, 4px);
-  box-shadow: 0 8px 24px rgba(0,0,0,.55);
+  box-shadow: 0 8px 24px var(--color-bg-overlay-light);
   z-index: 200;
   overflow: hidden;
 }
@@ -239,7 +239,7 @@
 .nav-badge {
   margin-left: auto;
   background: var(--red);
-  color: #fff;
+  color: var(--color-text-primary);
   font-size: 9px;
   padding: 1px 5px;
   border-radius: 8px;
@@ -255,7 +255,6 @@
   font-size: 11px;
   width: 100%;
   letter-spacing: 1px;
-  text-transform: uppercase;
   transition: color 0.2s, border-color 0.2s;
   font-family: var(--font-header, 'Cinzel', serif);
 }
@@ -337,7 +336,7 @@
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.6);
+  background: var(--color-bg-overlay-medium);
   z-index: 99;
 }
 #sidebar-overlay.open { display: block; }
@@ -418,4 +417,4 @@
 
 /* Alien: headers are orange */
 [data-theme="alien"] .page-title { color: #ff8c00; }
-[data-theme="alien"] .sidebar-title { color: #39ff14; }
+[data-theme="alien"] .sidebar-title { color: var(--accent); }

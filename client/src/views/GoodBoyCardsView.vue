@@ -40,7 +40,7 @@
           <div class="gbc-card-icon">{{ c.type === 'good' ? '🐶' : '😈' }}</div>
           <div class="gbc-card-name">{{ c.name }}</div>
           <div class="gbc-card-effect">{{ c.effect }}</div>
-          <div v-if="c.played_at" class="gbc-card-played-stamp">PLAYED</div>
+          <div v-if="c.played_at" class="gbc-card-played-stamp">Played</div>
           <div v-if="c.played_note" class="gbc-card-note">"{{ c.played_note }}"</div>
           <div class="gbc-card-footer">
             <span class="gbc-card-date">Awarded {{ fmtDate(c.awarded_at) }}</span>
@@ -78,7 +78,7 @@
           <div class="gbc-card-icon">{{ c.type === 'good' ? '🐶' : '😈' }}</div>
           <div class="gbc-card-name">{{ c.name }}</div>
           <div class="gbc-card-effect">{{ c.effect }}</div>
-          <div v-if="c.played_at" class="gbc-card-played-stamp">PLAYED</div>
+          <div v-if="c.played_at" class="gbc-card-played-stamp">Played</div>
           <div v-if="c.played_note" class="gbc-card-note">"{{ c.played_note }}"</div>
           <div class="gbc-card-footer">
             <span class="gbc-card-date">{{ c.played_at ? `Played ${fmtDate(c.played_at)}` : `Awarded ${fmtDate(c.awarded_at)}` }}</span>
@@ -344,7 +344,7 @@ async function removeCard(id) {
   min-height: 180px;
 }
 .gbc-card.can-play { cursor: pointer; }
-.gbc-card.can-play:hover { transform: translateY(-3px); box-shadow: 0 6px 24px rgba(0,0,0,0.4); }
+.gbc-card.can-play:hover { transform: translateY(-3px); box-shadow: 0 6px 24px var(--color-shadow-menu); }
 .gbc-card.played { opacity: 0.45; filter: grayscale(0.6); }
 
 /* Type accent colours */
@@ -359,7 +359,7 @@ async function removeCard(id) {
 
 .gbc-card-corner {
   position: absolute; top: 8px; right: 10px;
-  font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
+  font-size: 9px; font-weight: 500; letter-spacing: .1em;
   color: var(--text3);
 }
 .gbc-card.huge .gbc-card-corner { color: #c9a84c; }
@@ -394,13 +394,13 @@ async function removeCard(id) {
 
 /* ── Modals ── */
 .modal-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  position: fixed; inset: 0; background: var(--color-bg-overlay-medium);
   z-index: 800; display: flex; align-items: center; justify-content: center;
 }
 .modal-box {
   background: var(--surface2); border: 1px solid var(--border);
   border-radius: 10px; width: 420px; max-width: 94vw;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  box-shadow: 0 8px 32px var(--color-shadow-menu);
 }
 .modal-header {
   display: flex; justify-content: space-between; align-items: center;
@@ -409,7 +409,7 @@ async function removeCard(id) {
 .modal-close { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 14px; }
 .modal-body  { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
 .modal-footer { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
-.form-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; }
+.form-label { font-size: 11px; color: var(--text3); letter-spacing: .08em; }
 
 .gbc-type-btns { display: flex; gap: 8px; }
 .gbc-type-btn {
