@@ -368,7 +368,13 @@
 .page.active { display: flex; }
 
 /* ── Page typography ─────────────────────────────────────────────────────── */
-.page-header { margin-bottom: 24px; }
+.page-header {
+  margin-bottom: 24px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
 .page-title {
   font-family: var(--font-header, 'Cinzel', serif);
   font-size: 20px;

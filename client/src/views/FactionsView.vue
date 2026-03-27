@@ -1,9 +1,14 @@
 <template>
   <div class="page-content">
-    <div class="page-header"><div class="page-title">Factions</div></div>
+    <div class="page-header">
+      <div class="page-title">Factions</div>
+      <button v-if="campaign.isGm" class="btn-add" @click="ui.openGmEdit('faction', null, {})">+ Add faction</button>
+    </div>
     <div class="search-row" style="margin-bottom:16px">
       <input v-model="search" class="form-input" placeholder="Search factions…" style="max-width:320px" />
     </div>
+
+    <!-- Skeleton -->
     <div v-if="data.loading && !data.factions.length" class="card-grid">
       <div v-for="n in 4" :key="n" class="skeleton-card">
         <div class="skeleton-line skeleton-title"></div>
@@ -11,40 +16,47 @@
         <div class="skeleton-line skeleton-body-short"></div>
       </div>
     </div>
-    <div v-else class="card-grid">
-      <div v-if="campaign.isGm" class="add-tile" @click="ui.openGmEdit('faction', null, {})">
-        <div class="add-tile-icon">+</div><div class="add-tile-label">Add Faction</div>
+
+    <!-- Empty state -->
+    <EmptyState
+      v-else-if="!data.factions.length"
+      icon="⚔️"
+      heading="No factions yet"
+      description="Define the guilds, cults and powers that shape your world."
+      :cta-label="campaign.isGm ? '+ Add faction' : null"
+      :on-cta="campaign.isGm ? () => ui.openGmEdit('faction', null, {}) : null"
+    />
+
+    <!-- Card grid -->
+    <template v-else>
+      <div class="card-grid">
+        <OverlayCard
+          v-for="faction in filteredFactions"
+          :key="faction.id"
+          icon="⚔️"
+          :title="faction.name"
+          :status="reputationStatus(faction.reputation)"
+          :actions="factionActions(faction)"
+          :is-expanded="expandedId === faction.id"
+          :on-toggle="() => toggleExpand(faction.id)"
+          @delete="confirmDelete = { id: faction.id, name: faction.name }"
+        >
+          <div v-if="faction.description" class="card-overview">{{ stripMd(faction.description) }}</div>
+          <div v-if="faction.goals" class="card-meta">Goals: {{ stripMd(faction.goals, 80) }}</div>
+          <div v-if="faction.reputation != null" style="margin-top:4px">
+            <div style="display:flex;justify-content:space-between;font-size:0.75em;opacity:0.6;margin-bottom:4px">
+              <span>Hostile</span>
+              <span style="opacity:1;color:var(--accent)">{{ reputationLabel(faction.reputation) }}</span>
+              <span>Allied</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" :style="`width:${reputationPercent(faction.reputation)}%;background:${reputationColor(faction.reputation)}`"></div>
+            </div>
+          </div>
+        </OverlayCard>
       </div>
-      <OverlayCard
-        v-for="faction in filteredFactions"
-        :key="faction.id"
-        icon="⚔️"
-        :title="faction.name"
-        :status="reputationStatus(faction.reputation)"
-        :actions="factionActions(faction)"
-        :is-expanded="expandedId === faction.id"
-        :on-toggle="() => toggleExpand(faction.id)"
-        @delete="confirmDelete = { id: faction.id, name: faction.name }"
-      >
-        <div v-if="faction.description" class="card-overview">{{ stripMd(faction.description) }}</div>
-        <div v-if="faction.goals" class="card-meta">Goals: {{ stripMd(faction.goals, 80) }}</div>
-        <div v-if="faction.reputation != null" style="margin-top:4px">
-          <div style="display:flex;justify-content:space-between;font-size:0.75em;opacity:0.6;margin-bottom:4px">
-            <span>Hostile</span>
-            <span style="opacity:1;color:var(--accent)">{{ reputationLabel(faction.reputation) }}</span>
-            <span>Allied</span>
-          </div>
-          <div class="progress-bar">
-            <div class="progress-fill" :style="`width:${reputationPercent(faction.reputation)}%;background:${reputationColor(faction.reputation)}`"></div>
-          </div>
-        </div>
-      </OverlayCard>
-    </div>
-    <div v-if="!data.loading && filteredFactions.length === 0" class="empty-state">
-      <span class="empty-state-icon">⚔️</span>
-      <div class="empty-state-title">{{ data.factions.length ? 'No Matches' : 'No Factions Yet' }}</div>
-      <div class="empty-state-hint">{{ data.factions.length ? 'Try a different search or filter.' : 'GM: define the guilds, cults and powers that shape your world.' }}</div>
-    </div>
+      <p v-if="!filteredFactions.length" class="no-matches-msg">No matches — try a different search or filter.</p>
+    </template>
 
     <ConfirmDialog
       :is-open="!!confirmDelete"
@@ -64,6 +76,7 @@ import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
 import OverlayCard from '@/components/OverlayCard.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import EmptyState from '@/components/EmptyState.vue'
 
 const data     = useDataStore()
 const campaign = useCampaignStore()

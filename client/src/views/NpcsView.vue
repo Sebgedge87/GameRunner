@@ -1,6 +1,9 @@
 <template>
   <div class="page-content">
-    <div class="page-header"><div class="page-title">NPCs</div></div>
+    <div class="page-header">
+      <div class="page-title">NPCs</div>
+      <button v-if="campaign.isGm" class="btn-add" @click="ui.openGmEdit('npc', null, {})">+ Add NPC</button>
+    </div>
     <div class="search-row" style="margin-bottom:12px">
       <input v-model="search" class="form-input" placeholder="Search NPCs…" style="max-width:320px" />
     </div>
@@ -17,67 +20,78 @@
       </div>
     </div>
 
-    <!-- NPC portrait cards -->
-    <div v-else class="npc-grid">
-      <div v-if="campaign.isGm" class="add-tile" @click="ui.openGmEdit('npc', null, {})">
-        <div class="add-tile-icon">+</div><div class="add-tile-label">Add NPC</div>
-      </div>
+    <!-- Empty state -->
+    <EmptyState
+      v-else-if="!data.npcs.length"
+      icon="👤"
+      heading="No NPCs yet"
+      description="Add the people who populate your world."
+      :cta-label="campaign.isGm ? '+ Add NPC' : null"
+      :on-cta="campaign.isGm ? () => ui.openGmEdit('npc', null, {}) : null"
+    />
 
-      <div
-        v-for="npc in filteredNpcs" :key="npc.id"
-        class="npc-card card"
-        :class="{ 'npc-hidden': npc.hidden, 'npc-expanded': expandedId === npc.id }"
-        @click="toggleExpand(npc.id)"
-      >
-        <!-- Portrait -->
-        <div class="npc-portrait">
-          <img v-if="npc.image_url" :src="npc.image_url" class="npc-portrait-img" alt="" />
-          <div v-else class="npc-portrait-empty">👤</div>
+    <!-- NPC portrait grid -->
+    <template v-else>
+      <div class="npc-grid">
+        <div
+          v-for="npc in filteredNpcs" :key="npc.id"
+          class="npc-card card"
+          :class="{ 'npc-hidden': npc.hidden, 'npc-expanded': expandedId === npc.id }"
+          @click="toggleExpand(npc.id)"
+        >
+          <!-- Portrait -->
+          <div class="npc-portrait">
+            <img v-if="npc.image_url" :src="npc.image_url" class="npc-portrait-img" alt="" />
+            <div v-else class="npc-portrait-empty">👤</div>
+          </div>
+
+          <!-- Always-visible info -->
+          <div class="npc-info">
+            <div class="npc-name-row">
+              <span class="npc-name">{{ npc.name }}</span>
+              <button
+                v-if="campaign.isGm"
+                class="btn btn-xs npc-edit-btn"
+                title="Edit"
+                @click.stop="ui.openGmEdit('npc', npc.id, npc)"
+              >✏️</button>
+            </div>
+            <div class="npc-tags">
+              <span v-if="npc.role" class="tag">{{ npc.role }}</span>
+              <span v-if="npc.race" class="tag">{{ npc.race }}</span>
+              <span v-if="npc.disposition" class="tag" :class="dispositionClass(npc.disposition)">{{ npc.disposition }}</span>
+            </div>
+            <div v-if="npc.faction" class="npc-meta">⚔️ {{ npc.faction }}</div>
+            <div v-if="npc.location" class="npc-meta">📍 {{ npc.location }}</div>
+          </div>
+
+          <!-- Expanded detail -->
+          <template v-if="expandedId === npc.id">
+            <div v-if="npc.description" class="npc-body">
+              {{ stripMd(npc.description) }}
+            </div>
+            <div class="npc-actions">
+              <button class="btn btn-sm" @click.stop="data.addPin('npc', npc.id, npc.name)">📌 Pin</button>
+              <button v-if="campaign.isGm" class="btn btn-sm" @click.stop="revealNpc(npc.id, !npc.revealed)">
+                {{ npc.revealed ? '👁 Hide' : '⭐ Reveal' }}
+              </button>
+              <button v-if="campaign.isGm" class="btn btn-sm" @click.stop="ui.openShare('npc', npc.id, npc.name)">🔗 Share</button>
+              <button v-if="campaign.isGm" class="btn btn-sm" @click.stop="ui.openGmEdit('npc', npc.id, npc)">✏️ Edit</button>
+              <button v-if="campaign.isGm" class="btn btn-sm btn-danger" @click.stop="confirmDeleteNpc(npc)">🗑 Delete</button>
+            </div>
+          </template>
         </div>
-
-        <!-- Always-visible info -->
-        <div class="npc-info">
-          <div class="npc-name-row">
-            <span class="npc-name">{{ npc.name }}</span>
-            <button
-              v-if="campaign.isGm"
-              class="btn btn-xs npc-edit-btn"
-              title="Edit"
-              @click.stop="ui.openGmEdit('npc', npc.id, npc)"
-            >✏️</button>
-          </div>
-          <div class="npc-tags">
-            <span v-if="npc.role" class="tag">{{ npc.role }}</span>
-            <span v-if="npc.race" class="tag">{{ npc.race }}</span>
-            <span v-if="npc.disposition" class="tag" :class="dispositionClass(npc.disposition)">{{ npc.disposition }}</span>
-          </div>
-          <div v-if="npc.faction" class="npc-meta">⚔️ {{ npc.faction }}</div>
-          <div v-if="npc.location" class="npc-meta">📍 {{ npc.location }}</div>
-        </div>
-
-        <!-- Expanded detail -->
-        <template v-if="expandedId === npc.id">
-          <div v-if="npc.description" class="npc-body">
-            {{ stripMd(npc.description) }}
-          </div>
-          <div class="npc-actions">
-            <button class="btn btn-sm" @click.stop="data.addPin('npc', npc.id, npc.name)">📌 Pin</button>
-            <button v-if="campaign.isGm" class="btn btn-sm" @click.stop="revealNpc(npc.id, !npc.revealed)">
-              {{ npc.revealed ? '👁 Hide' : '⭐ Reveal' }}
-            </button>
-            <button v-if="campaign.isGm" class="btn btn-sm" @click.stop="ui.openShare('npc', npc.id, npc.name)">🔗 Share</button>
-            <button v-if="campaign.isGm" class="btn btn-sm" @click.stop="ui.openGmEdit('npc', npc.id, npc)">✏️ Edit</button>
-            <button v-if="campaign.isGm" class="btn btn-sm btn-danger" @click.stop="deleteNpc(npc)">🗑 Delete</button>
-          </div>
-        </template>
       </div>
-    </div>
+      <p v-if="!filteredNpcs.length" class="no-matches-msg">No matches — try a different search or filter.</p>
+    </template>
 
-    <div v-if="!data.loading && filteredNpcs.length === 0" class="empty-state">
-      <span class="empty-state-icon">👤</span>
-      <div class="empty-state-title">{{ data.npcs.length ? 'No Matches' : 'No NPCs Yet' }}</div>
-      <div class="empty-state-hint">{{ data.npcs.length ? 'Try a different search or filter.' : 'GM: add the people who populate your world.' }}</div>
-    </div>
+    <ConfirmDialog
+      :is-open="!!confirmDelete"
+      entity-type="NPC"
+      :entity-name="confirmDelete?.name"
+      :on-confirm="doDelete"
+      :on-cancel="() => confirmDelete = null"
+    />
   </div>
 </template>
 
@@ -87,19 +101,22 @@ import { ref, computed, onMounted } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
+import EmptyState from '@/components/EmptyState.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
-const data = useDataStore()
+const data     = useDataStore()
 const campaign = useCampaignStore()
-const ui = useUiStore()
-const search = ref('')
-const activeTab = ref('all')
-const expandedId = ref(null)
+const ui       = useUiStore()
+const search        = ref('')
+const activeTab     = ref('all')
+const expandedId    = ref(null)
+const confirmDelete = ref(null)
 
 const tabs = [
-  { value: 'all', label: 'All' },
+  { value: 'all',      label: 'All' },
   { value: 'friendly', label: 'Friendly' },
-  { value: 'neutral', label: 'Neutral' },
-  { value: 'hostile', label: 'Hostile' },
+  { value: 'neutral',  label: 'Neutral' },
+  { value: 'hostile',  label: 'Hostile' },
 ]
 
 const filteredNpcs = computed(() => {
@@ -132,10 +149,14 @@ async function revealNpc(id, val) {
   await data.loadNpcs()
 }
 
-async function deleteNpc(npc) {
-  if (!await ui.confirm(`Delete "${npc.name}"?`)) return
-  await data.deleteItem('npc', npc.id)
+function confirmDeleteNpc(npc) {
+  confirmDelete.value = { id: npc.id, name: npc.name }
+}
+
+async function doDelete() {
+  await data.deleteItem('npc', confirmDelete.value.id)
   await data.loadNpcs()
+  confirmDelete.value = null
 }
 
 onMounted(() => { if (!data.npcs.length) data.loadNpcs() })
@@ -148,9 +169,6 @@ onMounted(() => { if (!data.npcs.length) data.loadNpcs() })
   gap: 16px;
   align-items: start;
 }
-
-/* add-tile matches portrait card height */
-.npc-grid .add-tile { min-height: 160px; }
 
 .npc-card {
   padding: 0;

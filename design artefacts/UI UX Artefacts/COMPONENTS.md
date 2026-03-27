@@ -19,8 +19,8 @@ Never create a new component for something that matches an existing name.
 | `ConfirmDialog` | components/confirm-dialog.md | ✅ BUILT | No existing confirm — adds missing safety layer |
 | `EntityForm` | components/entity-form.md | ⬜ TODO | 4 different form layouts across all entity create/edit screens |
 | `Dropzone` | components/dropzone.md | ⬜ TODO | All `<input type="file">` elements |
-| `EmptyState` | components/empty-state.md | ⬜ TODO | Floating bottom-right empty messages |
-| `ListPage` | components/list-page.md | ⬜ TODO | Dashed "Add entity" card in grid position |
+| `EmptyState` | components/empty-state.md | ✅ BUILT | Floating bottom-right empty messages |
+| `ListPage` | components/list-page.md | ✅ BUILT | Dashed "Add entity" card in grid position |
 | `FilterTabs` | components/filter-tabs.md | ⬜ TODO | Inconsistently sized filter tab rows |
 | `RichTextField` | components/rich-text-field.md | ⬜ TODO | Rich text editor applied to wrong field types |
 | `StickyFormFooter` | components/sticky-form-footer.md | ⬜ TODO | Scrolling Cancel/Create buttons |
