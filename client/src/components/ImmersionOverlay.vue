@@ -460,7 +460,7 @@ onUnmounted(stopEffects)
   bottom: 18vh;
   right: -4px;
   opacity: 0.75;
-  filter: drop-shadow(-2px 2px 4px rgba(0,0,0,0.5));
+  filter: drop-shadow(-2px 2px 4px var(--color-shadow-menu));
 }
 .prop-knife-svg { display: block; }
 
@@ -468,7 +468,7 @@ onUnmounted(stopEffects)
   bottom: 12vh;
   left: -6px;
   opacity: 0.68;
-  filter: drop-shadow(3px 2px 5px rgba(0,0,0,0.55));
+  filter: drop-shadow(3px 2px 5px var(--color-bg-overlay-light));
   transform: rotate(-8deg);
   animation-delay: 0.6s;
 }

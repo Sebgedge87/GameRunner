@@ -183,7 +183,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onClickOutside))
   list-style: none;
   margin: 0;
   padding: 4px 0;
-  box-shadow: 0 4px 16px rgba(0,0,0,.5);
+  box-shadow: 0 4px 16px var(--color-shadow-menu);
 }
 .ss-option {
   padding: 7px 12px;

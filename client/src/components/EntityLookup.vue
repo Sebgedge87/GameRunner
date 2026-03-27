@@ -188,7 +188,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onClickOutside))
   border-radius: 4px;
   list-style: none;
   margin: 0; padding: 4px 0;
-  box-shadow: 0 4px 16px rgba(0,0,0,.5);
+  box-shadow: 0 4px 16px var(--color-shadow-menu);
 }
 .el-option {
   display: flex;

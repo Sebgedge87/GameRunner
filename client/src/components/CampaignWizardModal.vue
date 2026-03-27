@@ -650,7 +650,7 @@ function skipEntity() {
   position: fixed;
   inset: 0;
   z-index: 300;
-  background: rgba(0,0,0,.65);
+  background: var(--color-bg-overlay-medium);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   display: flex;
@@ -669,7 +669,7 @@ function skipEntity() {
   max-height: calc(100vh - 48px);
   overflow-y: auto;
   padding: 32px;
-  box-shadow: 0 24px 80px rgba(0,0,0,.6), 0 4px 16px rgba(0,0,0,.4);
+  box-shadow: 0 24px 80px var(--color-bg-overlay-medium), 0 4px 16px var(--color-shadow-menu);
 }
 
 /* ── Close ────────────────────────────────────────────── */

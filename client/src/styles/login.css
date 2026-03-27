@@ -1,6 +1,6 @@
 /* ── Login ──────────────────────────────────────────────────────────────────── */
 #login-screen{display:flex;align-items:center;justify-content:center;height:100vh;background:var(--bg);background-image:radial-gradient(ellipse at 50% 0%,var(--accent-dim) 0%,transparent 60%);}
-.login-box{width:380px;background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:40px;box-shadow:0 20px 60px rgba(0,0,0,0.6);animation:fade-in 0.4s ease;}
+.login-box{width:380px;background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:40px;box-shadow:0 20px 60px var(--color-bg-overlay-medium);animation:fade-in 0.4s ease;}
 .login-title{font-family:var(--font-header,'Cinzel',serif);font-size:22px;color:var(--accent);text-align:center;letter-spacing:3px;margin-bottom:4px;}
 .login-sub{text-align:center;color:var(--text3);font-size:12px;font-family:'JetBrains Mono',monospace;margin-bottom:32px;letter-spacing:1px;}
 .login-field{margin-bottom:16px;}

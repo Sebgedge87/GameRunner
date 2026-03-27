@@ -11,7 +11,7 @@
     </div>
     <div style="position:relative">
       <svg ref="svgEl" id="mindmap-svg" style="height:500px;width:100%"></svg>
-      <div v-if="flyoutItem" id="mindmap-flyout" style="position:absolute;top:12px;right:12px;width:230px;background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:14px;z-index:10;box-shadow:0 8px 24px rgba(0,0,0,.5)">
+      <div v-if="flyoutItem" id="mindmap-flyout" style="position:absolute;top:12px;right:12px;width:230px;background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:14px;z-index:10;box-shadow:0 8px 24px var(--color-shadow-menu)">
         <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:6px">{{ flyoutItem.type.toUpperCase() }}</div>
         <div style="font-size:15px;color:var(--text);margin-bottom:6px;font-family:'Cinzel',serif">{{ flyoutItem.title }}</div>
         <div v-if="flyoutItem.description" style="font-size:12px;color:var(--text2);line-height:1.5">{{ flyoutItem.description.slice(0, 120) }}{{ flyoutItem.description.length > 120 ? '…' : '' }}</div>

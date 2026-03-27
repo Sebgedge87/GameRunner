@@ -344,7 +344,7 @@ async function removeCard(id) {
   min-height: 180px;
 }
 .gbc-card.can-play { cursor: pointer; }
-.gbc-card.can-play:hover { transform: translateY(-3px); box-shadow: 0 6px 24px rgba(0,0,0,0.4); }
+.gbc-card.can-play:hover { transform: translateY(-3px); box-shadow: 0 6px 24px var(--color-shadow-menu); }
 .gbc-card.played { opacity: 0.45; filter: grayscale(0.6); }
 
 /* Type accent colours */
@@ -394,13 +394,13 @@ async function removeCard(id) {
 
 /* ── Modals ── */
 .modal-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  position: fixed; inset: 0; background: var(--color-bg-overlay-medium);
   z-index: 800; display: flex; align-items: center; justify-content: center;
 }
 .modal-box {
   background: var(--surface2); border: 1px solid var(--border);
   border-radius: 10px; width: 420px; max-width: 94vw;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  box-shadow: 0 8px 32px var(--color-shadow-menu);
 }
 .modal-header {
   display: flex; justify-content: space-between; align-items: center;

@@ -53,7 +53,7 @@ function openCreate() {
   font-size: 24px;
   font-weight: 300;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(0,0,0,.5);
+  box-shadow: 0 4px 16px var(--color-shadow-menu);
   transition: transform .15s, background .2s;
   z-index: 100;
 }

@@ -142,7 +142,7 @@
   background: var(--bg2);
   border: 1px solid var(--border2);
   border-radius: var(--radius, 4px);
-  box-shadow: 0 8px 24px rgba(0,0,0,.55);
+  box-shadow: 0 8px 24px var(--color-bg-overlay-light);
   z-index: 200;
   overflow: hidden;
 }
@@ -337,7 +337,7 @@
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.6);
+  background: var(--color-bg-overlay-medium);
   z-index: 99;
 }
 #sidebar-overlay.open { display: block; }

@@ -40,7 +40,7 @@
     </div>
 
     <!-- Fullscreen overlay -->
-    <div v-if="fullscreenMap" class="modal-overlay open" style="z-index:9999;background:rgba(0,0,0,0.92)" @click="fullscreenMap = null">
+    <div v-if="fullscreenMap" class="modal-overlay open" style="z-index:9999;background:var(--color-bg-overlay-heavy)" @click="fullscreenMap = null">
       <div style="position:relative;max-width:95vw;max-height:95vh" @click.stop>
         <img :src="fullscreenMap.image" style="max-width:95vw;max-height:90vh;object-fit:contain;border-radius:6px;display:block" />
         <div style="text-align:center;margin-top:10px;color:#fff;font-size:1em;opacity:0.85">{{ fullscreenMap.title }}</div>

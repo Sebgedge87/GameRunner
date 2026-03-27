@@ -157,7 +157,7 @@ function back() {
 #onboarding-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.85);
+  background: var(--color-bg-overlay-heavy);
   z-index: 400;
   display: flex;
   align-items: center;
@@ -170,7 +170,7 @@ function back() {
   padding: 36px 40px;
   width: 420px;
   max-width: 95vw;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+  box-shadow: 0 20px 60px var(--color-bg-overlay-medium);
 }
 .wizard-title {
   font-family: 'JetBrains Mono', monospace;
