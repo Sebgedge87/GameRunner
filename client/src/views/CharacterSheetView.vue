@@ -2049,39 +2049,38 @@ textarea.form-input { resize: vertical; }
 
 /* ══════════════════════════════════════════════════════════════════════════
    CoC — Investigator File Paper Document
-   Matches reference design: Georgia serif, vertical fields, taupe surround,
-   light cream paper (#f4efe4), red stamp header, subtle ruled lines.
-   All colours hardcoded — no theme variable inheritance.
+   Design tokens from design artefacts/CharacterSheetCoC.vue:
+     Paper:   #e8dfc0  |  Header:  #c8b882  |  Border: #8a7240
+     Ink:     #2a1a08  |  Mid ink: #4a3a18  |  Faded:  #6a5428
+     Placeholder: #a89a6a           |  Stamp:  #8b1a1a
+   Font: Courier Prime (same as base — no override needed)
    ══════════════════════════════════════════════════════════════════════════ */
 
-/* ── CoC type overrides (font / colour on the .page-content root) ──── */
-.coc-mode {
-  color: #2a2a2a;
-  font-family: Georgia, 'Times New Roman', serif;
-}
+/* ── CoC ink colour on root ─────────────────────────────────────────── */
+.coc-mode { color: #2a1a08; }
 
-/* ── Document box — cream paper, drop shadow ─────────────────────────── */
+/* ── Document box ────────────────────────────────────────────────────── */
 .coc-mode .document-box {
-  background: #f4efe4 !important;
-  border: 1px solid #cfc7b7 !important;
+  background: #e8dfc0 !important;
+  border: 1px solid #8a7240 !important;
 }
 .coc-mode .document-box::before {
   background-image: repeating-linear-gradient(
     0deg,
     transparent 0,
-    transparent 31px,
-    rgba(0, 0, 0, 0.09) 31px,
-    rgba(0, 0, 0, 0.09) 32px
+    transparent 27px,
+    rgba(120,100,60,.07) 27px,
+    rgba(120,100,60,.07) 28px
   ) !important;
 }
 
 /* ── Box header ─────────────────────────────────────────────────────── */
 .coc-mode .doc-box-header {
-  background: #ece8df !important;
-  border-bottom: 2px solid #cfc7b7 !important;
+  background: #c8b882 !important;
+  border-bottom: 2px solid #8a7240 !important;
 }
 
-/* ── Sheet page inside doc box ───────────────────────────────────────── */
+/* ── Sheet page wrapper ─────────────────────────────────────────────── */
 .coc-mode .sheet-page-wrap {
   background: transparent !important;
   border: none !important;
@@ -2090,28 +2089,19 @@ textarea.form-input { resize: vertical; }
 
 /* ── Doc footer ─────────────────────────────────────────────────────── */
 .coc-mode .doc-footer {
-  background: #ece8df !important;
-  border-top: 2px solid #cfc7b7 !important;
+  background: #c8b882 !important;
+  border-top: 2px solid #8a7240 !important;
 }
 
-/* ── Sheet page — light cream with 32px ruled lines ─────────────────── */
+/* ── Sheet page ─────────────────────────────────────────────────────── */
 .coc-mode .sheet-page {
-  background-color: #f4efe4 !important;
-  background-image: repeating-linear-gradient(
-    to bottom,
-    transparent 0,
-    transparent 31px,
-    rgba(0, 0, 0, 0.13) 31px,
-    rgba(0, 0, 0, 0.13) 32px
-  ) !important;
-  background-attachment: local !important;
-  color: #2a2a2a;
-  font-family: Georgia, 'Times New Roman', serif;
+  background-color: #e8dfc0 !important;
+  background-image: none !important;
+  color: #2a1a08;
   font-size: 1rem;
-  padding: 0 40px 40px;
+  padding: 16px 18px 18px;
   box-sizing: border-box;
 }
-
 .coc-mode .sheet-page * { box-sizing: border-box; }
 
 /* ── Cards: transparent ──────────────────────────────────────────── */
@@ -2126,22 +2116,19 @@ textarea.form-input { resize: vertical; }
   box-shadow: none !important;
 }
 
-/* ── Back-link / title in CoC box header ─────────────────────────── */
+/* ── Back-link / title in box header ────────────────────────────── */
 .coc-mode .page-title {
-  font-family: Georgia, 'Times New Roman', serif !important;
   font-size: 1.1em !important;
-  letter-spacing: 0.06em !important;
-  color: #2a2a2a !important;
+  letter-spacing: 0.12em !important;
+  color: #2a1a08 !important;
 }
 .coc-mode .back-link {
-  color: #8b1e1e !important;
-  font-family: Georgia, serif !important;
+  color: #6a5428 !important;
   font-size: 0.82em !important;
 }
 .coc-mode .classified-stamp {
-  font-family: Georgia, serif !important;
-  color: #8b1e1e !important;
-  border-color: #8b1e1e !important;
+  color: #8b1a1a !important;
+  border-color: #8b1a1a !important;
 }
 
 /* ── Stamp circle ──────────────────────────────────────────────── */
@@ -2156,14 +2143,14 @@ textarea.form-input { resize: vertical; }
 .coc-stamp-circle {
   width: 220px;
   height: 220px;
-  border: 4px solid #8b1e1e;
+  border: 4px solid #8b1a1a;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   transform: rotate(-8deg);
-  color: #8b1e1e;
+  color: #8b1a1a;
   font-weight: bold;
   text-align: center;
   mix-blend-mode: multiply;
@@ -2175,7 +2162,7 @@ textarea.form-input { resize: vertical; }
   content: '';
   position: absolute;
   inset: 12px;
-  border: 2px dashed #8b1e1e;
+  border: 2px dashed #8b1a1a;
   border-radius: 50%;
   opacity: 0.6;
   pointer-events: none;
@@ -2188,8 +2175,8 @@ textarea.form-input { resize: vertical; }
   border-radius: 50%;
   background: repeating-linear-gradient(
     45deg,
-    rgba(139, 30, 30, 0.08),
-    rgba(139, 30, 30, 0.08) 2px,
+    rgba(139,26,26,.08),
+    rgba(139,26,26,.08) 2px,
     transparent 2px,
     transparent 5px
   );
@@ -2200,101 +2187,92 @@ textarea.form-input { resize: vertical; }
 .coc-stamp-text {
   position: relative;
   z-index: 1;
-  font-family: Georgia, serif;
   font-size: 1.1rem;
   letter-spacing: 2px;
   text-transform: uppercase;
   line-height: 1.5;
 }
 
-/* ── Ruled field layout ────────────────────────────────────────── */
-/* --R matches the 32px ruled-line period of the sheet background  */
-.coc-mode { --R: 32px; }
-
-/* Field: label on one line, input on the next */
+/* ── Field labels ────────────────────────────────────────────────── */
 .coc-mode .field-group {
   display: block !important;
-  margin: 0 0 calc(var(--R) / 2) !important;
+  margin: 0 0 10px !important;
   padding: 0 !important;
 }
 
 .coc-mode .field-group > label {
   display: block !important;
   width: 100% !important;
-  height: var(--R);
-  line-height: var(--R) !important;
-  font-family: Georgia, 'Times New Roman', serif !important;
-  font-size: 0.95rem !important;
+  font-size: 8px !important;
   font-weight: 700 !important;
-  color: #2a2a2a !important;
-  text-transform: none !important;
-  letter-spacing: normal !important;
-  margin: 0 !important;
+  letter-spacing: 2px !important;
+  text-transform: uppercase !important;
+  color: #6a5428 !important;
+  margin: 0 0 2px !important;
   padding: 0 !important;
   white-space: nowrap;
   overflow: hidden;
 }
 
-/* Section sub-headings */
+/* Section sub-headings (inline-style selectors) */
 .coc-mode [style*="letter-spacing:.05em"],
 .coc-mode [style*="letter-spacing: .05em"],
 .coc-mode [style*="margin:16px 0"] {
   display: block !important;
-  height: var(--R) !important;
-  line-height: var(--R) !important;
-  margin: 0 0 var(--R) !important;
-  font-family: Georgia, serif !important;
-  font-size: 0.78rem !important;
+  margin: 0 0 6px !important;
+  font-size: 9px !important;
   font-weight: 700 !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.14em !important;
-  color: #666 !important;
+  letter-spacing: 3px !important;
+  color: #4a3a18 !important;
+  background: #c8b882 !important;
+  border-left: 3px solid #8a7240 !important;
+  padding: 2px 8px !important;
 }
 
-/* ── Inputs & selects: sit on the ruled line, no border ─────────── */
+/* ── Inputs & selects ──────────────────────────────────────────── */
 .coc-mode input,
 .coc-mode select {
   display: block !important;
   width: 100% !important;
-  height: var(--R) !important;
-  line-height: var(--R) !important;
   margin: 0 !important;
-  padding: 0 !important;
-  border: 0 !important;
+  padding: 1px 0 !important;
+  border: none !important;
+  border-bottom: 1px solid #8a7240 !important;
   outline: none !important;
   background: transparent !important;
-  color: #2a2a2a !important;
-  font-family: Georgia, 'Times New Roman', serif !important;
-  font-size: 1.05rem !important;
+  color: #2a1a08 !important;
+  font-family: 'Courier Prime', 'Courier New', monospace !important;
+  font-size: 12px !important;
   box-shadow: none !important;
   border-radius: 0 !important;
   flex: unset !important;
   -webkit-appearance: none;
 }
+.coc-mode input:focus,
+.coc-mode select:focus { background: rgba(180,160,100,.2) !important; border-bottom-color: #4a3a18 !important; }
 
 .coc-mode textarea {
   display: block !important;
   width: 100% !important;
-  min-height: calc(var(--R) * 4) !important;
-  line-height: var(--R) !important;
+  min-height: 55px !important;
   margin: 0 !important;
-  padding: 0 !important;
-  border: 0 !important;
+  padding: 5px !important;
+  border: 1px solid #b0a070 !important;
   outline: none !important;
-  background: transparent !important;
-  color: #2a2a2a !important;
-  font-family: Georgia, 'Times New Roman', serif !important;
-  font-size: 1.05rem !important;
+  background: rgba(180,160,100,.1) !important;
+  color: #2a1a08 !important;
+  font-family: 'Courier Prime', 'Courier New', monospace !important;
+  font-size: 10px !important;
+  line-height: 1.6 !important;
   box-shadow: none !important;
   border-radius: 0 !important;
   resize: vertical;
 }
 
 .coc-mode input::placeholder,
-.coc-mode textarea::placeholder { color: #7a7a7a !important; }
-.coc-mode input:focus,
-.coc-mode textarea:focus,
-.coc-mode select:focus { outline: none !important; box-shadow: none !important; }
+.coc-mode textarea::placeholder { color: #a89a6a !important; font-style: italic; }
+.coc-mode textarea:focus { border-color: #4a3a18 !important; }
 
 /* Remove number spinners */
 .coc-mode input[type="number"] { -moz-appearance: textfield; }
@@ -2308,31 +2286,33 @@ textarea.form-input { resize: vertical; }
 /* ── Skill rows ──────────────────────────────────────────────────── */
 .coc-mode .coc-view-row,
 .coc-mode .coc-skill-row {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.13) !important;
-  font-family: Georgia, serif !important;
-  color: #2a2a2a !important;
+  border-bottom: 1px dotted #c0b080 !important;
+  color: #2a1a08 !important;
 }
 .coc-mode .coc-view-hard,
 .coc-mode .coc-view-extreme,
 .coc-mode .coc-view-base,
-.coc-mode .coc-skill-base { color: #666 !important; }
+.coc-mode .coc-skill-base { color: #6a5428 !important; }
 .coc-mode .coc-raised .coc-view-val {
-  color: #2a2a2a !important;
+  color: #2a1a08 !important;
   font-weight: 700;
   text-decoration: underline;
-  text-decoration-color: #8b1e1e;
+  text-decoration-color: #8b1a1a;
   text-underline-offset: 3px;
 }
 
 /* ── Section card headers ────────────────────────────────────────── */
 .coc-mode .acht-card-header {
-  font-family: Georgia, serif !important;
-  font-size: 0.78rem !important;
+  font-size: 9px !important;
   font-weight: 700 !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.14em !important;
-  color: #666 !important;
-  border-bottom: 1px solid rgba(0,0,0,0.15) !important;
+  letter-spacing: 3px !important;
+  color: #4a3a18 !important;
+  background: #c8b882 !important;
+  border-left: 3px solid #8a7240 !important;
+  border-bottom: none !important;
+  padding: 2px 8px !important;
+  margin-bottom: 7px !important;
 }
 
 /* ── Checkboxes ──────────────────────────────────────────────────── */
@@ -2343,51 +2323,46 @@ textarea.form-input { resize: vertical; }
   min-height: unset !important;
   height: auto !important;
   gap: 6px;
-  font-family: Georgia, serif !important;
   font-size: 0.9rem !important;
-  color: #2a2a2a !important;
+  color: #2a1a08 !important;
 }
 
 /* ── Page nav tabs ───────────────────────────────────────────────── */
 .coc-mode .doc-tab {
-  background: #e0dbd1 !important;
-  border-color: #cfc7b7 !important;
-  color: #666 !important;
-  font-family: Georgia, serif !important;
-  font-size: 0.78em !important;
-  letter-spacing: 0.08em !important;
+  background: #c8b882 !important;
+  border-color: #8a7240 !important;
+  color: #4a3a18 !important;
+  font-size: 0.72em !important;
+  letter-spacing: 0.12em !important;
 }
-.coc-mode .doc-tab::after { background: #f4efe4 !important; }
+.coc-mode .doc-tab::after { background: #e8dfc0 !important; }
 .coc-mode .doc-tab.active {
-  background: #f4efe4 !important;
-  border-color: #8b1e1e !important;
-  color: #8b1e1e !important;
+  background: #e8dfc0 !important;
+  border-color: #8a7240 !important;
+  color: #2a1a08 !important;
 }
-.coc-mode .doc-tab.active::after { background: #f4efe4 !important; }
+.coc-mode .doc-tab.active::after { background: #e8dfc0 !important; }
 .coc-mode .doc-nav-btn {
   background: transparent !important;
-  border-color: rgba(0,0,0,0.18) !important;
-  color: #666 !important;
+  border-color: #8a7240 !important;
+  color: #6a5428 !important;
   box-shadow: none !important;
 }
 .coc-mode .doc-nav-btn:hover:not(:disabled) {
-  border-color: #8b1e1e !important;
-  color: #8b1e1e !important;
+  border-color: #4a3a18 !important;
+  color: #2a1a08 !important;
 }
 
 /* ── Tooltips ────────────────────────────────────────────────────── */
 .coc-mode .field-help::after {
-  background: #2a2a2a !important;
-  color: #f4efe4 !important;
+  background: #2a1a08 !important;
+  color: #e8dfc0 !important;
 }
 
 /* ── Save indicator ──────────────────────────────────────────────── */
-.coc-mode .sheet-save-indicator {
-  font-family: Georgia, serif !important;
-}
-.coc-mode .sheet-save-indicator.saving { color: #666 !important; }
+.coc-mode .sheet-save-indicator.saving { color: #6a5428 !important; }
 .coc-mode .sheet-save-indicator.saved  { color: #3a6b1e !important; }
-.coc-mode .sheet-save-indicator.error  { color: #8b1e1e !important; }
+.coc-mode .sheet-save-indicator.error  { color: #8b1a1a !important; }
 
 /* ── Mythos glow ─────────────────────────────────────────────────── */
 .mythos-glow { animation: mythos-pulse 3.5s ease-in-out infinite; }

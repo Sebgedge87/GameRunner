@@ -41,7 +41,7 @@
       </div>
 
       <!-- Create new campaign -->
-      <div class="camp-lobby-card camp-lobby-card-create" @click="showCreateModal = true">
+      <div class="camp-lobby-card camp-lobby-card-create" @click="router.push('/campaigns/new')">
         <div class="camp-lobby-create-icon">+</div>
         <div class="camp-lobby-create-label">Create a Campaign</div>
       </div>
