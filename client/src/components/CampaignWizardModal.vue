@@ -35,6 +35,124 @@ const entityForm   = reactive({
   type: 'NPC', name: '', role: '', location: '', description: '', notes: '',
 })
 
+/* ── Paste parser ──────────────────────────────────────── */
+const pasteRaw      = ref('')
+const parseWarnings = ref([])  // field names that were inferred, not explicit
+
+// Field name aliases → canonical field
+const FIELD_ALIASES = {
+  name:        ['name', 'title', 'character', 'character_name', 'entity'],
+  role:        ['role', 'type', 'class', 'occupation', 'job', 'rank', 'position', 'archetype'],
+  location:    ['location', 'home', 'hometown', 'place', 'region', 'base', 'area', 'origin'],
+  description: ['description', 'summary', 'overview', 'appearance', 'bio', 'profile', 'about', 'desc'],
+  notes:       ['notes', 'gm_notes', 'background', 'backstory', 'history', 'secrets', 'details', 'info'],
+}
+
+function aliasToField(key) {
+  const k = key.toLowerCase().trim().replace(/[\s_-]+/g, '_')
+  for (const [field, aliases] of Object.entries(FIELD_ALIASES)) {
+    if (aliases.includes(k)) return field
+  }
+  return null
+}
+
+function parseEntityText(raw) {
+  const result   = { name: '', role: '', location: '', description: '', notes: '' }
+  const warnings = []
+
+  // ── Try JSON ────────────────────────────────────────────
+  const trimmed = raw.trim()
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    try {
+      const obj = JSON.parse(trimmed.startsWith('[') ? trimmed[0] : trimmed)
+      const src = Array.isArray(obj) ? obj[0] : obj
+      for (const [key, val] of Object.entries(src)) {
+        if (typeof val !== 'string' && typeof val !== 'number') continue
+        const field = aliasToField(key)
+        if (field && !result[field]) result[field] = String(val)
+      }
+      // Flag fields that were filled from a non-obvious alias
+      for (const [key, val] of Object.entries(src)) {
+        if (typeof val !== 'string' && typeof val !== 'number') continue
+        const field = aliasToField(key)
+        if (field && !FIELD_ALIASES[field][0].includes(key.toLowerCase())) {
+          warnings.push(field)
+        }
+      }
+      return { result, warnings, format: 'json' }
+    } catch { /* fall through to markdown */ }
+  }
+
+  // ── Markdown / plain text ───────────────────────────────
+  const lines = raw.split('\n')
+  const notesLines = []
+  let inNotesBlock = false
+  let descLines    = []
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    const stripped = line.trim()
+    if (!stripped) continue
+
+    // # H1 → name (inferred)
+    if (/^#\s+/.test(stripped) && !result.name) {
+      result.name = stripped.replace(/^#+\s+/, '')
+      warnings.push('name')
+      continue
+    }
+
+    // ## Notes / ## Background etc. → start notes block
+    if (/^##\s+(notes?|background|backstory|secrets?|gm.?notes?|details?)/i.test(stripped)) {
+      inNotesBlock = true; continue
+    }
+    // Any other ## heading ends notes block back to desc
+    if (/^##\s+/.test(stripped)) {
+      inNotesBlock = false; continue
+    }
+
+    if (inNotesBlock) { notesLines.push(stripped); continue }
+
+    // **Key:** Value  or  *Key:* Value  or  Key: Value (at line start)
+    const kvMatch =
+      stripped.match(/^\*{1,2}([^*:]+)\*{0,2}:\*{0,2}\s+(.+)$/) ||
+      stripped.match(/^([A-Za-z][A-Za-z _/-]{1,24}):\s+(.+)$/)
+
+    if (kvMatch) {
+      const field = aliasToField(kvMatch[1])
+      const val   = kvMatch[2].replace(/\*\*/g, '').trim()
+      if (field && !result[field]) {
+        result[field] = val
+        // flag if alias was indirect
+        if (!FIELD_ALIASES[field][0].includes(kvMatch[1].toLowerCase().trim())) {
+          warnings.push(field)
+        }
+      }
+      continue
+    }
+
+    // Plain paragraph → candidate for description
+    if (stripped.length > 10) descLines.push(stripped)
+  }
+
+  if (!result.notes && notesLines.length) result.notes = notesLines.join('\n')
+  if (!result.description && descLines.length) {
+    result.description = descLines[0]
+    if (!result.name && descLines.length > 1) {
+      warnings.push('description')
+    }
+  }
+
+  return { result, warnings: [...new Set(warnings)], format: 'markdown' }
+}
+
+function runPaste() {
+  if (!pasteRaw.value.trim()) return
+  const { result, warnings } = parseEntityText(pasteRaw.value)
+  Object.assign(entityForm, result)
+  parseWarnings.value = warnings
+  importTab.value = 0  // switch to guided to review
+}
+
 /* ─────────────────────────────────────────────────────────
    System preview data
    ───────────────────────────────────────────────────────── */
@@ -394,6 +512,19 @@ function skipEntity() {
 
           <!-- Guided -->
           <div v-if="importTab === 0">
+            <!-- Parse warnings banner -->
+            <div v-if="parseWarnings.length" class="wiz-parse-notice">
+              <svg viewBox="0 0 16 16" width="13" height="13" fill="none" style="flex-shrink:0">
+                <path d="M8 2L14 13H2L8 2Z" stroke="#EF9F27" stroke-width="1.4" stroke-linejoin="round"/>
+                <line x1="8" y1="7" x2="8" y2="10" stroke="#EF9F27" stroke-width="1.4" stroke-linecap="round"/>
+                <circle cx="8" cy="12" r=".6" fill="#EF9F27"/>
+              </svg>
+              <span>
+                Fields marked <span class="wiz-inferred-badge">inferred</span> were guessed from your text — please confirm they're correct.
+              </span>
+              <button class="wiz-reparse-btn" @click="importTab = 1; parseWarnings = []">Re-paste</button>
+            </div>
+
             <div class="wiz-field-row">
               <div class="wiz-field">
                 <label>Entity type</label>
@@ -402,42 +533,79 @@ function skipEntity() {
                 </select>
               </div>
               <div class="wiz-field">
-                <label>Name <span class="wiz-req">*</span></label>
-                <input v-model="entityForm.name" type="text" placeholder="e.g. Ezekiel Marsh…" />
+                <label>
+                  Name <span class="wiz-req">*</span>
+                  <span v-if="parseWarnings.includes('name')" class="wiz-inferred-badge">inferred</span>
+                </label>
+                <input v-model="entityForm.name" type="text" placeholder="e.g. Ezekiel Marsh…"
+                  :class="{ 'wiz-inferred': parseWarnings.includes('name') }" />
               </div>
             </div>
             <div v-if="entityForm.type === 'NPC'" class="wiz-field-row">
               <div class="wiz-field">
-                <label>Role</label>
-                <select v-model="entityForm.role">
-                  <option value="">— select —</option>
-                  <option v-for="r in preview.npc_roles" :key="r">{{ r }}</option>
-                </select>
+                <label>
+                  Role
+                  <span v-if="parseWarnings.includes('role')" class="wiz-inferred-badge">inferred</span>
+                </label>
+                <input v-model="entityForm.role" type="text" placeholder="e.g. Cultist…"
+                  :class="{ 'wiz-inferred': parseWarnings.includes('role') }" />
               </div>
               <div class="wiz-field">
-                <label>Location</label>
-                <input v-model="entityForm.location" type="text" placeholder="e.g. Innsmouth, MA…" />
+                <label>
+                  Location
+                  <span v-if="parseWarnings.includes('location')" class="wiz-inferred-badge">inferred</span>
+                </label>
+                <input v-model="entityForm.location" type="text" placeholder="e.g. Innsmouth, MA…"
+                  :class="{ 'wiz-inferred': parseWarnings.includes('location') }" />
               </div>
             </div>
             <div class="wiz-field-row wiz-full">
               <div class="wiz-field">
-                <label>Description</label>
-                <input v-model="entityForm.description" type="text" placeholder="One-line summary…" />
+                <label>
+                  Description
+                  <span v-if="parseWarnings.includes('description')" class="wiz-inferred-badge">inferred</span>
+                </label>
+                <input v-model="entityForm.description" type="text" placeholder="One-line summary…"
+                  :class="{ 'wiz-inferred': parseWarnings.includes('description') }" />
               </div>
             </div>
             <div class="wiz-field-row wiz-full">
               <div class="wiz-field">
-                <label>GM Notes</label>
-                <textarea v-model="entityForm.notes" placeholder="Background, secrets, connections…" />
+                <label>
+                  GM Notes
+                  <span v-if="parseWarnings.includes('notes')" class="wiz-inferred-badge">inferred</span>
+                </label>
+                <textarea v-model="entityForm.notes" placeholder="Background, secrets, connections…"
+                  :class="{ 'wiz-inferred': parseWarnings.includes('notes') }" />
               </div>
             </div>
           </div>
 
           <!-- Paste -->
           <div v-if="importTab === 1">
-            <div class="wiz-warning">
-              <div class="wiz-warning-dot" />
-              <span>Paste import is coming soon — use the guided wizard for now.</span>
+            <div class="wiz-field-row" style="margin-bottom:10px">
+              <div class="wiz-field">
+                <label>Entity type</label>
+                <select v-model="entityForm.type">
+                  <option v-for="t in ENTITY_TYPES" :key="t">{{ t }}</option>
+                </select>
+              </div>
+            </div>
+            <div class="wiz-field" style="margin-bottom:10px">
+              <label>Paste JSON or Markdown</label>
+              <textarea
+                v-model="pasteRaw"
+                class="wiz-paste-area"
+                placeholder="# Ezekiel Marsh&#10;**Role:** Cultist&#10;**Location:** Innsmouth, MA&#10;**Description:** Old fisherman with unsettling eyes&#10;&#10;## Notes&#10;Knows about the Deep Ones. Avoid contact after dark."
+              />
+            </div>
+            <div class="wiz-paste-hint">
+              Supports JSON objects and Markdown with <code>**Field:** value</code> or <code>## Notes</code> sections.
+            </div>
+            <div style="display:flex;justify-content:flex-end;margin-top:10px">
+              <button class="wiz-parse-btn-main" :disabled="!pasteRaw.trim()" @click="runPaste">
+                Parse and prefill fields →
+              </button>
             </div>
           </div>
 
@@ -765,6 +933,101 @@ function skipEntity() {
   background: rgba(255,255,255,.06); color: rgba(255,255,255,.4);
   border: 0.5px solid rgba(255,255,255,.1);
 }
+
+/* ── Paste tab ────────────────────────────────────────── */
+.wiz-paste-area {
+  background: rgba(255,255,255,.04);
+  border: 0.5px solid rgba(255,255,255,.12);
+  border-radius: 8px;
+  color: rgba(255,255,255,.8);
+  font-size: 12px;
+  font-family: 'Courier New', monospace;
+  padding: 10px 12px;
+  outline: none;
+  width: 100%;
+  min-height: 140px;
+  resize: vertical;
+  line-height: 1.6;
+  transition: border-color .15s;
+}
+.wiz-paste-area:focus { border-color: rgba(168,192,128,.5); }
+.wiz-paste-area::placeholder { color: rgba(255,255,255,.18); }
+
+.wiz-paste-hint {
+  font-size: 11px;
+  color: rgba(255,255,255,.28);
+  margin-top: 5px;
+}
+.wiz-paste-hint code {
+  font-family: 'Courier New', monospace;
+  background: rgba(255,255,255,.07);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 10px;
+}
+
+.wiz-parse-btn-main {
+  padding: 7px 16px;
+  font-size: 12px; font-weight: 500;
+  border: 0.5px solid rgba(168,192,128,.5);
+  border-radius: 8px;
+  background: rgba(168,192,128,.1);
+  color: var(--accent, #a8c080);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s;
+}
+.wiz-parse-btn-main:hover:not(:disabled) { background: rgba(168,192,128,.18); }
+.wiz-parse-btn-main:disabled { opacity: .35; cursor: default; }
+
+/* ── Parse warnings on guided form ───────────────────── */
+.wiz-parse-notice {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: rgba(186,117,23,.1);
+  border: 0.5px solid rgba(186,117,23,.28);
+  margin-bottom: 12px;
+  font-size: 11px;
+  color: rgba(255,255,255,.55);
+  flex-wrap: wrap;
+}
+
+.wiz-inferred-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  background: rgba(186,117,23,.25);
+  color: #EF9F27;
+  border-radius: 3px;
+  padding: 1px 5px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.wiz-inferred {
+  border-color: rgba(186,117,23,.45) !important;
+  background: rgba(186,117,23,.06) !important;
+}
+.wiz-inferred:focus { border-color: rgba(239,159,39,.7) !important; }
+
+.wiz-reparse-btn {
+  margin-left: auto;
+  font-size: 11px;
+  background: transparent;
+  border: 0.5px solid rgba(255,255,255,.15);
+  border-radius: 5px;
+  color: rgba(255,255,255,.4);
+  padding: 2px 8px;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.wiz-reparse-btn:hover { color: rgba(255,255,255,.7); }
 
 /* ── Responsive ───────────────────────────────────────── */
 @media (max-width: 600px) {
