@@ -24,7 +24,7 @@
           <!-- Invite code for active GM campaign -->
           <div v-if="campaign.activeCampaign && campaign.isGm && campaign.activeCampaign.invite_code"
                style="border-top:1px solid var(--border);margin-top:4px;padding:8px 12px;display:flex;align-items:center;gap:8px">
-            <span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace">INVITE</span>
+            <span style="font-size:10px;color:var(--text3);font-family:var(--font-sans)">Invite code</span>
             <span style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.1em;color:var(--accent);font-weight:700">{{ campaign.activeCampaign.invite_code }}</span>
             <button class="btn btn-sm" style="margin-left:auto;padding:2px 8px;font-size:10px" @click.stop="copyCode">Copy</button>
           </div>

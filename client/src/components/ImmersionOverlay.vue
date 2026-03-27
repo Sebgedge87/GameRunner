@@ -358,7 +358,6 @@ onUnmounted(stopEffects)
   font-size: 7px;
   letter-spacing: 0.18em;
   color: rgba(0, 210, 255, 0.5);
-  text-transform: uppercase;
 }
 .hud-label-sm { font-size: 6px; opacity: 0.6; }
 .hud-value {
@@ -423,7 +422,7 @@ onUnmounted(stopEffects)
   font-size: 7px;
   letter-spacing: 0.1em;
   color: rgba(226, 185, 100, 0.45);
-  text-transform: uppercase;
+  text-transform: none;
   writing-mode: vertical-rl;
   text-orientation: mixed;
 }
@@ -511,7 +510,6 @@ onUnmounted(stopEffects)
   color: rgba(180, 30, 30, 0.65);
   border: 1px solid rgba(180, 30, 30, 0.4);
   padding: 1px 3px;
-  text-transform: uppercase;
   transform: rotate(-12deg);
   margin-top: 4px;
 }

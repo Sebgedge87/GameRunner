@@ -57,7 +57,7 @@
 
     <!-- Agenda card (player only) -->
     <div v-if="data.agenda && !campaign.isGm" class="agenda-card">
-      <div class="agenda-card-title">SECRET OBJECTIVE</div>
+      <div class="agenda-card-title">Secret objective</div>
       <div v-if="!data.agenda.revealed" class="agenda-locked">🔒 Sealed — awaiting revelation</div>
       <div v-else class="agenda-body">{{ data.agenda.body || data.agenda.title }}</div>
     </div>
@@ -77,7 +77,7 @@
         <div class="stress-bar-label">
           <span>Sanity</span>
           <span>{{ data.stress.sanity }}/{{ data.stress.sanity_max }}
-            <span v-if="data.stress.indefinite_insanity" class="sanity-critical">INDEFINITE</span>
+            <span v-if="data.stress.indefinite_insanity" class="sanity-critical">Indefinite</span>
           </span>
         </div>
         <div class="stress-track">

@@ -9,7 +9,7 @@
     <div class="card" style="margin-bottom:16px">
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         <div style="flex:1;min-width:180px">
-          <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:6px">ENCOUNTER</div>
+          <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:var(--font-sans);margin-bottom:6px">Encounter</div>
           <input v-model="encounterName" class="form-input" placeholder="Encounter name…" style="width:100%" />
         </div>
         <div style="display:flex;gap:8px;align-items:flex-end;padding-top:20px">
@@ -27,7 +27,7 @@
 
     <!-- Add Combatant -->
     <div class="card" style="margin-bottom:16px">
-      <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:10px">ADD COMBATANT</div>
+      <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:var(--font-sans);margin-bottom:10px">Add combatant</div>
       <div style="display:grid;grid-template-columns:1fr 80px 80px 80px auto;gap:8px;align-items:end">
         <div class="field-group" style="margin:0">
           <label>Name</label>
@@ -58,7 +58,7 @@
 
       <!-- Import from Bestiary -->
       <div v-if="data.bestiary.length" style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
-        <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:8px">IMPORT FROM BESTIARY</div>
+        <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:var(--font-sans);margin-bottom:8px">Import from bestiary</div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <select v-model="selectedCreature" class="form-input" style="max-width:220px">
             <option value="">— Select creature —</option>
@@ -76,7 +76,7 @@
     </div>
 
     <div v-else>
-      <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:10px">INITIATIVE ORDER</div>
+      <div style="font-size:0.7em;letter-spacing:1px;color:var(--text3);font-family:var(--font-sans);margin-bottom:10px">Initiative order</div>
       <div
         v-for="(c, idx) in sorted"
         :key="c.id"

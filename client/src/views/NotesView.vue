@@ -26,7 +26,7 @@
           <div v-for="n in filteredNotes" :key="n.id" class="note-card" style="cursor:pointer" @click="selectNote(n)">
             <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
               <div class="note-card-title" style="flex:1">{{ n.title }}</div>
-              <span v-if="selectedNote?.id === n.id" style="font-size:10px;color:var(--accent);font-family:'JetBrains Mono',monospace">editing</span>
+              <span v-if="selectedNote?.id === n.id" style="font-size:10px;color:var(--accent);font-family:var(--font-sans)">editing</span>
             </div>
             <div class="card-meta" style="margin:3px 0 6px">
               <span :class="`tag tag-${n.privacy === 'public' ? 'active' : 'inactive'}`">{{ n.privacy }}</span>
@@ -36,7 +36,7 @@
             <div class="note-card-body">{{ stripMd(n.body, 120) }}</div>
             <div class="note-card-footer">
               <span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace">{{ fmt(n.updated_at) }}</span>
-              <button class="delete-btn" @click.stop="deleteNote(n.id)">DELETE</button>
+              <button class="delete-btn" @click.stop="deleteNote(n.id)">Delete</button>
             </div>
           </div>
         </div>

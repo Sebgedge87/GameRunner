@@ -112,9 +112,9 @@
         <div class="form-group"><label>Playlist URL (Spotify / YouTube)</label><input v-model="cc.playlist_url" class="form-input" /></div>
         <div v-if="createError" class="status-msg status-err">{{ createError }}</div>
         <div class="modal-actions">
-          <button class="modal-close" @click="showCreateModal = false">CANCEL</button>
+          <button class="modal-close" @click="showCreateModal = false">Cancel</button>
           <button class="submit-btn" @click="saveCampaign" :disabled="creating">
-            {{ creating ? 'CREATING…' : 'CREATE' }}
+            {{ creating ? 'Creating…' : 'Create' }}
           </button>
         </div>
       </div>

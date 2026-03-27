@@ -19,8 +19,8 @@
           </div>
         </div>
         <div class="modal-actions">
-          <button class="modal-close" @click="transferItem = null">CANCEL</button>
-          <button class="submit-btn" :disabled="!transferTargetId || transferring" @click="doTransfer">{{ transferring ? 'GIVING…' : 'GIVE' }}</button>
+          <button class="modal-close" @click="transferItem = null">Cancel</button>
+          <button class="submit-btn" :disabled="!transferTargetId || transferring" @click="doTransfer">{{ transferring ? 'Giving…' : 'Give' }}</button>
         </div>
       </div>
     </div>

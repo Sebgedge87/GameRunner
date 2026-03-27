@@ -214,7 +214,7 @@ async function deleteItem() {
   font-size: 13px;
   color: var(--text);
   letter-spacing: 0.05em;
-  text-transform: uppercase;
+  text-transform: none;
   flex: 1;
   line-height: 1.3;
 }
@@ -238,7 +238,6 @@ async function deleteItem() {
 .qc-conn-label {
   font-size: 10px;
   font-family: 'JetBrains Mono', monospace;
-  text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text3);
   white-space: nowrap;
@@ -256,7 +255,7 @@ async function deleteItem() {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 7px;
   font-size: 11px; font-family: 'JetBrains Mono', monospace;
-  text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3);
+  letter-spacing: 0.06em; color: var(--text3);
 }
 .qc-add-reward {
   background: none; border: 1px dashed var(--border2); color: var(--text3);

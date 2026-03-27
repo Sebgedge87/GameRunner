@@ -13,7 +13,7 @@
       </div>
       <div class="modal-body">{{ msg.body }}</div>
       <div class="modal-actions">
-        <button class="modal-close" @click="close">CLOSE</button>
+        <button class="modal-close" @click="close">Close</button>
         <button v-if="msg.requires_ack && !msg.acked_at" class="btn btn-primary btn-sm" @click="ack">Acknowledge</button>
         <button class="btn btn-sm" @click="reply">Reply</button>
         <button v-if="canDelete" class="btn btn-sm btn-danger" @click="del">Delete</button>

@@ -10,7 +10,7 @@
       <div v-else-if="handout.body" class="modal-body prose" v-html="renderMd(handout.body)"></div>
       <div v-else class="modal-body" style="color:var(--text3);font-style:italic">No content.</div>
       <div class="modal-actions">
-        <button class="modal-close" @click="close">CLOSE</button>
+        <button class="modal-close" @click="close">Close</button>
         <button v-if="handout.file_path" class="btn btn-sm" @click="downloadFile">
           Download
         </button>

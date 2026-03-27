@@ -51,7 +51,7 @@
       <!-- Step 2: Ready -->
       <div v-else>
         <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:14px 16px;margin-bottom:16px">
-          <div style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:4px">CAMPAIGN</div>
+          <div style="font-size:12px;color:var(--text3);font-family:var(--font-sans);margin-bottom:4px">Campaign</div>
           <div style="font-size:16px;color:var(--accent);font-family:var(--font-header,'Cinzel',serif)">{{ campName }}</div>
         </div>
         <p style="color:var(--text2);font-size:13px;line-height:1.7;margin-bottom:14px">
@@ -225,7 +225,6 @@ function back() {
   font-family: 'JetBrains Mono', monospace;
   color: var(--text3);
   letter-spacing: 0.05em;
-  text-transform: uppercase;
   transition: color 0.2s;
 }
 .wizard-step-label.active { color: var(--accent); }

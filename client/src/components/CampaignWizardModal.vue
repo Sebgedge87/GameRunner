@@ -760,7 +760,7 @@ function skipEntity() {
 .wiz-full { grid-template-columns: 1fr; }
 
 .wiz-field { display: flex; flex-direction: column; gap: 4px; }
-.wiz-field label { font-size: 11px; letter-spacing: .5px; text-transform: uppercase; color: var(--color-text-hint); }
+.wiz-field label { font-size: 11px; letter-spacing: .5px; color: var(--color-text-hint); }
 .wiz-field input,
 .wiz-field select,
 .wiz-field textarea {
@@ -823,7 +823,6 @@ function skipEntity() {
 .wiz-preview-title {
   font-size: 10px;
   letter-spacing: 1.5px;
-  text-transform: uppercase;
   color: var(--color-text-hint);
   margin-bottom: 10px;
 }
@@ -838,7 +837,6 @@ function skipEntity() {
   font-size: 10px; letter-spacing: .5px;
   color: var(--color-text-hint);
   margin-bottom: 3px;
-  text-transform: uppercase;
 }
 .wiz-preview-val { font-size: 12px; color: var(--color-text-primary); line-height: 1.6; }
 
@@ -998,9 +996,8 @@ function skipEntity() {
 .wiz-inferred-badge {
   display: inline-block;
   font-size: 9px;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: .4px;
-  text-transform: uppercase;
   background: var(--gold-dim);
   color: var(--gold2);
   border-radius: 3px;

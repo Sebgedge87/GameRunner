@@ -167,7 +167,7 @@ watch(() => timer.value.end, () => { localHide.value = false })
 }
 .timer-label {
   font-size: 10px;
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: .12em;
   color: var(--text3, #888);
   margin-bottom: 2px;

@@ -5,7 +5,7 @@
       <svg ref="svgEl" id="theory-svg"></svg>
       <div class="theory-panel">
         <div class="theory-panel-box">
-          <div class="theory-panel-title">ADD NODE</div>
+          <div class="theory-panel-title">Add node</div>
           <div class="field-group"><label>Label</label><input v-model="form.label" type="text" /></div>
           <div class="field-group"><label>Type</label>
             <select v-model="form.type">
@@ -17,13 +17,13 @@
             </select>
           </div>
           <div class="field-group"><label>Notes</label><textarea v-model="form.notes" style="min-height:55px"></textarea></div>
-          <button class="submit-btn" @click="addNode">ADD</button>
+          <button class="submit-btn" @click="addNode">Add</button>
           <div v-if="addStatus" :class="['status-msg', addOk ? 'status-ok' : 'status-err']">{{ addStatus }}</div>
         </div>
 
         <!-- Edit box -->
         <div v-if="selectedNode" class="theory-panel-box">
-          <div class="theory-panel-title">EDIT NODE</div>
+          <div class="theory-panel-title">Edit node</div>
           <div class="field-group"><label>Label</label><input v-model="editForm.label" type="text" /></div>
           <div class="field-group"><label>Notes</label><textarea v-model="editForm.notes" style="min-height:55px"></textarea></div>
           <div class="field-group" style="display:flex;align-items:center;gap:8px">
