@@ -8,6 +8,7 @@ const C = true // requiresCampaign shorthand
 const routes = [
   { path: '/', redirect: '/home' },
   { path: '/home', component: () => import('@/views/HomeView.vue'), meta: { auth: true } },
+  { path: '/campaigns/new', component: () => import('@/views/CampaignWizardView.vue'), meta: { auth: true } },
   { path: '/dashboard', component: () => import('@/views/DashboardView.vue'), meta: { auth: true, requiresCampaign: C } },
   { path: '/quests', component: () => import('@/views/QuestsView.vue'), meta: { auth: true, requiresCampaign: C } },
   { path: '/jobs', component: () => import('@/views/JobsView.vue'), meta: { auth: true, requiresCampaign: C } },
