@@ -1,11 +1,19 @@
 <template>
   <div class="page-content">
     <div class="page-header">
-      <div class="page-title">Locations</div>
-      <div v-if="campaign.isGm && campaign.currentPartyLocationId" class="page-sub">
-        📍 Party at: <strong>{{ partyLocationName }}</strong>
-        <button class="btn btn-xs" style="margin-left:8px" @click="campaign.setPartyLocation(null)">Clear</button>
+      <div>
+        <div class="page-title">Locations</div>
+        <div v-if="campaign.isGm && campaign.currentPartyLocationId" class="page-sub">
+          📍 Party at: <strong>{{ partyLocationName }}</strong>
+          <button class="btn btn-xs" style="margin-left:8px" @click="campaign.setPartyLocation(null)">Clear</button>
+        </div>
       </div>
+      <!-- Add button only shown on Locations tab, not Notice Board -->
+      <button
+        v-if="campaign.isGm && mainTab === 'locations'"
+        class="btn-add"
+        @click="ui.openGmEdit('location', null, {})"
+      >+ Add location</button>
     </div>
 
     <!-- Top-level tabs: Locations vs Notice Board -->
@@ -22,6 +30,8 @@
       <div class="filter-tabs">
         <button v-for="tab in tabs" :key="tab.value" class="filter-tab" :class="{ active: activeTab === tab.value }" @click="activeTab = tab.value">{{ tab.label }}</button>
       </div>
+
+      <!-- Skeleton -->
       <div v-if="data.loading && !data.locations.length" class="card-grid">
         <div v-for="n in 6" :key="n" class="skeleton-card">
           <div class="skeleton-line skeleton-img"></div>
@@ -29,41 +39,48 @@
           <div class="skeleton-line skeleton-body"></div>
         </div>
       </div>
-      <div v-else class="card-grid">
-        <div v-if="campaign.isGm" class="add-tile" @click="ui.openGmEdit('location', null, {})">
-          <div class="add-tile-icon">+</div><div class="add-tile-label">Add Location</div>
+
+      <!-- Empty state -->
+      <EmptyState
+        v-else-if="!data.locations.length"
+        icon="📍"
+        heading="No locations yet"
+        description="Map the world — taverns, dungeons, cities and beyond."
+        :cta-label="campaign.isGm ? '+ Add location' : null"
+        :on-cta="campaign.isGm ? () => ui.openGmEdit('location', null, {}) : null"
+      />
+
+      <!-- Card grid -->
+      <template v-else>
+        <div class="card-grid">
+          <EntityCard
+            v-for="loc in filteredLocations" :key="loc.id"
+            :entity="loc" type="location" :title="loc.title || loc.name" icon="📍"
+            :image="loc.image_url || loc.image || null"
+            :expanded="expandedId === loc.id" :reload-fn="data.loadLocations"
+            @toggle="toggleExpand(loc.id)"
+          >
+            <template #badges>
+              <span v-if="loc.location_type" class="tag">{{ loc.location_type }}</span>
+              <span v-if="loc.danger_level > 0" class="tag tag-inactive">⚠️ Danger {{ loc.danger_level }}</span>
+              <span v-if="campaign.currentPartyLocationId === String(loc.id)" class="tag tag-active">📍 Party here</span>
+            </template>
+            <template #body>
+              <div v-if="loc.description" class="card-overview">{{ stripMd(loc.description) }}</div>
+              <div v-if="loc.parent_location_id" class="card-meta">↳ Sub-location</div>
+            </template>
+            <template #actions>
+              <button v-if="campaign.isGm" class="btn btn-xs"
+                :class="campaign.currentPartyLocationId === String(loc.id) ? 'btn-active' : ''"
+                @click.stop="campaign.setPartyLocation(campaign.currentPartyLocationId === String(loc.id) ? null : loc.id)">
+                {{ campaign.currentPartyLocationId === String(loc.id) ? 'Party here ✓' : 'Set as party location' }}
+              </button>
+              <button class="btn btn-xs" @click.stop="openNoticeBoard(loc)">📋 Notice Board</button>
+            </template>
+          </EntityCard>
         </div>
-        <EntityCard
-          v-for="loc in filteredLocations" :key="loc.id"
-          :entity="loc" type="location" :title="loc.title || loc.name" icon="📍"
-          :image="loc.image_url || loc.image || null"
-          :expanded="expandedId === loc.id" :reload-fn="data.loadLocations"
-          @toggle="toggleExpand(loc.id)"
-        >
-          <template #badges>
-            <span v-if="loc.location_type" class="tag">{{ loc.location_type }}</span>
-            <span v-if="loc.danger_level > 0" class="tag tag-inactive">⚠️ Danger {{ loc.danger_level }}</span>
-            <span v-if="campaign.currentPartyLocationId === String(loc.id)" class="tag tag-active">📍 Party here</span>
-          </template>
-          <template #body>
-            <div v-if="loc.description" class="card-overview">{{ stripMd(loc.description) }}</div>
-            <div v-if="loc.parent_location_id" class="card-meta">↳ Sub-location</div>
-          </template>
-          <template #actions>
-            <button v-if="campaign.isGm" class="btn btn-xs"
-              :class="campaign.currentPartyLocationId === String(loc.id) ? 'btn-active' : ''"
-              @click.stop="campaign.setPartyLocation(campaign.currentPartyLocationId === String(loc.id) ? null : loc.id)">
-              {{ campaign.currentPartyLocationId === String(loc.id) ? 'Party here ✓' : 'Set as party location' }}
-            </button>
-            <button class="btn btn-xs" @click.stop="openNoticeBoard(loc)">📋 Notice Board</button>
-          </template>
-        </EntityCard>
-      </div>
-      <div v-if="!data.loading && filteredLocations.length === 0" class="empty-state">
-        <span class="empty-state-icon">📍</span>
-        <div class="empty-state-title">{{ data.locations.length ? 'No Matches' : 'No Locations Yet' }}</div>
-        <div class="empty-state-hint">{{ data.locations.length ? 'Try a different search or filter.' : 'GM: map the world — taverns, dungeons, cities and beyond.' }}</div>
-      </div>
+        <p v-if="!filteredLocations.length" class="no-matches-msg">No matches — try a different search or filter.</p>
+      </template>
     </template>
 
     <!-- ── Notice Board tab ── -->
@@ -105,26 +122,27 @@
 
 <script setup>
 import { stripMd } from '@/utils/markdown'
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
 import EntityCard from '@/components/EntityCard.vue'
+import EmptyState from '@/components/EmptyState.vue'
 
-const data = useDataStore()
+const data     = useDataStore()
 const campaign = useCampaignStore()
-const ui = useUiStore()
-const search = ref('')
-const activeTab = ref('all')
-const expandedId = ref(null)
-const mainTab = ref('locations')
+const ui       = useUiStore()
+const search         = ref('')
+const activeTab      = ref('all')
+const expandedId     = ref(null)
+const mainTab        = ref('locations')
 const boardLocationId = ref('')
 
 const tabs = [
-  { value: 'all', label: 'All' },
-  { value: 'city', label: 'City/Town' },
-  { value: 'dungeon', label: 'Dungeon' },
-  { value: 'wilderness', label: 'Wilderness' },
+  { value: 'all',         label: 'All' },
+  { value: 'city',        label: 'City/Town' },
+  { value: 'dungeon',     label: 'Dungeon' },
+  { value: 'wilderness',  label: 'Wilderness' },
 ]
 
 const partyLocationName = computed(() => {
@@ -162,15 +180,15 @@ function openNoticeBoard(loc) {
 }
 
 function diffClass(d) {
-  if (d === 'easy') return 'tag-active'
-  if (d === 'hard') return 'tag-info'
+  if (d === 'easy')   return 'tag-active'
+  if (d === 'hard')   return 'tag-info'
   if (d === 'deadly') return 'tag-inactive'
   return ''
 }
 
 function jobStatusClass(s) {
-  if (s === 'open') return 'tag-active'
-  if (s === 'active') return 'tag-info'
+  if (s === 'open')      return 'tag-active'
+  if (s === 'active')    return 'tag-info'
   if (s === 'completed') return 'tag-completed'
   return 'tag-inactive'
 }
@@ -206,15 +224,15 @@ onMounted(() => {
   flex-direction: column;
   gap: 6px;
 }
-.nb-diff--easy  { border-left-color: var(--green, #4caf50); }
-.nb-diff--hard  { border-left-color: var(--blue, #4a9fd4); }
-.nb-diff--deadly{ border-left-color: var(--red, #c94c4c); }
+.nb-diff--easy   { border-left-color: var(--green, #4caf50); }
+.nb-diff--hard   { border-left-color: var(--blue, #4a9fd4); }
+.nb-diff--deadly { border-left-color: var(--red, #c94c4c); }
 
 .nb-job-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.nb-job-title  { font-size: 14px; font-weight: 600; color: var(--text); }
+.nb-job-title  { font-size: 14px; color: var(--text); }
 .nb-job-diff   { font-size: 10px; }
 .nb-job-desc   { font-size: 12px; color: var(--text2); line-height: 1.5; }
 .nb-job-footer { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12px; color: var(--text3); }
-.nb-reward     { color: var(--gold, #c9a84c); font-weight: 600; }
+.nb-reward     { color: var(--gold, #c9a84c); }
 .nb-job-actions{ margin-top: 4px; }
 </style>

@@ -1,37 +1,47 @@
 <template>
   <div class="page-content">
-    <div class="page-header"><div class="page-title">Rumours</div></div>
+    <div class="page-header">
+      <div class="page-title">Rumours</div>
+      <button v-if="campaign.isGm" class="btn-add" @click="ui.openGmEdit('rumour', null, {})">+ Add rumour</button>
+    </div>
     <div class="search-row" style="margin-bottom:12px">
       <input v-model="search" class="form-input" placeholder="Search rumours…" style="max-width:320px" />
     </div>
     <div class="filter-tabs">
       <button v-for="tab in tabs" :key="tab.value" class="filter-tab" :class="{ active: activeTab === tab.value }" @click="activeTab = tab.value">{{ tab.label }}</button>
     </div>
-    <div class="card-grid">
-      <div v-if="campaign.isGm" class="add-tile" @click="ui.openGmEdit('rumour', null, {})">
-        <div class="add-tile-icon">+</div><div class="add-tile-label">Add Rumour</div>
+
+    <!-- Empty state -->
+    <EmptyState
+      v-if="!data.rumours.length"
+      icon="🗣️"
+      heading="No rumours yet"
+      description="Plant whispers — some true, some false. Players won't know which."
+      :cta-label="campaign.isGm ? '+ Add rumour' : null"
+      :on-cta="campaign.isGm ? () => ui.openGmEdit('rumour', null, {}) : null"
+    />
+
+    <!-- Card grid -->
+    <template v-else>
+      <div class="card-grid">
+        <OverlayCard
+          v-for="rumour in filteredRumours"
+          :key="rumour.id"
+          icon="🗣️"
+          :title="rumourTitle(rumour)"
+          :status="rumourStatus(rumour)"
+          :actions="rumourActions(rumour)"
+          :is-expanded="expandedId === rumour.id"
+          :on-toggle="() => toggleExpand(rumour.id)"
+          @delete="confirmDelete = { id: rumour.id, name: rumourTitle(rumour) }"
+        >
+          <div v-if="rumour.source_npc" class="card-meta">Source: {{ rumour.source_npc }}</div>
+          <div v-if="rumour.source_location" class="card-meta">Location: {{ rumour.source_location }}</div>
+          <div v-if="rumour.text" class="card-overview">{{ stripMd(rumour.text) }}</div>
+        </OverlayCard>
       </div>
-      <OverlayCard
-        v-for="rumour in filteredRumours"
-        :key="rumour.id"
-        icon="🗣️"
-        :title="rumourTitle(rumour)"
-        :status="rumourStatus(rumour)"
-        :actions="rumourActions(rumour)"
-        :is-expanded="expandedId === rumour.id"
-        :on-toggle="() => toggleExpand(rumour.id)"
-        @delete="confirmDelete = { id: rumour.id, name: rumourTitle(rumour) }"
-      >
-        <div v-if="rumour.source_npc" class="card-meta">Source: {{ rumour.source_npc }}</div>
-        <div v-if="rumour.source_location" class="card-meta">Location: {{ rumour.source_location }}</div>
-        <div v-if="rumour.text" class="card-overview">{{ stripMd(rumour.text) }}</div>
-      </OverlayCard>
-    </div>
-    <div v-if="filteredRumours.length === 0" class="empty-state">
-      <span class="empty-state-icon">🗣️</span>
-      <div class="empty-state-title">{{ data.rumours.length ? 'No Matches' : 'No Rumours Yet' }}</div>
-      <div class="empty-state-hint">{{ data.rumours.length ? 'Try a different search or filter.' : "GM: plant whispers — some true, some false. Players won't know which." }}</div>
-    </div>
+      <p v-if="!filteredRumours.length" class="no-matches-msg">No matches — try a different search or filter.</p>
+    </template>
 
     <ConfirmDialog
       :is-open="!!confirmDelete"
@@ -51,6 +61,7 @@ import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
 import OverlayCard from '@/components/OverlayCard.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import EmptyState from '@/components/EmptyState.vue'
 
 const data     = useDataStore()
 const campaign = useCampaignStore()

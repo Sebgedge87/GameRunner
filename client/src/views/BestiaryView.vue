@@ -1,9 +1,14 @@
 <template>
   <div class="page-content">
-    <div class="page-header"><div class="page-title">Bestiary</div></div>
+    <div class="page-header">
+      <div class="page-title">Bestiary</div>
+      <button v-if="campaign.isGm" class="btn-add" @click="ui.openGmEdit('bestiary', null, {})">+ Add creature</button>
+    </div>
     <div class="search-row" style="margin-bottom:16px">
       <input v-model="search" class="form-input" placeholder="Search creatures…" style="max-width:320px" />
     </div>
+
+    <!-- Skeleton -->
     <div v-if="data.loading && !data.bestiary.length" class="card-grid">
       <div v-for="n in 6" :key="n" class="skeleton-card">
         <div class="skeleton-line skeleton-img"></div>
@@ -11,43 +16,50 @@
         <div class="skeleton-line skeleton-body"></div>
       </div>
     </div>
-    <div v-else class="card-grid">
-      <div v-if="campaign.isGm" class="add-tile" @click="ui.openGmEdit('bestiary', null, {})">
-        <div class="add-tile-icon">+</div><div class="add-tile-label">Add Creature</div>
-      </div>
-      <OverlayCard
-        v-for="creature in filteredBestiary"
-        :key="creature.id"
-        icon="🐉"
-        :title="creature.name"
-        :status="creature.revealed ? 'active' : null"
-        :actions="creatureActions(creature)"
-        :is-expanded="expandedId === creature.id"
-        :on-toggle="() => toggleExpand(creature.id)"
-        @delete="confirmDelete = { id: creature.id, name: creature.name }"
-      >
-        <img
-          v-if="creature.image_path"
-          :src="creature.image_path"
-          style="width:100%;max-height:180px;object-fit:cover;display:block;margin-bottom:8px;border-radius:var(--radius-sm)"
-          alt=""
-        />
-        <div
-          v-if="creature.stats?.cr != null || creature.stats?.ac != null || creature.stats?.hp != null"
-          style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px"
+
+    <!-- Empty state -->
+    <EmptyState
+      v-else-if="!data.bestiary.length"
+      icon="🐉"
+      heading="Bestiary empty"
+      description="Catalogue the creatures your party may encounter."
+      :cta-label="campaign.isGm ? '+ Add creature' : null"
+      :on-cta="campaign.isGm ? () => ui.openGmEdit('bestiary', null, {}) : null"
+    />
+
+    <!-- Card grid -->
+    <template v-else>
+      <div class="card-grid">
+        <OverlayCard
+          v-for="creature in filteredBestiary"
+          :key="creature.id"
+          icon="🐉"
+          :title="creature.name"
+          :status="creature.revealed ? 'active' : null"
+          :actions="creatureActions(creature)"
+          :is-expanded="expandedId === creature.id"
+          :on-toggle="() => toggleExpand(creature.id)"
+          @delete="confirmDelete = { id: creature.id, name: creature.name }"
         >
-          <span v-if="creature.stats?.cr != null" class="tag">CR {{ creature.stats.cr }}</span>
-          <span v-if="creature.stats?.ac != null" class="tag">AC {{ creature.stats.ac }}</span>
-          <span v-if="creature.stats?.hp != null" class="tag">HP {{ creature.stats.hp }}</span>
-        </div>
-        <div v-if="creature.description" class="card-overview">{{ stripMd(creature.description) }}</div>
-      </OverlayCard>
-    </div>
-    <div v-if="!data.loading && filteredBestiary.length === 0" class="empty-state">
-      <span class="empty-state-icon">🐉</span>
-      <div class="empty-state-title">{{ data.bestiary.length ? 'No Matches' : 'Bestiary Empty' }}</div>
-      <div class="empty-state-hint">{{ data.bestiary.length ? 'Try a different search or filter.' : 'GM: catalogue the creatures your party may encounter.' }}</div>
-    </div>
+          <img
+            v-if="creature.image_path"
+            :src="creature.image_path"
+            style="width:100%;max-height:180px;object-fit:cover;display:block;margin-bottom:8px;border-radius:var(--radius-sm)"
+            alt=""
+          />
+          <div
+            v-if="creature.stats?.cr != null || creature.stats?.ac != null || creature.stats?.hp != null"
+            style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px"
+          >
+            <span v-if="creature.stats?.cr != null" class="tag">CR {{ creature.stats.cr }}</span>
+            <span v-if="creature.stats?.ac != null" class="tag">AC {{ creature.stats.ac }}</span>
+            <span v-if="creature.stats?.hp != null" class="tag">HP {{ creature.stats.hp }}</span>
+          </div>
+          <div v-if="creature.description" class="card-overview">{{ stripMd(creature.description) }}</div>
+        </OverlayCard>
+      </div>
+      <p v-if="!filteredBestiary.length" class="no-matches-msg">No matches — try a different search or filter.</p>
+    </template>
 
     <ConfirmDialog
       :is-open="!!confirmDelete"
@@ -67,6 +79,7 @@ import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
 import OverlayCard from '@/components/OverlayCard.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import EmptyState from '@/components/EmptyState.vue'
 
 const data     = useDataStore()
 const campaign = useCampaignStore()

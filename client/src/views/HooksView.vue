@@ -1,12 +1,17 @@
 <template>
   <div class="page-content">
-    <div class="page-header"><div class="page-title">Plot Hooks</div></div>
+    <div class="page-header">
+      <div class="page-title">Plot Hooks</div>
+      <button v-if="campaign.isGm" class="btn-add" @click="ui.openGmEdit('hook', null, {})">+ Add hook</button>
+    </div>
     <div class="search-row" style="margin-bottom:12px">
       <input v-model="search" class="form-input" placeholder="Search hooks…" style="max-width:320px" />
     </div>
     <div class="filter-tabs">
       <button v-for="tab in tabs" :key="tab.value" class="filter-tab" :class="{ active: activeTab === tab.value }" @click="activeTab = tab.value">{{ tab.label }}</button>
     </div>
+
+    <!-- Skeleton -->
     <div v-if="data.loading && !data.hooks.length" class="card-grid">
       <div v-for="n in 6" :key="n" class="skeleton-card">
         <div class="skeleton-line skeleton-title"></div>
@@ -15,32 +20,39 @@
         <div class="skeleton-line skeleton-body-short"></div>
       </div>
     </div>
-    <div v-else class="card-grid">
-      <div v-if="campaign.isGm" class="add-tile" @click="ui.openGmEdit('hook', null, {})">
-        <div class="add-tile-icon">+</div><div class="add-tile-label">Add Hook</div>
+
+    <!-- Empty state -->
+    <EmptyState
+      v-else-if="!data.hooks.length"
+      icon="🪝"
+      heading="No hooks yet"
+      description="Plant clues and leads to draw players into the story."
+      :cta-label="campaign.isGm ? '+ Add hook' : null"
+      :on-cta="campaign.isGm ? () => ui.openGmEdit('hook', null, {}) : null"
+    />
+
+    <!-- Card grid -->
+    <template v-else>
+      <div class="card-grid">
+        <OverlayCard
+          v-for="hook in filteredHooks"
+          :key="hook.id"
+          icon="🎣"
+          :title="hook.title"
+          :status="hookStatus(hook.status)"
+          :actions="hookActions(hook)"
+          :is-expanded="expandedId === hook.id"
+          :on-toggle="() => toggleExpand(hook.id)"
+          @delete="confirmDelete = { id: hook.id, name: hook.title }"
+        >
+          <div v-if="hook.type" class="card-meta">Type: {{ hook.type }}</div>
+          <div v-if="hook.description" class="card-overview">{{ stripMd(hook.description) }}</div>
+          <div v-if="hook.session_delivered" class="card-meta">Delivered: Session {{ hook.session_delivered }}</div>
+          <div v-if="hook.connected_to?.length" class="card-meta">Linked: {{ hook.connected_to.join(', ') }}</div>
+        </OverlayCard>
       </div>
-      <OverlayCard
-        v-for="hook in filteredHooks"
-        :key="hook.id"
-        icon="🎣"
-        :title="hook.title"
-        :status="hookStatus(hook.status)"
-        :actions="hookActions(hook)"
-        :is-expanded="expandedId === hook.id"
-        :on-toggle="() => toggleExpand(hook.id)"
-        @delete="confirmDelete = { id: hook.id, name: hook.title }"
-      >
-        <div v-if="hook.type" class="card-meta">Type: {{ hook.type }}</div>
-        <div v-if="hook.description" class="card-overview">{{ stripMd(hook.description) }}</div>
-        <div v-if="hook.session_delivered" class="card-meta">Delivered: Session {{ hook.session_delivered }}</div>
-        <div v-if="hook.connected_to?.length" class="card-meta">Linked: {{ hook.connected_to.join(', ') }}</div>
-      </OverlayCard>
-    </div>
-    <div v-if="!data.loading && filteredHooks.length === 0" class="empty-state">
-      <span class="empty-state-icon">🪝</span>
-      <div class="empty-state-title">{{ data.hooks.length ? 'No Matches' : 'No Hooks Yet' }}</div>
-      <div class="empty-state-hint">{{ data.hooks.length ? 'Try a different search or filter.' : 'GM: plant clues and leads to draw players into the story.' }}</div>
-    </div>
+      <p v-if="!filteredHooks.length" class="no-matches-msg">No matches — try a different search or filter.</p>
+    </template>
 
     <ConfirmDialog
       :is-open="!!confirmDelete"
@@ -60,6 +72,7 @@ import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
 import OverlayCard from '@/components/OverlayCard.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import EmptyState from '@/components/EmptyState.vue'
 
 const data     = useDataStore()
 const campaign = useCampaignStore()
