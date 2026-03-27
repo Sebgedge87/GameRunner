@@ -115,8 +115,9 @@
   --radius-pill: 100px;
 
   /* ── Typography ───────────────────────────────────────────────────────── */
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --font-serif: 'Crimson Pro', Georgia, serif;
+  --font-sans: 'Cinzel', serif;
+  --font-serif: 'Crimson Pro', serif;
+  --font-display: 'Cinzel Decorative', serif;
   --font-mono: 'JetBrains Mono', 'Courier New', monospace;
   --text-xs: 11px;
   --text-sm: 12px;
@@ -139,6 +140,19 @@
   --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-in: cubic-bezier(0.4, 0, 1, 1);
   --ease-out: cubic-bezier(0, 0, 0.2, 1);
+
+  /* ── Overlays & shadows ───────────────────────────────────────────────── */
+  --color-bg-overlay-light:  rgba(0, 0, 0, 0.55);
+  --color-bg-overlay-medium: rgba(0, 0, 0, 0.70);
+  --color-bg-overlay-heavy:  rgba(0, 0, 0, 0.85);
+  --color-shadow-card:       rgba(0, 0, 0, 0.30);
+  --color-shadow-menu:       rgba(0, 0, 0, 0.40);
+
+  /* ── Urgency ───────────────────────────────────────────────────────────── */
+  --color-urgency-medium:    #e0a840;
+
+  /* TODO Task 11: tag palette tokens */
+  /* TODO Task 14: per-theme title colour tokens */
 
   /* ── Z-index ──────────────────────────────────────────────────────────── */
   --z-base: 0;
