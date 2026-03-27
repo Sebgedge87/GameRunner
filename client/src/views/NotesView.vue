@@ -45,7 +45,7 @@
       <!-- Compose / Edit panel -->
       <div>
         <div class="note-composer">
-          <div class="composer-title">{{ selectedNote ? 'EDIT NOTE' : 'NEW NOTE' }}</div>
+          <div class="composer-title">{{ selectedNote ? 'Edit note' : 'New note' }}</div>
           <div class="field-group"><label>Title</label><input v-model="form.title" type="text" placeholder="Session notes…" /></div>
           <div class="field-group">
             <label>Body</label>
@@ -66,7 +66,7 @@
             <label for="note-share-gm">Share with GM</label>
           </div>
           <div style="display:flex;gap:8px;margin-top:12px">
-            <button class="submit-btn" @click="saveNote">{{ selectedNote ? 'UPDATE NOTE' : 'SAVE NOTE' }}</button>
+            <button class="submit-btn" @click="saveNote">{{ selectedNote ? 'Update note' : 'Save note' }}</button>
             <button v-if="selectedNote" class="btn" @click="clearForm">Cancel</button>
           </div>
           <div v-if="status" :class="['status-msg', statusOk ? 'status-ok' : 'status-err']">{{ status }}</div>

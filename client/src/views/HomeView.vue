@@ -54,7 +54,7 @@
           <input
             v-model="joinCode"
             class="form-input join-tile-input"
-            placeholder="INVITE CODE"
+            placeholder="Invite code"
             maxlength="12"
             @keydown.enter="joinCampaign"
           />

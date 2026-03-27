@@ -151,6 +151,11 @@
   /* ── Urgency ───────────────────────────────────────────────────────────── */
   --color-urgency-medium:    #e0a840;
 
+  /* ── Danger (delete / destructive actions) ────────────────────────────── */
+  --color-danger:            #e05040;
+  --color-danger-border:     rgba(220, 80, 60, 0.50);
+  --color-danger-bg-hover:   rgba(160, 50, 30, 0.18);
+
   /* TODO Task 11: tag palette tokens */
   /* TODO Task 14: per-theme title colour tokens */
 

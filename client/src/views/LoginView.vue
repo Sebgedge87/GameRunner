@@ -33,7 +33,7 @@
         </div>
         <div class="login-error">{{ loginError }}</div>
         <button class="login-btn" @click="doLogin" :disabled="loading">
-          {{ loading ? 'ENTERING...' : requiresTotp ? 'VERIFY' : 'ENTER THE CHRONICLE' }}
+          {{ loading ? 'Entering...' : requiresTotp ? 'Verify' : 'Enter the Chronicle' }}
         </button>
         <div class="login-toggle">
           No account? <a @click="showRegister = true">Register</a>
