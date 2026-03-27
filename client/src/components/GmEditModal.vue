@@ -83,11 +83,14 @@
           <div class="form-section-label">Image</div>
           <div class="form-group">
             <label>Banner Image</label>
-            <div v-if="f.image_url" class="quest-img-preview">
-              <img :src="f.image_url" alt="Current banner" />
-              <button type="button" class="btn btn-xs" style="margin-top:4px" @click="f.image_url = ''">Remove</button>
-            </div>
-            <input type="file" ref="questImgInput" class="form-input" accept="image/*" />
+            <Dropzone
+              variant="banner"
+              accept="image/*"
+              :value="questImgFile || f.image_url || null"
+              :on-change="handleQuestImgChange"
+              :on-remove="handleQuestImgRemove"
+              hint="PNG, JPG up to 5 MB"
+            />
           </div>
 
           <template v-if="campaign.isGm">
@@ -106,13 +109,14 @@
             <!-- Sidebar -->
             <div class="efg-sidebar">
               <div class="efg-portrait-wrap">
-                <div class="efg-portrait" :style="portraitPreview ? `background-image:url(${portraitPreview})` : ''">
-                  <span v-if="!portraitPreview" class="efg-portrait-icon">🧙</span>
-                </div>
-                <label class="btn btn-sm efg-upload-btn">
-                  Upload Portrait
-                  <input type="file" ref="imgInput" accept="image/*" style="display:none" @change="onPortraitChange" />
-                </label>
+                <Dropzone
+                  variant="square"
+                  accept="image/*"
+                  :value="portraitFile || portraitPreview || null"
+                  :on-change="handlePortraitChange"
+                  :on-remove="handlePortraitRemove"
+                  hint="PNG, JPG"
+                />
               </div>
               <div class="efg-stat-block">
                 <div class="efg-stat-title">Character</div>
@@ -167,13 +171,14 @@
             <!-- Sidebar -->
             <div class="efg-sidebar">
               <div class="efg-portrait-wrap">
-                <div class="efg-portrait efg-portrait--map" :style="portraitPreview ? `background-image:url(${portraitPreview})` : ''">
-                  <span v-if="!portraitPreview" class="efg-portrait-icon">🗺️</span>
-                </div>
-                <label class="btn btn-sm efg-upload-btn">
-                  Upload Thumbnail
-                  <input type="file" ref="imgInput" accept="image/*" style="display:none" @change="onPortraitChange" />
-                </label>
+                <Dropzone
+                  variant="square"
+                  accept="image/*"
+                  :value="portraitFile || portraitPreview || null"
+                  :on-change="handlePortraitChange"
+                  :on-remove="handlePortraitRemove"
+                  hint="PNG, JPG"
+                />
               </div>
               <div class="efg-stat-block">
                 <div class="efg-stat-title">Details</div>
@@ -244,13 +249,14 @@
           </div>
           <div class="form-group">
             <label class="efg-label">Image <span style="color:var(--text3);font-size:10px">(optional)</span></label>
-            <label class="btn btn-sm efg-upload-btn" style="cursor:pointer">
-              {{ isEdit ? 'Replace Image' : 'Upload Image' }}
-              <input type="file" ref="imgInput" accept="image/*" style="display:none" @change="onHandoutImgChange" />
-            </label>
-            <img v-if="handoutImgPreview || (isEdit && ui.gmEditModal?.data?.file_path)"
-                 :src="handoutImgPreview || ('/uploads/' + ui.gmEditModal?.data?.file_path)"
-                 style="margin-top:8px;max-width:100%;max-height:140px;border-radius:4px;border:1px solid var(--border2);object-fit:contain;display:block" />
+            <Dropzone
+              variant="banner"
+              accept="image/*"
+              :value="portraitFile || handoutImgPreview || null"
+              :on-change="handleHandoutImgChange"
+              :on-remove="handleHandoutImgRemove"
+              hint="PNG, JPG"
+            />
           </div>
         </template>
 
@@ -289,13 +295,14 @@
               <div class="efg-stat-block">
                 <div class="efg-stat-title">Map Image</div>
                 <div class="form-group">
-                  <label class="btn btn-sm efg-upload-btn" style="width:100%;text-align:center;cursor:pointer">
-                    {{ isEdit ? 'Replace Image' : 'Upload Image' }}
-                    <input type="file" ref="imgInput" accept="image/*" style="display:none" @change="onMapImgChange" />
-                  </label>
-                  <img v-if="mapImgPreview || (isEdit && ui.gmEditModal?.data?.image_path)"
-                       :src="mapImgPreview || ('/uploads/' + ui.gmEditModal?.data?.image_path)"
-                       style="margin-top:8px;max-width:100%;max-height:120px;border-radius:4px;border:1px solid var(--border2);object-fit:contain" />
+                  <Dropzone
+                    variant="banner"
+                    accept="image/*"
+                    :value="portraitFile || mapImgPreview || null"
+                    :on-change="handleMapImgChange"
+                    :on-remove="handleMapImgRemove"
+                    hint="PNG, JPG"
+                  />
                 </div>
               </div>
             </div>
@@ -333,13 +340,14 @@
             <!-- Sidebar -->
             <div class="efg-sidebar">
               <div class="efg-portrait-wrap">
-                <div class="efg-portrait" :style="portraitPreview ? `background-image:url(${portraitPreview})` : ''">
-                  <span v-if="!portraitPreview" class="efg-portrait-icon">🏰</span>
-                </div>
-                <label class="btn btn-sm efg-upload-btn">
-                  Upload Icon
-                  <input type="file" ref="imgInput" accept="image/*" style="display:none" @change="onPortraitChange" />
-                </label>
+                <Dropzone
+                  variant="square"
+                  accept="image/*"
+                  :value="portraitFile || portraitPreview || null"
+                  :on-change="handlePortraitChange"
+                  :on-remove="handlePortraitRemove"
+                  hint="PNG, JPG"
+                />
               </div>
               <div class="efg-stat-block">
                 <div class="efg-stat-title">Status</div>
@@ -449,7 +457,17 @@
               placeholder="Search quests…"
             />
           </div>
-          <div class="form-group"><label>Image</label><input type="file" ref="imgInput" class="form-input" accept="image/*" /></div>
+          <div class="form-group">
+            <label>Image</label>
+            <Dropzone
+              variant="square"
+              accept="image/*"
+              :value="portraitFile"
+              :on-change="handlePortraitChange"
+              :on-remove="handlePortraitRemove"
+              hint="PNG, JPG"
+            />
+          </div>
         </template>
 
         <!-- Job -->
@@ -508,13 +526,14 @@
           <!-- ── Header: Portrait + Creature Name ── -->
           <div class="bst-header">
             <div class="bst-portrait-col">
-              <div class="bst-avatar" :style="portraitPreview ? `background-image:url(${portraitPreview})` : ''">
-                <span v-if="!portraitPreview" class="bst-avatar-icon">🐉</span>
-              </div>
-              <label class="btn btn-sm bst-upload-btn">
-                Upload Portrait
-                <input type="file" ref="imgInput" accept="image/*" style="display:none" @change="onPortraitChange" />
-              </label>
+              <Dropzone
+                variant="square"
+                accept="image/*"
+                :value="portraitFile || portraitPreview || null"
+                :on-change="handlePortraitChange"
+                :on-remove="handlePortraitRemove"
+                hint="PNG, JPG"
+              />
             </div>
             <div class="bst-name-col">
               <label class="bst-label">Creature Name</label>
@@ -645,32 +664,51 @@ import { useCampaignStore } from '@/stores/campaign'
 import SearchSelect from './SearchSelect.vue'
 import EntityLookup from './EntityLookup.vue'
 import MarkdownEditor from './MarkdownEditor.vue'
+import Dropzone from './Dropzone.vue'
 
 const ui = useUiStore()
 const data = useDataStore()
 const campaign = useCampaignStore()
 
-const imgInput = ref(null)
-const questImgInput = ref(null)
+const portraitFile = ref(null)     // File object for portrait/image uploads
+const questImgFile = ref(null)     // File object for quest banner upload
 const saving = ref(false)
 const saveError = ref('')
 const portraitPreview = ref('')
 const mapImgPreview = ref('')
 const handoutImgPreview = ref('')
 
-function onPortraitChange(e) {
-  const file = e.target.files?.[0]
-  if (file) portraitPreview.value = URL.createObjectURL(file)
+function handlePortraitChange(file) {
+  portraitFile.value = file
+  portraitPreview.value = URL.createObjectURL(file)
 }
-
-function onHandoutImgChange(e) {
-  const file = e.target.files?.[0]
-  handoutImgPreview.value = file ? URL.createObjectURL(file) : ''
+function handlePortraitRemove() {
+  portraitFile.value = null
+  portraitPreview.value = ''
 }
-
-function onMapImgChange(e) {
-  const file = e.target.files?.[0]
-  mapImgPreview.value = file ? URL.createObjectURL(file) : ''
+function handleQuestImgChange(file) {
+  questImgFile.value = file
+  f.image_url = ''
+}
+function handleQuestImgRemove() {
+  questImgFile.value = null
+  f.image_url = ''
+}
+function handleHandoutImgChange(file) {
+  portraitFile.value = file
+  handoutImgPreview.value = URL.createObjectURL(file)
+}
+function handleHandoutImgRemove() {
+  portraitFile.value = null
+  handoutImgPreview.value = ''
+}
+function handleMapImgChange(file) {
+  portraitFile.value = file
+  mapImgPreview.value = URL.createObjectURL(file)
+}
+function handleMapImgRemove() {
+  portraitFile.value = null
+  mapImgPreview.value = ''
 }
 
 const f = reactive({
@@ -746,6 +784,8 @@ watch(() => ui.gmEditModal, (modal) => {
     else if (typeof f[k] === 'boolean') f[k] = false
     else f[k] = ''
   })
+  portraitFile.value = null
+  questImgFile.value = null
   portraitPreview.value = ''
   mapImgPreview.value = ''
   handoutImgPreview.value = ''
@@ -798,6 +838,8 @@ watch(() => ui.gmEditModal, (modal) => {
   f.hp = d.stats?.hp ?? null
   f.player_notes = d.player_notes || ''
   if (['bestiary','npc','location','faction'].includes(modal.type)) portraitPreview.value = d.image_path || d.image_url || ''
+  if (modal.type === 'map' && d.image_path) mapImgPreview.value = '/uploads/' + d.image_path
+  if (modal.type === 'handout' && d.file_path) handoutImgPreview.value = '/uploads/' + d.file_path
   // NPC
   f.race = d.race || ''
   f.disposition = d.disposition || ''
@@ -835,10 +877,10 @@ watch(() => ui.gmEditModal, (modal) => {
 }, { immediate: true })
 
 async function uploadQuestImage() {
-  const input = questImgInput.value
-  if (!input || !input.files || !input.files[0]) return null
+  const file = questImgFile.value
+  if (!file) return null
   const fd = new FormData()
-  fd.append('file', input.files[0])
+  fd.append('file', file)
   const token = localStorage.getItem('chronicle_token')
   const r = await fetch('/api/uploads', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd })
   if (r.ok) { const d = await r.json(); return d.url || d.path || null }
@@ -846,10 +888,10 @@ async function uploadQuestImage() {
 }
 
 async function uploadImage() {
-  const input = imgInput.value
-  if (!input || !input.files || !input.files[0]) return null
+  const file = portraitFile.value
+  if (!file) return null
   const fd = new FormData()
-  fd.append('file', input.files[0])
+  fd.append('file', file)
   const token = localStorage.getItem('chronicle_token')
   const r = await fetch('/api/uploads', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd })
   if (r.ok) { const d = await r.json(); return d.url || d.path || null }
@@ -862,7 +904,7 @@ async function save() {
   try {
     const t = type.value
     let imageUrl = null
-    if (imgInput.value?.files?.[0]) imageUrl = await uploadImage()
+    if (portraitFile.value) imageUrl = await uploadImage()
 
     const endpoint = TYPE_ENDPOINT[t]
     if (!endpoint) throw new Error('Unknown type')
@@ -870,7 +912,7 @@ async function save() {
     let body = {}
     switch (t) {
       case 'quest': {
-        const questImgUrl = questImgInput.value?.files?.[0]
+        const questImgUrl = questImgFile.value
           ? await uploadQuestImage()
           : (f.image_url || null)
         body = {
