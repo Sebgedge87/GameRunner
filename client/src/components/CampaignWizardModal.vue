@@ -443,7 +443,7 @@ function skipEntity() {
             <div class="wiz-preview-grid">
               <div class="wiz-preview-item">
                 <div class="wiz-preview-label">Name</div>
-                <div class="wiz-preview-val" style="font-weight:500;color:rgba(255,255,255,.9)">{{ nameForm.name }}</div>
+                <div class="wiz-preview-val" style="font-weight:500;color:var(--color-text-primary)">{{ nameForm.name }}</div>
               </div>
               <div class="wiz-preview-item">
                 <div class="wiz-preview-label">System</div>
@@ -662,7 +662,7 @@ function skipEntity() {
 .wiz-card {
   position: relative;
   background: var(--surface2, #1e2120);
-  border: 0.5px solid rgba(255,255,255,.12);
+  border: 0.5px solid var(--color-border-default);
   border-radius: 12px;
   width: 100%;
   max-width: 780px;
@@ -680,16 +680,16 @@ function skipEntity() {
   width: 28px;
   height: 28px;
   border-radius: 6px;
-  border: 0.5px solid rgba(255,255,255,.1);
+  border: 0.5px solid var(--color-border-default);
   background: transparent;
-  color: rgba(255,255,255,.35);
+  color: var(--color-text-hint);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all .15s;
 }
-.wiz-close:hover { background: rgba(255,255,255,.07); color: rgba(255,255,255,.7); }
+.wiz-close:hover { background: var(--color-bg-elevated); color: var(--color-text-primary); }
 
 /* ── Step bar ─────────────────────────────────────────── */
 .wiz-step-bar {
@@ -703,29 +703,29 @@ function skipEntity() {
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: rgba(255,255,255,.28);
+  color: var(--color-text-hint);
   letter-spacing: .5px;
   white-space: nowrap;
 }
-.wiz-step.active { color: var(--accent, #a8c080); }
-.wiz-step.done   { color: rgba(255,255,255,.5); }
+.wiz-step.active { color: var(--accent); }
+.wiz-step.done   { color: var(--color-text-secondary); }
 
 .wiz-step-num {
   width: 24px; height: 24px;
   border-radius: 50%;
-  border: 1.5px solid rgba(255,255,255,.15);
+  border: 1.5px solid var(--color-border-default);
   display: flex; align-items: center; justify-content: center;
   font-size: 11px; font-weight: 500; flex-shrink: 0;
 }
 .wiz-step.active .wiz-step-num {
-  border-color: var(--accent, #a8c080);
-  background: rgba(168,192,128,.15);
-  color: var(--accent, #a8c080);
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
 }
 .wiz-step.done .wiz-step-num {
-  border-color: rgba(255,255,255,.3);
-  background: rgba(255,255,255,.06);
-  color: rgba(255,255,255,.5);
+  border-color: var(--color-border-hover);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-secondary);
 }
 
 .wiz-step-label { display: none; }
@@ -734,7 +734,7 @@ function skipEntity() {
 .wiz-step-line {
   flex: 1;
   height: 1px;
-  background: rgba(255,255,255,.08);
+  background: var(--border);
   margin: 0 8px;
   min-width: 8px;
 }
@@ -743,15 +743,15 @@ function skipEntity() {
 .wiz-title {
   font-size: 20px; font-weight: 500;
   margin-bottom: 4px;
-  color: rgba(255,255,255,.9);
+  color: var(--color-text-primary);
 }
 .wiz-sub {
   font-size: 13px;
-  color: rgba(255,255,255,.4);
+  color: var(--color-text-hint);
   margin-bottom: 22px;
 }
-.wiz-req { color: var(--accent, #a8c080); }
-.wiz-opt { color: rgba(255,255,255,.25); font-size: 10px; font-weight: 400; }
+.wiz-req { color: var(--accent); }
+.wiz-opt { color: var(--color-text-hint); font-size: 10px; font-weight: 400; }
 
 /* ── Fields ───────────────────────────────────────────── */
 .wiz-field-group { display: flex; flex-direction: column; gap: 12px; margin-bottom: 22px; }
@@ -760,14 +760,14 @@ function skipEntity() {
 .wiz-full { grid-template-columns: 1fr; }
 
 .wiz-field { display: flex; flex-direction: column; gap: 4px; }
-.wiz-field label { font-size: 11px; letter-spacing: .5px; text-transform: uppercase; color: rgba(255,255,255,.35); }
+.wiz-field label { font-size: 11px; letter-spacing: .5px; text-transform: uppercase; color: var(--color-text-hint); }
 .wiz-field input,
 .wiz-field select,
 .wiz-field textarea {
-  background: rgba(255,255,255,.05);
-  border: 0.5px solid rgba(255,255,255,.12);
+  background: var(--color-bg-input);
+  border: 0.5px solid var(--color-border-default);
   border-radius: 8px;
-  color: rgba(255,255,255,.8);
+  color: var(--color-text-primary);
   font-size: 13px;
   padding: 8px 10px;
   outline: none;
@@ -777,9 +777,9 @@ function skipEntity() {
 }
 .wiz-field input:focus,
 .wiz-field select:focus,
-.wiz-field textarea:focus { border-color: rgba(168,192,128,.5); }
+.wiz-field textarea:focus { border-color: var(--color-border-active); }
 .wiz-field input::placeholder,
-.wiz-field textarea::placeholder { color: rgba(255,255,255,.2); }
+.wiz-field textarea::placeholder { color: var(--color-text-disabled); }
 .wiz-field textarea { resize: vertical; min-height: 80px; font-family: monospace; font-size: 12px; }
 .wiz-field select option { background: var(--bg, #1c1f1a); }
 
@@ -791,32 +791,32 @@ function skipEntity() {
   margin-bottom: 20px;
 }
 .wiz-sys-card {
-  border: 1.5px solid rgba(255,255,255,.1);
+  border: 1.5px solid var(--color-border-default);
   border-radius: 8px;
   padding: 12px;
   cursor: pointer;
   transition: border-color .15s, background .15s;
-  background: rgba(255,255,255,.03);
+  background: var(--color-bg-card);
 }
-.wiz-sys-card:hover   { border-color: rgba(168,192,128,.4); background: rgba(168,192,128,.05); }
-.wiz-sys-card.selected { border-color: var(--accent, #a8c080); background: rgba(168,192,128,.1); }
+.wiz-sys-card:hover   { border-color: var(--color-border-hover); background: var(--accent-dim); }
+.wiz-sys-card.selected { border-color: var(--accent); background: var(--accent-dim); }
 .wiz-sys-card.custom  { border-style: dashed; }
 .wiz-sys-icon {
   width: 30px; height: 30px;
   border-radius: 6px;
-  background: rgba(255,255,255,.07);
+  background: var(--color-bg-elevated);
   display: flex; align-items: center; justify-content: center;
   margin-bottom: 8px;
   font-size: 15px;
 }
-.wiz-sys-name { font-size: 12px; font-weight: 500; color: rgba(255,255,255,.85); margin-bottom: 2px; }
-.wiz-sys-desc { font-size: 10px; color: rgba(255,255,255,.35); }
+.wiz-sys-name { font-size: 12px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 2px; }
+.wiz-sys-desc { font-size: 10px; color: var(--color-text-hint); }
 
 /* ── Preview box ──────────────────────────────────────── */
 .wiz-preview-box {
-  border: 0.5px solid rgba(255,255,255,.1);
+  border: 0.5px solid var(--color-border-default);
   border-radius: 8px;
-  background: rgba(255,255,255,.02);
+  background: var(--color-bg-subtle);
   padding: 14px;
   margin-bottom: 14px;
 }
@@ -824,29 +824,29 @@ function skipEntity() {
   font-size: 10px;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: rgba(255,255,255,.25);
+  color: var(--color-text-hint);
   margin-bottom: 10px;
 }
 .wiz-preview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .wiz-preview-item {
   padding: 8px 10px;
   border-radius: 6px;
-  background: rgba(255,255,255,.04);
-  border: 0.5px solid rgba(255,255,255,.06);
+  background: var(--color-bg-card);
+  border: 0.5px solid var(--color-bg-elevated);
 }
 .wiz-preview-label {
   font-size: 10px; letter-spacing: .5px;
-  color: rgba(255,255,255,.28);
+  color: var(--color-text-hint);
   margin-bottom: 3px;
   text-transform: uppercase;
 }
-.wiz-preview-val { font-size: 12px; color: rgba(255,255,255,.7); line-height: 1.6; }
+.wiz-preview-val { font-size: 12px; color: var(--color-text-primary); line-height: 1.6; }
 
 .wiz-tag {
   display: inline-block;
   font-size: 10px;
-  background: rgba(168,192,128,.12);
-  color: var(--accent, #a8c080);
+  background: var(--accent-dim);
+  color: var(--accent);
   border-radius: 4px;
   padding: 2px 5px;
   margin: 2px 2px 0 0;
@@ -861,29 +861,29 @@ function skipEntity() {
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  border: 1.5px solid rgba(255,255,255,.15);
+  border: 1.5px solid var(--color-border-default);
   background: transparent;
-  color: rgba(255,255,255,.6);
+  color: var(--color-text-secondary);
   transition: all .15s;
   font-family: inherit;
 }
-.wiz-btn:hover:not(:disabled) { background: rgba(255,255,255,.06); color: rgba(255,255,255,.9); }
+.wiz-btn:hover:not(:disabled) { background: var(--color-bg-elevated); color: var(--color-text-primary); }
 .wiz-btn:disabled { opacity: .4; cursor: default; }
-.wiz-btn.primary { background: var(--accent, #a8c080); border-color: var(--accent, #a8c080); color: #1c1f1a; }
+.wiz-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--color-bg-card); }
 .wiz-btn.primary:hover:not(:disabled) { filter: brightness(1.1); }
-.wiz-btn.ghost { border-color: transparent; color: rgba(255,255,255,.3); }
-.wiz-btn.ghost:hover:not(:disabled) { color: rgba(255,255,255,.55); background: transparent; }
+.wiz-btn.ghost { border-color: transparent; color: var(--color-text-hint); }
+.wiz-btn.ghost:hover:not(:disabled) { color: var(--color-text-secondary); background: transparent; }
 
 /* ── Import tabs ──────────────────────────────────────── */
 .wiz-import-tabs {
   display: flex;
-  border-bottom: 0.5px solid rgba(255,255,255,.1);
+  border-bottom: 0.5px solid var(--color-border-default);
   margin-bottom: 16px;
 }
 .wiz-itab {
   padding: 7px 14px;
   font-size: 12px; font-weight: 500;
-  color: rgba(255,255,255,.35);
+  color: var(--color-text-hint);
   cursor: pointer;
   border: none; background: transparent;
   border-bottom: 2px solid transparent;
@@ -891,55 +891,55 @@ function skipEntity() {
   transition: color .15s;
   font-family: inherit;
 }
-.wiz-itab.active { color: var(--accent, #a8c080); border-bottom-color: var(--accent, #a8c080); }
-.wiz-itab:hover:not(.active) { color: rgba(255,255,255,.6); }
+.wiz-itab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.wiz-itab:hover:not(.active) { color: var(--color-text-secondary); }
 
 /* ── Warning / error ──────────────────────────────────── */
 .wiz-warning {
   display: flex; align-items: center; gap: 6px;
   padding: 8px 10px; border-radius: 8px;
-  background: rgba(186,117,23,.1);
-  border: 0.5px solid rgba(186,117,23,.3);
+  background: var(--gold-dim);
+  border: 0.5px solid var(--gold-dim);
   margin-bottom: 10px;
-  font-size: 11px; color: #EF9F27;
+  font-size: 11px; color: var(--gold2);
 }
-.wiz-warning-dot { width: 6px; height: 6px; border-radius: 50%; background: #BA7517; flex-shrink: 0; }
+.wiz-warning-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); flex-shrink: 0; }
 
 .wiz-error {
-  color: var(--red, #e74c3c);
+  color: var(--red);
   font-size: 12px;
   margin-bottom: 8px;
   padding: 6px 10px;
   border-radius: 6px;
-  background: rgba(231,76,60,.1);
-  border: 0.5px solid rgba(231,76,60,.25);
+  background: var(--color-hostile-bg);
+  border: 0.5px solid var(--color-border-danger);
 }
 
 /* ── Upload zone ──────────────────────────────────────── */
 .wiz-upload-zone {
-  border: 1.5px dashed rgba(255,255,255,.12);
+  border: 1.5px dashed var(--color-border-default);
   border-radius: 8px;
   padding: 28px;
   text-align: center;
   cursor: pointer;
   transition: border-color .15s;
-  color: rgba(255,255,255,.3);
+  color: var(--color-text-hint);
 }
-.wiz-upload-label { font-size: 13px; color: rgba(255,255,255,.5); margin-bottom: 4px; }
-.wiz-upload-hint  { font-size: 11px; color: rgba(255,255,255,.25); margin-bottom: 10px; }
+.wiz-upload-label { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 4px; }
+.wiz-upload-hint  { font-size: 11px; color: var(--color-text-hint); margin-bottom: 10px; }
 .wiz-file-badges  { display: flex; justify-content: center; gap: 6px; }
 .wiz-file-badge {
   font-size: 10px; padding: 2px 8px; border-radius: 4px;
-  background: rgba(255,255,255,.06); color: rgba(255,255,255,.4);
-  border: 0.5px solid rgba(255,255,255,.1);
+  background: var(--color-bg-elevated); color: var(--color-text-hint);
+  border: 0.5px solid var(--color-border-default);
 }
 
 /* ── Paste tab ────────────────────────────────────────── */
 .wiz-paste-area {
-  background: rgba(255,255,255,.04);
-  border: 0.5px solid rgba(255,255,255,.12);
+  background: var(--color-bg-card);
+  border: 0.5px solid var(--color-border-default);
   border-radius: 8px;
-  color: rgba(255,255,255,.8);
+  color: var(--color-text-primary);
   font-size: 12px;
   font-family: 'Courier New', monospace;
   padding: 10px 12px;
@@ -950,17 +950,17 @@ function skipEntity() {
   line-height: 1.6;
   transition: border-color .15s;
 }
-.wiz-paste-area:focus { border-color: rgba(168,192,128,.5); }
-.wiz-paste-area::placeholder { color: rgba(255,255,255,.18); }
+.wiz-paste-area:focus { border-color: var(--color-border-active); }
+.wiz-paste-area::placeholder { color: var(--color-text-disabled); }
 
 .wiz-paste-hint {
   font-size: 11px;
-  color: rgba(255,255,255,.28);
+  color: var(--color-text-hint);
   margin-top: 5px;
 }
 .wiz-paste-hint code {
   font-family: 'Courier New', monospace;
-  background: rgba(255,255,255,.07);
+  background: var(--color-bg-elevated);
   padding: 1px 4px;
   border-radius: 3px;
   font-size: 10px;
@@ -969,15 +969,15 @@ function skipEntity() {
 .wiz-parse-btn-main {
   padding: 7px 16px;
   font-size: 12px; font-weight: 500;
-  border: 0.5px solid rgba(168,192,128,.5);
+  border: 0.5px solid var(--color-border-active);
   border-radius: 8px;
-  background: rgba(168,192,128,.1);
-  color: var(--accent, #a8c080);
+  background: var(--accent-dim);
+  color: var(--accent);
   cursor: pointer;
   font-family: inherit;
   transition: all .15s;
 }
-.wiz-parse-btn-main:hover:not(:disabled) { background: rgba(168,192,128,.18); }
+.wiz-parse-btn-main:hover:not(:disabled) { background: var(--accent-dim); }
 .wiz-parse-btn-main:disabled { opacity: .35; cursor: default; }
 
 /* ── Parse warnings on guided form ───────────────────── */
@@ -987,11 +987,11 @@ function skipEntity() {
   gap: 7px;
   padding: 7px 10px;
   border-radius: 8px;
-  background: rgba(186,117,23,.1);
-  border: 0.5px solid rgba(186,117,23,.28);
+  background: var(--gold-dim);
+  border: 0.5px solid var(--gold-dim);
   margin-bottom: 12px;
   font-size: 11px;
-  color: rgba(255,255,255,.55);
+  color: var(--color-text-secondary);
   flex-wrap: wrap;
 }
 
@@ -1001,8 +1001,8 @@ function skipEntity() {
   font-weight: 600;
   letter-spacing: .4px;
   text-transform: uppercase;
-  background: rgba(186,117,23,.25);
-  color: #EF9F27;
+  background: var(--gold-dim);
+  color: var(--gold2);
   border-radius: 3px;
   padding: 1px 5px;
   margin-left: 4px;
@@ -1010,24 +1010,24 @@ function skipEntity() {
 }
 
 .wiz-inferred {
-  border-color: rgba(186,117,23,.45) !important;
-  background: rgba(186,117,23,.06) !important;
+  border-color: var(--color-border-bracket) !important;
+  background: var(--gold-dim) !important;
 }
-.wiz-inferred:focus { border-color: rgba(239,159,39,.7) !important; }
+.wiz-inferred:focus { border-color: var(--color-border-active) !important; }
 
 .wiz-reparse-btn {
   margin-left: auto;
   font-size: 11px;
   background: transparent;
-  border: 0.5px solid rgba(255,255,255,.15);
+  border: 0.5px solid var(--color-border-default);
   border-radius: 5px;
-  color: rgba(255,255,255,.4);
+  color: var(--color-text-hint);
   padding: 2px 8px;
   cursor: pointer;
   font-family: inherit;
   white-space: nowrap;
 }
-.wiz-reparse-btn:hover { color: rgba(255,255,255,.7); }
+.wiz-reparse-btn:hover { color: var(--color-text-primary); }
 
 /* ── Responsive ───────────────────────────────────────── */
 @media (max-width: 600px) {

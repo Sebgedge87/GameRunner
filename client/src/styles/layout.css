@@ -85,7 +85,7 @@
 .topbar-icon-btn:hover { color: var(--text); border-color: var(--border2); }
 .topbar-icon-btn .badge {
   background: var(--red);
-  color: #fff;
+  color: var(--color-text-primary);
   font-size: 9px;
   padding: 1px 5px;
   border-radius: 8px;
@@ -239,7 +239,7 @@
 .nav-badge {
   margin-left: auto;
   background: var(--red);
-  color: #fff;
+  color: var(--color-text-primary);
   font-size: 9px;
   padding: 1px 5px;
   border-radius: 8px;
@@ -418,4 +418,4 @@
 
 /* Alien: headers are orange */
 [data-theme="alien"] .page-title { color: #ff8c00; }
-[data-theme="alien"] .sidebar-title { color: #39ff14; }
+[data-theme="alien"] .sidebar-title { color: var(--accent); }
