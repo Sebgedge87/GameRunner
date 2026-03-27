@@ -63,4 +63,30 @@ router.delete('/users/:id', requireDevKey, (req, res) => {
   res.json({ success: true, removed: user.username })
 })
 
+// POST /api/dev-admin/query — run a read-only SELECT query
+router.post('/query', requireDevKey, (req, res) => {
+  const { sql } = req.body
+  if (!sql || typeof sql !== 'string') return res.status(400).json({ error: 'sql required' })
+
+  // Strip comments and whitespace, then check it's a SELECT
+  const clean = sql.replace(/--[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '').trim()
+  if (!/^SELECT\b/i.test(clean)) {
+    return res.status(400).json({ error: 'Only SELECT statements are allowed' })
+  }
+  // Block any attempts to chain writes via semicolons
+  if (/;\s*(INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|ATTACH|DETACH|PRAGMA)\b/i.test(clean)) {
+    return res.status(400).json({ error: 'Write statements are not permitted' })
+  }
+
+  try {
+    const db = getDb()
+    const stmt = db.prepare(clean)
+    const rows = stmt.all()
+    const columns = rows.length > 0 ? Object.keys(rows[0]) : []
+    res.json({ columns, rows, count: rows.length })
+  } catch (err) {
+    res.status(400).json({ error: err.message })
+  }
+})
+
 module.exports = router
