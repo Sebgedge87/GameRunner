@@ -20,10 +20,13 @@
             </select>
           </div>
         </div>
-        <div class="modal-actions">
-          <button class="modal-close" @click="transferItem = null">Cancel</button>
-          <button class="submit-btn" :disabled="!transferTargetId || transferring" @click="doTransfer">{{ transferring ? 'Giving…' : 'Give' }}</button>
-        </div>
+        <StickyFormFooter
+          primary-label="Give"
+          :on-primary="doTransfer"
+          :on-cancel="() => transferItem = null"
+          :is-loading="transferring"
+          :is-disabled="!transferTargetId"
+        />
       </div>
     </div>
 
@@ -132,6 +135,7 @@ import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
 import EntityCard from '@/components/EntityCard.vue'
 import EmptyState from '@/components/EmptyState.vue'
+import StickyFormFooter from '@/components/StickyFormFooter.vue'
 
 const data     = useDataStore()
 const campaign = useCampaignStore()

@@ -644,14 +644,14 @@
         </template>
       </div>
 
-      <div v-if="saveError" class="status-msg status-err" style="margin-bottom:8px">{{ saveError }}</div>
+      <div v-if="saveError" class="status-msg status-err" style="margin-bottom:8px;padding:0 var(--space-6)">{{ saveError }}</div>
 
-      <div class="modal-actions">
-        <button class="modal-close" @click="ui.closeGmEdit()">Cancel</button>
-        <button class="submit-btn" @click="save" :disabled="saving">
-          {{ saving ? 'Saving…' : (isEdit ? 'Update' : 'Create') }}
-        </button>
-      </div>
+      <StickyFormFooter
+        :primary-label="isEdit ? 'Save' : 'Create'"
+        :on-primary="save"
+        :on-cancel="ui.closeGmEdit"
+        :is-loading="saving"
+      />
     </div>
   </div>
 </template>
@@ -665,6 +665,7 @@ import SearchSelect from './SearchSelect.vue'
 import EntityLookup from './EntityLookup.vue'
 import MarkdownEditor from './MarkdownEditor.vue'
 import Dropzone from './Dropzone.vue'
+import StickyFormFooter from './StickyFormFooter.vue'
 
 const ui = useUiStore()
 const data = useDataStore()

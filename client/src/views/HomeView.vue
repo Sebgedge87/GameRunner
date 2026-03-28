@@ -111,12 +111,12 @@
         <div class="form-group"><label>Description</label><textarea v-model="cc.description" class="form-input" rows="4"></textarea></div>
         <div class="form-group"><label>Playlist URL (Spotify / YouTube)</label><input v-model="cc.playlist_url" class="form-input" /></div>
         <div v-if="createError" class="status-msg status-err">{{ createError }}</div>
-        <div class="modal-actions">
-          <button class="modal-close" @click="showCreateModal = false">Cancel</button>
-          <button class="submit-btn" @click="saveCampaign" :disabled="creating">
-            {{ creating ? 'Creating…' : 'Create' }}
-          </button>
-        </div>
+        <StickyFormFooter
+          primary-label="Create"
+          :on-primary="saveCampaign"
+          :on-cancel="() => showCreateModal = false"
+          :is-loading="creating"
+        />
       </div>
     </div>
   </div>
@@ -130,6 +130,7 @@ import { useUiStore } from '@/stores/ui'
 import { useDataStore } from '@/stores/data'
 import { COC_ERAS } from '@/composables/useSystemFeatures'
 import CampaignWizardModal from '@/components/CampaignWizardModal.vue'
+import StickyFormFooter from '@/components/StickyFormFooter.vue'
 
 const campaign = useCampaignStore()
 const ui = useUiStore()

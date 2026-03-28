@@ -56,12 +56,12 @@
           <div style="font-size:0.82em;opacity:0.55;margin-bottom:6px">Inherited from campaign: <b>{{ sysLabel(activeSys) }}</b></div>
         </div>
         <div v-if="createError" class="status-msg status-err">{{ createError }}</div>
-        <div class="modal-actions">
-          <button class="modal-close" @click="showCreate = false">Cancel</button>
-          <button class="submit-btn" :disabled="creating" @click="createCharacter">
-            {{ creating ? 'Creating…' : 'Create' }}
-          </button>
-        </div>
+        <StickyFormFooter
+          primary-label="Create"
+          :on-primary="createCharacter"
+          :on-cancel="() => showCreate = false"
+          :is-loading="creating"
+        />
       </div>
     </div>
   </div>
@@ -73,6 +73,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
+import StickyFormFooter from '@/components/StickyFormFooter.vue'
 
 const auth = useAuthStore()
 const campaign = useCampaignStore()

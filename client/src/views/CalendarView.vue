@@ -260,12 +260,14 @@
             <input type="checkbox" v-model="modal.is_gm_only" style="margin-right:6px" />
             GM only (hidden from players)
           </label>
+
+          <button v-if="modal.id" class="btn btn-danger btn-sm" style="align-self:flex-start;margin-top:4px" @click="deleteEvent">Delete event</button>
         </div>
-        <div class="modal-footer">
-          <button v-if="modal.id" class="btn btn-danger btn-sm" @click="deleteEvent">Delete</button>
-          <button class="btn btn-sm" @click="modal.open = false">Cancel</button>
-          <button class="btn btn-primary btn-sm" @click="saveEvent">Save</button>
-        </div>
+        <StickyFormFooter
+          :primary-label="modal.id ? 'Save' : 'Create'"
+          :on-primary="saveEvent"
+          :on-cancel="() => modal.open = false"
+        />
       </div>
     </div>
   </div>
@@ -275,6 +277,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useCampaignStore } from '@/stores/campaign'
 import { useDataStore } from '@/stores/data'
+import StickyFormFooter from '@/components/StickyFormFooter.vue'
 
 const campaign = useCampaignStore()
 const data = useDataStore()
