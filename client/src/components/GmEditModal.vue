@@ -114,67 +114,70 @@
 
         </EntityForm>
 
-        <!-- NPC -->
-        <template v-else-if="type === 'npc'">
-          <div class="form-group"><label>Name</label><input v-model="f.name" class="form-input" /></div>
-          <div class="entity-form-grid">
-            <!-- Sidebar -->
-            <div class="efg-sidebar">
-              <div class="efg-portrait-wrap">
-                <Dropzone
-                  variant="square"
-                  accept="image/*"
-                  :value="portraitFile || portraitPreview || null"
-                  :on-change="handlePortraitChange"
-                  :on-remove="handlePortraitRemove"
-                  hint="PNG, JPG"
-                />
-              </div>
-              <div class="efg-stat-block">
-                <div class="efg-stat-title">Character</div>
-                <div class="form-group">
-                  <label class="efg-label">Role</label>
-                  <input v-model="f.role" class="form-input" placeholder="Innkeeper, guard…" />
-                </div>
-                <div class="form-group">
-                  <label class="efg-label">Race</label>
-                  <input v-model="f.race" class="form-input" placeholder="Human, Elf…" />
-                </div>
-                <div class="form-group">
-                  <label class="efg-label">Disposition</label>
-                  <select v-model="f.disposition" class="form-input">
-                    <option value="">Unknown</option>
-                    <option>Friendly</option><option>Neutral</option><option>Suspicious</option>
-                    <option>Hostile</option><option>Helpful</option><option>Fearful</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label class="efg-label">Faction</label>
-                  <EntityLookup v-model="f.faction_id" :options="data.factions.map(x=>({id:x.id,title:x.name}))" placeholder="Search factions…" />
-                </div>
-                <div class="form-group">
-                  <label class="efg-label">Home Location</label>
-                  <EntityLookup v-model="f.home_location_id" :options="data.locations.map(x=>({id:x.id,title:x.title||x.name}))" placeholder="Search locations…" />
-                </div>
-              </div>
+        <!-- NPC — migrated to EntityForm -->
+        <EntityForm v-else-if="type === 'npc'" :entity-type="title" sidebar-image-label="Upload portrait">
+
+          <template #name-field>
+            <div class="form-group">
+              <label>Name</label>
+              <input v-model="f.name" class="form-input" placeholder="Character name…" />
             </div>
-            <!-- Body -->
-            <div class="efg-body">
-              <div class="form-group" style="flex:1">
-                <label class="efg-label">Biography</label>
-                <MarkdownEditor v-model="f.description" :minRows="8" placeholder="Describe this character's appearance, background, and personality…" />
-              </div>
-              <div class="form-group">
-                <label class="efg-label">Player Notes</label>
-                <MarkdownEditor v-model="f.player_notes" :minRows="3" placeholder="Notes visible to all players…" />
-              </div>
-              <div class="efg-gm-notes">
-                <div class="efg-gm-hdr"><span class="bst-gm-badge">🔒 GM Only</span><span class="bst-gm-notes-title">Private Notes</span></div>
-                <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Secrets, motivations, hidden knowledge…" />
-              </div>
+          </template>
+
+          <template #sidebar-image>
+            <Dropzone
+              variant="square"
+              accept="image/*"
+              :value="portraitFile || portraitPreview || null"
+              :on-change="handlePortraitChange"
+              :on-remove="handlePortraitRemove"
+              hint="PNG, JPG"
+            />
+          </template>
+
+          <template #sidebar-details>
+            <div class="form-group">
+              <label>Role</label>
+              <input v-model="f.role" class="form-input" placeholder="Innkeeper, guard…" />
             </div>
-          </div>
-        </template>
+            <div class="form-group">
+              <label>Race</label>
+              <input v-model="f.race" class="form-input" placeholder="Human, Elf…" />
+            </div>
+            <div class="form-group">
+              <label>Disposition</label>
+              <select v-model="f.disposition" class="form-input">
+                <option value="">Unknown</option>
+                <option>Friendly</option><option>Neutral</option><option>Suspicious</option>
+                <option>Hostile</option><option>Helpful</option><option>Fearful</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Faction</label>
+              <EntityLookup v-model="f.faction_id" :options="data.factions.map(x=>({id:x.id,title:x.name}))" placeholder="Search factions…" />
+            </div>
+            <div class="form-group">
+              <label>Home location</label>
+              <EntityLookup v-model="f.home_location_id" :options="data.locations.map(x=>({id:x.id,title:x.title||x.name}))" placeholder="Search locations…" />
+            </div>
+          </template>
+
+          <template #main-content>
+            <div class="form-group">
+              <label>Biography</label>
+              <MarkdownEditor v-model="f.description" :minRows="8" placeholder="Describe this character's appearance, background, and personality…" />
+            </div>
+            <div class="form-group">
+              <label>Player notes (optional)</label>
+              <textarea v-model="f.player_notes" class="form-input" rows="3" placeholder="Notes visible to all players…"></textarea>
+            </div>
+          </template>
+
+          <template #gm-section>
+            <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Secrets, motivations, hidden knowledge…" />
+          </template>
+
+        </EntityForm>
 
         <!-- Location -->
         <template v-else-if="type === 'location'">
@@ -764,7 +767,7 @@ const title = computed(() => {
   return isEdit.value ? `Edit ${cap}` : `Create ${cap}`
 })
 
-const MIGRATED_TYPES = new Set(['quest'])
+const MIGRATED_TYPES = new Set(['quest', 'npc'])
 const isMigratedType = computed(() => MIGRATED_TYPES.has(type.value))
 const modalMaxWidth = computed(() => {
   if (isMigratedType.value) return '720px'
