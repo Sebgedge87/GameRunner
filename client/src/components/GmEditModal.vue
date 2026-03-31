@@ -242,43 +242,70 @@
 
         </EntityForm>
 
-        <!-- Hook -->
-        <template v-else-if="type === 'hook'">
-          <div class="form-group"><label>Title</label><input v-model="f.title" class="form-input" /></div>
-          <div class="form-group"><label>Description</label><textarea v-model="f.description" class="form-input" rows="3"></textarea></div>
-          <div class="form-group"><label>Status</label>
-            <select v-model="f.status" class="form-input">
-              <option>active</option><option>resolved</option><option>hidden</option>
-            </select>
-          </div>
-        </template>
+        <!-- Hook — migrated to EntityForm -->
+        <EntityForm v-else-if="type === 'hook'" :entity-type="title">
 
-        <!-- Handout -->
-        <template v-else-if="type === 'handout'">
-          <div class="form-group"><label>Title</label><input v-model="f.title" class="form-input" /></div>
-          <div class="form-group">
-            <label class="efg-label">Content</label>
-            <MarkdownEditor v-model="f.content" :minRows="6" placeholder="Write the handout text your players will receive…" />
-          </div>
-          <div class="form-group">
-            <label class="efg-label">Target Player</label>
-            <select v-model="f.user_id" class="form-input">
-              <option value="">All Players</option>
-              <option v-for="u in players" :key="u.id" :value="u.id">{{ u.username }}</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="efg-label">Image <span style="color:var(--text3);font-size:10px">(optional)</span></label>
-            <Dropzone
-              variant="banner"
-              accept="image/*"
-              :value="portraitFile || handoutImgPreview || null"
-              :on-change="handleHandoutImgChange"
-              :on-remove="handleHandoutImgRemove"
-              hint="PNG, JPG"
-            />
-          </div>
-        </template>
+          <template #name-field>
+            <div class="form-group">
+              <label>Title</label>
+              <input v-model="f.title" class="form-input" />
+            </div>
+          </template>
+
+          <template #sidebar-details>
+            <div class="form-group">
+              <label>Status</label>
+              <select v-model="f.status" class="form-input">
+                <option>active</option><option>resolved</option><option>hidden</option>
+              </select>
+            </div>
+          </template>
+
+          <template #main-content>
+            <div class="form-group">
+              <label>Description</label>
+              <MarkdownEditor v-model="f.description" :minRows="5" placeholder="Describe this plot hook — what draws the players in?" />
+            </div>
+          </template>
+
+        </EntityForm>
+
+        <!-- Handout — migrated to EntityForm (no sidebar) -->
+        <EntityForm v-else-if="type === 'handout'" :entity-type="title">
+
+          <template #name-field>
+            <div class="form-group">
+              <label>Title</label>
+              <input v-model="f.title" class="form-input" />
+            </div>
+          </template>
+
+          <template #main-content>
+            <div class="form-group">
+              <label>Content</label>
+              <MarkdownEditor v-model="f.content" :minRows="6" placeholder="Write the handout text your players will receive…" />
+            </div>
+            <div class="form-group">
+              <label>Target player (optional)</label>
+              <select v-model="f.user_id" class="form-input">
+                <option value="">All players</option>
+                <option v-for="u in players" :key="u.id" :value="u.id">{{ u.username }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Image (optional)</label>
+              <Dropzone
+                variant="banner"
+                accept="image/*"
+                :value="portraitFile || handoutImgPreview || null"
+                :on-change="handleHandoutImgChange"
+                :on-remove="handleHandoutImgRemove"
+                hint="PNG, JPG"
+              />
+            </div>
+          </template>
+
+        </EntityForm>
 
         <!-- Session -->
         <template v-else-if="type === 'session'">
@@ -598,18 +625,35 @@
 
         </EntityForm>
 
-        <!-- Rumour -->
-        <template v-else-if="type === 'rumour'">
-          <div class="form-group"><label>Rumour Text</label><textarea v-model="f.text" class="form-input" rows="3" placeholder="They say the blacksmith…"></textarea></div>
-          <div class="form-group"><label>Source NPC</label><input v-model="f.source_npc" class="form-input" /></div>
-          <div class="form-group"><label>Source Location</label><input v-model="f.source_location" class="form-input" /></div>
-          <div class="form-group"><label>Is True?</label>
-            <select v-model="f.is_true" class="form-input">
-              <option :value="true">True</option>
-              <option :value="false">False</option>
-            </select>
-          </div>
-        </template>
+        <!-- Rumour — migrated to EntityForm -->
+        <EntityForm v-else-if="type === 'rumour'" :entity-type="title">
+
+          <template #name-field>
+            <div class="form-group">
+              <label>Rumour text</label>
+              <textarea v-model="f.text" class="form-input" rows="3" placeholder="They say the blacksmith…"></textarea>
+            </div>
+          </template>
+
+          <template #sidebar-details>
+            <div class="form-group">
+              <label>Is true?</label>
+              <select v-model="f.is_true" class="form-input">
+                <option :value="true">True</option>
+                <option :value="false">False</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Source NPC (optional)</label>
+              <input v-model="f.source_npc" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label>Source location (optional)</label>
+              <input v-model="f.source_location" class="form-input" />
+            </div>
+          </template>
+
+        </EntityForm>
 
         <!-- Poll -->
         <template v-else-if="type === 'poll'">
@@ -767,7 +811,7 @@ const title = computed(() => {
   return isEdit.value ? `Edit ${cap}` : `Create ${cap}`
 })
 
-const MIGRATED_TYPES = new Set(['quest', 'npc', 'location', 'faction', 'map', 'bestiary'])
+const MIGRATED_TYPES = new Set(['quest', 'npc', 'location', 'faction', 'map', 'bestiary', 'handout', 'hook', 'rumour'])
 const isMigratedType = computed(() => MIGRATED_TYPES.has(type.value))
 const modalMaxWidth = computed(() => {
   if (isMigratedType.value) return '720px'
