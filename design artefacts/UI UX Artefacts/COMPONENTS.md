@@ -17,7 +17,7 @@ Never create a new component for something that matches an existing name.
 | `OverlayCard` | components/overlay-card.md | ✅ BUILT | Inline action rows on Factions, PlotHooks, Handouts, Bestiary, Rumours |
 | `OverflowMenu` | components/overflow-menu.md | ✅ BUILT | Inline Pin/Hide/Share/Edit/Delete buttons |
 | `ConfirmDialog` | components/confirm-dialog.md | ✅ BUILT | No existing confirm — adds missing safety layer |
-| `EntityForm` | components/entity-form.md | ⬜ TODO | 4 different form layouts across all entity create/edit screens |
+| `EntityForm` | components/entity-form.md | ✅ BUILT | 4 different form layouts across all entity create/edit screens |
 | `Dropzone` | components/dropzone.md | ✅ BUILT | All `<input type="file">` elements |
 | `EmptyState` | components/empty-state.md | ✅ BUILT | Floating bottom-right empty messages |
 | `ListPage` | components/list-page.md | ✅ BUILT | Dashed "Add entity" card in grid position |

@@ -485,31 +485,47 @@
           </div>
         </template>
 
-        <!-- Inventory -->
-        <template v-else-if="type === 'inventory'">
-          <div class="form-group"><label>Item Name</label><input v-model="f.name" class="form-input" /></div>
-          <div class="form-group"><label>Quantity</label><input v-model.number="f.quantity" class="form-input" type="number" min="0" /></div>
-          <div class="form-group"><label>Holder</label><input v-model="f.holder" class="form-input" placeholder="party, character name…" /></div>
-          <div class="form-group"><label>Description</label><textarea v-model="f.description" class="form-input" rows="2"></textarea></div>
-        </template>
+        <!-- Inventory — migrated to EntityForm -->
+        <EntityForm v-else-if="type === 'inventory'" :entity-type="title">
 
-        <!-- Key Item -->
-        <template v-else-if="type === 'key-item'">
-          <div class="form-group"><label>Name</label><input v-model="f.name" class="form-input" /></div>
-          <div class="form-group"><label>Description</label><textarea v-model="f.description" class="form-input" rows="3"></textarea></div>
-          <div class="form-group"><label>Significance</label><textarea v-model="f.significance" class="form-input" rows="2" placeholder="Why is this important?"></textarea></div>
-          <div class="form-group"><label>Linked Quest</label>
-            <SearchSelect
-              v-model="f.linked_quest"
-              :options="data.quests"
-              :multiple="false"
-              label-key="title"
-              value-key="title"
-              placeholder="Search quests…"
-            />
-          </div>
-          <div class="form-group">
-            <label>Image</label>
+          <template #name-field>
+            <div class="form-group">
+              <label>Item name</label>
+              <input v-model="f.name" class="form-input" />
+            </div>
+          </template>
+
+          <template #sidebar-details>
+            <div class="form-group">
+              <label>Quantity</label>
+              <input v-model.number="f.quantity" class="form-input" type="number" min="0" />
+            </div>
+            <div class="form-group">
+              <label>Holder</label>
+              <input v-model="f.holder" class="form-input" placeholder="party, character name…" />
+            </div>
+          </template>
+
+          <template #main-content>
+            <div class="form-group">
+              <label>Description (optional)</label>
+              <MarkdownEditor v-model="f.description" :minRows="3" placeholder="Describe this item…" />
+            </div>
+          </template>
+
+        </EntityForm>
+
+        <!-- Key-item — migrated to EntityForm -->
+        <EntityForm v-else-if="type === 'key-item'" :entity-type="title" sidebar-image-label="Upload portrait">
+
+          <template #name-field>
+            <div class="form-group">
+              <label>Name</label>
+              <input v-model="f.name" class="form-input" />
+            </div>
+          </template>
+
+          <template #sidebar-image>
             <Dropzone
               variant="square"
               accept="image/*"
@@ -518,8 +534,34 @@
               :on-remove="handlePortraitRemove"
               hint="PNG, JPG"
             />
-          </div>
-        </template>
+          </template>
+
+          <template #sidebar-details>
+            <div class="form-group">
+              <label>Significance (optional)</label>
+              <textarea v-model="f.significance" class="form-input" rows="2" placeholder="Why is this important?"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Linked quest (optional)</label>
+              <SearchSelect
+                v-model="f.linked_quest"
+                :options="data.quests"
+                :multiple="false"
+                label-key="title"
+                value-key="title"
+                placeholder="Search quests…"
+              />
+            </div>
+          </template>
+
+          <template #main-content>
+            <div class="form-group">
+              <label>Description</label>
+              <MarkdownEditor v-model="f.description" :minRows="5" placeholder="Describe this item's appearance, history, and properties…" />
+            </div>
+          </template>
+
+        </EntityForm>
 
         <!-- Job -->
         <template v-else-if="type === 'job'">
@@ -811,7 +853,7 @@ const title = computed(() => {
   return isEdit.value ? `Edit ${cap}` : `Create ${cap}`
 })
 
-const MIGRATED_TYPES = new Set(['quest', 'npc', 'location', 'faction', 'map', 'bestiary', 'handout', 'hook', 'rumour'])
+const MIGRATED_TYPES = new Set(['quest', 'npc', 'location', 'faction', 'map', 'bestiary', 'handout', 'hook', 'rumour', 'inventory', 'key-item'])
 const isMigratedType = computed(() => MIGRATED_TYPES.has(type.value))
 const modalMaxWidth = computed(() => {
   if (isMigratedType.value) return '720px'
