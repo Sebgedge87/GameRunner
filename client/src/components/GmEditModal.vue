@@ -179,63 +179,68 @@
 
         </EntityForm>
 
-        <!-- Location -->
-        <template v-else-if="type === 'location'">
-          <div class="form-group"><label>Name</label><input v-model="f.name" class="form-input" /></div>
-          <div class="entity-form-grid">
-            <!-- Sidebar -->
-            <div class="efg-sidebar">
-              <div class="efg-portrait-wrap">
-                <Dropzone
-                  variant="square"
-                  accept="image/*"
-                  :value="portraitFile || portraitPreview || null"
-                  :on-change="handlePortraitChange"
-                  :on-remove="handlePortraitRemove"
-                  hint="PNG, JPG"
-                />
-              </div>
-              <div class="efg-stat-block">
-                <div class="efg-stat-title">Details</div>
-                <div class="form-group">
-                  <label class="efg-label">Type</label>
-                  <select v-model="f.location_type" class="form-input">
-                    <option value="">Unknown</option>
-                    <option>City</option><option>Town</option><option>Village</option>
-                    <option>Dungeon</option><option>Forest</option><option>Keep</option>
-                    <option>Tavern</option><option>Temple</option><option>Region</option>
-                    <option>Wilderness</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label class="efg-label">Danger Level (0–5)</label>
-                  <input v-model.number="f.danger_level" class="form-input" type="number" min="0" max="5" />
-                </div>
-              </div>
+        <!-- Location — migrated to EntityForm -->
+        <EntityForm v-else-if="type === 'location'" :entity-type="title" sidebar-image-label="Upload portrait">
+
+          <template #name-field>
+            <div class="form-group">
+              <label>Name</label>
+              <input v-model="f.name" class="form-input" />
             </div>
-            <!-- Body -->
-            <div class="efg-body">
-              <div class="form-group" style="flex:1">
-                <label class="efg-label">Description</label>
-                <MarkdownEditor v-model="f.description" :minRows="8" placeholder="Describe this location — its sights, smells, inhabitants, history…" />
-              </div>
-              <div class="form-group">
-                <label class="efg-label">Parent Location</label>
-                <EntityLookup v-model="f.parent_location_id"
-                  :options="data.locations.filter(l=>l.id!==ui.gmEditModal?.id).map(x=>({id:x.id,title:x.title||x.name}))"
-                  placeholder="Search locations…" />
-              </div>
-              <div class="form-group">
-                <label class="efg-label">Player Notes</label>
-                <MarkdownEditor v-model="f.player_notes" :minRows="3" placeholder="Notes visible to all players…" />
-              </div>
-              <div class="efg-gm-notes">
-                <div class="efg-gm-hdr"><span class="bst-gm-badge">🔒 GM Only</span><span class="bst-gm-notes-title">Private Notes</span></div>
-                <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Hidden traps, secret doors, GM-only lore…" />
-              </div>
+          </template>
+
+          <template #sidebar-image>
+            <Dropzone
+              variant="square"
+              accept="image/*"
+              :value="portraitFile || portraitPreview || null"
+              :on-change="handlePortraitChange"
+              :on-remove="handlePortraitRemove"
+              hint="PNG, JPG"
+            />
+          </template>
+
+          <template #sidebar-details>
+            <div class="form-group">
+              <label>Type</label>
+              <select v-model="f.location_type" class="form-input">
+                <option value="">Unknown</option>
+                <option>City</option><option>Town</option><option>Village</option>
+                <option>Dungeon</option><option>Forest</option><option>Keep</option>
+                <option>Tavern</option><option>Temple</option><option>Region</option>
+                <option>Wilderness</option>
+              </select>
             </div>
-          </div>
-        </template>
+            <div class="form-group">
+              <label>Danger level (0–5)</label>
+              <input v-model.number="f.danger_level" class="form-input" type="number" min="0" max="5" />
+            </div>
+          </template>
+
+          <template #main-content>
+            <div class="form-group">
+              <label>Description</label>
+              <MarkdownEditor v-model="f.description" :minRows="8" placeholder="Describe this location — its sights, smells, inhabitants, history…" />
+            </div>
+            <div class="form-group">
+              <label>Parent location (optional)</label>
+              <EntityLookup
+                v-model="f.parent_location_id"
+                :options="data.locations.filter(l=>l.id!==ui.gmEditModal?.id).map(x=>({id:x.id,title:x.title||x.name}))"
+                placeholder="Search locations…"
+              />
+            </div>
+            <div class="form-group">
+              <label>Player notes (optional)</label>
+              <textarea v-model="f.player_notes" class="form-input" rows="3" placeholder="Notes visible to all players…"></textarea>
+            </div>
+          </template>
+
+          <template #gm-section>
+            <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Hidden traps, secret doors, GM-only lore…" />
+          </template>
+
+        </EntityForm>
 
         <!-- Hook -->
         <template v-else-if="type === 'hook'">
@@ -767,7 +772,7 @@ const title = computed(() => {
   return isEdit.value ? `Edit ${cap}` : `Create ${cap}`
 })
 
-const MIGRATED_TYPES = new Set(['quest', 'npc'])
+const MIGRATED_TYPES = new Set(['quest', 'npc', 'location'])
 const isMigratedType = computed(() => MIGRATED_TYPES.has(type.value))
 const modalMaxWidth = computed(() => {
   if (isMigratedType.value) return '720px'
