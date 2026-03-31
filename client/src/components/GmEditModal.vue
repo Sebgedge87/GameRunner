@@ -1,106 +1,118 @@
 <template>
   <div v-if="ui.gmEditModal" class="modal-overlay open" @click.self="ui.closeGmEdit()">
-    <div class="modal" :style="{ maxWidth: ['bestiary','npc','location','faction','job','timeline','map'].includes(type) ? '700px' : '520px' }">
-      <div class="modal-title">{{ title }}</div>
+    <div class="modal" :style="{ maxWidth: modalMaxWidth }">
+      <div v-if="!isMigratedType" class="modal-title">{{ title }}</div>
       <div class="gm-modal-body">
-        <!-- Quest -->
-        <template v-if="type === 'quest'">
-          <div class="form-group"><label>Title</label><input v-model="f.title" class="form-input" /></div>
-          <div class="form-group"><label>Description</label><textarea v-model="f.description" class="form-input" rows="4"></textarea></div>
-          <div class="form-row">
-            <div class="form-group" style="flex:1"><label>Status</label>
+        <!-- Quest — migrated to EntityForm -->
+        <EntityForm v-if="type === 'quest'" :entity-type="title">
+
+          <template #name-field>
+            <div class="form-group">
+              <label>Title</label>
+              <input v-model="f.title" class="form-input" placeholder="A tale of swords and sorcery…" />
+            </div>
+          </template>
+
+          <template #sidebar-details>
+            <div class="form-group">
+              <label>Status</label>
               <select v-model="f.status" class="form-input">
                 <option>active</option><option>completed</option><option>failed</option><option>hidden</option>
               </select>
             </div>
-            <div class="form-group" style="flex:1"><label>Type</label>
+            <div class="form-group">
+              <label>Type</label>
               <select v-model="f.quest_type" class="form-input">
                 <option>main</option><option>side</option><option>personal</option>
               </select>
             </div>
-          </div>
-          <div class="form-group"><label>Parent Quest (Chain)</label>
-            <SearchSelect
-              v-model="f.parent_quest_id"
-              :options="data.quests.filter(q => q.id !== ui.gmEditModal?.id)"
-              :multiple="false"
-              label-key="title"
-              value-key="id"
-              placeholder="Search quests…"
-            />
-          </div>
-
-          <div class="form-section-label">Urgency &amp; Deadline</div>
-          <div class="form-row">
-            <div class="form-group" style="flex:1"><label>Urgency</label>
+            <div class="form-group">
+              <label>Urgency</label>
               <select v-model="f.urgency" class="form-input">
                 <option value="none">None</option>
-                <option value="low">Low (amber)</option>
-                <option value="high">High — urgent (red)</option>
+                <option value="low">Low</option>
+                <option value="high">High — urgent</option>
               </select>
             </div>
-            <div class="form-group" style="flex:1"><label>Deadline</label>
+            <div class="form-group">
+              <label>Deadline (optional)</label>
               <input v-model="f.deadline" class="form-input" placeholder="e.g. 3 sessions / Day 14" />
             </div>
-          </div>
-
-          <div class="form-section-label">Rewards</div>
-          <div class="form-row">
-            <div class="form-group" style="flex:1"><label>💰 Gold (GP)</label><input v-model="f.reward_gold" class="form-input" placeholder="e.g. 100" /></div>
-            <div class="form-group" style="flex:1"><label>🎖️ XP</label><input v-model="f.reward_xp" class="form-input" placeholder="e.g. 250" /></div>
-          </div>
-          <div class="form-group"><label>⚔️ Item Rewards</label><input v-model="f.reward_items" class="form-input" placeholder="Silver dagger, potion of healing…" /></div>
-
-          <div class="form-section-label">Entity Connections</div>
-          <div class="form-group">
-            <label>📍 Locations</label>
-            <SearchSelect
-              v-model="f.connected_locations_arr"
-              :options="data.locations.map(l => ({ id: l.id, title: l.title || l.name }))"
-              label-key="title"
-              placeholder="Search locations…"
-            />
-          </div>
-          <div class="form-group">
-            <label>🏰 Factions</label>
-            <SearchSelect
-              v-model="f.connected_factions_arr"
-              :options="data.factions.map(f => ({ id: f.id, title: f.name }))"
-              label-key="title"
-              placeholder="Search factions…"
-            />
-          </div>
-          <div class="form-group">
-            <label>🧑 NPCs</label>
-            <SearchSelect
-              v-model="f.connected_npcs_arr"
-              :options="data.npcs.map(n => ({ id: n.id, title: n.title || n.name }))"
-              label-key="title"
-              placeholder="Search NPCs…"
-            />
-          </div>
-
-          <div class="form-section-label">Image</div>
-          <div class="form-group">
-            <label>Banner Image</label>
-            <Dropzone
-              variant="banner"
-              accept="image/*"
-              :value="questImgFile || f.image_url || null"
-              :on-change="handleQuestImgChange"
-              :on-remove="handleQuestImgRemove"
-              hint="PNG, JPG up to 5 MB"
-            />
-          </div>
-
-          <template v-if="campaign.isGm">
-            <div class="form-section-label gm-section-label">🔒 GM Only</div>
-            <div class="form-group gm-notes-group">
-              <label>GM Notes (private)</label>
-              <textarea v-model="f.gm_notes" class="form-input" rows="3" placeholder="Secret information, tactics, hidden motivations…"></textarea>
+            <div class="form-group">
+              <label>Gold reward (optional)</label>
+              <input v-model="f.reward_gold" class="form-input" placeholder="e.g. 100" />
+            </div>
+            <div class="form-group">
+              <label>XP reward (optional)</label>
+              <input v-model="f.reward_xp" class="form-input" placeholder="e.g. 250" />
+            </div>
+            <div class="form-group">
+              <label>Item rewards (optional)</label>
+              <input v-model="f.reward_items" class="form-input" placeholder="Silver dagger, potion of healing…" />
+            </div>
+            <div class="form-group">
+              <label>Parent quest (optional)</label>
+              <SearchSelect
+                v-model="f.parent_quest_id"
+                :options="data.quests.filter(q => q.id !== ui.gmEditModal?.id)"
+                :multiple="false"
+                label-key="title"
+                value-key="id"
+                placeholder="Search quests…"
+              />
             </div>
           </template>
-        </template>
+
+          <template #main-content>
+            <div class="form-group">
+              <label>Description</label>
+              <MarkdownEditor v-model="f.description" :minRows="6" placeholder="Describe this quest — the problem, stakes, and what the players know so far…" />
+            </div>
+            <div class="form-group">
+              <label>Locations</label>
+              <SearchSelect
+                v-model="f.connected_locations_arr"
+                :options="data.locations.map(l => ({ id: l.id, title: l.title || l.name }))"
+                label-key="title"
+                placeholder="Search locations…"
+              />
+            </div>
+            <div class="form-group">
+              <label>Factions</label>
+              <SearchSelect
+                v-model="f.connected_factions_arr"
+                :options="data.factions.map(fa => ({ id: fa.id, title: fa.name }))"
+                label-key="title"
+                placeholder="Search factions…"
+              />
+            </div>
+            <div class="form-group">
+              <label>NPCs</label>
+              <SearchSelect
+                v-model="f.connected_npcs_arr"
+                :options="data.npcs.map(n => ({ id: n.id, title: n.title || n.name }))"
+                label-key="title"
+                placeholder="Search NPCs…"
+              />
+            </div>
+            <div class="form-group">
+              <label>Banner image (optional)</label>
+              <Dropzone
+                variant="banner"
+                accept="image/*"
+                :value="questImgFile || f.image_url || null"
+                :on-change="handleQuestImgChange"
+                :on-remove="handleQuestImgRemove"
+                hint="PNG, JPG up to 5 MB"
+              />
+            </div>
+          </template>
+
+          <template #gm-section>
+            <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Secret information, tactics, hidden motivations…" />
+          </template>
+
+        </EntityForm>
 
         <!-- NPC -->
         <template v-else-if="type === 'npc'">
@@ -666,6 +678,7 @@ import EntityLookup from './EntityLookup.vue'
 import MarkdownEditor from './MarkdownEditor.vue'
 import Dropzone from './Dropzone.vue'
 import StickyFormFooter from './StickyFormFooter.vue'
+import EntityForm from './EntityForm.vue'
 
 const ui = useUiStore()
 const data = useDataStore()
@@ -749,6 +762,14 @@ const title = computed(() => {
   const t = type.value
   const cap = t.charAt(0).toUpperCase() + t.slice(1)
   return isEdit.value ? `Edit ${cap}` : `Create ${cap}`
+})
+
+const MIGRATED_TYPES = new Set(['quest'])
+const isMigratedType = computed(() => MIGRATED_TYPES.has(type.value))
+const modalMaxWidth = computed(() => {
+  if (isMigratedType.value) return '720px'
+  if (['bestiary','npc','location','faction','job','timeline','map'].includes(type.value)) return '700px'
+  return '520px'
 })
 
 const players = computed(() => data.users.filter(u => u.role !== 'gm'))
