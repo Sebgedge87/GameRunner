@@ -135,10 +135,12 @@
             <div class="gbc-preview-effect">{{ defById(awardModal.card_def_id)?.effect }}</div>
           </div>
         </div>
-        <div class="modal-footer">
-          <button class="btn btn-sm" @click="awardModal.open = false">Cancel</button>
-          <button class="btn btn-primary btn-sm" :disabled="!awardModal.user_id || !awardModal.type" @click="awardCard">Award</button>
-        </div>
+        <StickyFormFooter
+          primary-label="Award"
+          :on-primary="awardCard"
+          :on-cancel="() => awardModal.open = false"
+          :is-disabled="!awardModal.user_id || !awardModal.type"
+        />
       </div>
     </div>
 
@@ -161,10 +163,11 @@
             The DM will be notified. This card will be spent permanently.
           </p>
         </div>
-        <div class="modal-footer">
-          <button class="btn btn-sm" @click="playModal.open = false">Cancel</button>
-          <button class="btn btn-primary btn-sm" @click="playCard">Play Card</button>
-        </div>
+        <StickyFormFooter
+          primary-label="Play Card"
+          :on-primary="playCard"
+          :on-cancel="() => playModal.open = false"
+        />
       </div>
     </div>
   </div>
@@ -175,6 +178,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useCampaignStore } from '@/stores/campaign'
 import { useDataStore } from '@/stores/data'
 import { useUiStore } from '@/stores/ui'
+import StickyFormFooter from '@/components/StickyFormFooter.vue'
 
 const campaign = useCampaignStore()
 const data = useDataStore()

@@ -1,258 +1,311 @@
 <template>
   <div v-if="ui.gmEditModal" class="modal-overlay open" @click.self="ui.closeGmEdit()">
-    <div class="modal" :style="{ maxWidth: ['bestiary','npc','location','faction','job','timeline','map'].includes(type) ? '700px' : '520px' }">
-      <div class="modal-title">{{ title }}</div>
+    <div class="modal" :style="{ maxWidth: modalMaxWidth }">
+      <div v-if="!isMigratedType" class="modal-title">{{ title }}</div>
       <div class="gm-modal-body">
-        <!-- Quest -->
-        <template v-if="type === 'quest'">
-          <div class="form-group"><label>Title</label><input v-model="f.title" class="form-input" /></div>
-          <div class="form-group"><label>Description</label><textarea v-model="f.description" class="form-input" rows="4"></textarea></div>
-          <div class="form-row">
-            <div class="form-group" style="flex:1"><label>Status</label>
+        <!-- Quest — migrated to EntityForm -->
+        <EntityForm v-if="type === 'quest'" :entity-type="title">
+
+          <template #name-field>
+            <div class="form-group">
+              <label>Title</label>
+              <input v-model="f.title" class="form-input" placeholder="A tale of swords and sorcery…" />
+            </div>
+          </template>
+
+          <template #sidebar-details>
+            <div class="form-group">
+              <label>Status</label>
               <select v-model="f.status" class="form-input">
                 <option>active</option><option>completed</option><option>failed</option><option>hidden</option>
               </select>
             </div>
-            <div class="form-group" style="flex:1"><label>Type</label>
+            <div class="form-group">
+              <label>Type</label>
               <select v-model="f.quest_type" class="form-input">
                 <option>main</option><option>side</option><option>personal</option>
               </select>
             </div>
-          </div>
-          <div class="form-group"><label>Parent Quest (Chain)</label>
-            <SearchSelect
-              v-model="f.parent_quest_id"
-              :options="data.quests.filter(q => q.id !== ui.gmEditModal?.id)"
-              :multiple="false"
-              label-key="title"
-              value-key="id"
-              placeholder="Search quests…"
-            />
-          </div>
-
-          <div class="form-section-label">Urgency &amp; Deadline</div>
-          <div class="form-row">
-            <div class="form-group" style="flex:1"><label>Urgency</label>
+            <div class="form-group">
+              <label>Urgency</label>
               <select v-model="f.urgency" class="form-input">
                 <option value="none">None</option>
-                <option value="low">Low (amber)</option>
-                <option value="high">High — urgent (red)</option>
+                <option value="low">Low</option>
+                <option value="high">High — urgent</option>
               </select>
             </div>
-            <div class="form-group" style="flex:1"><label>Deadline</label>
+            <div class="form-group">
+              <label>Deadline (optional)</label>
               <input v-model="f.deadline" class="form-input" placeholder="e.g. 3 sessions / Day 14" />
             </div>
-          </div>
-
-          <div class="form-section-label">Rewards</div>
-          <div class="form-row">
-            <div class="form-group" style="flex:1"><label>💰 Gold (GP)</label><input v-model="f.reward_gold" class="form-input" placeholder="e.g. 100" /></div>
-            <div class="form-group" style="flex:1"><label>🎖️ XP</label><input v-model="f.reward_xp" class="form-input" placeholder="e.g. 250" /></div>
-          </div>
-          <div class="form-group"><label>⚔️ Item Rewards</label><input v-model="f.reward_items" class="form-input" placeholder="Silver dagger, potion of healing…" /></div>
-
-          <div class="form-section-label">Entity Connections</div>
-          <div class="form-group">
-            <label>📍 Locations</label>
-            <SearchSelect
-              v-model="f.connected_locations_arr"
-              :options="data.locations.map(l => ({ id: l.id, title: l.title || l.name }))"
-              label-key="title"
-              placeholder="Search locations…"
-            />
-          </div>
-          <div class="form-group">
-            <label>🏰 Factions</label>
-            <SearchSelect
-              v-model="f.connected_factions_arr"
-              :options="data.factions.map(f => ({ id: f.id, title: f.name }))"
-              label-key="title"
-              placeholder="Search factions…"
-            />
-          </div>
-          <div class="form-group">
-            <label>🧑 NPCs</label>
-            <SearchSelect
-              v-model="f.connected_npcs_arr"
-              :options="data.npcs.map(n => ({ id: n.id, title: n.title || n.name }))"
-              label-key="title"
-              placeholder="Search NPCs…"
-            />
-          </div>
-
-          <div class="form-section-label">Image</div>
-          <div class="form-group">
-            <label>Banner Image</label>
-            <div v-if="f.image_url" class="quest-img-preview">
-              <img :src="f.image_url" alt="Current banner" />
-              <button type="button" class="btn btn-xs" style="margin-top:4px" @click="f.image_url = ''">Remove</button>
+            <div class="form-group">
+              <label>Gold reward (optional)</label>
+              <input v-model="f.reward_gold" class="form-input" placeholder="e.g. 100" />
             </div>
-            <input type="file" ref="questImgInput" class="form-input" accept="image/*" />
-          </div>
-
-          <template v-if="campaign.isGm">
-            <div class="form-section-label gm-section-label">🔒 GM Only</div>
-            <div class="form-group gm-notes-group">
-              <label>GM Notes (private)</label>
-              <textarea v-model="f.gm_notes" class="form-input" rows="3" placeholder="Secret information, tactics, hidden motivations…"></textarea>
+            <div class="form-group">
+              <label>XP reward (optional)</label>
+              <input v-model="f.reward_xp" class="form-input" placeholder="e.g. 250" />
+            </div>
+            <div class="form-group">
+              <label>Item rewards (optional)</label>
+              <input v-model="f.reward_items" class="form-input" placeholder="Silver dagger, potion of healing…" />
+            </div>
+            <div class="form-group">
+              <label>Parent quest (optional)</label>
+              <SearchSelect
+                v-model="f.parent_quest_id"
+                :options="data.quests.filter(q => q.id !== ui.gmEditModal?.id)"
+                :multiple="false"
+                label-key="title"
+                value-key="id"
+                placeholder="Search quests…"
+              />
             </div>
           </template>
-        </template>
 
-        <!-- NPC -->
-        <template v-else-if="type === 'npc'">
-          <div class="form-group"><label>Name</label><input v-model="f.name" class="form-input" /></div>
-          <div class="entity-form-grid">
-            <!-- Sidebar -->
-            <div class="efg-sidebar">
-              <div class="efg-portrait-wrap">
-                <div class="efg-portrait" :style="portraitPreview ? `background-image:url(${portraitPreview})` : ''">
-                  <span v-if="!portraitPreview" class="efg-portrait-icon">🧙</span>
-                </div>
-                <label class="btn btn-sm efg-upload-btn">
-                  Upload Portrait
-                  <input type="file" ref="imgInput" accept="image/*" style="display:none" @change="onPortraitChange" />
-                </label>
-              </div>
-              <div class="efg-stat-block">
-                <div class="efg-stat-title">Character</div>
-                <div class="form-group">
-                  <label class="efg-label">Role</label>
-                  <input v-model="f.role" class="form-input" placeholder="Innkeeper, guard…" />
-                </div>
-                <div class="form-group">
-                  <label class="efg-label">Race</label>
-                  <input v-model="f.race" class="form-input" placeholder="Human, Elf…" />
-                </div>
-                <div class="form-group">
-                  <label class="efg-label">Disposition</label>
-                  <select v-model="f.disposition" class="form-input">
-                    <option value="">Unknown</option>
-                    <option>Friendly</option><option>Neutral</option><option>Suspicious</option>
-                    <option>Hostile</option><option>Helpful</option><option>Fearful</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label class="efg-label">Faction</label>
-                  <EntityLookup v-model="f.faction_id" :options="data.factions.map(x=>({id:x.id,title:x.name}))" placeholder="Search factions…" />
-                </div>
-                <div class="form-group">
-                  <label class="efg-label">Home Location</label>
-                  <EntityLookup v-model="f.home_location_id" :options="data.locations.map(x=>({id:x.id,title:x.title||x.name}))" placeholder="Search locations…" />
-                </div>
-              </div>
+          <template #main-content>
+            <div class="form-group">
+              <label>Description</label>
+              <MarkdownEditor v-model="f.description" :minRows="6" placeholder="Describe this quest — the problem, stakes, and what the players know so far…" />
             </div>
-            <!-- Body -->
-            <div class="efg-body">
-              <div class="form-group" style="flex:1">
-                <label class="efg-label">Biography</label>
-                <MarkdownEditor v-model="f.description" :minRows="8" placeholder="Describe this character's appearance, background, and personality…" />
-              </div>
-              <div class="form-group">
-                <label class="efg-label">Player Notes</label>
-                <MarkdownEditor v-model="f.player_notes" :minRows="3" placeholder="Notes visible to all players…" />
-              </div>
-              <div class="efg-gm-notes">
-                <div class="efg-gm-hdr"><span class="bst-gm-badge">🔒 GM Only</span><span class="bst-gm-notes-title">Private Notes</span></div>
-                <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Secrets, motivations, hidden knowledge…" />
-              </div>
+            <div class="form-group">
+              <label>Locations</label>
+              <SearchSelect
+                v-model="f.connected_locations_arr"
+                :options="data.locations.map(l => ({ id: l.id, title: l.title || l.name }))"
+                label-key="title"
+                placeholder="Search locations…"
+              />
             </div>
-          </div>
-        </template>
+            <div class="form-group">
+              <label>Factions</label>
+              <SearchSelect
+                v-model="f.connected_factions_arr"
+                :options="data.factions.map(fa => ({ id: fa.id, title: fa.name }))"
+                label-key="title"
+                placeholder="Search factions…"
+              />
+            </div>
+            <div class="form-group">
+              <label>NPCs</label>
+              <SearchSelect
+                v-model="f.connected_npcs_arr"
+                :options="data.npcs.map(n => ({ id: n.id, title: n.title || n.name }))"
+                label-key="title"
+                placeholder="Search NPCs…"
+              />
+            </div>
+            <div class="form-group">
+              <label>Banner image (optional)</label>
+              <Dropzone
+                variant="banner"
+                accept="image/*"
+                :value="questImgFile || f.image_url || null"
+                :on-change="handleQuestImgChange"
+                :on-remove="handleQuestImgRemove"
+                hint="PNG, JPG up to 5 MB"
+              />
+            </div>
+          </template>
 
-        <!-- Location -->
-        <template v-else-if="type === 'location'">
-          <div class="form-group"><label>Name</label><input v-model="f.name" class="form-input" /></div>
-          <div class="entity-form-grid">
-            <!-- Sidebar -->
-            <div class="efg-sidebar">
-              <div class="efg-portrait-wrap">
-                <div class="efg-portrait efg-portrait--map" :style="portraitPreview ? `background-image:url(${portraitPreview})` : ''">
-                  <span v-if="!portraitPreview" class="efg-portrait-icon">🗺️</span>
-                </div>
-                <label class="btn btn-sm efg-upload-btn">
-                  Upload Thumbnail
-                  <input type="file" ref="imgInput" accept="image/*" style="display:none" @change="onPortraitChange" />
-                </label>
-              </div>
-              <div class="efg-stat-block">
-                <div class="efg-stat-title">Details</div>
-                <div class="form-group">
-                  <label class="efg-label">Type</label>
-                  <select v-model="f.location_type" class="form-input">
-                    <option value="">Unknown</option>
-                    <option>City</option><option>Town</option><option>Village</option>
-                    <option>Dungeon</option><option>Forest</option><option>Keep</option>
-                    <option>Tavern</option><option>Temple</option><option>Region</option>
-                    <option>Wilderness</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label class="efg-label">Danger Level (0–5)</label>
-                  <input v-model.number="f.danger_level" class="form-input" type="number" min="0" max="5" />
-                </div>
-              </div>
-            </div>
-            <!-- Body -->
-            <div class="efg-body">
-              <div class="form-group" style="flex:1">
-                <label class="efg-label">Description</label>
-                <MarkdownEditor v-model="f.description" :minRows="8" placeholder="Describe this location — its sights, smells, inhabitants, history…" />
-              </div>
-              <div class="form-group">
-                <label class="efg-label">Parent Location</label>
-                <EntityLookup v-model="f.parent_location_id"
-                  :options="data.locations.filter(l=>l.id!==ui.gmEditModal?.id).map(x=>({id:x.id,title:x.title||x.name}))"
-                  placeholder="Search locations…" />
-              </div>
-              <div class="form-group">
-                <label class="efg-label">Player Notes</label>
-                <MarkdownEditor v-model="f.player_notes" :minRows="3" placeholder="Notes visible to all players…" />
-              </div>
-              <div class="efg-gm-notes">
-                <div class="efg-gm-hdr"><span class="bst-gm-badge">🔒 GM Only</span><span class="bst-gm-notes-title">Private Notes</span></div>
-                <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Hidden traps, secret doors, GM-only lore…" />
-              </div>
-            </div>
-          </div>
-        </template>
+          <template #gm-section>
+            <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Secret information, tactics, hidden motivations…" />
+          </template>
 
-        <!-- Hook -->
-        <template v-else-if="type === 'hook'">
-          <div class="form-group"><label>Title</label><input v-model="f.title" class="form-input" /></div>
-          <div class="form-group"><label>Description</label><textarea v-model="f.description" class="form-input" rows="3"></textarea></div>
-          <div class="form-group"><label>Status</label>
-            <select v-model="f.status" class="form-input">
-              <option>active</option><option>resolved</option><option>hidden</option>
-            </select>
-          </div>
-        </template>
+        </EntityForm>
 
-        <!-- Handout -->
-        <template v-else-if="type === 'handout'">
-          <div class="form-group"><label>Title</label><input v-model="f.title" class="form-input" /></div>
-          <div class="form-group">
-            <label class="efg-label">Content</label>
-            <MarkdownEditor v-model="f.content" :minRows="6" placeholder="Write the handout text your players will receive…" />
-          </div>
-          <div class="form-group">
-            <label class="efg-label">Target Player</label>
-            <select v-model="f.user_id" class="form-input">
-              <option value="">All Players</option>
-              <option v-for="u in players" :key="u.id" :value="u.id">{{ u.username }}</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="efg-label">Image <span style="color:var(--text3);font-size:10px">(optional)</span></label>
-            <label class="btn btn-sm efg-upload-btn" style="cursor:pointer">
-              {{ isEdit ? 'Replace Image' : 'Upload Image' }}
-              <input type="file" ref="imgInput" accept="image/*" style="display:none" @change="onHandoutImgChange" />
-            </label>
-            <img v-if="handoutImgPreview || (isEdit && ui.gmEditModal?.data?.file_path)"
-                 :src="handoutImgPreview || ('/uploads/' + ui.gmEditModal?.data?.file_path)"
-                 style="margin-top:8px;max-width:100%;max-height:140px;border-radius:4px;border:1px solid var(--border2);object-fit:contain;display:block" />
-          </div>
-        </template>
+        <!-- NPC — migrated to EntityForm -->
+        <EntityForm v-else-if="type === 'npc'" :entity-type="title" sidebar-image-label="Upload portrait">
+
+          <template #name-field>
+            <div class="form-group">
+              <label>Name</label>
+              <input v-model="f.name" class="form-input" placeholder="Character name…" />
+            </div>
+          </template>
+
+          <template #sidebar-image>
+            <Dropzone
+              variant="square"
+              accept="image/*"
+              :value="portraitFile || portraitPreview || null"
+              :on-change="handlePortraitChange"
+              :on-remove="handlePortraitRemove"
+              hint="PNG, JPG"
+            />
+          </template>
+
+          <template #sidebar-details>
+            <div class="form-group">
+              <label>Role</label>
+              <input v-model="f.role" class="form-input" placeholder="Innkeeper, guard…" />
+            </div>
+            <div class="form-group">
+              <label>Race</label>
+              <input v-model="f.race" class="form-input" placeholder="Human, Elf…" />
+            </div>
+            <div class="form-group">
+              <label>Disposition</label>
+              <select v-model="f.disposition" class="form-input">
+                <option value="">Unknown</option>
+                <option>Friendly</option><option>Neutral</option><option>Suspicious</option>
+                <option>Hostile</option><option>Helpful</option><option>Fearful</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Faction</label>
+              <EntityLookup v-model="f.faction_id" :options="data.factions.map(x=>({id:x.id,title:x.name}))" placeholder="Search factions…" />
+            </div>
+            <div class="form-group">
+              <label>Home location</label>
+              <EntityLookup v-model="f.home_location_id" :options="data.locations.map(x=>({id:x.id,title:x.title||x.name}))" placeholder="Search locations…" />
+            </div>
+          </template>
+
+          <template #main-content>
+            <div class="form-group">
+              <label>Biography</label>
+              <MarkdownEditor v-model="f.description" :minRows="8" placeholder="Describe this character's appearance, background, and personality…" />
+            </div>
+            <div class="form-group">
+              <label>Player notes (optional)</label>
+              <textarea v-model="f.player_notes" class="form-input" rows="3" placeholder="Notes visible to all players…"></textarea>
+            </div>
+          </template>
+
+          <template #gm-section>
+            <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Secrets, motivations, hidden knowledge…" />
+          </template>
+
+        </EntityForm>
+
+        <!-- Location — migrated to EntityForm -->
+        <EntityForm v-else-if="type === 'location'" :entity-type="title" sidebar-image-label="Upload portrait">
+
+          <template #name-field>
+            <div class="form-group">
+              <label>Name</label>
+              <input v-model="f.name" class="form-input" />
+            </div>
+          </template>
+
+          <template #sidebar-image>
+            <Dropzone
+              variant="square"
+              accept="image/*"
+              :value="portraitFile || portraitPreview || null"
+              :on-change="handlePortraitChange"
+              :on-remove="handlePortraitRemove"
+              hint="PNG, JPG"
+            />
+          </template>
+
+          <template #sidebar-details>
+            <div class="form-group">
+              <label>Type</label>
+              <select v-model="f.location_type" class="form-input">
+                <option value="">Unknown</option>
+                <option>City</option><option>Town</option><option>Village</option>
+                <option>Dungeon</option><option>Forest</option><option>Keep</option>
+                <option>Tavern</option><option>Temple</option><option>Region</option>
+                <option>Wilderness</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Danger level (0–5)</label>
+              <input v-model.number="f.danger_level" class="form-input" type="number" min="0" max="5" />
+            </div>
+          </template>
+
+          <template #main-content>
+            <div class="form-group">
+              <label>Description</label>
+              <MarkdownEditor v-model="f.description" :minRows="8" placeholder="Describe this location — its sights, smells, inhabitants, history…" />
+            </div>
+            <div class="form-group">
+              <label>Parent location (optional)</label>
+              <EntityLookup
+                v-model="f.parent_location_id"
+                :options="data.locations.filter(l=>l.id!==ui.gmEditModal?.id).map(x=>({id:x.id,title:x.title||x.name}))"
+                placeholder="Search locations…"
+              />
+            </div>
+            <div class="form-group">
+              <label>Player notes (optional)</label>
+              <textarea v-model="f.player_notes" class="form-input" rows="3" placeholder="Notes visible to all players…"></textarea>
+            </div>
+          </template>
+
+          <template #gm-section>
+            <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Hidden traps, secret doors, GM-only lore…" />
+          </template>
+
+        </EntityForm>
+
+        <!-- Hook — migrated to EntityForm -->
+        <EntityForm v-else-if="type === 'hook'" :entity-type="title">
+
+          <template #name-field>
+            <div class="form-group">
+              <label>Title</label>
+              <input v-model="f.title" class="form-input" />
+            </div>
+          </template>
+
+          <template #sidebar-details>
+            <div class="form-group">
+              <label>Status</label>
+              <select v-model="f.status" class="form-input">
+                <option>active</option><option>resolved</option><option>hidden</option>
+              </select>
+            </div>
+          </template>
+
+          <template #main-content>
+            <div class="form-group">
+              <label>Description</label>
+              <MarkdownEditor v-model="f.description" :minRows="5" placeholder="Describe this plot hook — what draws the players in?" />
+            </div>
+          </template>
+
+        </EntityForm>
+
+        <!-- Handout — migrated to EntityForm (no sidebar) -->
+        <EntityForm v-else-if="type === 'handout'" :entity-type="title">
+
+          <template #name-field>
+            <div class="form-group">
+              <label>Title</label>
+              <input v-model="f.title" class="form-input" />
+            </div>
+          </template>
+
+          <template #main-content>
+            <div class="form-group">
+              <label>Content</label>
+              <MarkdownEditor v-model="f.content" :minRows="6" placeholder="Write the handout text your players will receive…" />
+            </div>
+            <div class="form-group">
+              <label>Target player (optional)</label>
+              <select v-model="f.user_id" class="form-input">
+                <option value="">All players</option>
+                <option v-for="u in players" :key="u.id" :value="u.id">{{ u.username }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Image (optional)</label>
+              <Dropzone
+                variant="banner"
+                accept="image/*"
+                :value="portraitFile || handoutImgPreview || null"
+                :on-change="handleHandoutImgChange"
+                :on-remove="handleHandoutImgRemove"
+                hint="PNG, JPG"
+              />
+            </div>
+          </template>
+
+        </EntityForm>
 
         <!-- Session -->
         <template v-else-if="type === 'session'">
@@ -261,127 +314,133 @@
           <div class="form-group"><label>Session Date</label><input v-model="f.date" class="form-input" type="date" /></div>
         </template>
 
-        <!-- Map -->
-        <template v-else-if="type === 'map'">
-          <div class="form-group"><label>Title</label><input v-model="f.title" class="form-input" /></div>
-          <div class="entity-form-grid">
-            <!-- Sidebar -->
-            <div class="efg-sidebar">
-              <div class="efg-stat-block" style="margin-top:0">
-                <div class="efg-stat-title">Details</div>
-                <div class="form-group">
-                  <label class="efg-label">Type</label>
-                  <select v-model="f.map_type" class="form-input">
-                    <option value="world">World</option>
-                    <option value="region">Region</option>
-                    <option value="city">City</option>
-                    <option value="dungeon">Dungeon</option>
-                    <option value="encounter">Encounter</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label class="efg-label" style="display:flex;align-items:center;gap:8px;cursor:pointer">
-                    <input type="checkbox" v-model="f.map_gm_only" style="width:auto;margin:0" />
-                    GM Only
-                  </label>
-                </div>
-              </div>
-              <div class="efg-stat-block">
-                <div class="efg-stat-title">Map Image</div>
-                <div class="form-group">
-                  <label class="btn btn-sm efg-upload-btn" style="width:100%;text-align:center;cursor:pointer">
-                    {{ isEdit ? 'Replace Image' : 'Upload Image' }}
-                    <input type="file" ref="imgInput" accept="image/*" style="display:none" @change="onMapImgChange" />
-                  </label>
-                  <img v-if="mapImgPreview || (isEdit && ui.gmEditModal?.data?.image_path)"
-                       :src="mapImgPreview || ('/uploads/' + ui.gmEditModal?.data?.image_path)"
-                       style="margin-top:8px;max-width:100%;max-height:120px;border-radius:4px;border:1px solid var(--border2);object-fit:contain" />
-                </div>
-              </div>
-            </div>
-            <!-- Body -->
-            <div class="efg-body">
-              <div class="form-group">
-                <label class="efg-label">Description</label>
-                <MarkdownEditor v-model="f.description" :minRows="5" placeholder="Describe this map's region, history, and notable features…" />
-              </div>
-              <div class="form-group">
-                <label class="efg-label">Linked Location</label>
-                <EntityLookup v-model="f.map_linked_location_id" :options="data.locations.map(x=>({id:x.id,title:x.title||x.name}))" placeholder="Search locations…" />
-              </div>
-              <div class="form-group">
-                <label class="efg-label">Mind Map Links <span style="font-size:10px;color:var(--text3)">(hold Ctrl/Cmd to multi-select)</span></label>
-                <select v-model="f.map_connected_to" class="form-input" multiple style="height:80px">
-                  <option v-for="q in data.quests" :key="'q'+q.id" :value="q.title">{{ q.title }} (Quest)</option>
-                  <option v-for="n in data.npcs" :key="'n'+n.id" :value="n.title||n.name">{{ n.title||n.name }} (NPC)</option>
-                  <option v-for="l in data.locations" :key="'l'+l.id" :value="l.title||l.name">{{ l.title||l.name }} (Location)</option>
-                  <option v-for="h in data.hooks" :key="'h'+h.id" :value="h.title">{{ h.title }} (Hook)</option>
-                </select>
-              </div>
-              <div class="efg-gm-notes">
-                <div class="efg-gm-hdr"><span class="bst-gm-badge">🔒 GM Only</span><span class="bst-gm-notes-title">Private Notes</span></div>
-                <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Private — players never see this…" />
-              </div>
-            </div>
-          </div>
-        </template>
+        <!-- Map — migrated to EntityForm (banner-image variant) -->
+        <EntityForm v-else-if="type === 'map'" :entity-type="title">
 
-        <!-- Faction -->
-        <template v-else-if="type === 'faction'">
-          <div class="form-group"><label>Name</label><input v-model="f.name" class="form-input" /></div>
-          <div class="entity-form-grid">
-            <!-- Sidebar -->
-            <div class="efg-sidebar">
-              <div class="efg-portrait-wrap">
-                <div class="efg-portrait" :style="portraitPreview ? `background-image:url(${portraitPreview})` : ''">
-                  <span v-if="!portraitPreview" class="efg-portrait-icon">🏰</span>
-                </div>
-                <label class="btn btn-sm efg-upload-btn">
-                  Upload Icon
-                  <input type="file" ref="imgInput" accept="image/*" style="display:none" @change="onPortraitChange" />
-                </label>
-              </div>
-              <div class="efg-stat-block">
-                <div class="efg-stat-title">Status</div>
-                <div class="form-group">
-                  <label class="efg-label">Standing (−10 to +10)</label>
-                  <input v-model.number="f.standing" class="form-input efg-stat-input" type="number" min="-10" max="10" />
-                </div>
-                <div class="form-group">
-                  <label class="efg-label">Influence (1–5)</label>
-                  <input v-model.number="f.influence" class="form-input efg-stat-input" type="number" min="1" max="5" />
-                </div>
-              </div>
+          <template #name-field>
+            <div class="form-group">
+              <label>Title</label>
+              <input v-model="f.title" class="form-input" />
             </div>
-            <!-- Body -->
-            <div class="efg-body">
-              <div class="form-group">
-                <label class="efg-label">Description / Lore</label>
-                <MarkdownEditor v-model="f.description" :minRows="5" placeholder="Describe this faction's history, beliefs, and methods…" />
-              </div>
-              <div class="form-group">
-                <label class="efg-label">Goals</label>
-                <MarkdownEditor v-model="f.goals" :minRows="3" placeholder="What does this faction want?" />
-              </div>
-              <div class="form-group">
-                <label class="efg-label">Leader (NPC)</label>
-                <EntityLookup v-model="f.leader_npc_id" :options="data.npcs.map(x=>({id:x.id,title:x.title||x.name}))" placeholder="Search NPCs…" />
-              </div>
-              <div class="form-group">
-                <label class="efg-label">Headquarters (Location)</label>
-                <EntityLookup v-model="f.hq_location_id" :options="data.locations.map(x=>({id:x.id,title:x.title||x.name}))" placeholder="Search locations…" />
-              </div>
-              <div class="form-group">
-                <label class="efg-label">Members (NPCs)</label>
-                <EntityLookup v-model="f.member_ids" :options="data.npcs.map(x=>({id:x.id,title:x.title||x.name}))" :multiple="true" placeholder="Add members…" />
-              </div>
-              <div class="efg-gm-notes">
-                <div class="efg-gm-hdr"><span class="bst-gm-badge">🔒 GM Only</span><span class="bst-gm-notes-title">Private Notes</span></div>
-                <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Internal tensions, secret agendas, hidden members…" />
-              </div>
+          </template>
+
+          <!-- Banner image spans full width above the sidebar/main split -->
+          <template #banner-image>
+            <Dropzone
+              variant="banner"
+              accept="image/*"
+              :value="portraitFile || mapImgPreview || null"
+              :on-change="handleMapImgChange"
+              :on-remove="handleMapImgRemove"
+              hint="PNG, JPG — map image required"
+            />
+          </template>
+
+          <template #sidebar-details>
+            <div class="form-group">
+              <label>Type</label>
+              <select v-model="f.map_type" class="form-input">
+                <option value="world">World</option>
+                <option value="region">Region</option>
+                <option value="city">City</option>
+                <option value="dungeon">Dungeon</option>
+                <option value="encounter">Encounter</option>
+              </select>
             </div>
-          </div>
-        </template>
+            <div class="form-group">
+              <label class="ef-checkbox-label">
+                <input type="checkbox" v-model="f.map_gm_only" class="ef-checkbox" />
+                GM only
+              </label>
+            </div>
+          </template>
+
+          <template #main-content>
+            <div class="form-group">
+              <label>Description</label>
+              <MarkdownEditor v-model="f.description" :minRows="5" placeholder="Describe this map's region, history, and notable features…" />
+            </div>
+            <div class="form-group">
+              <label>Linked location (optional)</label>
+              <EntityLookup v-model="f.map_linked_location_id" :options="data.locations.map(x=>({id:x.id,title:x.title||x.name}))" placeholder="Search locations…" />
+            </div>
+            <div class="form-group">
+              <label>Mind map links (optional)</label>
+              <select v-model="f.map_connected_to" class="form-input" multiple style="height:80px">
+                <option v-for="q in data.quests" :key="'q'+q.id" :value="q.title">{{ q.title }} (Quest)</option>
+                <option v-for="n in data.npcs" :key="'n'+n.id" :value="n.title||n.name">{{ n.title||n.name }} (NPC)</option>
+                <option v-for="l in data.locations" :key="'l'+l.id" :value="l.title||l.name">{{ l.title||l.name }} (Location)</option>
+                <option v-for="h in data.hooks" :key="'h'+h.id" :value="h.title">{{ h.title }} (Hook)</option>
+              </select>
+            </div>
+          </template>
+
+          <template #gm-section>
+            <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Private — players never see this…" />
+          </template>
+
+        </EntityForm>
+
+        <!-- Faction — migrated to EntityForm -->
+        <EntityForm v-else-if="type === 'faction'" :entity-type="title" sidebar-image-label="Upload icon">
+
+          <template #name-field>
+            <div class="form-group">
+              <label>Name</label>
+              <input v-model="f.name" class="form-input" />
+            </div>
+          </template>
+
+          <template #sidebar-image>
+            <Dropzone
+              variant="square"
+              accept="image/*"
+              :value="portraitFile || portraitPreview || null"
+              :on-change="handlePortraitChange"
+              :on-remove="handlePortraitRemove"
+              hint="PNG, JPG"
+            />
+          </template>
+
+          <template #sidebar-details>
+            <div class="form-group">
+              <label>Standing (−10 to +10)</label>
+              <input v-model.number="f.standing" class="form-input" type="number" min="-10" max="10" />
+            </div>
+            <div class="form-group">
+              <label>Influence (1–5)</label>
+              <input v-model.number="f.influence" class="form-input" type="number" min="1" max="5" />
+            </div>
+          </template>
+
+          <template #main-content>
+            <div class="form-group">
+              <label>Description / lore</label>
+              <MarkdownEditor v-model="f.description" :minRows="5" placeholder="Describe this faction's history, beliefs, and methods…" />
+            </div>
+            <div class="form-group">
+              <label>Goals (optional)</label>
+              <textarea v-model="f.goals" class="form-input" rows="3" placeholder="What does this faction want?"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Leader (NPC)</label>
+              <EntityLookup v-model="f.leader_npc_id" :options="data.npcs.map(x=>({id:x.id,title:x.title||x.name}))" placeholder="Search NPCs…" />
+            </div>
+            <div class="form-group">
+              <label>Headquarters (location)</label>
+              <EntityLookup v-model="f.hq_location_id" :options="data.locations.map(x=>({id:x.id,title:x.title||x.name}))" placeholder="Search locations…" />
+            </div>
+            <div class="form-group">
+              <label>Members (NPCs)</label>
+              <EntityLookup v-model="f.member_ids" :options="data.npcs.map(x=>({id:x.id,title:x.title||x.name}))" :multiple="true" placeholder="Add members…" />
+            </div>
+          </template>
+
+          <template #gm-section>
+            <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Internal tensions, secret agendas, hidden members…" />
+          </template>
+
+        </EntityForm>
 
         <!-- Timeline -->
         <template v-else-if="type === 'timeline'">
@@ -426,31 +485,83 @@
           </div>
         </template>
 
-        <!-- Inventory -->
-        <template v-else-if="type === 'inventory'">
-          <div class="form-group"><label>Item Name</label><input v-model="f.name" class="form-input" /></div>
-          <div class="form-group"><label>Quantity</label><input v-model.number="f.quantity" class="form-input" type="number" min="0" /></div>
-          <div class="form-group"><label>Holder</label><input v-model="f.holder" class="form-input" placeholder="party, character name…" /></div>
-          <div class="form-group"><label>Description</label><textarea v-model="f.description" class="form-input" rows="2"></textarea></div>
-        </template>
+        <!-- Inventory — migrated to EntityForm -->
+        <EntityForm v-else-if="type === 'inventory'" :entity-type="title">
 
-        <!-- Key Item -->
-        <template v-else-if="type === 'key-item'">
-          <div class="form-group"><label>Name</label><input v-model="f.name" class="form-input" /></div>
-          <div class="form-group"><label>Description</label><textarea v-model="f.description" class="form-input" rows="3"></textarea></div>
-          <div class="form-group"><label>Significance</label><textarea v-model="f.significance" class="form-input" rows="2" placeholder="Why is this important?"></textarea></div>
-          <div class="form-group"><label>Linked Quest</label>
-            <SearchSelect
-              v-model="f.linked_quest"
-              :options="data.quests"
-              :multiple="false"
-              label-key="title"
-              value-key="title"
-              placeholder="Search quests…"
+          <template #name-field>
+            <div class="form-group">
+              <label>Item name</label>
+              <input v-model="f.name" class="form-input" />
+            </div>
+          </template>
+
+          <template #sidebar-details>
+            <div class="form-group">
+              <label>Quantity</label>
+              <input v-model.number="f.quantity" class="form-input" type="number" min="0" />
+            </div>
+            <div class="form-group">
+              <label>Holder</label>
+              <input v-model="f.holder" class="form-input" placeholder="party, character name…" />
+            </div>
+          </template>
+
+          <template #main-content>
+            <div class="form-group">
+              <label>Description (optional)</label>
+              <MarkdownEditor v-model="f.description" :minRows="3" placeholder="Describe this item…" />
+            </div>
+          </template>
+
+        </EntityForm>
+
+        <!-- Key-item — migrated to EntityForm -->
+        <EntityForm v-else-if="type === 'key-item'" :entity-type="title" sidebar-image-label="Upload portrait">
+
+          <template #name-field>
+            <div class="form-group">
+              <label>Name</label>
+              <input v-model="f.name" class="form-input" />
+            </div>
+          </template>
+
+          <template #sidebar-image>
+            <Dropzone
+              variant="square"
+              accept="image/*"
+              :value="portraitFile"
+              :on-change="handlePortraitChange"
+              :on-remove="handlePortraitRemove"
+              hint="PNG, JPG"
             />
-          </div>
-          <div class="form-group"><label>Image</label><input type="file" ref="imgInput" class="form-input" accept="image/*" /></div>
-        </template>
+          </template>
+
+          <template #sidebar-details>
+            <div class="form-group">
+              <label>Significance (optional)</label>
+              <textarea v-model="f.significance" class="form-input" rows="2" placeholder="Why is this important?"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Linked quest (optional)</label>
+              <SearchSelect
+                v-model="f.linked_quest"
+                :options="data.quests"
+                :multiple="false"
+                label-key="title"
+                value-key="title"
+                placeholder="Search quests…"
+              />
+            </div>
+          </template>
+
+          <template #main-content>
+            <div class="form-group">
+              <label>Description</label>
+              <MarkdownEditor v-model="f.description" :minRows="5" placeholder="Describe this item's appearance, history, and properties…" />
+            </div>
+          </template>
+
+        </EntityForm>
 
         <!-- Job -->
         <template v-else-if="type === 'job'">
@@ -503,79 +614,88 @@
           </div>
         </template>
 
-        <!-- Bestiary -->
-        <template v-else-if="type === 'bestiary'">
-          <!-- ── Header: Portrait + Creature Name ── -->
-          <div class="bst-header">
-            <div class="bst-portrait-col">
-              <div class="bst-avatar" :style="portraitPreview ? `background-image:url(${portraitPreview})` : ''">
-                <span v-if="!portraitPreview" class="bst-avatar-icon">🐉</span>
-              </div>
-              <label class="btn btn-sm bst-upload-btn">
-                Upload Portrait
-                <input type="file" ref="imgInput" accept="image/*" style="display:none" @change="onPortraitChange" />
-              </label>
-            </div>
-            <div class="bst-name-col">
-              <label class="bst-label">Creature Name</label>
-              <input v-model="f.name" class="form-input bst-name-input" placeholder="e.g. Ancient Red Dragon…" />
-            </div>
-          </div>
+        <!-- Bestiary — migrated to EntityForm -->
+        <EntityForm v-else-if="type === 'bestiary'" :entity-type="title" sidebar-image-label="Upload portrait">
 
-          <!-- ── Main Body: Stat Block + Description ── -->
-          <div class="bst-body">
-            <div class="bst-stat-block">
-              <div class="bst-stat-title">Stat Block</div>
-              <div class="form-group">
-                <label class="bst-label">CR</label>
-                <input v-model.number="f.cr" class="form-input bst-stat-input" type="number" step="0.25" min="0" placeholder="—" />
-              </div>
-              <div class="form-group">
-                <label class="bst-label">AC</label>
-                <input v-model.number="f.ac" class="form-input bst-stat-input" type="number" min="0" placeholder="—" />
-              </div>
-              <div class="form-group">
-                <label class="bst-label">HP</label>
-                <input v-model.number="f.hp" class="form-input bst-stat-input" type="number" min="0" placeholder="—" />
-              </div>
+          <template #name-field>
+            <div class="form-group">
+              <label>Creature name</label>
+              <input v-model="f.name" class="form-input" placeholder="e.g. Ancient Red Dragon…" />
             </div>
-            <div class="bst-desc-col">
-              <label class="bst-label">Description</label>
-              <textarea v-model="f.description" class="form-input bst-desc-area" rows="7"
-                placeholder="Describe this creature's appearance, behaviour, and lore…"></textarea>
+          </template>
+
+          <template #sidebar-image>
+            <Dropzone
+              variant="square"
+              accept="image/*"
+              :value="portraitFile || portraitPreview || null"
+              :on-change="handlePortraitChange"
+              :on-remove="handlePortraitRemove"
+              hint="PNG, JPG"
+            />
+          </template>
+
+          <template #sidebar-details>
+            <div class="form-group">
+              <label>CR</label>
+              <input v-model.number="f.cr" class="form-input ef-stat-input" type="number" step="0.25" min="0" placeholder="—" />
             </div>
-          </div>
-
-          <!-- ── Player Notes ── -->
-          <div class="form-group bst-player-notes">
-            <label class="bst-label">Player Notes</label>
-            <textarea v-model="f.player_notes" class="form-input" rows="3"
-              placeholder="Notes visible to all players in the campaign…"></textarea>
-          </div>
-
-          <!-- ── DM Private Notes (GM only) ── -->
-          <div class="bst-gm-notes">
-            <div class="bst-gm-notes-hdr">
-              <span class="bst-gm-badge">🔒 GM Only</span>
-              <span class="bst-gm-notes-title">Private Notes</span>
+            <div class="form-group">
+              <label>AC</label>
+              <input v-model.number="f.ac" class="form-input ef-stat-input" type="number" min="0" placeholder="—" />
             </div>
-            <textarea v-model="f.gm_notes" class="form-input bst-gm-textarea" rows="3"
-              placeholder="Secret information, hidden motivations, encounter tactics… not visible to players."></textarea>
-          </div>
-        </template>
+            <div class="form-group">
+              <label>HP</label>
+              <input v-model.number="f.hp" class="form-input ef-stat-input" type="number" min="0" placeholder="—" />
+            </div>
+          </template>
 
-        <!-- Rumour -->
-        <template v-else-if="type === 'rumour'">
-          <div class="form-group"><label>Rumour Text</label><textarea v-model="f.text" class="form-input" rows="3" placeholder="They say the blacksmith…"></textarea></div>
-          <div class="form-group"><label>Source NPC</label><input v-model="f.source_npc" class="form-input" /></div>
-          <div class="form-group"><label>Source Location</label><input v-model="f.source_location" class="form-input" /></div>
-          <div class="form-group"><label>Is True?</label>
-            <select v-model="f.is_true" class="form-input">
-              <option :value="true">True</option>
-              <option :value="false">False</option>
-            </select>
-          </div>
-        </template>
+          <template #main-content>
+            <div class="form-group">
+              <label>Description</label>
+              <MarkdownEditor v-model="f.description" :minRows="7" placeholder="Describe this creature's appearance, behaviour, and lore…" />
+            </div>
+            <div class="form-group">
+              <label>Player notes (optional)</label>
+              <textarea v-model="f.player_notes" class="form-input" rows="3" placeholder="Notes visible to all players in the campaign…"></textarea>
+            </div>
+          </template>
+
+          <template #gm-section>
+            <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Secret information, hidden motivations, encounter tactics…" />
+          </template>
+
+        </EntityForm>
+
+        <!-- Rumour — migrated to EntityForm -->
+        <EntityForm v-else-if="type === 'rumour'" :entity-type="title">
+
+          <template #name-field>
+            <div class="form-group">
+              <label>Rumour text</label>
+              <textarea v-model="f.text" class="form-input" rows="3" placeholder="They say the blacksmith…"></textarea>
+            </div>
+          </template>
+
+          <template #sidebar-details>
+            <div class="form-group">
+              <label>Is true?</label>
+              <select v-model="f.is_true" class="form-input">
+                <option :value="true">True</option>
+                <option :value="false">False</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Source NPC (optional)</label>
+              <input v-model="f.source_npc" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label>Source location (optional)</label>
+              <input v-model="f.source_location" class="form-input" />
+            </div>
+          </template>
+
+        </EntityForm>
 
         <!-- Poll -->
         <template v-else-if="type === 'poll'">
@@ -625,14 +745,14 @@
         </template>
       </div>
 
-      <div v-if="saveError" class="status-msg status-err" style="margin-bottom:8px">{{ saveError }}</div>
+      <div v-if="saveError" class="status-msg status-err" style="margin-bottom:8px;padding:0 var(--space-6)">{{ saveError }}</div>
 
-      <div class="modal-actions">
-        <button class="modal-close" @click="ui.closeGmEdit()">Cancel</button>
-        <button class="submit-btn" @click="save" :disabled="saving">
-          {{ saving ? 'Saving…' : (isEdit ? 'Update' : 'Create') }}
-        </button>
-      </div>
+      <StickyFormFooter
+        :primary-label="isEdit ? 'Save' : 'Create'"
+        :on-primary="save"
+        :on-cancel="ui.closeGmEdit"
+        :is-loading="saving"
+      />
     </div>
   </div>
 </template>
@@ -645,32 +765,53 @@ import { useCampaignStore } from '@/stores/campaign'
 import SearchSelect from './SearchSelect.vue'
 import EntityLookup from './EntityLookup.vue'
 import MarkdownEditor from './MarkdownEditor.vue'
+import Dropzone from './Dropzone.vue'
+import StickyFormFooter from './StickyFormFooter.vue'
+import EntityForm from './EntityForm.vue'
 
 const ui = useUiStore()
 const data = useDataStore()
 const campaign = useCampaignStore()
 
-const imgInput = ref(null)
-const questImgInput = ref(null)
+const portraitFile = ref(null)     // File object for portrait/image uploads
+const questImgFile = ref(null)     // File object for quest banner upload
 const saving = ref(false)
 const saveError = ref('')
 const portraitPreview = ref('')
 const mapImgPreview = ref('')
 const handoutImgPreview = ref('')
 
-function onPortraitChange(e) {
-  const file = e.target.files?.[0]
-  if (file) portraitPreview.value = URL.createObjectURL(file)
+function handlePortraitChange(file) {
+  portraitFile.value = file
+  portraitPreview.value = URL.createObjectURL(file)
 }
-
-function onHandoutImgChange(e) {
-  const file = e.target.files?.[0]
-  handoutImgPreview.value = file ? URL.createObjectURL(file) : ''
+function handlePortraitRemove() {
+  portraitFile.value = null
+  portraitPreview.value = ''
 }
-
-function onMapImgChange(e) {
-  const file = e.target.files?.[0]
-  mapImgPreview.value = file ? URL.createObjectURL(file) : ''
+function handleQuestImgChange(file) {
+  questImgFile.value = file
+  f.image_url = ''
+}
+function handleQuestImgRemove() {
+  questImgFile.value = null
+  f.image_url = ''
+}
+function handleHandoutImgChange(file) {
+  portraitFile.value = file
+  handoutImgPreview.value = URL.createObjectURL(file)
+}
+function handleHandoutImgRemove() {
+  portraitFile.value = null
+  handoutImgPreview.value = ''
+}
+function handleMapImgChange(file) {
+  portraitFile.value = file
+  mapImgPreview.value = URL.createObjectURL(file)
+}
+function handleMapImgRemove() {
+  portraitFile.value = null
+  mapImgPreview.value = ''
 }
 
 const f = reactive({
@@ -712,6 +853,14 @@ const title = computed(() => {
   return isEdit.value ? `Edit ${cap}` : `Create ${cap}`
 })
 
+const MIGRATED_TYPES = new Set(['quest', 'npc', 'location', 'faction', 'map', 'bestiary', 'handout', 'hook', 'rumour', 'inventory', 'key-item'])
+const isMigratedType = computed(() => MIGRATED_TYPES.has(type.value))
+const modalMaxWidth = computed(() => {
+  if (isMigratedType.value) return '720px'
+  if (['bestiary','npc','location','faction','job','timeline','map'].includes(type.value)) return '700px'
+  return '520px'
+})
+
 const players = computed(() => data.users.filter(u => u.role !== 'gm'))
 
 const TYPE_ENDPOINT = {
@@ -746,6 +895,8 @@ watch(() => ui.gmEditModal, (modal) => {
     else if (typeof f[k] === 'boolean') f[k] = false
     else f[k] = ''
   })
+  portraitFile.value = null
+  questImgFile.value = null
   portraitPreview.value = ''
   mapImgPreview.value = ''
   handoutImgPreview.value = ''
@@ -798,6 +949,8 @@ watch(() => ui.gmEditModal, (modal) => {
   f.hp = d.stats?.hp ?? null
   f.player_notes = d.player_notes || ''
   if (['bestiary','npc','location','faction'].includes(modal.type)) portraitPreview.value = d.image_path || d.image_url || ''
+  if (modal.type === 'map' && d.image_path) mapImgPreview.value = '/uploads/' + d.image_path
+  if (modal.type === 'handout' && d.file_path) handoutImgPreview.value = '/uploads/' + d.file_path
   // NPC
   f.race = d.race || ''
   f.disposition = d.disposition || ''
@@ -835,10 +988,10 @@ watch(() => ui.gmEditModal, (modal) => {
 }, { immediate: true })
 
 async function uploadQuestImage() {
-  const input = questImgInput.value
-  if (!input || !input.files || !input.files[0]) return null
+  const file = questImgFile.value
+  if (!file) return null
   const fd = new FormData()
-  fd.append('file', input.files[0])
+  fd.append('file', file)
   const token = localStorage.getItem('chronicle_token')
   const r = await fetch('/api/uploads', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd })
   if (r.ok) { const d = await r.json(); return d.url || d.path || null }
@@ -846,10 +999,10 @@ async function uploadQuestImage() {
 }
 
 async function uploadImage() {
-  const input = imgInput.value
-  if (!input || !input.files || !input.files[0]) return null
+  const file = portraitFile.value
+  if (!file) return null
   const fd = new FormData()
-  fd.append('file', input.files[0])
+  fd.append('file', file)
   const token = localStorage.getItem('chronicle_token')
   const r = await fetch('/api/uploads', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd })
   if (r.ok) { const d = await r.json(); return d.url || d.path || null }
@@ -862,7 +1015,7 @@ async function save() {
   try {
     const t = type.value
     let imageUrl = null
-    if (imgInput.value?.files?.[0]) imageUrl = await uploadImage()
+    if (portraitFile.value) imageUrl = await uploadImage()
 
     const endpoint = TYPE_ENDPOINT[t]
     if (!endpoint) throw new Error('Unknown type')
@@ -870,7 +1023,7 @@ async function save() {
     let body = {}
     switch (t) {
       case 'quest': {
-        const questImgUrl = questImgInput.value?.files?.[0]
+        const questImgUrl = questImgFile.value
           ? await uploadQuestImage()
           : (f.image_url || null)
         body = {
@@ -1168,6 +1321,34 @@ async function save() {
   .bst-body { grid-template-columns: 1fr; }
   .bst-stat-block { flex-direction: row; flex-wrap: wrap; gap: 12px; }
   .bst-stat-block .form-group { flex: 1; min-width: 60px; }
+}
+
+/* ── EntityForm helpers ──────────────────────────────────────────────────── */
+
+/* Checkbox label used in Map's GM-only toggle */
+.ef-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  font-family: var(--font-sans);
+  font-weight: var(--weight-regular);
+}
+.ef-checkbox {
+  width: auto;
+  margin: 0;
+  accent-color: var(--color-text-accent);
+}
+
+/* Numeric stat inputs (CR / AC / HP in Bestiary sidebar).
+   Mono font is allowed here — these are numeric data values per COPY_RULES. */
+.ef-stat-input {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
 }
 
 /* ── Entity Form 30/70 Grid ──────────────────────────────────────────────── */

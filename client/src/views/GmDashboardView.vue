@@ -239,15 +239,15 @@
             <!-- Background image row -->
             <div class="field-group" style="grid-column:1/-1">
               <label>Background Image</label>
-              <div style="display:flex;gap:8px;align-items:center">
-                <input v-model="campForm.bg_image" class="form-input" placeholder="https://… or upload below" style="flex:1" />
-                <label class="btn btn-sm" style="cursor:pointer;flex-shrink:0">
-                  Upload
-                  <input type="file" accept="image/*" style="display:none" @change="uploadBgImage" />
-                </label>
-                <button v-if="campForm.bg_image" class="btn btn-sm btn-danger" style="flex-shrink:0" @click="campForm.bg_image = ''">Clear</button>
-              </div>
-              <div v-if="campForm.bg_image" class="bg-preview" :style="`background-image:url(${JSON.stringify(campForm.bg_image)})`"></div>
+              <Dropzone
+                variant="banner"
+                accept="image/*"
+                :value="campForm.bg_image || null"
+                :on-change="uploadBgImage"
+                :on-remove="() => campForm.bg_image = ''"
+                hint="PNG, JPG — or paste a URL below"
+              />
+              <input v-model="campForm.bg_image" class="form-input" placeholder="Or paste image URL…" style="margin-top:8px" />
             </div>
             <!-- Invite code row -->
             <div class="field-group" style="grid-column:1/-1">
@@ -329,6 +329,7 @@ import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
 import { useSystemFeatures } from '@/composables/useSystemFeatures'
 import QuestCard from '@/components/QuestCard.vue'
+import Dropzone from '@/components/Dropzone.vue'
 
 const data = useDataStore()
 const campaign = useCampaignStore()
@@ -418,8 +419,7 @@ async function saveCampaign() {
   }
 }
 
-async function uploadBgImage(e) {
-  const file = e.target.files[0]
+async function uploadBgImage(file) {
   if (!file) return
   const fd = new FormData()
   fd.append('file', file)
