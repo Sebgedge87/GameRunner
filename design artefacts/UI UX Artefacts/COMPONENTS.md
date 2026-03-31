@@ -24,7 +24,7 @@ Never create a new component for something that matches an existing name.
 | `FilterTabs` | components/filter-tabs.md | ✅ BUILT | Inconsistently sized filter tab rows |
 | `RichTextField` | components/rich-text-field.md | ⬜ TODO | Rich text editor applied to wrong field types |
 | `StickyFormFooter` | components/sticky-form-footer.md | ✅ BUILT | Scrolling Cancel/Create buttons |
-| `StatusBadge` | components/status-badge.md | ⬜ TODO | Various inline status labels |
+| `StatusBadge` | components/status-badge.md | ✅ BUILT | Various inline status labels |
 | `RelationshipSlider` | components/relationship-slider.md | ⬜ TODO | Faction Hostile→Allied slider |
 
 ## Status flags
