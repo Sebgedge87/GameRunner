@@ -287,129 +287,133 @@
           <div class="form-group"><label>Session Date</label><input v-model="f.date" class="form-input" type="date" /></div>
         </template>
 
-        <!-- Map -->
-        <template v-else-if="type === 'map'">
-          <div class="form-group"><label>Title</label><input v-model="f.title" class="form-input" /></div>
-          <div class="entity-form-grid">
-            <!-- Sidebar -->
-            <div class="efg-sidebar">
-              <div class="efg-stat-block" style="margin-top:0">
-                <div class="efg-stat-title">Details</div>
-                <div class="form-group">
-                  <label class="efg-label">Type</label>
-                  <select v-model="f.map_type" class="form-input">
-                    <option value="world">World</option>
-                    <option value="region">Region</option>
-                    <option value="city">City</option>
-                    <option value="dungeon">Dungeon</option>
-                    <option value="encounter">Encounter</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label class="efg-label" style="display:flex;align-items:center;gap:8px;cursor:pointer">
-                    <input type="checkbox" v-model="f.map_gm_only" style="width:auto;margin:0" />
-                    GM Only
-                  </label>
-                </div>
-              </div>
-              <div class="efg-stat-block">
-                <div class="efg-stat-title">Map Image</div>
-                <div class="form-group">
-                  <Dropzone
-                    variant="banner"
-                    accept="image/*"
-                    :value="portraitFile || mapImgPreview || null"
-                    :on-change="handleMapImgChange"
-                    :on-remove="handleMapImgRemove"
-                    hint="PNG, JPG"
-                  />
-                </div>
-              </div>
-            </div>
-            <!-- Body -->
-            <div class="efg-body">
-              <div class="form-group">
-                <label class="efg-label">Description</label>
-                <MarkdownEditor v-model="f.description" :minRows="5" placeholder="Describe this map's region, history, and notable features…" />
-              </div>
-              <div class="form-group">
-                <label class="efg-label">Linked Location</label>
-                <EntityLookup v-model="f.map_linked_location_id" :options="data.locations.map(x=>({id:x.id,title:x.title||x.name}))" placeholder="Search locations…" />
-              </div>
-              <div class="form-group">
-                <label class="efg-label">Mind Map Links <span style="font-size:10px;color:var(--text3)">(hold Ctrl/Cmd to multi-select)</span></label>
-                <select v-model="f.map_connected_to" class="form-input" multiple style="height:80px">
-                  <option v-for="q in data.quests" :key="'q'+q.id" :value="q.title">{{ q.title }} (Quest)</option>
-                  <option v-for="n in data.npcs" :key="'n'+n.id" :value="n.title||n.name">{{ n.title||n.name }} (NPC)</option>
-                  <option v-for="l in data.locations" :key="'l'+l.id" :value="l.title||l.name">{{ l.title||l.name }} (Location)</option>
-                  <option v-for="h in data.hooks" :key="'h'+h.id" :value="h.title">{{ h.title }} (Hook)</option>
-                </select>
-              </div>
-              <div class="efg-gm-notes">
-                <div class="efg-gm-hdr"><span class="bst-gm-badge">🔒 GM Only</span><span class="bst-gm-notes-title">Private Notes</span></div>
-                <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Private — players never see this…" />
-              </div>
-            </div>
-          </div>
-        </template>
+        <!-- Map — migrated to EntityForm (banner-image variant) -->
+        <EntityForm v-else-if="type === 'map'" :entity-type="title">
 
-        <!-- Faction -->
-        <template v-else-if="type === 'faction'">
-          <div class="form-group"><label>Name</label><input v-model="f.name" class="form-input" /></div>
-          <div class="entity-form-grid">
-            <!-- Sidebar -->
-            <div class="efg-sidebar">
-              <div class="efg-portrait-wrap">
-                <Dropzone
-                  variant="square"
-                  accept="image/*"
-                  :value="portraitFile || portraitPreview || null"
-                  :on-change="handlePortraitChange"
-                  :on-remove="handlePortraitRemove"
-                  hint="PNG, JPG"
-                />
-              </div>
-              <div class="efg-stat-block">
-                <div class="efg-stat-title">Status</div>
-                <div class="form-group">
-                  <label class="efg-label">Standing (−10 to +10)</label>
-                  <input v-model.number="f.standing" class="form-input efg-stat-input" type="number" min="-10" max="10" />
-                </div>
-                <div class="form-group">
-                  <label class="efg-label">Influence (1–5)</label>
-                  <input v-model.number="f.influence" class="form-input efg-stat-input" type="number" min="1" max="5" />
-                </div>
-              </div>
+          <template #name-field>
+            <div class="form-group">
+              <label>Title</label>
+              <input v-model="f.title" class="form-input" />
             </div>
-            <!-- Body -->
-            <div class="efg-body">
-              <div class="form-group">
-                <label class="efg-label">Description / Lore</label>
-                <MarkdownEditor v-model="f.description" :minRows="5" placeholder="Describe this faction's history, beliefs, and methods…" />
-              </div>
-              <div class="form-group">
-                <label class="efg-label">Goals</label>
-                <MarkdownEditor v-model="f.goals" :minRows="3" placeholder="What does this faction want?" />
-              </div>
-              <div class="form-group">
-                <label class="efg-label">Leader (NPC)</label>
-                <EntityLookup v-model="f.leader_npc_id" :options="data.npcs.map(x=>({id:x.id,title:x.title||x.name}))" placeholder="Search NPCs…" />
-              </div>
-              <div class="form-group">
-                <label class="efg-label">Headquarters (Location)</label>
-                <EntityLookup v-model="f.hq_location_id" :options="data.locations.map(x=>({id:x.id,title:x.title||x.name}))" placeholder="Search locations…" />
-              </div>
-              <div class="form-group">
-                <label class="efg-label">Members (NPCs)</label>
-                <EntityLookup v-model="f.member_ids" :options="data.npcs.map(x=>({id:x.id,title:x.title||x.name}))" :multiple="true" placeholder="Add members…" />
-              </div>
-              <div class="efg-gm-notes">
-                <div class="efg-gm-hdr"><span class="bst-gm-badge">🔒 GM Only</span><span class="bst-gm-notes-title">Private Notes</span></div>
-                <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Internal tensions, secret agendas, hidden members…" />
-              </div>
+          </template>
+
+          <!-- Banner image spans full width above the sidebar/main split -->
+          <template #banner-image>
+            <Dropzone
+              variant="banner"
+              accept="image/*"
+              :value="portraitFile || mapImgPreview || null"
+              :on-change="handleMapImgChange"
+              :on-remove="handleMapImgRemove"
+              hint="PNG, JPG — map image required"
+            />
+          </template>
+
+          <template #sidebar-details>
+            <div class="form-group">
+              <label>Type</label>
+              <select v-model="f.map_type" class="form-input">
+                <option value="world">World</option>
+                <option value="region">Region</option>
+                <option value="city">City</option>
+                <option value="dungeon">Dungeon</option>
+                <option value="encounter">Encounter</option>
+              </select>
             </div>
-          </div>
-        </template>
+            <div class="form-group">
+              <label class="ef-checkbox-label">
+                <input type="checkbox" v-model="f.map_gm_only" class="ef-checkbox" />
+                GM only
+              </label>
+            </div>
+          </template>
+
+          <template #main-content>
+            <div class="form-group">
+              <label>Description</label>
+              <MarkdownEditor v-model="f.description" :minRows="5" placeholder="Describe this map's region, history, and notable features…" />
+            </div>
+            <div class="form-group">
+              <label>Linked location (optional)</label>
+              <EntityLookup v-model="f.map_linked_location_id" :options="data.locations.map(x=>({id:x.id,title:x.title||x.name}))" placeholder="Search locations…" />
+            </div>
+            <div class="form-group">
+              <label>Mind map links (optional)</label>
+              <select v-model="f.map_connected_to" class="form-input" multiple style="height:80px">
+                <option v-for="q in data.quests" :key="'q'+q.id" :value="q.title">{{ q.title }} (Quest)</option>
+                <option v-for="n in data.npcs" :key="'n'+n.id" :value="n.title||n.name">{{ n.title||n.name }} (NPC)</option>
+                <option v-for="l in data.locations" :key="'l'+l.id" :value="l.title||l.name">{{ l.title||l.name }} (Location)</option>
+                <option v-for="h in data.hooks" :key="'h'+h.id" :value="h.title">{{ h.title }} (Hook)</option>
+              </select>
+            </div>
+          </template>
+
+          <template #gm-section>
+            <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Private — players never see this…" />
+          </template>
+
+        </EntityForm>
+
+        <!-- Faction — migrated to EntityForm -->
+        <EntityForm v-else-if="type === 'faction'" :entity-type="title" sidebar-image-label="Upload icon">
+
+          <template #name-field>
+            <div class="form-group">
+              <label>Name</label>
+              <input v-model="f.name" class="form-input" />
+            </div>
+          </template>
+
+          <template #sidebar-image>
+            <Dropzone
+              variant="square"
+              accept="image/*"
+              :value="portraitFile || portraitPreview || null"
+              :on-change="handlePortraitChange"
+              :on-remove="handlePortraitRemove"
+              hint="PNG, JPG"
+            />
+          </template>
+
+          <template #sidebar-details>
+            <div class="form-group">
+              <label>Standing (−10 to +10)</label>
+              <input v-model.number="f.standing" class="form-input" type="number" min="-10" max="10" />
+            </div>
+            <div class="form-group">
+              <label>Influence (1–5)</label>
+              <input v-model.number="f.influence" class="form-input" type="number" min="1" max="5" />
+            </div>
+          </template>
+
+          <template #main-content>
+            <div class="form-group">
+              <label>Description / lore</label>
+              <MarkdownEditor v-model="f.description" :minRows="5" placeholder="Describe this faction's history, beliefs, and methods…" />
+            </div>
+            <div class="form-group">
+              <label>Goals (optional)</label>
+              <textarea v-model="f.goals" class="form-input" rows="3" placeholder="What does this faction want?"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Leader (NPC)</label>
+              <EntityLookup v-model="f.leader_npc_id" :options="data.npcs.map(x=>({id:x.id,title:x.title||x.name}))" placeholder="Search NPCs…" />
+            </div>
+            <div class="form-group">
+              <label>Headquarters (location)</label>
+              <EntityLookup v-model="f.hq_location_id" :options="data.locations.map(x=>({id:x.id,title:x.title||x.name}))" placeholder="Search locations…" />
+            </div>
+            <div class="form-group">
+              <label>Members (NPCs)</label>
+              <EntityLookup v-model="f.member_ids" :options="data.npcs.map(x=>({id:x.id,title:x.title||x.name}))" :multiple="true" placeholder="Add members…" />
+            </div>
+          </template>
+
+          <template #gm-section>
+            <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Internal tensions, secret agendas, hidden members…" />
+          </template>
+
+        </EntityForm>
 
         <!-- Timeline -->
         <template v-else-if="type === 'timeline'">
@@ -541,67 +545,58 @@
           </div>
         </template>
 
-        <!-- Bestiary -->
-        <template v-else-if="type === 'bestiary'">
-          <!-- ── Header: Portrait + Creature Name ── -->
-          <div class="bst-header">
-            <div class="bst-portrait-col">
-              <Dropzone
-                variant="square"
-                accept="image/*"
-                :value="portraitFile || portraitPreview || null"
-                :on-change="handlePortraitChange"
-                :on-remove="handlePortraitRemove"
-                hint="PNG, JPG"
-              />
-            </div>
-            <div class="bst-name-col">
-              <label class="bst-label">Creature Name</label>
-              <input v-model="f.name" class="form-input bst-name-input" placeholder="e.g. Ancient Red Dragon…" />
-            </div>
-          </div>
+        <!-- Bestiary — migrated to EntityForm -->
+        <EntityForm v-else-if="type === 'bestiary'" :entity-type="title" sidebar-image-label="Upload portrait">
 
-          <!-- ── Main Body: Stat Block + Description ── -->
-          <div class="bst-body">
-            <div class="bst-stat-block">
-              <div class="bst-stat-title">Stat Block</div>
-              <div class="form-group">
-                <label class="bst-label">CR</label>
-                <input v-model.number="f.cr" class="form-input bst-stat-input" type="number" step="0.25" min="0" placeholder="—" />
-              </div>
-              <div class="form-group">
-                <label class="bst-label">AC</label>
-                <input v-model.number="f.ac" class="form-input bst-stat-input" type="number" min="0" placeholder="—" />
-              </div>
-              <div class="form-group">
-                <label class="bst-label">HP</label>
-                <input v-model.number="f.hp" class="form-input bst-stat-input" type="number" min="0" placeholder="—" />
-              </div>
+          <template #name-field>
+            <div class="form-group">
+              <label>Creature name</label>
+              <input v-model="f.name" class="form-input" placeholder="e.g. Ancient Red Dragon…" />
             </div>
-            <div class="bst-desc-col">
-              <label class="bst-label">Description</label>
-              <textarea v-model="f.description" class="form-input bst-desc-area" rows="7"
-                placeholder="Describe this creature's appearance, behaviour, and lore…"></textarea>
-            </div>
-          </div>
+          </template>
 
-          <!-- ── Player Notes ── -->
-          <div class="form-group bst-player-notes">
-            <label class="bst-label">Player Notes</label>
-            <textarea v-model="f.player_notes" class="form-input" rows="3"
-              placeholder="Notes visible to all players in the campaign…"></textarea>
-          </div>
+          <template #sidebar-image>
+            <Dropzone
+              variant="square"
+              accept="image/*"
+              :value="portraitFile || portraitPreview || null"
+              :on-change="handlePortraitChange"
+              :on-remove="handlePortraitRemove"
+              hint="PNG, JPG"
+            />
+          </template>
 
-          <!-- ── DM Private Notes (GM only) ── -->
-          <div class="bst-gm-notes">
-            <div class="bst-gm-notes-hdr">
-              <span class="bst-gm-badge">🔒 GM Only</span>
-              <span class="bst-gm-notes-title">Private Notes</span>
+          <template #sidebar-details>
+            <div class="form-group">
+              <label>CR</label>
+              <input v-model.number="f.cr" class="form-input ef-stat-input" type="number" step="0.25" min="0" placeholder="—" />
             </div>
-            <textarea v-model="f.gm_notes" class="form-input bst-gm-textarea" rows="3"
-              placeholder="Secret information, hidden motivations, encounter tactics… not visible to players."></textarea>
-          </div>
-        </template>
+            <div class="form-group">
+              <label>AC</label>
+              <input v-model.number="f.ac" class="form-input ef-stat-input" type="number" min="0" placeholder="—" />
+            </div>
+            <div class="form-group">
+              <label>HP</label>
+              <input v-model.number="f.hp" class="form-input ef-stat-input" type="number" min="0" placeholder="—" />
+            </div>
+          </template>
+
+          <template #main-content>
+            <div class="form-group">
+              <label>Description</label>
+              <MarkdownEditor v-model="f.description" :minRows="7" placeholder="Describe this creature's appearance, behaviour, and lore…" />
+            </div>
+            <div class="form-group">
+              <label>Player notes (optional)</label>
+              <textarea v-model="f.player_notes" class="form-input" rows="3" placeholder="Notes visible to all players in the campaign…"></textarea>
+            </div>
+          </template>
+
+          <template #gm-section>
+            <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Secret information, hidden motivations, encounter tactics…" />
+          </template>
+
+        </EntityForm>
 
         <!-- Rumour -->
         <template v-else-if="type === 'rumour'">
@@ -772,7 +767,7 @@ const title = computed(() => {
   return isEdit.value ? `Edit ${cap}` : `Create ${cap}`
 })
 
-const MIGRATED_TYPES = new Set(['quest', 'npc', 'location'])
+const MIGRATED_TYPES = new Set(['quest', 'npc', 'location', 'faction', 'map', 'bestiary'])
 const isMigratedType = computed(() => MIGRATED_TYPES.has(type.value))
 const modalMaxWidth = computed(() => {
   if (isMigratedType.value) return '720px'
@@ -1240,6 +1235,34 @@ async function save() {
   .bst-body { grid-template-columns: 1fr; }
   .bst-stat-block { flex-direction: row; flex-wrap: wrap; gap: 12px; }
   .bst-stat-block .form-group { flex: 1; min-width: 60px; }
+}
+
+/* ── EntityForm helpers ──────────────────────────────────────────────────── */
+
+/* Checkbox label used in Map's GM-only toggle */
+.ef-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  font-family: var(--font-sans);
+  font-weight: var(--weight-regular);
+}
+.ef-checkbox {
+  width: auto;
+  margin: 0;
+  accent-color: var(--color-text-accent);
+}
+
+/* Numeric stat inputs (CR / AC / HP in Bestiary sidebar).
+   Mono font is allowed here — these are numeric data values per COPY_RULES. */
+.ef-stat-input {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
 }
 
 /* ── Entity Form 30/70 Grid ──────────────────────────────────────────────── */
