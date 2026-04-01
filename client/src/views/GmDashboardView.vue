@@ -226,10 +226,11 @@
             </div>
             <div v-if="campForm.system === 'dune'" class="field-group">
               <label>Great House</label>
-              <select v-model="campForm.dune_house" class="form-input">
+              <select v-model="campForm.dune_house" class="form-input" @change="previewHouse">
                 <option value="">None</option>
                 <option value="atreides">Atreides</option>
                 <option value="harkonnen">Harkonnen</option>
+                <option value="corrino">Corrino</option>
                 <option value="fremen">Fremen</option>
                 <option value="bene-gesserit">Bene Gesserit</option>
               </select>
@@ -363,6 +364,15 @@ const campForm = ref({ name: '', subtitle: '', system: '', description: '', play
 const campSaving = ref(false)
 const campStatus = ref('')
 const campOk = ref(false)
+// Track last-persisted house value so the live preview can be reverted on discard
+const savedHouse = ref('')
+
+function previewHouse() {
+  if (campaign.activeCampaign) {
+    campaign.activeCampaign.dune_house = campForm.value.dune_house || null
+  }
+  campaign.applyTheme(campForm.value.system)
+}
 const campaignStats = ref(null)
 const sheetMap = ref({}) // userId → { dnd_beyond_url, ... }
 
@@ -419,6 +429,7 @@ async function saveCampaign() {
     if (r.ok) {
       campStatus.value = 'Saved.'
       campOk.value = true
+      savedHouse.value = campForm.value.dune_house
       await campaign.loadCampaigns()
       campaign.applyBgImage(campForm.value.bg_image || null)
     } else {
@@ -648,6 +659,7 @@ async function initForCampaign() {
       invite_code: ac.invite_code || '',
       dune_house: ac.dune_house || '',
     }
+    savedHouse.value = ac.dune_house || ''
   }
   await Promise.all([
     data.loadUsers(),
@@ -665,6 +677,15 @@ onMounted(initForCampaign)
 
 watch(() => campaign.activeCampaign?.id, (newId, oldId) => {
   if (newId && newId !== oldId) initForCampaign()
+})
+
+// Revert house live preview when navigating away from settings without saving
+watch(activeTab, (newTab, oldTab) => {
+  if (oldTab === 'settings' && newTab !== 'settings' && campForm.value.dune_house !== savedHouse.value) {
+    campForm.value.dune_house = savedHouse.value
+    if (campaign.activeCampaign) campaign.activeCampaign.dune_house = savedHouse.value || null
+    campaign.applyTheme(campaign.activeCampaign?.system || 'dune')
+  }
 })
 </script>
 
