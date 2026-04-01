@@ -334,7 +334,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
@@ -368,10 +368,16 @@ const campOk = ref(false)
 const savedHouse = ref('')
 
 function previewHouse() {
+  const house = campForm.value.dune_house || null
+  // Write to store first, then apply theme
   if (campaign.activeCampaign) {
-    campaign.activeCampaign.dune_house = campForm.value.dune_house || null
+    campaign.activeCampaign.dune_house = house
   }
-  campaign.applyTheme(campForm.value.system)
+  // Small nextTick delay to ensure store is updated
+  // before applyTheme reads it
+  nextTick(() => {
+    campaign.applyTheme(campForm.value.system)
+  })
 }
 const campaignStats = ref(null)
 const sheetMap = ref({}) // userId → { dnd_beyond_url, ... }
