@@ -230,3 +230,355 @@
   --radius: 4px;
   --h-spacing: 0.12em;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 1 — Semantic token themes (class-based)
+   These override the --color-* semantic tokens defined in tokens.css.
+   Applied to <html> by campaign.js — only ONE theme-* class active at a time.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Layer 0: No campaign (home / login) ─────────────────────────────────── */
+.theme-none {
+  --color-bg-page:          #0d1014;
+  --color-bg-card:          #141820;
+  --color-bg-elevated:      #1a2028;
+  --color-bg-input:         #1e2530;
+  --color-bg-subtle:        #10141a;
+  --color-bg-gm:            #10141a;
+
+  --color-accent:           #5a7a8a;
+  --color-accent-muted:     rgba(90, 122, 138, 0.18);
+
+  --color-text-primary:     #c8d8e4;
+  --color-text-secondary:   #3a5060;
+  --color-text-hint:        #1e3040;
+
+  --color-border-default:   rgba(80, 120, 150, 0.14);
+  --color-border-active:    rgba(80, 120, 150, 0.55);
+  --color-border-gm:        rgba(80, 120, 150, 0.14);
+  --color-border-bracket:   rgba(80, 120, 150, 0.30);
+}
+
+/* ── Default — warm amber ────────────────────────────────────────────────── */
+.theme-default {
+  --color-bg-page:          #0e0b08;
+  --color-bg-card:          #1c1510;
+  --color-bg-elevated:      #231a12;
+  --color-bg-input:         #2a1f15;
+  --color-bg-subtle:        #160e06;
+  --color-bg-gm:            #1a0e06;
+
+  --color-accent:           #b87828;
+  --color-accent-muted:     rgba(184, 120, 40, 0.16);
+
+  --color-text-primary:     #e8d5b5;
+  --color-text-secondary:   #7a5a3a;
+  --color-text-hint:        #4e3520;
+
+  --color-border-default:   rgba(185, 125, 55, 0.18);
+  --color-border-active:    rgba(185, 125, 55, 0.65);
+  --color-border-gm:        rgba(180, 70, 30, 0.30);
+  --color-border-bracket:   rgba(185, 125, 55, 0.45);
+}
+
+/* ── D&D 5e — forgotten realms crimson ──────────────────────────────────── */
+.theme-dnd5e {
+  --color-bg-page:          #0c0804;
+  --color-bg-card:          #180c06;
+  --color-bg-elevated:      #200e08;
+  --color-bg-input:         #280e08;
+  --color-bg-subtle:        #100806;
+  --color-bg-gm:            #180806;
+
+  --color-accent:           #c84020;
+  --color-accent-muted:     rgba(200, 64, 32, 0.16);
+
+  --color-text-primary:     #f0d0b0;
+  --color-text-secondary:   #6a3020;
+  --color-text-hint:        #3a1810;
+
+  --color-border-default:   rgba(180, 50, 20, 0.20);
+  --color-border-active:    rgba(180, 50, 20, 0.65);
+  --color-border-gm:        rgba(180, 30, 20, 0.30);
+  --color-border-bracket:   rgba(180, 50, 20, 0.45);
+}
+
+/* ── Call of Cthulhu — tidal green ──────────────────────────────────────── */
+.theme-cthulhu {
+  --color-bg-page:          #060a0a;
+  --color-bg-card:          #0c1414;
+  --color-bg-elevated:      #101a1a;
+  --color-bg-input:         #141e1e;
+  --color-bg-subtle:        #080e0e;
+  --color-bg-gm:            #080e0e;
+
+  --color-accent:           #6a8888;
+  --color-accent-muted:     rgba(106, 136, 136, 0.16);
+
+  --color-text-primary:     #c0d0c8;
+  --color-text-secondary:   #3a5850;
+  --color-text-hint:        #1e3030;
+
+  --color-border-default:   rgba(80, 120, 110, 0.18);
+  --color-border-active:    rgba(80, 120, 110, 0.60);
+  --color-border-gm:        rgba(80, 120, 80, 0.28);
+  --color-border-bracket:   rgba(80, 120, 110, 0.40);
+
+  /* Antiquarian serif for body copy */
+  --font-serif:             'EB Garamond', serif;
+}
+
+/* ── Alien RPG — cold cyan ───────────────────────────────────────────────── */
+.theme-alien {
+  --color-bg-page:          #060810;
+  --color-bg-card:          #0c1018;
+  --color-bg-elevated:      #101420;
+  --color-bg-input:         #141828;
+  --color-bg-subtle:        #080c16;
+  --color-bg-gm:            #080c16;
+
+  --color-accent:           #5a9aaa;
+  --color-accent-muted:     rgba(90, 154, 170, 0.15);
+
+  --color-text-primary:     #b8d0da;
+  --color-text-secondary:   #2a4858;
+  --color-text-hint:        #182030;
+
+  --color-border-default:   rgba(70, 130, 150, 0.16);
+  --color-border-active:    rgba(70, 130, 150, 0.60);
+  --color-border-gm:        rgba(70, 130, 100, 0.25);
+  --color-border-bracket:   rgba(70, 130, 150, 0.38);
+}
+
+/* ── Coriolis — station violet ───────────────────────────────────────────── */
+.theme-coriolis {
+  --color-bg-page:          #080610;
+  --color-bg-card:          #100c1c;
+  --color-bg-elevated:      #161028;
+  --color-bg-input:         #1c1430;
+  --color-bg-subtle:        #0c0a18;
+  --color-bg-gm:            #0c0a18;
+
+  --color-accent:           #8a78c8;
+  --color-accent-muted:     rgba(138, 120, 200, 0.15);
+
+  --color-text-primary:     #d0c8f0;
+  --color-text-secondary:   #3a2e60;
+  --color-text-hint:        #201a40;
+
+  --color-border-default:   rgba(110, 90, 180, 0.18);
+  --color-border-active:    rgba(110, 90, 180, 0.62);
+  --color-border-gm:        rgba(110, 60, 180, 0.28);
+  --color-border-bracket:   rgba(110, 90, 180, 0.42);
+}
+
+/* ── Dune — desert gold ──────────────────────────────────────────────────── */
+.theme-dune {
+  --color-bg-page:          #0a0804;
+  --color-bg-card:          #160e04;
+  --color-bg-elevated:      #1e1206;
+  --color-bg-input:         #241608;
+  --color-bg-subtle:        #120a04;
+  --color-bg-gm:            #120a04;
+
+  --color-accent:           #c8a040;
+  --color-accent-muted:     rgba(200, 160, 64, 0.14);
+
+  --color-text-primary:     #f0e0b0;
+  --color-text-secondary:   #806020;
+  --color-text-hint:        #402e10;
+
+  --color-border-default:   rgba(200, 160, 50, 0.14);
+  --color-border-active:    rgba(200, 160, 50, 0.58);
+  --color-border-gm:        rgba(200, 100, 30, 0.28);
+  --color-border-bracket:   rgba(200, 160, 50, 0.38);
+}
+
+/* ── Achtung! Cthulhu — wartime khaki ────────────────────────────────────── */
+.theme-achtung {
+  --color-bg-page:          #0a0c06;
+  --color-bg-card:          #141608;
+  --color-bg-elevated:      #1a1c0c;
+  --color-bg-input:         #1e2010;
+  --color-bg-subtle:        #0e1006;
+  --color-bg-gm:            #0e1006;
+
+  --color-accent:           #a89060;
+  --color-accent-muted:     rgba(168, 144, 96, 0.15);
+
+  --color-text-primary:     #ddd8b8;
+  --color-text-secondary:   #4a4a28;
+  --color-text-hint:        #2a2a14;
+
+  --color-border-default:   rgba(140, 130, 80, 0.16);
+  --color-border-active:    rgba(140, 130, 80, 0.58);
+  --color-border-gm:        rgba(160, 80, 40, 0.28);
+  --color-border-bracket:   rgba(140, 130, 80, 0.38);
+
+  /* Condensed serif for body copy */
+  --font-serif:             'Lora', serif;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 2 — Ambient FX classes
+   Applied alongside a base theme class. CSS-only, no JavaScript required.
+   All animations inside @media (prefers-reduced-motion: no-preference).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── .fx-crt — Alien RPG scanline + phosphor flicker ────────────────────── */
+.fx-crt {
+  --scanline-color: rgba(0, 255, 180, 0.03);
+}
+
+.fx-crt body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    var(--scanline-color) 2px,
+    var(--scanline-color) 4px
+  );
+  pointer-events: none;
+  z-index: var(--z-top);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fx-crt h1 {
+    animation: crt-flicker 6s steps(1) infinite;
+  }
+  @keyframes crt-flicker {
+    0%, 95%, 97%, 100% { opacity: 1; }
+    96%                { opacity: 0.85; }
+  }
+}
+
+.fx-crt .nav-label,
+.fx-crt .field-label {
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+}
+
+/* ── .fx-grain — Dune sand texture ──────────────────────────────────────── */
+.fx-grain body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  pointer-events: none;
+  z-index: var(--z-top);
+  opacity: 0.6;
+}
+
+.fx-grain h1,
+.fx-grain h2 {
+  letter-spacing: 0.22em;
+}
+
+/* ── .fx-desaturate — Cthulhu wet ink + colour fade ─────────────────────── */
+.fx-desaturate .card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 60%, rgba(0, 0, 0, 0.4) 100%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fx-desaturate .card {
+    transition: filter 2s ease;
+  }
+  .fx-desaturate .card:hover {
+    filter: saturate(0.2) brightness(0.9);
+  }
+}
+
+.fx-desaturate .body-text {
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+
+/* ── .fx-parchment — Achtung! aged paper + military stamp ───────────────── */
+.fx-parchment .card {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)' opacity='0.04'/%3E%3C/svg%3E");
+}
+
+.fx-parchment .status-badge {
+  border-style: dashed;
+  letter-spacing: 0.18em;
+  font-weight: 500;
+}
+
+.fx-parchment .gm-section::before {
+  content: 'CLASSIFIED';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-25deg);
+  font-size: 48px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  color: rgba(180, 40, 30, 0.06);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* ── .fx-stars — Coriolis star field + holographic card hover ────────────── */
+.fx-stars body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgba(255, 255, 255, 0.40) 0%, transparent 100%),
+    radial-gradient(1px 1px at 70% 15%, rgba(255, 255, 255, 0.30) 0%, transparent 100%),
+    radial-gradient(1px 1px at 45% 70%, rgba(255, 255, 255, 0.20) 0%, transparent 100%),
+    radial-gradient(1px 1px at 85% 55%, rgba(255, 255, 255, 0.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 10% 80%, rgba(255, 255, 255, 0.25) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fx-stars .card {
+    transition: background-position 0.3s ease;
+    background-size: 200% 200%;
+  }
+  .fx-stars .card:hover {
+    background-image: conic-gradient(
+      from var(--hue, 0deg) at 50% 50%,
+      rgba(138, 120, 200, 0.06),
+      transparent 40%,
+      rgba(138, 120, 200, 0.04),
+      transparent
+    );
+    animation: holo-rotate 3s linear infinite;
+  }
+  @keyframes holo-rotate {
+    to { --hue: 360deg; }
+  }
+}
+
+/* ── .fx-vignette — D&D 5e parchment + illuminated initial ──────────────── */
+.fx-vignette .card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.35) 100%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.fx-vignette .entity-description p:first-child::first-letter {
+  font-family: var(--font-display);
+  font-size: 2.8em;
+  line-height: 0.8;
+  float: left;
+  margin: 0.05em 0.08em 0 0;
+  color: var(--color-accent);
+}

@@ -9,7 +9,12 @@
       </div>
     </div>
     <div id="notifs-body" class="flyout-body">
-      <div v-if="!ui.notifications.length" class="empty-state">No notifications.</div>
+      <EmptyState
+        v-if="!ui.notifications.length"
+        icon="🔔"
+        heading="No notifications yet"
+        description="You'll see alerts when players send messages, share notes, or respond to scheduling polls."
+      />
       <div
         v-for="n in ui.notifications"
         :key="n.id"
@@ -27,6 +32,7 @@
 <script setup>
 import { useUiStore } from '@/stores/ui'
 import { useDataStore } from '@/stores/data'
+import EmptyState from './EmptyState.vue'
 
 const ui = useUiStore()
 const data = useDataStore()

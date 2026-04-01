@@ -34,10 +34,10 @@
     Pass a simple emoji string via the icon prop, or use the named
     #icon slot for any custom content.
 
-  Status values with built-in styling:
-    'active' | 'done' | 'missed' | 'hostile' | 'neutral' | 'allied'
-    Any other string renders with the default muted style.
-    (These will transfer to StatusBadge when that component is built.)
+  Status values — passed through to StatusBadge:
+    'active' | 'done' | 'delivered' | 'completed' | 'missed' | 'expired'
+    | 'hostile' | 'neutral' | 'allied' | 'true' | 'false' | 'exposed'
+    Any other string renders with the default neutral style.
 -->
 <template>
   <div
@@ -61,13 +61,8 @@
       <!-- Title — text-transform: none enforced in CSS -->
       <span class="overlay-card-title">{{ title }}</span>
 
-      <!-- Inline status badge (placeholder until StatusBadge component is built) -->
-      <span
-        v-if="status"
-        class="overlay-card-status-badge"
-        :class="`overlay-card-status-badge--${status}`"
-        :aria-label="`Status: ${status}`"
-      >{{ status }}</span>
+      <!-- Status badge -->
+      <StatusBadge v-if="status" :status="status" />
 
       <!-- Edit pencil — visible on card hover only; the only permitted inline action -->
       <button
@@ -94,6 +89,7 @@
 <script setup>
 import { computed } from 'vue'
 import OverflowMenu from './OverflowMenu.vue'
+import StatusBadge from './StatusBadge.vue'
 
 const props = defineProps({
   icon:       { type: String,   default: '' },
@@ -202,49 +198,6 @@ const editAction = computed(() =>
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-/* ── Inline status badge ─────────────────────────────────────────────── */
-/* Placeholder until StatusBadge component is built (Task 10) */
-.overlay-card-status-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px var(--space-2);
-  border-radius: var(--radius-pill);
-  font-size: var(--text-xs);
-  font-family: var(--font-sans);
-  font-weight: var(--weight-regular);
-  text-transform: none;
-  white-space: nowrap;
-  flex-shrink: 0;
-  /* Default style for any unrecognised status value */
-  color: var(--color-text-secondary);
-  background: var(--color-bg-subtle);
-}
-
-.overlay-card-status-badge--active {
-  color: var(--color-status-active);
-  background: var(--color-status-active-bg);
-}
-.overlay-card-status-badge--done {
-  color: var(--color-status-done);
-  background: var(--color-status-done-bg);
-}
-.overlay-card-status-badge--missed {
-  color: var(--color-status-missed);
-  background: var(--color-status-missed-bg);
-}
-.overlay-card-status-badge--hostile {
-  color: var(--color-hostile);
-  background: var(--color-hostile-bg);
-}
-.overlay-card-status-badge--neutral {
-  color: var(--color-neutral);
-  background: var(--color-neutral-bg);
-}
-.overlay-card-status-badge--allied {
-  color: var(--color-allied);
-  background: var(--color-allied-bg);
 }
 
 /* ── Edit shortcut — visible on card hover only ──────────────────────── */

@@ -40,9 +40,7 @@
       <input v-model="invSearch" class="form-input" placeholder="Search items…" style="max-width:300px" />
     </div>
 
-    <div class="filter-tabs">
-      <button v-for="tab in invTabs" :key="tab.value" class="filter-tab" :class="{ active: invTab === tab.value }" @click="invTab = tab.value">{{ tab.label }}</button>
-    </div>
+    <FilterTabs :tabs="invTabs" :active="invTab" :on-change="v => invTab = v" />
 
     <!-- Inventory empty state -->
     <EmptyState
@@ -136,6 +134,7 @@ import { useAuthStore } from '@/stores/auth'
 import EntityCard from '@/components/EntityCard.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import StickyFormFooter from '@/components/StickyFormFooter.vue'
+import FilterTabs from '@/components/FilterTabs.vue'
 
 const data     = useDataStore()
 const campaign = useCampaignStore()

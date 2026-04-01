@@ -6,27 +6,42 @@
       <button class="flyout-close" @click="ui.closeFlyout()">✕</button>
     </div>
     <div class="flyout-body">
-      <!-- Compose -->
-      <div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border)">
-        <div style="font-size:10px;color:var(--text3);letter-spacing:.08em;margin-bottom:8px;font-family:var(--font-sans)">Send message</div>
-        <div v-if="toUserLocked" class="form-input" style="margin-bottom:6px;opacity:0.7;cursor:default">
-          To: {{ toUserLockedName }}
+      <!-- Compose toggle -->
+      <button v-if="!composeOpen" class="btn-compose" @click="composeOpen = true">+ New message</button>
+
+      <!-- Compose form (collapsed by default) -->
+      <div v-show="composeOpen" class="compose-form">
+        <div class="compose-header">
+          <span class="compose-title">New message</span>
+          <button class="compose-close" @click="composeOpen = false" aria-label="Close compose">✕</button>
         </div>
-        <select v-else id="flyout-msg-to" v-model="toUser" class="form-input" style="margin-bottom:6px">
-          <option value="">— All Players —</option>
+        <div v-if="toUserLocked" class="form-input compose-locked-to">To: {{ toUserLockedName }}</div>
+        <select v-else id="flyout-msg-to" v-model="toUser" class="form-input">
+          <option value="">— All players —</option>
           <option v-for="u in recipients" :key="u.id" :value="u.id">
             {{ u.character_name || u.username }}
           </option>
         </select>
-        <input v-model="subject" class="form-input" placeholder="Subject" style="margin-bottom:6px" />
-        <textarea v-model="body" class="form-input" placeholder="Message..." style="min-height:80px;resize:vertical;margin-bottom:6px"></textarea>
-        <div style="display:flex;gap:12px;margin-bottom:6px;font-size:12px">
-          <label><input type="checkbox" v-model="isSecret" style="margin-right:4px" />Secret</label>
-          <label><input type="checkbox" v-model="requiresAck" style="margin-right:4px" />Needs ack</label>
+        <input v-model="subject" class="form-input" placeholder="Subject" />
+        <textarea v-model="body" class="form-input" placeholder="Message…" style="min-height:80px;resize:vertical"></textarea>
+        <div class="compose-checks">
+          <div class="compose-check-group">
+            <label class="compose-check-label">
+              <input type="checkbox" v-model="isSecret" /> Secret
+            </label>
+            <div class="compose-helper">Recipient won't see your name</div>
+          </div>
+          <div class="compose-check-group">
+            <label class="compose-check-label">
+              <input type="checkbox" v-model="requiresAck" /> Needs ack
+            </label>
+            <div class="compose-helper">You'll be notified when read</div>
+          </div>
         </div>
         <button class="submit-btn" @click="sendMessage">Send</button>
         <div v-if="sendStatus" :class="['status-msg', sendOk ? 'status-ok' : 'status-err']">{{ sendStatus }}</div>
       </div>
+
       <!-- Search + filter -->
       <div style="margin-bottom:10px;display:flex;gap:6px;align-items:center">
         <input v-model="search" class="form-input" placeholder="Search messages…" style="flex:1;font-size:0.85em" />
@@ -86,6 +101,7 @@ const sendStatus = ref('')
 const sendOk = ref(false)
 const search = ref('')
 const unreadOnly = ref(false)
+const composeOpen = ref(false)
 
 const filteredMessages = computed(() => {
   let msgs = ui.messages
@@ -107,6 +123,7 @@ watch(() => ui.activeFlyout, (val) => {
     toUserLocked.value = true
     toUserLockedName.value = ui.pendingReply.toName
     subject.value = ui.pendingReply.subject
+    composeOpen.value = true   // auto-open compose when replying
   } else if (!val) {
     toUserLocked.value = false
     toUserLockedName.value = ''
@@ -146,6 +163,7 @@ async function sendMessage() {
     toUser.value = ''
     toUserLocked.value = false
     toUserLockedName.value = ''
+    composeOpen.value = false
     ui.pendingReply = null
     const msgs = await data.loadMessages()
     ui.setMessages(msgs)
@@ -168,3 +186,96 @@ async function ackMessage(m) {
   }
 }
 </script>
+
+<style scoped>
+/* ── Compose toggle button ───────────────────────────────────────────────── */
+.btn-compose {
+  display: block;
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
+  background: transparent;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-accent);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-regular);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-default),
+              background    var(--duration-fast) var(--ease-default);
+}
+.btn-compose:hover {
+  border-color: var(--color-border-active);
+  background: rgba(212, 98, 26, 0.06);
+}
+
+/* ── Compose form ───────────────────────────────────────────────────────── */
+.compose-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.compose-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.compose-title {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.compose-close {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  padding: 2px 4px;
+}
+.compose-close:hover { color: var(--color-text-primary); }
+
+.compose-locked-to {
+  opacity: 0.7;
+  cursor: default;
+}
+
+/* ── Checkboxes + helper text ───────────────────────────────────────────── */
+.compose-checks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.compose-check-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.compose-check-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.compose-helper {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  color: var(--color-text-hint);
+  padding-left: 18px;   /* aligns under the label text, past the checkbox */
+}
+</style>

@@ -7,9 +7,7 @@
     <div class="search-row" style="margin-bottom:12px">
       <input v-model="search" class="form-input" placeholder="Search hooks…" style="max-width:320px" />
     </div>
-    <div class="filter-tabs">
-      <button v-for="tab in tabs" :key="tab.value" class="filter-tab" :class="{ active: activeTab === tab.value }" @click="activeTab = tab.value">{{ tab.label }}</button>
-    </div>
+    <FilterTabs :tabs="tabs" :active="activeTab" :on-change="v => activeTab = v" />
 
     <!-- Skeleton -->
     <div v-if="data.loading && !data.hooks.length" class="card-grid">
@@ -73,6 +71,7 @@ import { useUiStore } from '@/stores/ui'
 import OverlayCard from '@/components/OverlayCard.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import EmptyState from '@/components/EmptyState.vue'
+import FilterTabs from '@/components/FilterTabs.vue'
 
 const data     = useDataStore()
 const campaign = useCampaignStore()

@@ -7,9 +7,7 @@
     <div class="search-row" style="margin-bottom:12px">
       <input v-model="search" class="form-input" placeholder="Search jobs…" style="max-width:320px" />
     </div>
-    <div class="filter-tabs">
-      <button v-for="tab in tabs" :key="tab.value" class="filter-tab" :class="{ active: activeTab === tab.value }" @click="activeTab = tab.value">{{ tab.label }}</button>
-    </div>
+    <FilterTabs :tabs="tabs" :active="activeTab" :on-change="v => activeTab = v" />
     <div class="card-grid">
       <div v-if="campaign.isGm" class="add-tile" @click="ui.openGmEdit('job', null, {})">
         <div class="add-tile-icon">+</div><div class="add-tile-label">Add Job</div>
@@ -53,6 +51,7 @@ import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
 import EntityCard from '@/components/EntityCard.vue'
+import FilterTabs from '@/components/FilterTabs.vue'
 
 const data = useDataStore()
 const campaign = useCampaignStore()

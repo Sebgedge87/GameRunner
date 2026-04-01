@@ -404,8 +404,8 @@
 
           <template #sidebar-details>
             <div class="form-group">
-              <label>Standing (−10 to +10)</label>
-              <input v-model.number="f.standing" class="form-input" type="number" min="-10" max="10" />
+              <label>Standing</label>
+              <RelationshipSlider v-model="f.standing" />
             </div>
             <div class="form-group">
               <label>Influence (1–5)</label>
@@ -768,6 +768,7 @@ import MarkdownEditor from './MarkdownEditor.vue'
 import Dropzone from './Dropzone.vue'
 import StickyFormFooter from './StickyFormFooter.vue'
 import EntityForm from './EntityForm.vue'
+import RelationshipSlider from './RelationshipSlider.vue'
 
 const ui = useUiStore()
 const data = useDataStore()

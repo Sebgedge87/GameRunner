@@ -13,11 +13,11 @@
           <input v-model="encounterName" class="form-input" placeholder="Encounter name…" style="width:100%" />
         </div>
         <div style="display:flex;gap:8px;align-items:flex-end;padding-top:20px">
-          <button class="btn btn-sm" @click="startEncounter" :disabled="combatants.length === 0">
+          <button class="btn btn-sm btn-ct-outline" @click="startEncounter" :disabled="combatants.length === 0">
             {{ active ? '⏸ Pause' : '▶ Start' }}
           </button>
-          <button class="btn btn-sm" @click="nextTurn" :disabled="!active">Next Turn</button>
-          <button class="btn btn-sm btn-danger" @click="clearEncounter">Clear</button>
+          <button class="btn-ct-primary" @click="nextTurn" :disabled="!active">Next Turn →</button>
+          <button class="btn-ct-ghost" @click="clearEncounter">Clear</button>
         </div>
         <div v-if="active" style="padding-top:20px;font-size:0.85em;opacity:0.7">
           Round {{ round }} &mdash; Turn {{ currentTurn + 1 }} / {{ combatants.length }}
@@ -31,22 +31,22 @@
       <div style="display:grid;grid-template-columns:1fr 80px 80px 80px auto;gap:8px;align-items:end">
         <div class="field-group" style="margin:0">
           <label>Name</label>
-          <input v-model="newCombatant.name" class="form-input" placeholder="Name…" @keyup.enter="addCombatant" />
+          <input v-model="newCombatant.name" class="form-input ct-input" placeholder="Name…" @keyup.enter="addCombatant" />
         </div>
         <div class="field-group" style="margin:0">
           <label>Init</label>
-          <input v-model.number="newCombatant.initiative" class="form-input" type="number" placeholder="0" />
+          <input v-model.number="newCombatant.initiative" class="form-input ct-input" type="number" placeholder="0" />
         </div>
         <div class="field-group" style="margin:0">
           <label>HP</label>
-          <input v-model.number="newCombatant.hp_max" class="form-input" type="number" placeholder="10" />
+          <input v-model.number="newCombatant.hp_max" class="form-input ct-input" type="number" placeholder="10" />
         </div>
         <div class="field-group" style="margin:0">
           <label>AC</label>
-          <input v-model.number="newCombatant.ac" class="form-input" type="number" placeholder="10" />
+          <input v-model.number="newCombatant.ac" class="form-input ct-input" type="number" placeholder="10" />
         </div>
         <div style="display:flex;gap:6px;padding-bottom:1px">
-          <select v-model="newCombatant.type" class="form-input" style="width:90px">
+          <select v-model="newCombatant.type" class="form-input ct-input" style="width:90px">
             <option value="player">Player</option>
             <option value="enemy">Enemy</option>
             <option value="ally">Ally</option>
@@ -331,13 +331,68 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* ── Active combatant row ──────────────────────────────────────────────── */
 .combatant-active {
-  border-color: var(--accent, #c9a84c) !important;
-  box-shadow: 0 0 0 1px var(--accent, #c9a84c);
+  border-left: 3px solid var(--color-text-accent) !important;
+  background: rgba(212, 98, 26, 0.08) !important;
 }
+
 .combatant-dead {
   opacity: 0.45;
 }
+
+/* ── Add-combatant dark inputs ─────────────────────────────────────────── */
+.ct-input {
+  background: var(--color-bg-input) !important;
+  color: var(--color-text-primary) !important;
+  border-color: var(--color-border-default) !important;
+}
+.ct-input::placeholder {
+  color: var(--color-text-hint);
+}
+
+/* ── Button hierarchy ──────────────────────────────────────────────────── */
+.btn-ct-primary {
+  height: 32px;
+  padding: 0 18px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-active);
+  background: rgba(212, 98, 26, 0.15);
+  color: var(--color-text-accent);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-default);
+}
+.btn-ct-primary:hover:not(:disabled) {
+  background: rgba(212, 98, 26, 0.25);
+}
+.btn-ct-primary:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.btn-ct-outline {
+  /* Keep the global .btn look — outline is the default btn style */
+}
+
+.btn-ct-ghost {
+  height: 32px;
+  padding: 0 10px;
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-regular);
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-default);
+}
+.btn-ct-ghost:hover {
+  color: var(--color-text-primary);
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;

@@ -17,19 +17,14 @@
     </div>
 
     <!-- Top-level tabs: Locations vs Notice Board -->
-    <div class="filter-tabs" style="margin-bottom:16px">
-      <button class="filter-tab" :class="{ active: mainTab === 'locations' }" @click="mainTab = 'locations'">📍 Locations</button>
-      <button class="filter-tab" :class="{ active: mainTab === 'board' }" @click="mainTab = 'board'">📋 Notice Board</button>
-    </div>
+    <FilterTabs :tabs="mainTabs" :active="mainTab" :on-change="v => mainTab = v" style="margin-bottom:16px" />
 
     <!-- ── Locations tab ── -->
     <template v-if="mainTab === 'locations'">
       <div class="search-row" style="margin-bottom:12px">
         <input v-model="search" class="form-input" placeholder="Search locations…" style="max-width:320px" />
       </div>
-      <div class="filter-tabs">
-        <button v-for="tab in tabs" :key="tab.value" class="filter-tab" :class="{ active: activeTab === tab.value }" @click="activeTab = tab.value">{{ tab.label }}</button>
-      </div>
+      <FilterTabs :tabs="tabs" :active="activeTab" :on-change="v => activeTab = v" />
 
       <!-- Skeleton -->
       <div v-if="data.loading && !data.locations.length" class="card-grid">
@@ -128,6 +123,7 @@ import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
 import EntityCard from '@/components/EntityCard.vue'
 import EmptyState from '@/components/EmptyState.vue'
+import FilterTabs from '@/components/FilterTabs.vue'
 
 const data     = useDataStore()
 const campaign = useCampaignStore()
@@ -137,6 +133,11 @@ const activeTab      = ref('all')
 const expandedId     = ref(null)
 const mainTab        = ref('locations')
 const boardLocationId = ref('')
+
+const mainTabs = [
+  { value: 'locations', label: '📍 Locations' },
+  { value: 'board',     label: '📋 Notice Board' },
+]
 
 const tabs = [
   { value: 'all',         label: 'All' },

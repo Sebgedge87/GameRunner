@@ -14,7 +14,8 @@ export const useCampaignStore = defineStore('campaign', () => {
   function setTimer(t) { timer.value = { ...timer.value, ...t } }
 
   const SYSTEM_THEME_MAP = {
-    default: 'default', dnd5e: 'dnd5e', coc: 'coc', alien: 'alien',
+    none: 'none',
+    default: 'default', dnd5e: 'dnd5e', coc: 'cthulhu', alien: 'alien',
     coriolis: 'coriolis', dune: 'dune', achtung: 'achtung', custom: 'custom',
   }
 
@@ -43,7 +44,22 @@ export const useCampaignStore = defineStore('campaign', () => {
 
   function applyTheme(system) {
     const theme = SYSTEM_THEME_MAP[system] || 'default'
-    document.documentElement.setAttribute('data-theme', theme)
+    // Keep data-theme attribute for legacy [data-theme] variable rules
+    document.documentElement.setAttribute('data-theme', theme === 'none' ? 'default' : theme)
+    // Apply semantic theme class — remove existing theme-* and fx-* classes first
+    const cl = document.documentElement.classList
+    Array.from(cl).filter(c => c.startsWith('theme-') || c.startsWith('fx-')).forEach(c => cl.remove(c))
+    cl.add(`theme-${theme}`)
+    // Apply ambient FX class alongside theme
+    const FX_MAP = {
+      alien:    'fx-crt',
+      dune:     'fx-grain',
+      cthulhu:  'fx-desaturate',
+      achtung:  'fx-parchment',
+      coriolis: 'fx-stars',
+      dnd5e:    'fx-vignette',
+    }
+    if (FX_MAP[theme]) cl.add(FX_MAP[theme])
     localStorage.setItem('chronicle_theme', system)
     if (theme === 'custom') applyCustomTheme()
   }
@@ -90,7 +106,7 @@ export const useCampaignStore = defineStore('campaign', () => {
       if (activeCampaign.value?.system) {
         applyTheme(activeCampaign.value.system)
       } else {
-        applyTheme('default')
+        applyTheme('none')
       }
       applyBgImage(activeCampaign.value?.bg_image || null)
       // Hydrate timer from campaign row
@@ -156,7 +172,7 @@ export const useCampaignStore = defineStore('campaign', () => {
   function leaveCampaign() {
     activeCampaign.value = null
     isGm.value = false
-    applyTheme('default')
+    applyTheme('none')
     applyBgImage(null)
   }
 

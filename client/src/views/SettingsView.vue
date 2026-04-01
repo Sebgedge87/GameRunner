@@ -2,123 +2,120 @@
   <div class="page-content">
     <div class="page-header"><div class="page-title">Settings</div></div>
 
-    <div class="settings-cols">
+    <div class="settings-stack">
 
-      <!-- ── LEFT COLUMN ───────────────────────────────── -->
-      <div class="settings-col">
-
-        <!-- Profile -->
-        <div class="settings-section">
-          <div class="settings-section-title">Profile</div>
-          <div class="field-group">
-            <label>Character Name</label>
-            <input v-model="charName" class="form-input" placeholder="Thorin Oakenshield" />
-          </div>
-          <div class="field-group">
-            <label>Character Class</label>
-            <input v-model="charClass" class="form-input" placeholder="Fighter" />
-          </div>
-          <button class="btn btn-primary" @click="saveProfile">Save Profile</button>
+      <!-- ── Profile ──────────────────────────────────────────────────────── -->
+      <section class="settings-card">
+        <h2 class="settings-card-heading">Profile</h2>
+        <div class="field-group">
+          <label>Character name</label>
+          <input v-model="charName" class="form-input" placeholder="Thorin Oakenshield" />
+        </div>
+        <div class="field-group">
+          <label>Character class</label>
+          <input v-model="charClass" class="form-input" placeholder="Fighter" />
+        </div>
+        <div>
+          <button class="btn btn-primary" @click="saveProfile">Save profile</button>
           <div v-if="profileStatus" :class="['status-msg', profileOk ? 'status-ok' : 'status-err']">{{ profileStatus }}</div>
         </div>
 
-        <!-- Font Size -->
-        <div class="settings-section">
-          <div class="settings-section-title">Font Size</div>
-          <div class="font-sz-row">
-            <button
-              v-for="sz in ['small','medium','large']"
-              :key="sz"
-              class="font-sz-btn filter-tab"
-              :data-sz="sz"
-              :class="{ active: fontSize === sz }"
-              @click="setFontSize(sz)"
-            >{{ sz }}</button>
-          </div>
+        <div class="settings-divider"></div>
+
+        <div class="settings-sub-heading">Font size</div>
+        <div class="font-sz-row">
+          <button
+            v-for="sz in ['small','medium','large']"
+            :key="sz"
+            class="font-sz-btn filter-tab"
+            :data-sz="sz"
+            :class="{ active: fontSize === sz }"
+            @click="setFontSize(sz)"
+          >{{ sz }}</button>
+        </div>
+      </section>
+
+      <!-- ── Appearance ────────────────────────────────────────────────────── -->
+      <section class="settings-card">
+        <h2 class="settings-card-heading">Appearance</h2>
+        <div class="theme-swatches">
+          <button
+            v-for="(meta, key) in THEME_META"
+            :key="key"
+            type="button"
+            class="theme-swatch"
+            :class="{ active: currentTheme === key }"
+            @click="applyTheme(key)"
+          >
+            <div class="theme-swatch-dot" :style="swatchDotStyle(key, meta)"></div>
+            <div class="theme-swatch-name">{{ meta.name }}</div>
+          </button>
         </div>
 
-        <!-- Accessibility -->
-        <div class="settings-section">
-          <div class="settings-section-title">Accessibility</div>
-          <div class="a11y-list">
-            <label class="check-row">
-              <input type="checkbox" v-model="a11y.contrast" @change="setA11y('contrast', a11y.contrast)" />
-              High Contrast
-            </label>
-            <label class="check-row">
-              <input type="checkbox" v-model="a11y.motion" @change="setA11y('motion', a11y.motion)" />
-              Reduce Motion
-            </label>
-            <label class="check-row">
-              <input type="checkbox" v-model="a11y.effects" @change="setA11y('effects', a11y.effects)" />
-              Disable Effects
-            </label>
-          </div>
-        </div>
-
-        <!-- Backup (GM only) -->
-        <div v-if="campaign.isGm" class="settings-section">
-          <div class="settings-section-title">Backup</div>
-          <button class="btn btn-primary" @click="downloadBackup">Download Backup</button>
-        </div>
-
-      </div><!-- /left col -->
-
-      <!-- ── RIGHT COLUMN ──────────────────────────────── -->
-      <div class="settings-col">
-
-        <!-- Theme -->
-        <div class="settings-section">
-          <div class="settings-section-title">Theme</div>
-          <div class="theme-swatches">
-            <div
-              v-for="(meta, key) in THEME_META"
-              :key="key"
-              class="theme-swatch"
-              :class="{ active: currentTheme === key }"
-              @click="applyTheme(key)"
-            >
-              <div class="theme-swatch-dot" :style="swatchDotStyle(key, meta)"></div>
-              <div class="theme-swatch-name">{{ meta.name }}</div>
+        <div v-if="currentTheme === 'custom'" class="custom-theme-controls">
+          <div class="custom-colors-grid">
+            <div v-for="k in ['bg','surface','accent','text','border']" :key="k" class="field-group">
+              <label>{{ k.charAt(0).toUpperCase() + k.slice(1) }}</label>
+              <input type="color" v-model="customColors[k]" class="form-input color-input" @input="applyCustomTheme" />
             </div>
           </div>
-
-          <!-- Custom theme controls -->
-          <div v-if="currentTheme === 'custom'" class="custom-theme-controls">
-            <div class="custom-colors-grid">
-              <div v-for="k in ['bg','surface','accent','text','border']" :key="k" class="field-group">
-                <label>{{ k.charAt(0).toUpperCase() + k.slice(1) }}</label>
-                <input type="color" v-model="customColors[k]" class="form-input color-input" @input="applyCustomTheme" />
-              </div>
-            </div>
-            <div class="custom-theme-actions">
-              <button class="btn btn-sm btn-primary" @click="saveCustomTheme">Apply Custom Theme</button>
-              <button class="btn btn-sm" @click="resetCustomTheme">Reset</button>
-            </div>
+          <div class="custom-theme-actions">
+            <button class="btn btn-sm btn-primary" @click="saveCustomTheme">Apply custom theme</button>
+            <button class="btn btn-sm" @click="resetCustomTheme">Reset</button>
           </div>
         </div>
+      </section>
 
-        <!-- Change Password -->
-        <div class="settings-section">
-          <div class="settings-section-title">Change Password</div>
-          <div class="field-group">
-            <label>Current Password</label>
-            <input v-model="pwCurrent" type="password" class="form-input" autocomplete="current-password" />
-          </div>
-          <div class="field-group">
-            <label>New Password</label>
-            <input v-model="pwNew" type="password" class="form-input" autocomplete="new-password" />
-          </div>
-          <div class="field-group">
-            <label>Confirm New Password</label>
-            <input v-model="pwConfirm" type="password" class="form-input" autocomplete="new-password" />
-          </div>
-          <button class="btn btn-primary" @click="changePassword">Change Password</button>
+      <!-- ── Accessibility ─────────────────────────────────────────────────── -->
+      <section class="settings-card">
+        <h2 class="settings-card-heading">Accessibility</h2>
+        <div class="a11y-list">
+          <label class="check-row">
+            <input type="checkbox" v-model="a11y.contrast" @change="setA11y('contrast', a11y.contrast)" />
+            High contrast
+          </label>
+          <label class="check-row">
+            <input type="checkbox" v-model="a11y.motion" @change="setA11y('motion', a11y.motion)" />
+            Reduce motion
+          </label>
+          <label class="check-row">
+            <input type="checkbox" v-model="a11y.effects" @change="setA11y('effects', a11y.effects)" />
+            Disable effects
+          </label>
+        </div>
+      </section>
+
+      <!-- ── Data (GM only) ────────────────────────────────────────────────── -->
+      <section v-if="campaign.isGm" class="settings-card">
+        <h2 class="settings-card-heading">Data</h2>
+        <p class="settings-card-hint">Download a full backup of this campaign's data.</p>
+        <div>
+          <button class="btn btn-primary" @click="downloadBackup">Download backup</button>
+        </div>
+      </section>
+
+      <!-- ── Account ───────────────────────────────────────────────────────── -->
+      <section class="settings-card">
+        <h2 class="settings-card-heading">Account</h2>
+        <div class="field-group">
+          <label>Current password</label>
+          <input v-model="pwCurrent" type="password" class="form-input settings-pw-input" autocomplete="current-password" />
+        </div>
+        <div class="field-group">
+          <label>New password</label>
+          <input v-model="pwNew" type="password" class="form-input settings-pw-input" autocomplete="new-password" />
+        </div>
+        <div class="field-group">
+          <label>Confirm new password</label>
+          <input v-model="pwConfirm" type="password" class="form-input settings-pw-input" autocomplete="new-password" />
+        </div>
+        <div>
+          <button class="btn btn-primary" @click="changePassword">Change password</button>
           <div v-if="pwStatus" :class="['status-msg', pwOk ? 'status-ok' : 'status-err']">{{ pwStatus }}</div>
         </div>
+      </section>
 
-      </div><!-- /right col -->
-    </div><!-- /settings-cols -->
+    </div>
   </div>
 </template>
 
@@ -264,33 +261,115 @@ async function downloadBackup() {
 </script>
 
 <style scoped>
-/* 2-column layout */
-.settings-cols {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  align-items: start;
+/* ── Card stack layout ──────────────────────────────────────────────────── */
+.settings-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 560px;
 }
 
-/* Theme */
-.theme-swatches { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
-.custom-theme-controls { margin-top: 12px; }
+.settings-card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-5) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.settings-card-heading {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.settings-card-hint {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.settings-sub-heading {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.settings-divider {
+  height: 1px;
+  background: var(--color-border-default);
+}
+
+/* ── Theme swatches ─────────────────────────────────────────────────────── */
+.theme-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.theme-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.theme-swatch-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  outline: 2px solid transparent;
+  outline-offset: 3px;
+  transition: outline-color var(--duration-fast) var(--ease-default);
+}
+
+.theme-swatch.active .theme-swatch-dot {
+  outline-color: var(--color-border-active);
+}
+
+.theme-swatch-name {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-regular);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.theme-swatch.active .theme-swatch-name {
+  color: var(--color-text-accent);
+}
+
+/* ── Custom theme ───────────────────────────────────────────────────────── */
+.custom-theme-controls { display: flex; flex-direction: column; gap: var(--space-3); }
 .custom-colors-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: var(--space-3);
 }
 .color-input { height: 36px; padding: 2px; }
-.custom-theme-actions { display: flex; gap: 8px; }
+.custom-theme-actions { display: flex; gap: var(--space-2); }
 
-/* Font size */
-.font-sz-row { display: flex; gap: 8px; }
+/* ── Font size ──────────────────────────────────────────────────────────── */
+.font-sz-row { display: flex; gap: var(--space-2); }
 
-/* Accessibility */
-.a11y-list { display: flex; flex-direction: column; gap: 10px; }
+/* ── Accessibility ──────────────────────────────────────────────────────── */
+.a11y-list { display: flex; flex-direction: column; gap: var(--space-3); }
 
-@media (max-width: 860px) {
-  .settings-cols { grid-template-columns: 1fr; }
+/* ── Password autofill override ─────────────────────────────────────────── */
+.settings-pw-input:-webkit-autofill,
+.settings-pw-input:-webkit-autofill:hover,
+.settings-pw-input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--color-bg-input) inset;
+  -webkit-text-fill-color: var(--color-text-primary);
 }
 </style>
