@@ -224,6 +224,16 @@
                 <option value="custom">Custom</option>
               </select>
             </div>
+            <div v-if="campForm.system === 'dune'" class="field-group">
+              <label>Great House</label>
+              <select v-model="campForm.dune_house" class="form-input">
+                <option value="">None</option>
+                <option value="atreides">Atreides</option>
+                <option value="harkonnen">Harkonnen</option>
+                <option value="fremen">Fremen</option>
+                <option value="bene-gesserit">Bene Gesserit</option>
+              </select>
+            </div>
             <div class="field-group">
               <label>Subtitle</label>
               <input v-model="campForm.subtitle" class="form-input" placeholder="Optional tagline…" />
@@ -349,7 +359,7 @@ const stressEdits = reactive({})
 const xpMap = ref({})
 const auditLog = ref([])
 
-const campForm = ref({ name: '', subtitle: '', system: '', description: '', playlist_url: '', bg_image: '', invite_code: '' })
+const campForm = ref({ name: '', subtitle: '', system: '', description: '', playlist_url: '', bg_image: '', invite_code: '', dune_house: '' })
 const campSaving = ref(false)
 const campStatus = ref('')
 const campOk = ref(false)
@@ -403,6 +413,7 @@ async function saveCampaign() {
         playlist_url: campForm.value.playlist_url || null,
         bg_image: campForm.value.bg_image || null,
         invite_code: campForm.value.invite_code?.toUpperCase() || null,
+        dune_house: campForm.value.system === 'dune' ? (campForm.value.dune_house || null) : null,
       }),
     })
     if (r.ok) {
@@ -635,6 +646,7 @@ async function initForCampaign() {
       playlist_url: ac.playlist_url || '',
       bg_image: ac.bg_image || '',
       invite_code: ac.invite_code || '',
+      dune_house: ac.dune_house || '',
     }
   }
   await Promise.all([
