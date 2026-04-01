@@ -9,33 +9,58 @@
       <div class="legend-item"><div class="legend-dot" style="background:#c94c4c"></div>Map</div>
       <div class="legend-item"><div class="legend-dot" style="background:#c94c8b"></div>Faction</div>
     </div>
-    <div style="position:relative">
-      <svg ref="svgEl" id="mindmap-svg" style="height:500px;width:100%"></svg>
-      <div v-if="flyoutItem" id="mindmap-flyout" style="position:absolute;top:12px;right:12px;width:230px;background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:14px;z-index:10;box-shadow:0 8px 24px var(--color-shadow-menu)">
-        <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:6px">{{ flyoutItem.type.toUpperCase() }}</div>
-        <div style="font-size:15px;color:var(--text);margin-bottom:6px;font-family:'Cinzel',serif">{{ flyoutItem.title }}</div>
-        <div v-if="flyoutItem.description" style="font-size:12px;color:var(--text2);line-height:1.5">{{ flyoutItem.description.slice(0, 120) }}{{ flyoutItem.description.length > 120 ? '…' : '' }}</div>
-        <button class="btn btn-sm" style="margin-top:8px" @click="flyoutItem = null">✕ Close</button>
-      </div>
+    <div style="position:relative;overflow:hidden">
+      <svg ref="svgEl" id="mindmap-svg" style="height:500px;width:100%;display:block"></svg>
+
+      <!-- Slide-out inspector panel -->
+      <Transition name="mm-panel">
+        <div v-if="flyoutItem" class="mm-panel">
+          <div class="mm-panel-type">{{ flyoutType }}</div>
+          <div class="mm-panel-name">{{ flyoutItem.title }}</div>
+          <div v-if="flyoutItem.description" class="mm-panel-summary">
+            {{ flyoutItem.description.slice(0, 100) }}{{ flyoutItem.description.length > 100 ? '…' : '' }}
+          </div>
+          <div class="mm-panel-actions">
+            <button class="btn btn-sm mm-panel-open" @click="navigateTo">Open {{ flyoutType }} →</button>
+            <button class="btn btn-sm" @click="flyoutItem = null">Close</button>
+          </div>
+        </div>
+      </Transition>
     </div>
-    <div style="margin-top:8px;font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace">
-      Click a node to inspect · Connections auto-generated from item links
-    </div>
+    <div class="mm-hint">Click a node to inspect · Connections auto-generated from item links</div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import * as d3 from 'd3'
+import { useRouter } from 'vue-router'
 import { useDataStore } from '@/stores/data'
 
 const data = useDataStore()
+const router = useRouter()
 const svgEl = ref(null)
 const flyoutItem = ref(null)
 let simulation = null
 
 const TYPE_COLORS = {
   quest: '#c9a84c', npc: '#4c7ac9', location: '#4caf7d', hook: '#8b4cc9', map: '#c94c4c', faction: '#c94c8b',
+}
+
+const TYPE_LABELS = {
+  quest: 'Quest', npc: 'NPC', location: 'Location', hook: 'Plot hook', map: 'Map', faction: 'Faction',
+}
+
+const TYPE_ROUTES = {
+  quest: '/quests', npc: '/npcs', location: '/locations', hook: '/hooks', map: '/maps', faction: '/factions',
+}
+
+const flyoutType = computed(() => TYPE_LABELS[flyoutItem.value?.type] ?? flyoutItem.value?.type ?? '')
+
+function navigateTo() {
+  const route = TYPE_ROUTES[flyoutItem.value?.type]
+  flyoutItem.value = null
+  if (route) router.push(route)
 }
 
 function buildGraphData() {
@@ -240,3 +265,78 @@ onUnmounted(() => {
 
 watch([() => data.quests, () => data.npcs, () => data.locations, () => data.hooks, () => data.maps, () => data.factions], renderMindmap)
 </script>
+
+<style scoped>
+/* ── Slide-out inspector panel ───────────────────────────────────────────── */
+.mm-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 240px;
+  height: 100%;
+  background: var(--color-bg-elevated);
+  border-left: 1px solid var(--color-border-default);
+  padding: var(--space-5) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  z-index: var(--z-raised);
+  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.4);
+}
+
+.mm-panel-type {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-regular);
+  color: var(--color-text-secondary);
+  letter-spacing: 0.04em;
+}
+
+.mm-panel-name {
+  font-family: var(--font-sans);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-primary);
+  line-height: var(--leading-tight);
+  word-break: break-word;
+}
+
+.mm-panel-summary {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-normal);
+  flex: 1;
+}
+
+.mm-panel-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.mm-panel-open {
+  border-color: var(--color-border-active);
+  color: var(--color-text-accent);
+}
+
+/* ── Slide transition ─────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  .mm-panel-enter-active,
+  .mm-panel-leave-active {
+    transition: transform var(--duration-base) var(--ease-out);
+  }
+  .mm-panel-enter-from,
+  .mm-panel-leave-to {
+    transform: translateX(100%);
+  }
+}
+
+/* ── Hint text ────────────────────────────────────────────────────────────── */
+.mm-hint {
+  margin-top: var(--space-2);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+</style>
