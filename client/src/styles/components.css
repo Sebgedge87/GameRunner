@@ -101,15 +101,15 @@
 .updated-badge{position:absolute;top:10px;right:32px;font-size:9px;background:var(--accent-dim);color:var(--accent2);padding:1px 5px;border-radius:3px;font-family:'JetBrains Mono',monospace;}
 /* ── Tags ────────────────────────────────────────────────────────────────────── */
 .tag{display:inline-block;padding:2px 7px;border-radius:3px;font-size:10px;font-family:'JetBrains Mono',monospace;border:1px solid;}
-.tag-main,.tag-fact{color:#c9a84c;border-color:#7a6230;background:#1a1500;}
-.tag-side,.tag-npc-type,.tag-visited{color:#4c7ac9;border-color:#2a3a60;background:#0f1520;}
-.tag-delivery,.tag-mystery,.tag-theory{color:#8b4cc9;border-color:#4a2a70;background:#140f20;}
-.tag-active,.tag-friendly,.tag-current,.tag-low,.tag-open,.tag-completed,.tag-fact-tag{color:#4caf7d;border-color:#2a6040;background:#0f1a12;}
-.tag-inactive,.tag-unknown,.tag-unvisited,.tag-closed,.tag-none{color:#6a6460;border-color:#3a3830;background:#111110;}
-.tag-failed,.tag-hostile,.tag-high,.tag-deadly{color:#c94c4c;border-color:#601a1a;background:#1a0f0f;}
-.tag-neutral,.tag-medium,.tag-clue,.tag-easy{color:#a09890;border-color:#3a3830;background:#111110;}
-.tag-intrigue,.tag-text,.tag-image,.tag-location-tag{color:#4c7ac9;border-color:#2a3a60;background:#0f1520;}
-.tag-question{color:#c94c4c;border-color:#601a1a;background:#1a0f0f;}
+.tag-main,.tag-fact{color:var(--color-tag-gold-text);border-color:var(--color-tag-gold-border);background:var(--color-tag-gold-bg);}
+.tag-side,.tag-npc-type,.tag-visited{color:var(--color-tag-blue-text);border-color:var(--color-tag-blue-border);background:var(--color-tag-blue-bg);}
+.tag-delivery,.tag-mystery,.tag-theory{color:var(--color-tag-purple-text);border-color:var(--color-tag-purple-border);background:var(--color-tag-purple-bg);}
+.tag-active,.tag-friendly,.tag-current,.tag-low,.tag-open,.tag-completed,.tag-fact-tag{color:var(--color-tag-green-text);border-color:var(--color-tag-green-border);background:var(--color-tag-green-bg);}
+.tag-inactive,.tag-unknown,.tag-unvisited,.tag-closed,.tag-none{color:var(--color-tag-grey-dim-text);border-color:var(--color-tag-grey-border);background:var(--color-tag-grey-bg);}
+.tag-failed,.tag-hostile,.tag-high,.tag-deadly{color:var(--color-tag-red-text);border-color:var(--color-tag-red-border);background:var(--color-tag-red-bg);}
+.tag-neutral,.tag-medium,.tag-clue,.tag-easy{color:var(--color-tag-grey-text);border-color:var(--color-tag-grey-border);background:var(--color-tag-grey-bg);}
+.tag-intrigue,.tag-text,.tag-image,.tag-location-tag{color:var(--color-tag-blue-text);border-color:var(--color-tag-blue-border);background:var(--color-tag-blue-bg);}
+.tag-question{color:var(--color-tag-red-text);border-color:var(--color-tag-red-border);background:var(--color-tag-red-bg);}
 /* ── Quest Card — GM HUD Design ─────────────────────────────────────────────── */
 .quest-card{display:flex;flex-direction:column;gap:0;padding:0;overflow:visible;cursor:default;}
 .quest-card-header{padding:14px 18px 6px;cursor:pointer;}

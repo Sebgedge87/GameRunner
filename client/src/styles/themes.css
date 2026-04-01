@@ -341,6 +341,9 @@
   --color-accent:           #5a9aaa;
   --color-accent-muted:     rgba(90, 154, 170, 0.15);
 
+  /* Alien page titles use phosphor orange, distinct from the cyan accent */
+  --color-title:            #ff8c00;
+
   --color-text-primary:     #b8d0da;
   --color-text-secondary:   #2a4858;
   --color-text-hint:        #182030;
