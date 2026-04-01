@@ -797,6 +797,8 @@ function runMigrations() {
   try { db.exec('ALTER TABLE users ADD COLUMN preferences TEXT'); } catch (_) {}
   // Dune house selection for Layer 3 dynamic theme
   try { db.exec('ALTER TABLE campaigns ADD COLUMN dune_house TEXT'); } catch (_) {}
+  // Average party sanity for Cthulhu sanity atmosphere (Layer 3 dynamic theme)
+  try { db.exec('ALTER TABLE campaigns ADD COLUMN avg_sanity INTEGER DEFAULT 100'); } catch (_) {}
 
   console.log('✅ Migrations complete.');
 }
