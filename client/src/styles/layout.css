@@ -378,7 +378,7 @@
 .page-title {
   font-family: var(--font-header, 'Cinzel', serif);
   font-size: 20px;
-  color: var(--accent);
+  color: var(--color-title, var(--accent));
   letter-spacing: var(--h-spacing, 0.15em);
   text-transform: uppercase;
   position: relative;
@@ -421,6 +421,4 @@
   letter-spacing: 0.08em;
 }
 
-/* Alien: headers are orange */
-[data-theme="alien"] .page-title { color: #ff8c00; }
-[data-theme="alien"] .sidebar-title { color: var(--accent); }
+

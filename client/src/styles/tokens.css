@@ -159,8 +159,31 @@
   --color-danger-border:     rgba(220, 80, 60, 0.50);
   --color-danger-bg-hover:   rgba(220, 80, 60, 0.12);
 
-  /* TODO Task 11: tag palette tokens */
-  /* TODO Task 14: per-theme title colour tokens */
+  /* ── Tag palette ──────────────────────────────────────────────────────── */
+  --color-tag-gold-text:     #c9a84c;
+  --color-tag-gold-border:   #7a6230;
+  --color-tag-gold-bg:       #1a1500;
+
+  --color-tag-blue-text:     #4c7ac9;
+  --color-tag-blue-border:   #2a3a60;
+  --color-tag-blue-bg:       #0f1520;
+
+  --color-tag-green-text:    #4caf7d;
+  --color-tag-green-border:  #2a6040;
+  --color-tag-green-bg:      #0f1a12;
+
+  --color-tag-purple-text:   #8b4cc9;
+  --color-tag-purple-border: #4a2a70;
+  --color-tag-purple-bg:     #140f20;
+
+  --color-tag-red-text:      #c94c4c;
+  --color-tag-red-border:    #601a1a;
+  --color-tag-red-bg:        #1a0f0f;
+
+  --color-tag-grey-text:     #a09890;
+  --color-tag-grey-border:   #3a3830;
+  --color-tag-grey-bg:       #111110;
+  --color-tag-grey-dim-text: #6a6460;
 
   /* ── Z-index ──────────────────────────────────────────────────────────── */
   --z-base: 0;
