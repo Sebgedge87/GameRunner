@@ -606,6 +606,16 @@
   --color-border-active:    rgba(74, 136, 120, 0.65);
   --color-border-bracket:   rgba(74, 136, 120, 0.45);
   --radius-card:            6px;
+  /* Legacy variables used by existing components */
+  --bg:      #080c0a;
+  --bg2:     #0e1612;
+  --bg3:     #141e18;
+  --accent:  #4a8878;
+  --accent2: #6aaa98;
+  --text:    #c8e0d8;
+  --text2:   #2a5040;
+  --border:  rgba(74, 136, 120, 0.18);
+  --border2: rgba(74, 136, 120, 0.38);
 }
 
 /* Harkonnen — cold blue, brutal, squared */
@@ -622,6 +632,16 @@
   --radius-card:            0px;
   --radius-md:              0px;
   --radius-sm:              0px;
+  /* Legacy variables used by existing components */
+  --bg:      #080608;
+  --bg2:     #100810;
+  --bg3:     #180c18;
+  --accent:  #4a78c8;
+  --accent2: #6a98e8;
+  --text:    #b0c8f0;
+  --text2:   #1e3060;
+  --border:  rgba(74, 120, 200, 0.18);
+  --border2: rgba(74, 120, 200, 0.38);
 }
 
 /* Corrino — imperial gold, commanding */
@@ -636,6 +656,16 @@
   --color-border-active:    rgba(200, 160, 0, 0.65);
   --color-border-bracket:   rgba(200, 160, 0, 0.45);
   --radius-card:            4px;
+  /* Legacy variables used by existing components */
+  --bg:      #0a0800;
+  --bg2:     #161000;
+  --bg3:     #1e1800;
+  --accent:  #c8a000;
+  --accent2: #e8c020;
+  --text:    #f0e080;
+  --text2:   #604800;
+  --border:  rgba(200, 160, 0, 0.18);
+  --border2: rgba(200, 160, 0, 0.38);
 }
 
 /* Fremen — sand tan, austere, desert-worn */
@@ -650,6 +680,16 @@
   --color-border-active:    rgba(184, 144, 80, 0.65);
   --color-border-bracket:   rgba(184, 144, 80, 0.45);
   --radius-card:            2px;
+  /* Legacy variables used by existing components */
+  --bg:      #0a0804;
+  --bg2:     #160e04;
+  --bg3:     #1e1408;
+  --accent:  #b89050;
+  --accent2: #d8b070;
+  --text:    #e8d8a0;
+  --text2:   #604820;
+  --border:  rgba(184, 144, 80, 0.18);
+  --border2: rgba(184, 144, 80, 0.38);
 }
 
 /* Bene Gesserit — deep purple, controlled, precise */
@@ -664,4 +704,14 @@
   --color-border-active:    rgba(120, 88, 168, 0.65);
   --color-border-bracket:   rgba(120, 88, 168, 0.45);
   --radius-card:            8px;
+  /* Legacy variables used by existing components */
+  --bg:      #080608;
+  --bg2:     #100810;
+  --bg3:     #180c20;
+  --accent:  #7858a8;
+  --accent2: #9878c8;
+  --text:    #d0b8f0;
+  --text2:   #3a2060;
+  --border:  rgba(120, 88, 168, 0.18);
+  --border2: rgba(120, 88, 168, 0.38);
 }

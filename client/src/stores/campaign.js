@@ -63,11 +63,8 @@ export const useCampaignStore = defineStore('campaign', () => {
     }
     if (FX_MAP[theme]) cl.add(FX_MAP[theme])
     // Layer 3: Dune house accent
-    if (theme === 'dune') {
-      console.log('dune_house value:', activeCampaign.value?.dune_house)
-      if (activeCampaign.value?.dune_house) {
-        cl.add(`dynamic-house-${activeCampaign.value.dune_house}`)
-      }
+    if (theme === 'dune' && activeCampaign.value?.dune_house) {
+      cl.add(`dynamic-house-${activeCampaign.value.dune_house}`)
     }
     localStorage.setItem('chronicle_theme', system)
     if (theme === 'custom') applyCustomTheme()
