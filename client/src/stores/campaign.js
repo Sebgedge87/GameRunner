@@ -46,10 +46,12 @@ export const useCampaignStore = defineStore('campaign', () => {
     const theme = SYSTEM_THEME_MAP[system] || 'default'
     // Keep data-theme attribute for legacy [data-theme] variable rules
     document.documentElement.setAttribute('data-theme', theme === 'none' ? 'default' : theme)
-    // Apply semantic theme class — remove any existing theme-* class first
+    // Apply semantic theme class — remove existing theme-* and fx-* classes first
     const cl = document.documentElement.classList
-    Array.from(cl).filter(c => c.startsWith('theme-')).forEach(c => cl.remove(c))
+    Array.from(cl).filter(c => c.startsWith('theme-') || c.startsWith('fx-')).forEach(c => cl.remove(c))
     cl.add(`theme-${theme}`)
+    // Apply ambient FX class alongside theme
+    if (theme === 'alien') cl.add('fx-crt')
     localStorage.setItem('chronicle_theme', system)
     if (theme === 'custom') applyCustomTheme()
   }

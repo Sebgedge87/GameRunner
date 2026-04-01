@@ -419,3 +419,46 @@
   /* Condensed serif for body copy */
   --font-serif:             'Lora', serif;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 2 — Ambient FX classes
+   Applied alongside a base theme class. CSS-only, no JavaScript required.
+   All animations inside @media (prefers-reduced-motion: no-preference).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── .fx-crt — Alien RPG scanline + phosphor flicker ────────────────────── */
+.fx-crt {
+  --scanline-color: rgba(0, 255, 180, 0.03);
+}
+
+.fx-crt body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    var(--scanline-color) 2px,
+    var(--scanline-color) 4px
+  );
+  pointer-events: none;
+  z-index: var(--z-top);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fx-crt h1 {
+    animation: crt-flicker 6s steps(1) infinite;
+  }
+  @keyframes crt-flicker {
+    0%, 95%, 97%, 100% { opacity: 1; }
+    96%                { opacity: 0.85; }
+  }
+}
+
+.fx-crt .nav-label,
+.fx-crt .field-label {
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+}
