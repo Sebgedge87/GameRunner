@@ -14,7 +14,8 @@ export const useCampaignStore = defineStore('campaign', () => {
   function setTimer(t) { timer.value = { ...timer.value, ...t } }
 
   const SYSTEM_THEME_MAP = {
-    default: 'default', dnd5e: 'dnd5e', coc: 'coc', alien: 'alien',
+    none: 'none',
+    default: 'default', dnd5e: 'dnd5e', coc: 'cthulhu', alien: 'alien',
     coriolis: 'coriolis', dune: 'dune', achtung: 'achtung', custom: 'custom',
   }
 
@@ -43,7 +44,12 @@ export const useCampaignStore = defineStore('campaign', () => {
 
   function applyTheme(system) {
     const theme = SYSTEM_THEME_MAP[system] || 'default'
-    document.documentElement.setAttribute('data-theme', theme)
+    // Keep data-theme attribute for legacy [data-theme] variable rules
+    document.documentElement.setAttribute('data-theme', theme === 'none' ? 'default' : theme)
+    // Apply semantic theme class — remove any existing theme-* class first
+    const cl = document.documentElement.classList
+    Array.from(cl).filter(c => c.startsWith('theme-')).forEach(c => cl.remove(c))
+    cl.add(`theme-${theme}`)
     localStorage.setItem('chronicle_theme', system)
     if (theme === 'custom') applyCustomTheme()
   }
@@ -90,7 +96,7 @@ export const useCampaignStore = defineStore('campaign', () => {
       if (activeCampaign.value?.system) {
         applyTheme(activeCampaign.value.system)
       } else {
-        applyTheme('default')
+        applyTheme('none')
       }
       applyBgImage(activeCampaign.value?.bg_image || null)
       // Hydrate timer from campaign row
@@ -156,7 +162,7 @@ export const useCampaignStore = defineStore('campaign', () => {
   function leaveCampaign() {
     activeCampaign.value = null
     isGm.value = false
-    applyTheme('default')
+    applyTheme('none')
     applyBgImage(null)
   }
 
