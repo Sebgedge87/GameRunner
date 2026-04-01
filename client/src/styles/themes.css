@@ -596,27 +596,72 @@
 
 /* Atreides — blue-green, noble, disciplined */
 .dynamic-house-atreides {
+  --color-bg-page:          #080c0a;
+  --color-bg-card:          #0e1612;
+  --color-bg-elevated:      #141e18;
   --color-accent:           #4a8878;
-  --color-border-bracket:   rgba(74, 136, 120, 0.50);
+  --color-text-primary:     #c8e0d8;
+  --color-text-secondary:   #2a5040;
+  --color-border-default:   rgba(74, 136, 120, 0.18);
+  --color-border-active:    rgba(74, 136, 120, 0.65);
+  --color-border-bracket:   rgba(74, 136, 120, 0.45);
   --radius-card:            6px;
 }
 
-/* Harkonnen — blood red, brutal, squared */
+/* Harkonnen — cold blue, brutal, squared */
 .dynamic-house-harkonnen {
-  --color-accent:           #a02818;
-  --color-border-bracket:   rgba(160, 40, 24, 0.60);
+  --color-bg-page:          #080608;
+  --color-bg-card:          #100810;
+  --color-bg-elevated:      #180c18;
+  --color-accent:           #4a78c8;
+  --color-text-primary:     #b0c8f0;
+  --color-text-secondary:   #1e3060;
+  --color-border-default:   rgba(74, 120, 200, 0.18);
+  --color-border-active:    rgba(74, 120, 200, 0.65);
+  --color-border-bracket:   rgba(74, 120, 200, 0.45);
   --radius-card:            0px;
   --radius-md:              0px;
+  --radius-sm:              0px;
 }
 
-/* Fremen — sand tan, austere */
+/* Corrino — imperial gold, commanding */
+.dynamic-house-corrino {
+  --color-bg-page:          #0a0800;
+  --color-bg-card:          #161000;
+  --color-bg-elevated:      #1e1800;
+  --color-accent:           #c8a000;
+  --color-text-primary:     #f0e080;
+  --color-text-secondary:   #604800;
+  --color-border-default:   rgba(200, 160, 0, 0.18);
+  --color-border-active:    rgba(200, 160, 0, 0.65);
+  --color-border-bracket:   rgba(200, 160, 0, 0.45);
+  --radius-card:            4px;
+}
+
+/* Fremen — sand tan, austere, desert-worn */
 .dynamic-house-fremen {
+  --color-bg-page:          #0a0804;
+  --color-bg-card:          #160e04;
+  --color-bg-elevated:      #1e1408;
   --color-accent:           #b89050;
   --color-text-primary:     #e8d8a0;
+  --color-text-secondary:   #604820;
+  --color-border-default:   rgba(184, 144, 80, 0.18);
+  --color-border-active:    rgba(184, 144, 80, 0.65);
+  --color-border-bracket:   rgba(184, 144, 80, 0.45);
+  --radius-card:            2px;
 }
 
-/* Bene Gesserit — deep purple, controlled */
+/* Bene Gesserit — deep purple, controlled, precise */
 .dynamic-house-bene-gesserit {
+  --color-bg-page:          #080608;
+  --color-bg-card:          #100810;
+  --color-bg-elevated:      #180c20;
   --color-accent:           #7858a8;
-  --color-border-bracket:   rgba(120, 88, 168, 0.50);
+  --color-text-primary:     #d0b8f0;
+  --color-text-secondary:   #3a2060;
+  --color-border-default:   rgba(120, 88, 168, 0.18);
+  --color-border-active:    rgba(120, 88, 168, 0.65);
+  --color-border-bracket:   rgba(120, 88, 168, 0.45);
+  --radius-card:            8px;
 }
