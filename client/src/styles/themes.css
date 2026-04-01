@@ -462,3 +462,123 @@
   font-family: var(--font-mono);
   letter-spacing: 0.08em;
 }
+
+/* ── .fx-grain — Dune sand texture ──────────────────────────────────────── */
+.fx-grain body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  pointer-events: none;
+  z-index: var(--z-top);
+  opacity: 0.6;
+}
+
+.fx-grain h1,
+.fx-grain h2 {
+  letter-spacing: 0.22em;
+}
+
+/* ── .fx-desaturate — Cthulhu wet ink + colour fade ─────────────────────── */
+.fx-desaturate .card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 60%, rgba(0, 0, 0, 0.4) 100%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fx-desaturate .card {
+    transition: filter 2s ease;
+  }
+  .fx-desaturate .card:hover {
+    filter: saturate(0.2) brightness(0.9);
+  }
+}
+
+.fx-desaturate .body-text {
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+
+/* ── .fx-parchment — Achtung! aged paper + military stamp ───────────────── */
+.fx-parchment .card {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)' opacity='0.04'/%3E%3C/svg%3E");
+}
+
+.fx-parchment .status-badge {
+  border-style: dashed;
+  letter-spacing: 0.18em;
+  font-weight: 500;
+}
+
+.fx-parchment .gm-section::before {
+  content: 'CLASSIFIED';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-25deg);
+  font-size: 48px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  color: rgba(180, 40, 30, 0.06);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* ── .fx-stars — Coriolis star field + holographic card hover ────────────── */
+.fx-stars body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgba(255, 255, 255, 0.40) 0%, transparent 100%),
+    radial-gradient(1px 1px at 70% 15%, rgba(255, 255, 255, 0.30) 0%, transparent 100%),
+    radial-gradient(1px 1px at 45% 70%, rgba(255, 255, 255, 0.20) 0%, transparent 100%),
+    radial-gradient(1px 1px at 85% 55%, rgba(255, 255, 255, 0.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 10% 80%, rgba(255, 255, 255, 0.25) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fx-stars .card {
+    transition: background-position 0.3s ease;
+    background-size: 200% 200%;
+  }
+  .fx-stars .card:hover {
+    background-image: conic-gradient(
+      from var(--hue, 0deg) at 50% 50%,
+      rgba(138, 120, 200, 0.06),
+      transparent 40%,
+      rgba(138, 120, 200, 0.04),
+      transparent
+    );
+    animation: holo-rotate 3s linear infinite;
+  }
+  @keyframes holo-rotate {
+    to { --hue: 360deg; }
+  }
+}
+
+/* ── .fx-vignette — D&D 5e parchment + illuminated initial ──────────────── */
+.fx-vignette .card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.35) 100%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.fx-vignette .entity-description p:first-child::first-letter {
+  font-family: var(--font-display);
+  font-size: 2.8em;
+  line-height: 0.8;
+  float: left;
+  margin: 0.05em 0.08em 0 0;
+  color: var(--color-accent);
+}

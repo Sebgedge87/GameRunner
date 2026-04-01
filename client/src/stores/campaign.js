@@ -51,7 +51,15 @@ export const useCampaignStore = defineStore('campaign', () => {
     Array.from(cl).filter(c => c.startsWith('theme-') || c.startsWith('fx-')).forEach(c => cl.remove(c))
     cl.add(`theme-${theme}`)
     // Apply ambient FX class alongside theme
-    if (theme === 'alien') cl.add('fx-crt')
+    const FX_MAP = {
+      alien:    'fx-crt',
+      dune:     'fx-grain',
+      cthulhu:  'fx-desaturate',
+      achtung:  'fx-parchment',
+      coriolis: 'fx-stars',
+      dnd5e:    'fx-vignette',
+    }
+    if (FX_MAP[theme]) cl.add(FX_MAP[theme])
     localStorage.setItem('chronicle_theme', system)
     if (theme === 'custom') applyCustomTheme()
   }
