@@ -795,6 +795,8 @@ function runMigrations() {
   try { db.exec('ALTER TABLE users ADD COLUMN token_version INTEGER DEFAULT 0'); } catch (_) {}
   // User preferences (theme, custom colors, etc.) persisted server-side
   try { db.exec('ALTER TABLE users ADD COLUMN preferences TEXT'); } catch (_) {}
+  // Dune house selection for Layer 3 dynamic theme
+  try { db.exec('ALTER TABLE campaigns ADD COLUMN dune_house TEXT'); } catch (_) {}
 
   console.log('✅ Migrations complete.');
 }

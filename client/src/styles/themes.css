@@ -585,3 +585,38 @@
   margin: 0.05em 0.08em 0 0;
   color: var(--color-accent);
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 3 — Dynamic data classes
+   Applied programmatically alongside base theme + FX classes.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Dune house accents ──────────────────────────────────────────────────── */
+
+/* Atreides — blue-green, noble, disciplined */
+.dynamic-house-atreides {
+  --color-accent:           #4a8878;
+  --color-border-bracket:   rgba(74, 136, 120, 0.50);
+  --radius-card:            6px;
+}
+
+/* Harkonnen — blood red, brutal, squared */
+.dynamic-house-harkonnen {
+  --color-accent:           #a02818;
+  --color-border-bracket:   rgba(160, 40, 24, 0.60);
+  --radius-card:            0px;
+  --radius-md:              0px;
+}
+
+/* Fremen — sand tan, austere */
+.dynamic-house-fremen {
+  --color-accent:           #b89050;
+  --color-text-primary:     #e8d8a0;
+}
+
+/* Bene Gesserit — deep purple, controlled */
+.dynamic-house-bene-gesserit {
+  --color-accent:           #7858a8;
+  --color-border-bracket:   rgba(120, 88, 168, 0.50);
+}
