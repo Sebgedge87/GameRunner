@@ -91,7 +91,9 @@ export const useCampaignStore = defineStore('campaign', () => {
       'Content-Type': 'application/json',
       ...(opts.headers || {}),
     }
-    if (activeCampaign.value?.id) headers['X-Campaign-Id'] = activeCampaign.value.id
+    if (!headers['X-Campaign-Id'] && activeCampaign.value?.id) {
+      headers['X-Campaign-Id'] = activeCampaign.value.id
+    }
     return fetch(path, { ...opts, headers })
   }
 
