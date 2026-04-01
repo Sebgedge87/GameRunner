@@ -136,6 +136,20 @@
 
         </div><!-- /players-xp-cols -->
 
+        <!-- ── Cthulhu: Average party sanity ─────────────────── -->
+        <div v-if="campaign.activeCampaign?.system === 'coc'" class="card" style="margin:16px 0;padding:14px 18px;display:flex;align-items:center;gap:16px">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:0.78em;font-weight:600;letter-spacing:0.06em;opacity:0.55;margin-bottom:4px">AVERAGE PARTY SANITY</div>
+            <div style="font-size:0.75em;opacity:0.45;line-height:1.5">
+              80–100: normal &nbsp;·&nbsp; 60–79: faint fade &nbsp;·&nbsp; 40–59: grey shift &nbsp;·&nbsp; 20–39: near-monochrome &nbsp;·&nbsp; 0–19: greyscale
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+            <input v-model.number="avgSanityInput" type="number" min="0" max="100" class="form-input stress-input" style="width:64px;text-align:center" />
+            <button class="btn btn-sm" @click="saveSanity">Set</button>
+          </div>
+        </div>
+
         <!-- ── 2-column lower dashboard ──────────────────────── -->
         <div class="dash-cols">
 
@@ -367,6 +381,8 @@ const campOk = ref(false)
 // Track last-persisted house value so the live preview can be reverted on discard
 const savedHouse = ref('')
 
+const avgSanityInput = ref(100)
+
 function previewHouse() {
   const house = campForm.value.dune_house || null
   // Write to store first, then apply theme
@@ -474,6 +490,24 @@ function copyInviteCode() {
     () => ui.showToast('Invite code copied!', '', '✓'),
     () => ui.showToast('Copy failed', '', '✕'),
   )
+}
+
+async function saveSanity() {
+  const id = campaign.activeCampaign?.id
+  if (!id) return
+  const val = Math.max(0, Math.min(100, Math.round(avgSanityInput.value ?? 100)))
+  avgSanityInput.value = val
+  const r = await data.apif(`/api/campaigns/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ avg_sanity: val }),
+  })
+  if (r.ok) {
+    if (campaign.activeCampaign) campaign.activeCampaign.avg_sanity = val
+    campaign.applyTheme(campaign.activeCampaign?.system)
+    ui.showToast('Sanity updated', '', '✓')
+  } else {
+    ui.showToast('Update failed', '', '✕')
+  }
 }
 
 async function saveStress(userId) {
@@ -666,6 +700,7 @@ async function initForCampaign() {
       dune_house: ac.dune_house || '',
     }
     savedHouse.value = ac.dune_house || ''
+    avgSanityInput.value = ac.avg_sanity ?? 100
   }
   await Promise.all([
     data.loadUsers(),

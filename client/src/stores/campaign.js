@@ -66,6 +66,12 @@ export const useCampaignStore = defineStore('campaign', () => {
     if (theme === 'dune' && activeCampaign.value?.dune_house) {
       cl.add(`dynamic-house-${activeCampaign.value.dune_house}`)
     }
+    // Layer 3: Cthulhu sanity atmosphere
+    if (theme === 'cthulhu') {
+      const sanity = activeCampaign.value?.avg_sanity ?? 100
+      const band = Math.min(4, Math.floor(sanity / 20))
+      cl.add(`dynamic-sanity-${band}`)
+    }
     localStorage.setItem('chronicle_theme', system)
     if (theme === 'custom') applyCustomTheme()
   }

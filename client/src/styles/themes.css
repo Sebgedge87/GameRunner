@@ -692,6 +692,27 @@
   --border2: rgba(184, 144, 80, 0.38);
 }
 
+/* ── Call of Cthulhu — Sanity atmosphere ─────────────────────────────────── */
+
+/* Sanity band 4 (80–100 SAN) — normal */
+.dynamic-sanity-4 { filter: saturate(1); }
+
+/* Sanity band 3 (60–79 SAN) — faint desaturation */
+.dynamic-sanity-3 { filter: saturate(0.85); }
+
+/* Sanity band 2 (40–59 SAN) — noticeable grey shift */
+.dynamic-sanity-2 { filter: saturate(0.60); }
+
+/* Sanity band 1 (20–39 SAN) — near-monochrome */
+.dynamic-sanity-1 {
+  filter: saturate(0.25) contrast(1.05);
+}
+
+/* Sanity band 0 (0–19 SAN) — greyscale + red tint */
+.dynamic-sanity-0 {
+  filter: saturate(0) sepia(0.3) hue-rotate(320deg) contrast(1.1);
+}
+
 /* Bene Gesserit — deep purple, controlled, precise */
 .dynamic-house-bene-gesserit {
   --color-bg-page:          #080608;
