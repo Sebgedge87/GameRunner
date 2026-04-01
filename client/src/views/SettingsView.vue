@@ -85,6 +85,21 @@
         </div>
       </section>
 
+      <!-- ── Campaign (GM only, Dune system only) ─────────────────────────── -->
+      <section v-if="campaign.isGm && campaign.activeCampaign?.system === 'dune'" class="settings-card">
+        <h2 class="settings-card-heading">Campaign</h2>
+        <div class="field-group">
+          <label>Great House</label>
+          <select v-model="duneHouse" class="form-input" @change="saveHouse">
+            <option value="">None</option>
+            <option value="atreides">Atreides</option>
+            <option value="harkonnen">Harkonnen</option>
+            <option value="fremen">Fremen</option>
+            <option value="bene-gesserit">Bene Gesserit</option>
+          </select>
+        </div>
+      </section>
+
       <!-- ── Data (GM only) ────────────────────────────────────────────────── -->
       <section v-if="campaign.isGm" class="settings-card">
         <h2 class="settings-card-heading">Data</h2>
@@ -162,6 +177,18 @@ const pwNew = ref('')
 const pwConfirm = ref('')
 const pwStatus = ref('')
 const pwOk = ref(false)
+
+const duneHouse = ref(campaign.activeCampaign?.dune_house || '')
+
+async function saveHouse() {
+  try {
+    await campaign.updateCampaign(campaign.activeCampaign.id, { dune_house: duneHouse.value || null })
+    campaign.applyTheme(campaign.activeCampaign.system)
+    ui.showToast('Campaign updated', '', '✓')
+  } catch (e) {
+    ui.showToast(e.message || 'Failed to save', '', '✕')
+  }
+}
 
 onMounted(() => {
   if (auth.currentUser) {

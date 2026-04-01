@@ -46,11 +46,13 @@ export const useCampaignStore = defineStore('campaign', () => {
     const theme = SYSTEM_THEME_MAP[system] || 'default'
     // Keep data-theme attribute for legacy [data-theme] variable rules
     document.documentElement.setAttribute('data-theme', theme === 'none' ? 'default' : theme)
-    // Apply semantic theme class — remove existing theme-* and fx-* classes first
+    // Apply semantic theme class — remove existing theme-*, fx-*, dynamic-* classes first
     const cl = document.documentElement.classList
-    Array.from(cl).filter(c => c.startsWith('theme-') || c.startsWith('fx-')).forEach(c => cl.remove(c))
+    Array.from(cl).filter(c =>
+      c.startsWith('theme-') || c.startsWith('fx-') || c.startsWith('dynamic-')
+    ).forEach(c => cl.remove(c))
     cl.add(`theme-${theme}`)
-    // Apply ambient FX class alongside theme
+    // Layer 2: ambient FX alongside theme
     const FX_MAP = {
       alien:    'fx-crt',
       dune:     'fx-grain',
@@ -60,6 +62,10 @@ export const useCampaignStore = defineStore('campaign', () => {
       dnd5e:    'fx-vignette',
     }
     if (FX_MAP[theme]) cl.add(FX_MAP[theme])
+    // Layer 3: Dune house accent
+    if (theme === 'dune' && activeCampaign.value?.dune_house) {
+      cl.add(`dynamic-house-${activeCampaign.value.dune_house}`)
+    }
     localStorage.setItem('chronicle_theme', system)
     if (theme === 'custom') applyCustomTheme()
   }
@@ -156,6 +162,16 @@ export const useCampaignStore = defineStore('campaign', () => {
     return d.campaign
   }
 
+  async function updateCampaign(id, fields) {
+    const r = await apif(`/api/campaigns/${id}`, { method: 'PUT', body: JSON.stringify(fields) })
+    const d = await r.json()
+    if (!r.ok) throw new Error(d.error || 'Failed to update campaign')
+    if (activeCampaign.value?.id === id) {
+      activeCampaign.value = { ...activeCampaign.value, ...fields }
+    }
+    return d.campaign
+  }
+
   const currentPartyLocationId = computed(() => activeCampaign.value?.current_party_location_id || null)
 
   async function setPartyLocation(locId) {
@@ -180,6 +196,6 @@ export const useCampaignStore = defineStore('campaign', () => {
     activeCampaign, allCampaigns, isGm, currentPartyLocationId, timer, calendarVersion,
     SYSTEM_META, SYSTEM_THEME_MAP,
     applyTheme, applyCustomTheme, applyBgImage,
-    loadCampaigns, switchCampaign, createCampaign, joinCampaign, setPartyLocation, leaveCampaign, setTimer,
+    loadCampaigns, switchCampaign, createCampaign, joinCampaign, updateCampaign, setPartyLocation, leaveCampaign, setTimer,
   }
 })
