@@ -12,7 +12,7 @@
 2. [Navigation structure](#2-navigation-structure)
 3. [GM features](#3-gm-features)
 4. [World-building views](#4-world-building-views)
-5. Entity reference *(coming)*
+5. [Campaign tools](#5-campaign-tools)
 6. Data flow *(coming)*
 7. Key design decisions *(coming)*
 
@@ -419,5 +419,179 @@ All eight views share the same structural skeleton and conventions:
 **Pinning** — all entity types support `data.addPin(type, id, name)` which adds a pinned shortcut to the sidebar.
 
 **GM-only controls** — edit, delete, share, and reveal actions are conditionally rendered with `v-if="campaign.isGm"`. Players see only the browsing surface.
+
+---
+
+## 5. Campaign tools
+
+Campaign tools are the operational layer — the views used during and between sessions to run the game, track resources, and communicate. Unlike world-building views (which the GM primarily authors), several campaign tools are interactive for all players.
+
+### 5.1 Sessions (`SessionsView.vue`)
+
+Route: `/sessions`
+
+The Sessions view is a campaign chronicle combined with a scheduling hub. It has three sections on a single scrollable page.
+
+#### Session list
+
+Sessions are sorted newest-first (descending `number`). The latest session is auto-expanded on mount. Each session card expands/collapses on click and shows:
+
+- **Session number** and optional **title** in the header; formatted play date on the right
+- **Summary** — rendered as full Markdown (using `renderMd()`, not stripped). Displayed in italic body text with the `.prose` class
+- **Player notes** — a list of notes posted by players (and the GM). Each note shows the author's character name and rendered body. A player can edit or delete their own notes; the GM can edit/delete any note. Inline edit uses a textarea that replaces the note in place
+- **Add Note** — available to all users; posts to `POST /api/sessions/:id/notes`
+
+GM action bar (visible when expanded): Edit (opens `GmEditModal`) · Delete (with `ui.confirm()`).
+
+#### Polls section
+
+Below the session list. The GM can create a poll via `GmEditModal` (`type = 'poll'`). Poll cards show the question and option list; each option is clickable to vote (`POST /api/sessions/polls/:id/vote`). Vote counts are shown when `results_public` is true or when the viewer is the GM. GM controls: Reveal Results · Close Poll · Delete.
+
+#### Scheduling section
+
+The GM can propose session dates (`type = 'schedule'`). Each scheduling item shows the proposed date/time and a response matrix (per-player yes/maybe/no). All users can respond with yes/maybe/no buttons (`POST /api/sessions/scheduling/:id/respond`). The GM can mark a date as confirmed (`PUT /api/sessions/scheduling/:id/confirm`).
+
+---
+
+### 5.2 Handouts (`HandoutsView.vue`)
+
+Route: `/handouts`
+
+Card grid using `OverlayCard`. Handouts are documents, images, or artefacts the GM shares with players. Each card can show a full-width image preview (180 px max height), a session delivery number, and a description.
+
+Filter tabs: All · Text · Image · Map · Letter (filters on `handout.type`).
+
+Actions: Pin · Share (GM) · Edit (GM) · Delete (GM).
+
+Players see all non-hidden handouts and can pin them. There is no player-specific reveal flow for handouts — visibility is controlled by the `hidden` flag on the record.
+
+---
+
+### 5.3 Notes (`NotesView.vue`)
+
+Route: `/notes`
+
+Notes is the only view with a **two-panel side-by-side layout** (`notes-layout`). The left column is a searchable list; the right column is a compose/edit panel.
+
+**Note list** — each card shows: title, privacy tag (`private` = red, `public` = green), category tag, shared-with-GM indicator, a 120-character stripped body preview, last-updated date, and a Delete button. Clicking a card loads it into the right panel.
+
+**Compose/edit panel** — fields:
+
+| Field | Values |
+|-------|--------|
+| Title | Free text |
+| Body | `MarkdownEditor` component |
+| Category | Notes · Clues · Plans · Lore |
+| Privacy | Private · Public |
+| Share with GM | Checkbox |
+
+Notes are **per-user** — each player only sees their own notes regardless of privacy setting. The `privacy` field controls whether the note is visible to other players (public) or only the author (private). The "Share with GM" checkbox separately flags the note for GM visibility.
+
+Filter tabs: All · Notes · Clues · Plans · Lore.
+
+---
+
+### 5.4 Inventory (`InventoryView.vue`)
+
+Route: `/inventory`
+
+The Inventory view has two distinct sections on one page: **Party Inventory** and **Key Items**.
+
+#### Party inventory
+
+Standard item tracking (weapons, armour, gear, consumables). Card grid using `EntityCard`. Each card shows:
+
+- Item type and rarity tags (rarity is colour-coded: uncommon = green, rare/very rare = blue, legendary = accent, artifact = red)
+- Holder tag — shows the player's name when an item is held by a specific player rather than the party
+- Quantity, weight, description
+
+**Transfer modal** — any player who owns an item (or the GM for any item) can click "Give ↗" to open a modal with a player selector. Submits to `PUT /api/inventory/:id/transfer`. On success the new owner's name is shown in the toast.
+
+Filter tabs: All · Weapon · Armour · Gear · Consumable.
+
+#### Key items
+
+A separate grid below the party inventory for plot-critical objects (artefacts, quest MacGuffins, unique relics). Uses `EntityCard` with `type = 'key-item'`. Shows linked entities. No filter tabs; search only. No transfer mechanism — key items are not player-holdable.
+
+---
+
+### 5.5 Jobs / Job Board (`JobsView.vue`)
+
+Route: `/jobs`
+
+A standalone card grid view of all campaign jobs (contracts, bounties, escort missions). Mirrors the Notice Board sub-tab of `LocationsView` but without the location filter — it shows all jobs across all locations.
+
+Filter tabs: All · Open · Active · Completed.
+
+Each expanded card shows: description, reward, source location, employer, linked entities, and status tag. Two action-slot buttons:
+
+- **Accept** — visible to players on open jobs; calls `PUT /api/jobs/:id/accept`
+- **→ Quest** — visible to GMs on jobs without an associated quest; calls `PUT /api/jobs/:id` with `{ status: 'taken', promoted_quest_id: -1 }` then reloads both jobs and quests. This workflow promotes a job to a tracked quest in one click.
+
+The GM can also post new jobs from the "+ Add Job" tile at the start of the grid.
+
+---
+
+### 5.6 Rumours (`RumoursView.vue`)
+
+Route: `/rumours`
+
+Card grid using `OverlayCard`. Rumours are whispers the GM plants — some true, some false. Players see all non-hidden rumours but cannot tell which are true (the `is_true` field is only surfaced to the GM via status badges).
+
+**GM status badge logic:**
+- `exposed` → done (accent)
+- `is_true = true`, not exposed → active (green)
+- `is_true = false`, not exposed → missed (red)
+
+Card title is auto-generated from the first 60 characters of the rumour text, wrapped in curly quotes.
+
+Each card shows: source NPC, source location, rumour text.
+
+**Expose action** (GM only) — calls `POST /api/rumours/:id/expose`. Once exposed the rumour is publicly acknowledged as resolved, regardless of truth value.
+
+Filter tabs: All · True · False · Exposed (GM can filter to review their deception layer).
+
+---
+
+### 5.7 Calendar (`CalendarView.vue`)
+
+Route: `/calendar`
+
+The Calendar is the most configurable view in the app. It renders a fully custom in-world calendar system — not the real-world Gregorian calendar — making it suitable for fantasy campaigns with invented timekeeping.
+
+#### Grid and navigation
+
+The view displays a standard month grid: day-of-week header row, blank cells to offset the first day, then numbered day cells. Navigation arrows step one month at a time; a ◎ button jumps to the campaign's current in-world date. The header shows the current month name, year, era suffix, and season (with its colour and icon).
+
+Each day cell can display:
+
+- **Moon phase icons** — one per configured moon, computed from the moon's cycle length and reference phase. Each moon has its own colour
+- **Events** — rendered as labelled chips with a coloured left border. Weather events use a weather icon instead. GM-only events show an 👁 badge
+
+Clicking a day cell (GM only) opens the event creation form. Clicking an existing event (GM only) opens it for editing.
+
+#### GM toolbar
+
+A bar visible only to GMs with two actions:
+
+- **Generate Weather** — auto-populates the entire current month with weather events based on the season's weighted weather table
+- **Advance Date** — inline form to advance the current in-world date by N days, or set it to the first of the viewed month
+
+#### Calendar configuration panel
+
+The ⚙ Configure button opens an in-page settings panel with six tabs:
+
+| Tab | Configures |
+|----|-----------|
+| General | Epoch weekday offset, active era, current date (year/month/day) |
+| Days | Names and short abbreviations for each day of the week |
+| Months | Names, short names, and day counts per month |
+| Eras | Named historical periods with year ranges and suffix labels (e.g. "AE", "DR") |
+| Seasons | Season name, icon, accent colour, and which months belong to each season |
+| Moons | Moon name, colour, cycle length (days), reference phase index, and reference date for phase calculation |
+| Weather | Per-season weather outcomes — each with a label, icon, and relative weight for the random generator |
+
+All configuration is stored as JSON on the campaign record. Changes are saved to `PUT /api/calendar/config`. This lets a GM model virtually any fantasy calendar — the Forgotten Realms Calendar of Harptos, a homebrew 13-month world, multiple moons with different cycles, etc.
+
 
 
