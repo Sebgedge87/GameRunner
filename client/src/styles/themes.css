@@ -713,6 +713,44 @@
   filter: saturate(0) sepia(0.3) hue-rotate(320deg) contrast(1.1);
 }
 
+/* ── D&D 5e — Setting / plane overrides ──────────────────────────────────── */
+
+/* Ravenloft — gothic mist */
+.dynamic-setting-ravenloft {
+  --color-bg-page: #08060a;
+  --color-bg-card: #120a14;
+  --color-accent:  #9858a8;
+  /* Legacy variables */
+  --bg:     #08060a;
+  --bg2:    #120a14;
+  --accent: #9858a8;
+  --accent2: #b878c8;
+}
+
+/* Spelljammer — void + stars */
+.dynamic-setting-spelljammer {
+  --color-bg-page: #06060e;
+  --color-bg-card: #0c0c18;
+  --color-accent:  #5858c8;
+  /* Legacy variables */
+  --bg:     #06060e;
+  --bg2:    #0c0c18;
+  --accent: #5858c8;
+  --accent2: #7878e8;
+}
+
+/* Eberron — arcane lightning */
+.dynamic-setting-eberron {
+  --color-bg-page: #080a10;
+  --color-bg-card: #101420;
+  --color-accent:  #4888d0;
+  /* Legacy variables */
+  --bg:     #080a10;
+  --bg2:    #101420;
+  --accent: #4888d0;
+  --accent2: #68a8f0;
+}
+
 /* Bene Gesserit — deep purple, controlled, precise */
 .dynamic-house-bene-gesserit {
   --color-bg-page:          #080608;

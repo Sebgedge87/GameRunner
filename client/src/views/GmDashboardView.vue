@@ -249,6 +249,15 @@
                 <option value="bene-gesserit">Bene Gesserit</option>
               </select>
             </div>
+            <div v-if="campForm.system === 'dnd5e'" class="field-group">
+              <label>Setting / Plane</label>
+              <select v-model="campForm.dnd_setting" class="form-input" @change="previewSetting">
+                <option value="">None (Forgotten Realms)</option>
+                <option value="ravenloft">Ravenloft</option>
+                <option value="spelljammer">Spelljammer</option>
+                <option value="eberron">Eberron</option>
+              </select>
+            </div>
             <div class="field-group">
               <label>Subtitle</label>
               <input v-model="campForm.subtitle" class="form-input" placeholder="Optional tagline…" />
@@ -374,12 +383,13 @@ const stressEdits = reactive({})
 const xpMap = ref({})
 const auditLog = ref([])
 
-const campForm = ref({ name: '', subtitle: '', system: '', description: '', playlist_url: '', bg_image: '', invite_code: '', dune_house: '' })
+const campForm = ref({ name: '', subtitle: '', system: '', description: '', playlist_url: '', bg_image: '', invite_code: '', dune_house: '', dnd_setting: '' })
 const campSaving = ref(false)
 const campStatus = ref('')
 const campOk = ref(false)
-// Track last-persisted house value so the live preview can be reverted on discard
+// Track last-persisted values so live previews can be reverted on discard
 const savedHouse = ref('')
+const savedSetting = ref('')
 
 const avgSanityInput = ref(100)
 
@@ -391,6 +401,16 @@ function previewHouse() {
   }
   // Small nextTick delay to ensure store is updated
   // before applyTheme reads it
+  nextTick(() => {
+    campaign.applyTheme(campForm.value.system)
+  })
+}
+
+function previewSetting() {
+  const setting = campForm.value.dnd_setting || null
+  if (campaign.activeCampaign) {
+    campaign.activeCampaign.dnd_setting = setting
+  }
   nextTick(() => {
     campaign.applyTheme(campForm.value.system)
   })
@@ -446,12 +466,14 @@ async function saveCampaign() {
         bg_image: campForm.value.bg_image || null,
         invite_code: campForm.value.invite_code?.toUpperCase() || null,
         dune_house: campForm.value.system === 'dune' ? (campForm.value.dune_house || null) : null,
+        dnd_setting: campForm.value.system === 'dnd5e' ? (campForm.value.dnd_setting || null) : null,
       }),
     })
     if (r.ok) {
       campStatus.value = 'Saved.'
       campOk.value = true
       savedHouse.value = campForm.value.dune_house
+      savedSetting.value = campForm.value.dnd_setting
       await campaign.loadCampaigns()
       campaign.applyBgImage(campForm.value.bg_image || null)
     } else {
@@ -698,8 +720,10 @@ async function initForCampaign() {
       bg_image: ac.bg_image || '',
       invite_code: ac.invite_code || '',
       dune_house: ac.dune_house || '',
+      dnd_setting: ac.dnd_setting || '',
     }
     savedHouse.value = ac.dune_house || ''
+    savedSetting.value = ac.dnd_setting || ''
     avgSanityInput.value = ac.avg_sanity ?? 100
   }
   await Promise.all([
@@ -720,13 +744,21 @@ watch(() => campaign.activeCampaign?.id, (newId, oldId) => {
   if (newId && newId !== oldId) initForCampaign()
 })
 
-// Revert house live preview when navigating away from settings without saving
+// Revert live previews when navigating away from settings without saving
 watch(activeTab, (newTab, oldTab) => {
-  if (oldTab === 'settings' && newTab !== 'settings' && campForm.value.dune_house !== savedHouse.value) {
+  if (oldTab !== 'settings' || newTab === 'settings') return
+  let needsReapply = false
+  if (campForm.value.dune_house !== savedHouse.value) {
     campForm.value.dune_house = savedHouse.value
     if (campaign.activeCampaign) campaign.activeCampaign.dune_house = savedHouse.value || null
-    campaign.applyTheme(campaign.activeCampaign?.system || 'dune')
+    needsReapply = true
   }
+  if (campForm.value.dnd_setting !== savedSetting.value) {
+    campForm.value.dnd_setting = savedSetting.value
+    if (campaign.activeCampaign) campaign.activeCampaign.dnd_setting = savedSetting.value || null
+    needsReapply = true
+  }
+  if (needsReapply) campaign.applyTheme(campaign.activeCampaign?.system)
 })
 </script>
 

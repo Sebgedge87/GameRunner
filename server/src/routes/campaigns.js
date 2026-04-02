@@ -95,7 +95,7 @@ router.put('/:id', requireGm, (req, res) => {
   const db = getDb();
   const { name, system, subtitle, description, theme, current_scene, current_weather, current_time,
           music_url: rawMusicUrl, music_label, session_count, max_players, invite_code, cover_image,
-          bg_image: rawBgImage, playlist_url: rawPlaylistUrl, dune_house, avg_sanity } = req.body;
+          bg_image: rawBgImage, playlist_url: rawPlaylistUrl, dune_house, avg_sanity, dnd_setting } = req.body;
   const music_url = rawMusicUrl == null ? null : (/^https?:\/\//i.test(rawMusicUrl) ? rawMusicUrl : null);
   const bg_image = rawBgImage == null ? null : (/^https?:\/\//i.test(rawBgImage) ? rawBgImage : (rawBgImage.startsWith('/') ? rawBgImage : null));
   const playlist_url = rawPlaylistUrl == null ? null : (/^https?:\/\//i.test(rawPlaylistUrl) ? rawPlaylistUrl : null);
@@ -132,6 +132,10 @@ router.put('/:id', requireGm, (req, res) => {
   // avg_sanity handled separately to allow explicit null (resets to default 100)
   if (avg_sanity !== undefined) {
     db.prepare('UPDATE campaigns SET avg_sanity = ? WHERE id = ?').run(avg_sanity != null ? parseInt(avg_sanity) : 100, req.params.id);
+  }
+  // dnd_setting handled separately so an explicit null/empty can clear the value
+  if (dnd_setting !== undefined) {
+    db.prepare('UPDATE campaigns SET dnd_setting = ? WHERE id = ?').run(dnd_setting || null, req.params.id);
   }
   const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(req.params.id);
   res.json({ campaign });
