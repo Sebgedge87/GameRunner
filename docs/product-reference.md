@@ -11,7 +11,7 @@
 1. [App overview](#1-app-overview)
 2. [Navigation structure](#2-navigation-structure)
 3. [GM features](#3-gm-features)
-4. Player features *(coming)*
+4. [World-building views](#4-world-building-views)
 5. Entity reference *(coming)*
 6. Data flow *(coming)*
 7. Key design decisions *(coming)*
@@ -258,4 +258,166 @@ Entity types that accept images (NPCs, locations, maps, handouts, bestiary entri
 #### 3.2.4 Linked entity selectors
 
 Several forms include relationship fields that use `SearchSelect` — a typeahead component backed by the existing Pinia store data (no extra API call). Examples: Quest → connected NPCs, locations, factions, parent quest; NPC → faction memberships; Faction → leader NPC, HQ location, member list. These multi-select fields serialise to/from comma-delimited ID strings for storage.
+
+---
+
+## 4. World-building views
+
+World-building views are the shared reference layer of the campaign — the places, people, factions, quests, and lore that both the GM and players can browse. All views follow the same structural pattern: a page header with a title and (GM-only) "+ Add" button, a text search bar, optional `FilterTabs` to narrow by status/type, a loading skeleton, an `EmptyState` for a fresh campaign, and the main card grid.
+
+Visibility rules apply across all entity types: records marked `hidden = true` are invisible to players and shown at reduced opacity (0.5) to the GM as a reminder that they are unpublished.
+
+### 4.1 NPCs (`NpcsView.vue`)
+
+Route: `/npcs`
+
+Displays campaign NPCs as a portrait grid (`npc-grid`, `minmax(200px, 1fr)` columns). Each NPC card shows:
+
+- A 160 px portrait image (or a placeholder silhouette emoji if no image is set), with a subtle zoom-on-hover transform
+- Name (Cinzel font), role tag, race tag, disposition tag (colour-coded: `tag-active` for friendly/allied, `tag-inactive` for hostile)
+- Faction affiliation and current location as metadata lines
+
+Clicking a card **expands** it in-place to reveal a truncated description (4-line clamp) and an action row. Available actions:
+
+| Action | Visible to |
+|--------|-----------|
+| Pin | All |
+| Reveal / Hide | GM only — calls `PUT /api/npcs/:id/reveal` |
+| Share | GM only — opens share modal |
+| Edit | GM only — opens `GmEditModal` prefilled |
+| Delete | GM only — requires `ConfirmDialog` |
+
+Filter tabs: All · Friendly · Neutral · Hostile (filters on `npc.disposition`).
+
+Search fields: name, role, faction, location.
+
+### 4.2 Locations (`LocationsView.vue`)
+
+Route: `/locations`
+
+Locations has two top-level tabs: **Locations** (the default entity list) and **Notice Board** (a jobs board scoped to a specific location).
+
+#### Locations tab
+
+Card grid using the `EntityCard` component. Each card shows location type, danger level (as a warning tag), and a "Party here" badge if the GM has pinned the party to that location. Actions in the expanded card:
+
+| Action | Description |
+|--------|-------------|
+| Set as party location | Calls `campaign.setPartyLocation(id)` — persists the party's current location to the campaign store; button turns accent-coloured when active |
+| Notice Board | Switches to the Notice Board tab pre-filtered to this location |
+| Standard entity actions | Pin, Share (GM), Edit (GM), Delete (GM) via `EntityCard` |
+
+The GM can also clear the party location from the page header subtitle (which shows "Party at: \<name\>" when set).
+
+Filter tabs: All · City/Town · Dungeon · Wilderness (filters on `location_type`).
+
+#### Notice Board tab
+
+A jobs board that shows all `job` entities, optionally filtered by a location dropdown. Jobs are displayed as styled cards with a coloured left-border keyed to difficulty:
+
+- Easy — green
+- Medium — default border
+- Hard — blue
+- Deadly — red
+
+Each job card shows: title, difficulty tag, description preview, reward, posted-by name, and status tag. Players see an **Accept** button on open jobs (calls `PUT /api/jobs/:id/accept`). GMs can post new jobs via an "+ Post Job" tile that opens `GmEditModal` with `type = 'job'` pre-seeded with the current board location.
+
+### 4.3 Factions (`FactionsView.vue`)
+
+Route: `/factions`
+
+Card grid using `OverlayCard`. Each faction card shows:
+
+- Description and goals (truncated)
+- A **reputation bar** — a 6-point scale from −3 (Hostile) to +3 (Allied), rendered as a progress bar whose fill colour transitions from red through muted to green/accent
+
+Reputation labels: Hostile (≤ −3) · Unfriendly (−2/−1) · Neutral (0) · Friendly (1/2) · Allied (≥ 3).
+
+Actions: Pin · Share (GM) · Edit (GM) · Delete (GM). No filter tabs — search only (name, description, goals).
+
+### 4.4 Quests (`QuestsView.vue`)
+
+Route: `/quests`
+
+Card grid using the `QuestCard` component (also used in the GM Dashboard overview). Filter tabs: All · Active · Completed · Failed.
+
+Search fields: title, quest type, description.
+
+`QuestCard` handles its own expand/collapse, status badge rendering, urgency styling, reward display, and (GM-only) edit/delete actions — the view itself is intentionally thin, delegating all card presentation to the component.
+
+### 4.5 Timeline (`TimelineView.vue`)
+
+Route: `/timeline`
+
+The Timeline is the only view with a custom horizontal layout rather than a card grid. Events are plotted on a centre horizontal rule with cards alternating above and below (even-indexed events above the line, odd-indexed events below), connected by short vertical stems to dot markers.
+
+Dot size and colour reflect significance:
+
+| Significance | Visual |
+|-------------|--------|
+| `minor` | Small plain dot |
+| `major` | Larger accent-coloured dot |
+| `world-changing` | Large dot with animated pulse ring |
+
+Each card is clickable and opens the `DetailModal` with the full event record.
+
+**Call of Cthulhu era support**: when the active campaign system is `coc`, the page title shows an era badge (e.g. "🐙 1920s Era") and a date format hint beneath it. Era data comes from the `COC_ERAS` constant exported by `useSystemFeatures`.
+
+Filter tabs: All Sessions · Session 1 · Session 2 · … (dynamically generated from the `session_number` values in the timeline data).
+
+Search: event title and description.
+
+### 4.6 Maps (`MapsView.vue`)
+
+Route: `/maps`
+
+Card grid using `EntityCard`. Each map card shows map type (world/region/city/battle) and an image thumbnail. The `EntityCard` expand row includes a **Fullscreen** button (only shown when the map has an image) that opens a custom overlay: the image is displayed at up to 95 vw × 90 vh with `object-fit: contain`. The overlay can be dismissed by clicking outside it or pressing Escape.
+
+### 4.7 Bestiary (`BestiaryView.vue`)
+
+Route: `/bestiary`
+
+Card grid using `OverlayCard`. Each creature card can display:
+
+- Portrait image (full card width, 180 px max height)
+- Stat tags: CR, AC, HP (from a JSON `stats` column)
+- Description
+
+Creatures have a Reveal/Hide toggle (GM only), same as NPCs, via `PUT /api/bestiary/:id/reveal`. Revealed status is shown as an `active` status badge on the card.
+
+### 4.8 Plot Hooks (`HooksView.vue`)
+
+Route: `/hooks`
+
+Card grid using `OverlayCard`. Plot hooks are GM planning tools — breadcrumbs and leads that the GM tracks but may not reveal directly to players.
+
+Each card shows: hook type, description, session it was delivered, linked entities.
+
+Filter tabs: All · Active · Delivered · Missed · Expired.
+
+Status badge mapping:
+- `active` → green
+- `delivered` → done (accent)
+- `missed` / `expired` → red
+
+Actions: Pin · Share (GM) · Edit (GM) · Delete (GM).
+
+---
+
+### 4.9 Common patterns across world-building views
+
+All eight views share the same structural skeleton and conventions:
+
+**Loading state** — shown while `data.loading` is true and the store collection is empty. Renders 4–6 skeleton cards matching the real card proportions.
+
+**Empty state** — shown when the store collection has zero items. Uses the `EmptyState` component with an icon, heading, description, and (GM-only) CTA button that calls `openGmEdit`.
+
+**Lazy loading** — each view calls its `data.load*()` method in `onMounted` only if the store collection is already empty (`if (!data.npcs.length) data.loadNpcs()`). If the user navigated away and back, the data is already in the store and no request is made.
+
+**Markdown stripping** — description fields are passed through `stripMd()` from `@/utils/markdown` before display in card previews to avoid rendering raw Markdown syntax in truncated text.
+
+**Pinning** — all entity types support `data.addPin(type, id, name)` which adds a pinned shortcut to the sidebar.
+
+**GM-only controls** — edit, delete, share, and reveal actions are conditionally rendered with `v-if="campaign.isGm"`. Players see only the browsing surface.
+
 
