@@ -845,3 +845,527 @@ OverflowMenu does **not** handle delete confirmation itself. When the Delete ite
 
 Remove any instance of this pattern and replace with OverlayCard + OverflowMenu.
 
+---
+
+### 5.3 EntityForm
+
+The standard shell for every create and edit form in the application. Every entity type (NPC, Quest, Location, Faction, Job, Map, Bestiary, Handout, Rumour, Hook, Key-item, Inventory item) uses this exact layout. Individual forms supply their field content into the named slots — they do not customise the shell structure.
+
+#### Anatomy
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  [h2] Create [Entity Type]                                    │  FormHeader
+├──────────────────────────────────────────────────────────────┤
+│  [Name / Title field — full width]                            │  NameRow
+├──────────────────┬───────────────────────────────────────────┤
+│  FormSidebar     │  FormMain                                  │
+│  240px fixed     │  flex: 1                                   │
+│                  │                                            │
+│  [Dropzone]      │  [Description / Biography / Briefing]      │
+│  [Upload label]  │  [Other player-visible fields]             │
+│                  │                                            │
+│  ┌─ DETAILS ───┐ │  ┌─────────────────────────────────────┐  │
+│  │ Type        │ │  │  🔒 GM ONLY   Private Notes          │  │
+│  │ Status      │ │  │  [GM notes field]                    │  │
+│  │ Stats…      │ │  └─────────────────────────────────────┘  │
+│  └─────────────┘ │                                            │
+├──────────────────┴───────────────────────────────────────────┤
+│  [Cancel]  [Create / Save]                                    │  StickyFormFooter
+└──────────────────────────────────────────────────────────────┘
+```
+
+#### Props / slots
+
+| Slot | Description |
+|------|-------------|
+| `entityType` | String shown in heading: "Create NPC", "Create Quest" |
+| `nameField` | Title/name input — always full width, always first |
+| `sidebarImage` | Dropzone variant: `'square'`, `'banner'`, or `null` |
+| `sidebarDetails` | Metadata fields (type, status, standing, stats, etc.) |
+| `mainContent` | Primary content fields (description, biography, lore, etc.) |
+| `gmSection` | GmOnlySection — always the last element in the main column |
+| `onSubmit` | Form submit handler |
+| `onCancel` | Cancel / close handler |
+| `primaryLabel` | `"Create"` for new entities, `"Save"` for edits |
+
+#### Sidebar variants
+
+| Variant | Used for | Dropzone |
+|---------|----------|----------|
+| With portrait | NPC, Faction, Bestiary, Location | `variant="square"` (180×180px) at top of sidebar |
+| Without portrait | Quest, Hook, Handout, Rumour, Inventory | No Dropzone; Details card fills full sidebar width |
+| Banner image | Map | `variant="banner"` spans full width above the sidebar/main split |
+
+When there are no metadata fields, the sidebar may be omitted entirely and the main content column goes full width.
+
+#### Details card (sidebar metadata block)
+
+```
+┌─────────────────────┐
+│ DETAILS             │  ← uppercase allowed — this is UI chrome, not user content
+├─────────────────────┤
+│ Type                │
+│ [select input]      │
+│                     │
+│ Status              │
+│ [select input]      │
+└─────────────────────┘
+```
+
+```css
+.details-card {
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+.details-card-title {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: var(--space-3);
+}
+```
+
+#### Layout rules
+
+- Name/Title is always the **first** field, always **full width**, always **above** the sidebar split.
+- Sidebar is always `240px` fixed (`--space-sidebar-width`). Never wider or narrower.
+- Main content column is `flex: 1`.
+- At viewport < 640px, sidebar stacks above main content.
+- GmOnlySection is always **last** in the main content column.
+- Field gap within a section: `var(--space-form-gap)` (16px).
+- Gap between distinct sections: `var(--space-form-section)` (28px).
+
+#### Autofill override
+
+All inputs inside EntityForm must suppress the browser's white autofill background:
+
+```css
+.entity-form input:-webkit-autofill,
+.entity-form input:-webkit-autofill:hover,
+.entity-form input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--color-bg-input) inset;
+  -webkit-text-fill-color: var(--color-text-primary);
+  caret-color: var(--color-text-primary);
+}
+```
+
+#### Form-to-EntityForm migration map
+
+| Form | Was | EntityForm config |
+|------|-----|-------------------|
+| Create NPC | Portrait-left split | Square portrait, sidebar has character metadata |
+| Create Location | Portrait-left split | Square portrait, sidebar has type/danger level |
+| Create Faction | Portrait-left split | Square portrait, sidebar has standing/influence |
+| Create Bestiary | Portrait-left split | Circular portrait, sidebar has stat block |
+| Create Quest | Single column modal | No portrait, sidebar has type/status/urgency/rewards |
+| Create Job | Two-column ad-hoc | No portrait, sidebar has type/difficulty/reward |
+| Create Map | Two-column ad-hoc | Banner image variant |
+| Create Handout | Single column modal | No portrait, no sidebar — mainContent only |
+| Create Hook | Single column modal | No portrait, minimal sidebar |
+| Create Rumour | Single column modal | No portrait, sidebar has source NPC/location |
+| Create Inventory | Single column modal | No portrait, sidebar has quantity/holder |
+| Create Key-item | Single column modal | Square portrait, sidebar has significance/linked quest |
+
+---
+
+### 5.4 ConfirmDialog
+
+A modal that gates every destructive action. No delete may execute without passing through this component first.
+
+#### Anatomy
+
+```
+┌──────────────────────────────────────┐
+│  Delete quest?                        │  ← "Delete [entityType]?"
+│                                       │
+│  "The Burning Keep" will be           │  ← entity name in quotes
+│  permanently deleted. This cannot    │
+│  be undone.                           │
+│                                       │
+│  [      Cancel      ] [   Delete   ]  │
+└──────────────────────────────────────┘
+```
+
+#### Props
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `isOpen` | boolean | Yes | Controls visibility |
+| `entityType` | string | Yes | e.g. `"quest"`, `"NPC"`, `"faction"` |
+| `entityName` | string | Yes | The entity's actual name |
+| `onConfirm` | function | Yes | Called when Delete is clicked |
+| `onCancel` | function | Yes | Called on Cancel, overlay click, or Escape |
+
+#### Rules
+
+- Cancel button receives **default focus** when the dialog opens — prevents accidental Enter-key deletion.
+- Delete button uses `--color-text-danger` text and `--color-border-danger` border.
+- The entity name is always shown **in quotes** in the body text.
+- Clicking the overlay → same as Cancel.
+- Pressing Escape → same as Cancel.
+- Max width: 400px. Always centred in the viewport.
+- z-index: `var(--z-modal)`.
+
+---
+
+### 5.5 EmptyState
+
+The zero-content placeholder shown whenever a list has no entities. Always centred inside ContentArea. Always includes a CTA that triggers the create action.
+
+#### Anatomy
+
+```
+         [icon — 32px, muted]
+
+      No factions yet
+  Add factions to track the political
+  landscape of your world.
+
+       [+ Add faction]
+```
+
+#### Props
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `icon` | node | Yes | 32px icon at muted opacity |
+| `heading` | string | Yes | e.g. `"No factions yet"` |
+| `description` | string | Yes | One line of GM-directed context |
+| `ctaLabel` | string | Yes | e.g. `"+ Add faction"` |
+| `onCta` | function | Yes | Triggers the create action |
+
+#### CSS
+
+```css
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-12) var(--space-8);
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 300px;
+}
+```
+
+#### Rules
+
+- **Never** position in the bottom-right of the viewport. Always centred in ContentArea.
+- Icon: 32px, `--color-text-secondary`, `opacity: 0.5`.
+- Heading: `--text-lg`, `--weight-medium`, `--color-text-primary`, sentence case.
+- Description: `--text-sm`, `--color-text-secondary`, sentence case.
+- CTA: outline style, `--color-text-accent` border and text.
+- CTA label always starts with `+`.
+- The CTA triggers the same action as the `+ Add [Entity]` button in the PageHeader.
+
+---
+
+### 5.6 ListPage
+
+The standard page shell for all entity list pages. Provides PageHeader, search, FilterTabs, and ContentArea in a fixed structure. All list pages use this shell without deviation.
+
+#### Props / slots
+
+| Slot | Description |
+|------|-------------|
+| `title` | Page heading (ALL CAPS applied via CSS) |
+| `subtitle` | Optional one-line description below title |
+| `ctaLabel` | `"+ Add [Entity]"` button label |
+| `onCta` | Triggered by the add button |
+| `searchPlaceholder` | e.g. `"Search factions..."` |
+| `onSearch` | Search handler |
+| `tabs` | Array of `{ label, value, count? }` for FilterTabs (optional) |
+| `activeTab` | Currently active tab value |
+| `onTabChange` | Tab change handler |
+| `children` | Card grid or EmptyState |
+
+#### Layout
+
+```
+┌───────────────────────────────────────────────────┐
+│  [h1 title]                   [+ Add Entity btn]  │  PageHeader
+├───────────────────────────────────────────────────┤
+│  [Search input]                                    │  Controls
+│  [FilterTabs — only if tabs provided]              │
+├───────────────────────────────────────────────────┤
+│  [Card grid]  — or —  [EmptyState centred]         │  ContentArea
+│  min-height: 400px                                 │
+└───────────────────────────────────────────────────┘
+```
+
+#### Rules
+
+- `+ Add [Entity]` is **always** in PageHeader top-right. Never in ContentArea.
+- FilterTabs row is not rendered when `tabs` is empty or undefined.
+- ContentArea has `min-height: 400px` so EmptyState has room to centre vertically.
+
+---
+
+### 5.7 FilterTabs
+
+A horizontal row of pill-shaped filter buttons. Used on list pages to filter the card grid by status or entity type.
+
+#### Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `tabs` | `{ label, value, count? }[]` | Tab definitions |
+| `active` | string | Currently active tab value |
+| `onChange` | function | Called with new value on click |
+
+#### Visual spec
+
+```css
+.filter-tabs {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.filter-tab {
+  height: 28px;
+  padding: 4px 14px;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-sm);
+  border: 1px solid var(--color-border-default);
+  color: var(--color-text-secondary);
+  background: transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+}
+
+.filter-tab.active {
+  border-color: var(--color-border-active);
+  color: var(--color-text-accent);
+  background: rgba(212, 98, 26, 0.10);
+}
+
+.filter-tab:hover:not(.active) {
+  border-color: var(--color-border-hover);
+  color: var(--color-text-primary);
+}
+```
+
+#### Rules
+
+- Tab labels are sentence case — never ALL CAPS or Title Case.
+- All tabs are the same height (28px) regardless of label length.
+- "All" tab is always first and always present.
+- Optional count: shown inside the label as `Active (3)` in muted colour.
+
+---
+
+### 5.8 Dropzone
+
+A styled file and image upload area. Replaces every `<input type="file">` in the application. The native file input is handled internally and never exposed in the DOM directly.
+
+#### Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `accept` | string | e.g. `"image/*"` |
+| `value` | File \| string \| null | Current value — File object or URL string |
+| `onChange` | function | Called with the selected File |
+| `onRemove` | function | Called when the × button is clicked |
+| `label` | string | e.g. `"Upload portrait"` |
+| `hint` | string | e.g. `"PNG, JPG up to 5MB"` |
+| `variant` | `'square'` \| `'banner'` | `square` for portraits, `banner` for wide images |
+
+#### States
+
+**Empty**
+```
+┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐
+  [↑]
+  Click or drag to upload       ← --color-text-secondary
+  PNG, JPG up to 5MB            ← --color-text-hint, --text-xs
+└ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
+```
+
+**Filled**
+```
+┌───────────────────────────┐
+│                           │
+│   [image preview]      [×]│
+│                           │
+└───────────────────────────┘
+```
+
+**Drag-over** — border switches to `--color-border-active`, background to `rgba(212, 98, 26, 0.06)`.
+
+#### CSS
+
+```css
+.dropzone {
+  border: 1px dashed var(--color-border-default);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color var(--duration-fast), background var(--duration-fast);
+  background: transparent;
+}
+.dropzone.square { width: 180px; height: 180px; }
+.dropzone.banner { width: 100%; height: 120px; }
+.dropzone:hover,
+.dropzone.drag-over {
+  border-color: var(--color-border-active);
+  background: rgba(212, 98, 26, 0.06);
+}
+```
+
+#### Rules
+
+- `<input type="file">` must **never** appear directly in any component. Always use Dropzone.
+- After an image is selected, show a visual preview — never just a filename.
+- The × remove button is always visible when an image is loaded.
+
+---
+
+### 5.9 StatusBadge
+
+A small pill showing an entity's current status or disposition. Used on collapsed OverlayCards and in table rows.
+
+#### Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `status` | string | Status value — see mapping table below |
+| `size` | `'sm'` \| `'md'` | Default: `'sm'` |
+
+#### Status → colour mapping
+
+| Value | Label | Background | Border |
+|-------|-------|------------|--------|
+| `active` | Active | `--color-status-active-bg` | `--color-status-active` |
+| `completed` | Completed | `--color-status-done-bg` | `--color-status-done` |
+| `delivered` | Delivered | `--color-status-done-bg` | `--color-status-done` |
+| `missed` | Missed | `--color-status-missed-bg` | `--color-status-missed` |
+| `expired` | Expired | `--color-status-missed-bg` | `--color-status-missed` |
+| `hostile` | Hostile | `--color-hostile-bg` | `--color-hostile` |
+| `neutral` | Neutral | `--color-neutral-bg` | `--color-neutral` |
+| `allied` | Allied | `--color-allied-bg` | `--color-allied` |
+| `true` | True | `--color-allied-bg` | `--color-allied` |
+| `false` | False | `--color-hostile-bg` | `--color-hostile` |
+| `exposed` | Exposed | `--color-status-done-bg` | `--color-status-done` |
+
+#### Rules
+
+- Status text is always sentence case (`"Active"`, never `"ACTIVE"`).
+- Border radius: `--radius-pill`.
+- Font size: `--text-xs` (11px).
+- Never use arbitrary colours — always map through the table above.
+
+---
+
+### 5.10 StickyFormFooter
+
+A sticky footer inside modal and full-page forms. Always shows Cancel and the primary action. Remains visible at the bottom of the form regardless of scroll position.
+
+#### Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `primaryLabel` | string | `"Create"` or `"Save"` |
+| `onPrimary` | function | Submit handler |
+| `onCancel` | function | Cancel / close handler |
+| `isLoading` | boolean | Shows spinner on primary button; disables interaction |
+| `isDisabled` | boolean | Disables the primary button |
+
+#### CSS
+
+```css
+.sticky-form-footer {
+  position: sticky;
+  bottom: 0;
+  padding: var(--space-4) var(--space-6);
+  background: var(--color-bg-elevated);
+  border-top: 1px solid var(--color-border-default);
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-start;
+  align-items: center;
+  z-index: 1;
+}
+```
+
+#### Rules
+
+- Cancel is left, primary action is to its right — both are left-aligned in the footer (not `space-between`).
+- Cancel: transparent background, `--color-border-default` border, `--color-text-secondary` text.
+- Primary: `--color-border-active` border, `--color-text-accent` text.
+- Both buttons use sentence case labels.
+- `position: sticky; bottom: 0` places the footer inside the scrollable container — it is **not** fixed to the viewport.
+- When `isLoading` is true, the primary button shows a spinner and is non-interactive.
+
+---
+
+### 5.11 RichTextField
+
+A smart wrapper that renders either a rich text editor (with toolbar) or a plain `<textarea>` based on the field type. The caller passes a `fieldType` string — the component makes the render decision internally.
+
+#### Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `fieldType` | `RichFieldType` \| `PlainFieldType` | Determines which editor renders |
+| `value` | string | Current content |
+| `onChange` | function | Change handler |
+| `placeholder` | string | Placeholder text |
+| `minHeight` | number | Minimum height in px |
+
+#### Field type decision
+
+**Renders rich text editor (toolbar: B I H2 H3 • □ " </> —):**
+
+```
+biography · description · lore · briefing
+gm-notes · private-notes · content · body
+```
+
+**Renders plain `<textarea>`:**
+
+```
+goals · player-notes · summary · significance
+rumour-text · source · notes · title · name
+reward · item-description
+```
+
+#### Rules
+
+- Never show the rich text toolbar on plain field types.
+- Toolbar buttons are identical across all rich text fields.
+- Plain textareas auto-resize vertically to their content.
+- Rich text fields have a fixed minimum height of 120px with internal scrolling.
+
+---
+
+### 5.12 RelationshipSlider
+
+A horizontal slider representing a faction's or NPC's disposition toward the party, running from Hostile (−10) to Allied (+10) with Neutral at zero.
+
+The slider maps numeric values to the three semantic disposition tokens:
+
+| Range | Label | Token |
+|-------|-------|-------|
+| −10 to −4 | Hostile | `--color-hostile` / `--color-hostile-bg` |
+| −3 to +3 | Neutral | `--color-neutral` / `--color-neutral-bg` |
+| +4 to +10 | Allied | `--color-allied` / `--color-allied-bg` |
+
+#### Rules
+
+- The slider track colour updates in real time to reflect the current disposition zone.
+- The current value is passed to StatusBadge to show the corresponding label pill.
+- Helper text shown below the slider: `(−10 = hostile, +10 = allied)`.
+- Used inside the OverlayCard `children` slot for Faction and NPC cards.
+
