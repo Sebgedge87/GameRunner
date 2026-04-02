@@ -362,3 +362,195 @@ The entire application uses exactly **two weights**:
 > `text-transform: uppercase` must **never** be applied to any element that contains or could contain user-generated content.
 
 User-generated content includes: entity names, descriptions, notes, quest titles, NPC names, faction names, hook titles, creature names, rumour text, session titles, handout titles, calendar event names. When in doubt, assume the field contains user content and leave it untransformed.
+
+---
+
+## 4. Spacing & layout
+
+### 4.1 Spacing scale
+
+The spacing scale is a fixed set of tokens defined on `:root`. No other values are used — if a measurement does not exist in this scale, the closest token is used instead. Spacing, unlike colour, is **never overridden by themes**.
+
+```css
+:root {
+  --space-1:   4px;
+  --space-2:   8px;
+  --space-3:   12px;
+  --space-4:   16px;
+  --space-5:   20px;
+  --space-6:   24px;
+  --space-8:   32px;
+  --space-10:  40px;
+  --space-12:  48px;
+}
+```
+
+### 4.2 Component-specific spacing tokens
+
+In addition to the base scale, a set of named tokens encode the correct spacing for recurring layout contexts. These must be used instead of the base scale wherever they apply — they make the intent explicit and keep measurements consistent across all pages.
+
+```css
+:root {
+  --space-form-gap:      16px;   /* Vertical gap between fields within a form section */
+  --space-form-section:  28px;   /* Gap between distinct sections within a form */
+  --space-card-padding:  16px;   /* Internal padding inside all card surfaces */
+  --space-card-gap:      12px;   /* Gap between cards in a grid */
+  --space-page-padding:  24px;   /* Left/right padding of page content area */
+  --space-sidebar-width: 240px;  /* Fixed width of the EntityForm portrait sidebar */
+}
+```
+
+### 4.3 Border radius scale
+
+```css
+:root {
+  --radius-xs:    2px;    /* Input fields */
+  --radius-sm:    3px;    /* Buttons, badges */
+  --radius-md:    4px;    /* Cards, panels */
+  --radius-lg:    6px;    /* Modals, drawers */
+  --radius-pill:  100px;  /* Status badges, filter tabs */
+}
+```
+
+Radius values follow a strict hierarchy: inputs are tightest, modals are loosest, pills are fully rounded. The Dune house system overrides `--radius-card` and `--radius-md` per house to reinforce faction character (e.g. Harkonnen uses `0px` — no mercy).
+
+### 4.4 Motion tokens
+
+All animation durations and easing curves are tokenised. **All animations must be wrapped in `@media (prefers-reduced-motion: no-preference)`** — this is a hard rule with no exceptions.
+
+```css
+:root {
+  --duration-fast:   120ms;                        /* Hover states, opacity fades */
+  --duration-base:   200ms;                        /* Most transitions */
+  --duration-slow:   350ms;                        /* Modals, drawers, page transitions */
+  --ease-default:    cubic-bezier(0.4, 0, 0.2, 1); /* General purpose */
+  --ease-in:         cubic-bezier(0.4, 0, 1, 1);   /* Elements leaving the screen */
+  --ease-out:        cubic-bezier(0, 0, 0.2, 1);   /* Elements entering the screen */
+}
+```
+
+### 4.5 Z-index scale
+
+Layering is governed by a fixed six-level scale. Never use arbitrary z-index values.
+
+```css
+:root {
+  --z-base:      0;    /* Default document flow */
+  --z-raised:    10;   /* Cards on hover */
+  --z-dropdown:  100;  /* OverflowMenu popovers */
+  --z-drawer:    200;  /* Side panels (Timeline detail, Mindmap inspector) */
+  --z-modal:     300;  /* EntityForm modals, ConfirmDialog */
+  --z-toast:     400;  /* Toast notifications */
+  --z-top:       500;  /* Global navigation, FX overlay layers */
+}
+```
+
+Each level is intentionally spaced by 100 to allow internal stacking within a layer if needed without breaking the global order.
+
+### 4.6 Page structure
+
+Every page in the app follows the same structural skeleton: a fixed global navigation bar on the left, and a scrollable content area to its right.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  Global Nav (fixed, left)  │  Page content area          │
+│  width: ~56px collapsed    │  padding: --space-page-      │
+│         ~200px expanded    │           padding (24px)     │
+│                            │                              │
+│  [nav items]               │  [PageHeader]                │
+│                            │  [Controls / FilterTabs]     │
+│                            │  [ContentArea]               │
+│                            │                              │
+└──────────────────────────────────────────────────────────┘
+```
+
+The content area is always scrollable. The nav is always fixed. No page-level layout deviates from this structure.
+
+### 4.7 Card grid layout
+
+All entity list pages display their cards in a responsive CSS grid. The grid is set on the ContentArea container — never on individual card components.
+
+```css
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-card-gap);   /* 12px */
+}
+```
+
+- Minimum card width: **280px**. Cards never shrink below this.
+- The grid fills available width and reflows automatically as the viewport changes.
+- No fixed column counts — `auto-fill` handles responsive reflow.
+- The dashed "Add entity" card inside the grid is **forbidden**. The add action lives in the PageHeader only.
+
+### 4.8 List page structure
+
+All entity list pages (NPCs, Locations, Factions, Plot Hooks, Handouts, Bestiary, Rumours, Inventory, Maps, Timeline) share this exact layout. Deviating from it is not permitted.
+
+```
+┌─────────────────────────────────────────────────────┐
+│  [Page title h1]               [+ Add Entity btn]   │  ← PageHeader
+├─────────────────────────────────────────────────────┤
+│  [Search input]                                      │  ← Controls
+│  [FilterTabs — if applicable]                        │
+├─────────────────────────────────────────────────────┤
+│                                                      │
+│  [Card grid]                                         │  ← ContentArea
+│   — or —                                             │    min-height: 400px
+│  [EmptyState — centred]                              │
+│                                                      │
+└─────────────────────────────────────────────────────┘
+```
+
+Rules:
+- The `+ Add [Entity]` button is **always** in PageHeader top-right. Never inside ContentArea.
+- When the list is empty, ContentArea shows `EmptyState` centred within its full height.
+- When items exist, ContentArea shows the card grid. The add button remains in PageHeader.
+- ContentArea has `min-height: 400px` so EmptyState has vertical room to centre.
+
+### 4.9 EntityForm layout (two-column shell)
+
+All create and edit forms use the EntityForm two-column shell. The layout is fixed — individual forms customise their field content within it, not the shell itself.
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  [h2] Create [Entity Type]                                    │  FormHeader
+├─────────────────────────────────────────────────────────────-┤
+│  [Name / Title field — full width]                            │  NameRow
+├──────────────────┬───────────────────────────────────────────┤
+│  FormSidebar     │  FormMain                                  │
+│  240px fixed     │  flex: 1                                   │
+│                  │                                            │
+│  [Dropzone]      │  [Description / Biography / Briefing]      │
+│  [Upload label]  │  [Other player-visible fields]             │
+│                  │                                            │
+│  ┌─ DETAILS ───┐ │  ┌─────────────────────────────────────┐  │
+│  │ Type        │ │  │  🔒 GM ONLY   Private Notes          │  │
+│  │ Status      │ │  │  [GM notes field]                    │  │
+│  │ Stats       │ │  └─────────────────────────────────────┘  │
+│  └─────────────┘ │                                            │
+├──────────────────┴───────────────────────────────────────────┤
+│  [Cancel]  [Create / Save]                                    │  StickyFormFooter
+└──────────────────────────────────────────────────────────────┘
+```
+
+Layout rules:
+- **Name/Title** is always the first field, always full width, always above the sidebar split.
+- **Sidebar** is always `var(--space-sidebar-width)` (240px) fixed. Never wider, never narrower.
+- **Main content** is `flex: 1`, takes all remaining horizontal space.
+- **GmOnlySection** is always the last element in the main content column.
+- Field gap within a section: `var(--space-form-gap)` (16px).
+- Gap between distinct sections: `var(--space-form-section)` (28px).
+- On viewports narrower than 640px, the sidebar stacks above main content.
+- The `StickyFormFooter` is `position: sticky; bottom: 0` inside the scrollable form container — it scrolls with the form, not fixed to the viewport.
+
+### 4.10 Modal sizing
+
+| Form type | Max width |
+|-----------|-----------|
+| Complex forms (NPC, Faction, Location, Quest) | 760px |
+| Simple forms (Rumour, Hook, Inventory item) | 480px |
+| ConfirmDialog | 400px |
+
+All modals are centred in the viewport. Background overlay: `rgba(0, 0, 0, 0.65)`. Clicking the overlay or pressing Escape closes the modal (same as Cancel).
+
