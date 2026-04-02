@@ -66,6 +66,10 @@ export const useCampaignStore = defineStore('campaign', () => {
     if (theme === 'dune' && activeCampaign.value?.dune_house) {
       cl.add(`dynamic-house-${activeCampaign.value.dune_house}`)
     }
+    // Layer 3: D&D 5e setting/plane accent
+    if (theme === 'dnd5e' && activeCampaign.value?.dnd_setting) {
+      cl.add(`dynamic-setting-${activeCampaign.value.dnd_setting}`)
+    }
     // Layer 3: Cthulhu sanity atmosphere
     if (theme === 'cthulhu') {
       const sanity = activeCampaign.value?.avg_sanity ?? 100

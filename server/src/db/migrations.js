@@ -799,6 +799,8 @@ function runMigrations() {
   try { db.exec('ALTER TABLE campaigns ADD COLUMN dune_house TEXT'); } catch (_) {}
   // Average party sanity for Cthulhu sanity atmosphere (Layer 3 dynamic theme)
   try { db.exec('ALTER TABLE campaigns ADD COLUMN avg_sanity INTEGER DEFAULT 100'); } catch (_) {}
+  // D&D 5e setting/plane for Layer 3 dynamic theme
+  try { db.exec('ALTER TABLE campaigns ADD COLUMN dnd_setting TEXT'); } catch (_) {}
 
   console.log('✅ Migrations complete.');
 }
