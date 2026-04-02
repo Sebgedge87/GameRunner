@@ -1369,3 +1369,330 @@ The slider maps numeric values to the three semantic disposition tokens:
 - Helper text shown below the slider: `(−10 = hostile, +10 = allied)`.
 - Used inside the OverlayCard `children` slot for Faction and NPC cards.
 
+---
+
+## 6. Theme system
+
+### 6.1 Architecture overview
+
+The theme system has four layers. Each is additive — a lower layer is never modified to accommodate a higher one. Base tokens must work correctly with no FX or dynamic classes present.
+
+```
+Layer 0  .theme-none               No campaign active (home / login)
+Layer 1  .theme-{name}             Base token overrides per game system
+Layer 2  .fx-{effect}              CSS-only ambient effects per system
+Layer 3  .dynamic-{key}-{value}    Programmatic overrides from live campaign data
+```
+
+All four classes are applied to `<html>`. Only one theme class and one FX class are active at a time. Multiple dynamic classes may coexist if different subsystems are active simultaneously.
+
+```html
+<!-- Layer 1 only -->
+<html class="theme-dune">
+
+<!-- Layers 1 + 2 -->
+<html class="theme-dune fx-grain">
+
+<!-- Layers 1 + 2 + 3 -->
+<html class="theme-dune fx-grain dynamic-house-atreides">
+```
+
+**Switching rule:** When a campaign is loaded or changed, strip all existing `theme-*`, `fx-*`, and `dynamic-*` classes before applying the new set. Never accumulate stale classes.
+
+### 6.2 Layer 0 — No campaign state
+
+Applied to `<html>` when no campaign is active (home screen, login, campaign selection). A neutral blue-slate palette — intentionally distinct from all campaign themes so the user feels they are outside any world.
+
+```css
+.theme-none {
+  --color-bg-page:        #0d1014;
+  --color-bg-card:        #141820;
+  --color-bg-elevated:    #1a2028;
+  --color-bg-input:       #1e2530;
+  --color-bg-subtle:      #10141a;
+  --color-bg-gm:          #10141a;
+  --color-accent:         #5a7a8a;
+  --color-accent-muted:   rgba(90,122,138,0.18);
+  --color-text-primary:   #c8d8e4;
+  --color-text-secondary: #3a5060;
+  --color-text-hint:      #1e3040;
+  --color-border-default: rgba(80,120,150,0.14);
+  --color-border-active:  rgba(80,120,150,0.55);
+  --color-border-gm:      rgba(80,120,150,0.14);
+  --color-border-bracket: rgba(80,120,150,0.30);
+}
+```
+
+### 6.3 Layer 1 — Base themes
+
+Each theme overrides the surface, accent, text, and border tokens only. Spacing, typography, motion, and z-index are never theme-scoped. Semantic status colours (`--color-success`, `--color-danger`, `--color-warning`, `--color-gm`) are defined on `:root` and are **never overridden** by any theme class.
+
+#### System → theme class mapping
+
+| Campaign system | Class | Character |
+|-----------------|-------|-----------|
+| None / default | `.theme-default` | Warm amber on near-black |
+| `dnd5e` | `.theme-dnd5e` | Forgotten Realms crimson |
+| `coc` | `.theme-cthulhu` | Tidal green, desaturated |
+| `alien` | `.theme-alien` | Cold cyan, near-black |
+| `coriolis` | `.theme-coriolis` | Station violet |
+| `dune` | `.theme-dune` | Desert gold |
+| `achtung` | `.theme-achtung` | Wartime khaki |
+
+#### `.theme-default` — warm amber
+
+```css
+.theme-default {
+  --color-bg-page:        #0e0b08;   --color-bg-card:        #1c1510;
+  --color-bg-elevated:    #231a12;   --color-bg-input:       #2a1f15;
+  --color-bg-subtle:      #160e06;   --color-bg-gm:          #1a0e06;
+  --color-accent:         #b87828;   --color-accent-muted:   rgba(184,120,40,0.16);
+  --color-text-primary:   #e8d5b5;   --color-text-secondary: #7a5a3a;
+  --color-text-hint:      #4e3520;
+  --color-border-default: rgba(185,125,55,0.18);
+  --color-border-active:  rgba(185,125,55,0.65);
+  --color-border-gm:      rgba(180,70,30,0.30);
+  --color-border-bracket: rgba(185,125,55,0.45);
+}
+```
+
+#### `.theme-dnd5e` — forgotten realms crimson
+
+```css
+.theme-dnd5e {
+  --color-bg-page:        #0c0804;   --color-bg-card:        #180c06;
+  --color-bg-elevated:    #200e08;   --color-bg-input:       #280e08;
+  --color-bg-subtle:      #100806;   --color-bg-gm:          #180806;
+  --color-accent:         #c84020;   --color-accent-muted:   rgba(200,64,32,0.16);
+  --color-text-primary:   #f0d0b0;   --color-text-secondary: #6a3020;
+  --color-text-hint:      #3a1810;
+  --color-border-default: rgba(180,50,20,0.20);
+  --color-border-active:  rgba(180,50,20,0.65);
+  --color-border-gm:      rgba(180,30,20,0.30);
+  --color-border-bracket: rgba(180,50,20,0.45);
+}
+```
+
+#### `.theme-cthulhu` — tidal green
+
+```css
+.theme-cthulhu {
+  --color-bg-page:        #060a0a;   --color-bg-card:        #0c1414;
+  --color-bg-elevated:    #101a1a;   --color-bg-input:       #141e1e;
+  --color-bg-subtle:      #080e0e;   --color-bg-gm:          #080e0e;
+  --color-accent:         #6a8888;   --color-accent-muted:   rgba(106,136,136,0.16);
+  --color-text-primary:   #c0d0c8;   --color-text-secondary: #3a5850;
+  --color-text-hint:      #1e3030;
+  --color-border-default: rgba(80,120,110,0.18);
+  --color-border-active:  rgba(80,120,110,0.60);
+  --color-border-gm:      rgba(80,120,80,0.28);
+  --color-border-bracket: rgba(80,120,110,0.40);
+  /* Serif override */
+  --font-serif: 'EB Garamond', serif;
+}
+```
+
+#### `.theme-alien` — cold cyan
+
+```css
+.theme-alien {
+  --color-bg-page:        #060810;   --color-bg-card:        #0c1018;
+  --color-bg-elevated:    #101420;   --color-bg-input:       #141828;
+  --color-bg-subtle:      #080c16;   --color-bg-gm:          #080c16;
+  --color-accent:         #5a9aaa;   --color-accent-muted:   rgba(90,154,170,0.15);
+  --color-text-primary:   #b8d0da;   --color-text-secondary: #2a4858;
+  --color-text-hint:      #182030;
+  --color-border-default: rgba(70,130,150,0.16);
+  --color-border-active:  rgba(70,130,150,0.60);
+  --color-border-gm:      rgba(70,130,100,0.25);
+  --color-border-bracket: rgba(70,130,150,0.38);
+}
+```
+
+#### `.theme-coriolis` — station violet
+
+```css
+.theme-coriolis {
+  --color-bg-page:        #080610;   --color-bg-card:        #100c1c;
+  --color-bg-elevated:    #161028;   --color-bg-input:       #1c1430;
+  --color-bg-subtle:      #0c0a18;   --color-bg-gm:          #0c0a18;
+  --color-accent:         #8a78c8;   --color-accent-muted:   rgba(138,120,200,0.15);
+  --color-text-primary:   #d0c8f0;   --color-text-secondary: #3a2e60;
+  --color-text-hint:      #201a40;
+  --color-border-default: rgba(110,90,180,0.18);
+  --color-border-active:  rgba(110,90,180,0.62);
+  --color-border-gm:      rgba(110,60,180,0.28);
+  --color-border-bracket: rgba(110,90,180,0.42);
+}
+```
+
+#### `.theme-dune` — desert gold
+
+```css
+.theme-dune {
+  --color-bg-page:        #0a0804;   --color-bg-card:        #160e04;
+  --color-bg-elevated:    #1e1206;   --color-bg-input:       #241608;
+  --color-bg-subtle:      #120a04;   --color-bg-gm:          #120a04;
+  --color-accent:         #c8a040;   --color-accent-muted:   rgba(200,160,64,0.14);
+  --color-text-primary:   #f0e0b0;   --color-text-secondary: #806020;
+  --color-text-hint:      #402e10;
+  --color-border-default: rgba(200,160,50,0.14);
+  --color-border-active:  rgba(200,160,50,0.58);
+  --color-border-gm:      rgba(200,100,30,0.28);
+  --color-border-bracket: rgba(200,160,50,0.38);
+}
+```
+
+#### `.theme-achtung` — wartime khaki
+
+```css
+.theme-achtung {
+  --color-bg-page:        #0a0c06;   --color-bg-card:        #141608;
+  --color-bg-elevated:    #1a1c0c;   --color-bg-input:       #1e2010;
+  --color-bg-subtle:      #0e1006;   --color-bg-gm:          #0e1006;
+  --color-accent:         #a89060;   --color-accent-muted:   rgba(168,144,96,0.15);
+  --color-text-primary:   #ddd8b8;   --color-text-secondary: #4a4a28;
+  --color-text-hint:      #2a2a14;
+  --color-border-default: rgba(140,130,80,0.16);
+  --color-border-active:  rgba(140,130,80,0.58);
+  --color-border-gm:      rgba(160,80,40,0.28);
+  --color-border-bracket: rgba(140,130,80,0.38);
+  /* Serif override */
+  --font-serif: 'Lora', serif;
+}
+```
+
+### 6.4 Layer 2 — Ambient FX classes
+
+Pure CSS effects applied alongside the base theme class. No JavaScript. Each FX class is independent — it can be tested against `.theme-default` without breaking anything. All animations must be wrapped in `@media (prefers-reduced-motion: no-preference)` without exception.
+
+| FX class | System | Effect |
+|----------|--------|--------|
+| `.fx-crt` | Alien RPG | Full-viewport scanline overlay via `body::before` (repeating-linear-gradient, `rgba(0,255,180,0.03)`); phosphor flicker animation on `h1` (`crt-flicker`, 6s, steps(1)); monospace font on `.nav-label` and `.field-label`. |
+| `.fx-grain` | Dune | SVG fractalNoise texture tiled across the viewport via `body::after` (200px tile, opacity 0.6); heading letter-spacing widened to `0.22em` for inscription feel. |
+| `.fx-desaturate` | Call of Cthulhu | Radial gradient ink-bleed on `.card::after` (transparent 60% → black 40% at edges); on hover, cards slowly drain to `saturate(0.2) brightness(0.9)` over 2 seconds (motion-safe); body text rendered in Courier New for typewriter feel. |
+| `.fx-parchment` | Achtung! Cthulhu | SVG fractalNoise paper texture on `.card` backgrounds; status badges get dashed borders and wide letter-spacing for a rubber-stamp look; GM-only sections show a faint diagonal "CLASSIFIED" watermark via `::before`. |
+| `.fx-stars` | Coriolis | Five radial-gradient pinpoint stars fixed to the viewport background via `body::before`; cards on hover get a slow conic-gradient holographic shimmer animation (`holo-rotate`, 3s linear). |
+| `.fx-vignette` | D&D 5e | Radial gradient vignette on `.card::after` (transparent 55% → black 35% at edges); the first letter of `.entity-description p:first-child` becomes an illuminated drop cap in `--font-display` at 2.8em. |
+
+### 6.5 Layer 3 — Dynamic data classes
+
+Applied programmatically from live campaign data. JavaScript reads campaign state, calculates the appropriate class name, strips any existing `dynamic-*` classes, and adds the new one.
+
+**Stripping pattern — always run before applying a new dynamic class:**
+
+```js
+const cl = document.documentElement.classList
+Array.from(cl)
+  .filter(c => c.startsWith('dynamic-'))
+  .forEach(c => cl.remove(c))
+```
+
+#### Dune — house accents (full worked example)
+
+The Dune house system is the canonical Layer 3 implementation. When a GM selects a Great House in the campaign settings, the interface immediately shifts to reflect that house's visual identity — accent colour, border character, and border radius all change in unison.
+
+**How it works end to end:**
+
+1. GM selects a house in the GM Dashboard settings tab (dropdown, `dnd_setting` field)
+2. `previewHouse()` writes the value to `activeCampaign.dune_house` in the Pinia store
+3. `applyTheme()` is called via `nextTick()` — it strips existing `dynamic-*` classes, then adds `dynamic-house-{name}`
+4. On "Save Changes", the value is persisted to `campaigns.dune_house` via `PUT /api/campaigns/:id`
+5. On tab switch without saving, the watch on `activeTab` reverts the preview to the last persisted value
+
+**Live preview revert pattern:**
+```js
+// savedHouse tracks last persisted value
+watch(activeTab, (newTab, oldTab) => {
+  if (oldTab !== 'settings' || newTab === 'settings') return
+  if (campForm.value.dune_house !== savedHouse.value) {
+    campForm.value.dune_house = savedHouse.value
+    campaign.activeCampaign.dune_house = savedHouse.value || null
+    campaign.applyTheme(campaign.activeCampaign?.system)
+  }
+})
+```
+
+**The five house classes:**
+
+```css
+/* Atreides — blue-green, noble, rounded corners */
+.dynamic-house-atreides {
+  --color-accent:         #4a8878;
+  --color-border-bracket: rgba(74,136,120,0.5);
+  --radius-card: 6px;
+}
+
+/* Harkonnen — blood red, brutal, zero radius */
+.dynamic-house-harkonnen {
+  --color-accent:         #a02818;
+  --color-border-bracket: rgba(160,40,24,0.6);
+  --radius-card: 0px;
+  --radius-md:   0px;
+}
+
+/* Corrino — imperial gold */
+.dynamic-house-corrino {
+  --color-accent:         #c8a000;
+  --color-border-bracket: rgba(200,160,0,0.55);
+}
+
+/* Fremen — sand tan, austere */
+.dynamic-house-fremen {
+  --color-accent:       #b89050;
+  --color-text-primary: #e8d8a0;
+}
+
+/* Bene Gesserit — deep purple, controlled */
+.dynamic-house-bene-gesserit {
+  --color-accent:         #7858a8;
+  --color-border-bracket: rgba(120,88,168,0.5);
+}
+```
+
+**Note on legacy variable compatibility:** The existing `base.css` uses old variable names (`--bg`, `--accent`, `--text`, `--border2`). Dynamic house classes must set both the new `--color-*` semantic tokens and the legacy names for visual changes to take effect across all components.
+
+#### Alien RPG — threat level (summary)
+
+Six classes `.dynamic-threat-0` through `.dynamic-threat-5` shift `--color-accent` from normal cyan (0) through amber (1–2) to red (3–5). At levels 4 and 5, a `filter: saturate()` is also applied to the entire UI, progressively draining colour from the interface as the situation deteriorates.
+
+#### Call of Cthulhu — sanity atmosphere (summary)
+
+Five classes `.dynamic-sanity-0` through `.dynamic-sanity-4` apply a CSS `filter` to `<html>` based on average party sanity, entered manually by the GM in the Overview tab. Band 4 (80–100 SAN) is normal. Band 0 (0–19 SAN) applies `saturate(0) sepia(0.3) hue-rotate(320deg) contrast(1.1)` — full greyscale with a red tint. The sanity band is calculated as `Math.min(4, Math.floor(avg_sanity / 20))`.
+
+#### D&D 5e — setting/plane (summary)
+
+Three classes override `--color-bg-page`, `--color-bg-card`, and `--color-accent` to shift the UI toward the visual identity of the active plane: `.dynamic-setting-ravenloft` (gothic purple), `.dynamic-setting-spelljammer` (void blue), `.dynamic-setting-eberron` (arcane cyan). Selected via a dropdown in GM Dashboard settings, same live-preview/revert pattern as house selection.
+
+### 6.6 Implementation checklist
+
+#### Phase 1 — Base themes ✅ Complete
+
+- [x] All theme classes added to `themes.css`
+- [x] Google Fonts import added to `index.html`
+- [x] `theme-none` applied when no campaign is active
+- [x] `campaign.system` read on load; correct `.theme-{name}` applied to `<html>`
+- [x] Theme class stripped and reapplied on campaign switch
+- [x] Semantic colours untouched across all themes
+- [x] `data-theme` attribute kept for legacy `[data-theme]` CSS rules
+
+#### Phase 2 — Ambient FX ✅ Complete
+
+- [x] `.fx-crt` built and applied alongside `.theme-alien`
+- [x] `.fx-grain` built and applied alongside `.theme-dune`
+- [x] `.fx-desaturate` built and applied alongside `.theme-cthulhu`
+- [x] `.fx-parchment` built and applied alongside `.theme-achtung`
+- [x] `.fx-stars` built and applied alongside `.theme-coriolis`
+- [x] `.fx-vignette` built and applied alongside `.theme-dnd5e`
+- [x] All animations wrapped in `prefers-reduced-motion`
+
+#### Phase 3 — Dynamic data ✅ Complete
+
+- [x] `applyTheme()` strips all `dynamic-*` before applying new classes
+- [x] Dune: house selector in GM Dashboard, live preview, persist on save, revert on discard
+- [x] Dune: `dune_house` column in `campaigns` table, migration added
+- [x] CoC: average party sanity widget in Overview tab, `avg_sanity` column added
+- [x] CoC: sanity band calculated and `.dynamic-sanity-{0-4}` applied
+- [x] D&D 5e: setting/plane selector in GM Dashboard, same preview/revert pattern
+- [x] D&D 5e: `dnd_setting` column in `campaigns` table, migration added
+
