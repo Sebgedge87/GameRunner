@@ -1696,3 +1696,280 @@ Three classes override `--color-bg-page`, `--color-bg-card`, and `--color-accent
 - [x] D&D 5e: setting/plane selector in GM Dashboard, same preview/revert pattern
 - [x] D&D 5e: `dnd_setting` column in `campaigns` table, migration added
 
+---
+
+## 7. Interaction patterns
+
+### 7.1 List page layout
+
+Every entity list page (NPCs, Locations, Factions, Plot Hooks, Maps, Bestiary, Rumours, Inventory, Timeline, Handouts) follows this exact structure. Deviating from it is not permitted.
+
+```
+┌─────────────────────────────────────────────────────┐
+│  [Page title h1]               [+ Add Entity btn]   │  PageHeader
+├─────────────────────────────────────────────────────┤
+│  [Search input]                                      │  Controls
+│  [FilterTabs]                                        │
+├─────────────────────────────────────────────────────┤
+│                                                      │
+│  [Entity card grid]                                  │  ContentArea
+│  — or —                                             │
+│  [EmptyState — centred]                              │
+│                                                      │
+└─────────────────────────────────────────────────────┘
+```
+
+- The `+ Add [Entity]` button lives in PageHeader top-right. **Always.** Never in ContentArea.
+- The dashed "ADD ENTITY" card inside the grid is **forbidden**.
+- When zero entities exist, ContentArea shows EmptyState — not an add card.
+- When entities exist, ContentArea shows the card grid. The add button stays in PageHeader.
+- The EmptyState CTA triggers the same action as the PageHeader add button.
+
+### 7.2 Empty states
+
+Every zero-content section uses the EmptyState component, centred horizontally and vertically within ContentArea.
+
+- EmptyState is **never** positioned in the bottom-right of the viewport.
+- EmptyState always includes a CTA that creates the missing entity type.
+- Copy is always contextual — see [Section 8.5](#85-empty-state-copy-voice).
+
+### 7.3 Destructive actions (delete)
+
+Any action that permanently removes data follows this exact flow — no shortcuts:
+
+```
+User clicks Delete in OverflowMenu
+        ↓
+ConfirmDialog opens
+        ↓
+"Delete [entity type]?" — entity name shown in quotes
+"This cannot be undone."
+        ↓
+[Cancel] (default focus)    [Delete] (danger style)
+        ↓                          ↓
+closes, no action       executes, closes, shows toast
+```
+
+- Delete is **never** executed on first click. ConfirmDialog is mandatory.
+- ConfirmDialog must name both the entity type and the entity name.
+- Cancel has default focus when the dialog opens — prevents Enter-key accidents.
+- After a successful delete: show a toast `"[Entity name] deleted."`.
+
+### 7.4 Card expansion and actions
+
+- Cards have two states: **collapsed** (header only) and **expanded** (header + body).
+- Clicking a collapsed card expands it. Clicking again collapses it.
+- Actions (Pin, Share, Edit, Delete) live **only** in the OverflowMenu (⋯), always top-right of the card header.
+- No action buttons are ever shown inline in the card body.
+- The edit pencil icon may appear on card header hover as a shortcut — this is the **only** inline action permitted, and only as a hover affordance.
+
+### 7.5 Form footers
+
+All create and edit forms have a sticky footer, always visible regardless of scroll position.
+
+```
+[      Cancel      ]   [      Create / Save      ]
+```
+
+- Footer is sticky at the bottom of the form container (`position: sticky; bottom: 0`).
+- Applies to both modal forms and full-page forms.
+- Cancel is always left, primary action always right — both left-aligned (not `space-between`).
+- Primary label: `"Create"` for new entities, `"Save"` for edits.
+- Both buttons use sentence case.
+
+### 7.6 File and image upload
+
+All file upload interactions use the Dropzone component. `<input type="file">` is **forbidden** anywhere in the app.
+
+- Any field that accepts an image or file uses `<Dropzone>`.
+- Dropzone shows: upload icon + "Click or drag to upload" + accepted format hint.
+- After upload: show a thumbnail preview with a × remove button — never just a filename.
+
+### 7.7 GM-only sections
+
+Any section containing information hidden from players uses this pattern, always at the bottom of the form after all player-visible fields:
+
+```
+┌─────────────────────────────────────────────────────┐  ← --color-border-gm
+│  🔒 GM ONLY    Private Notes                        │
+│                                                      │
+│  [content field]                                     │
+└─────────────────────────────────────────────────────┘
+```
+
+- Background: `--color-bg-gm`. Border: `--color-border-gm`.
+- The 🔒 icon and "GM ONLY" badge are always visible in the section header.
+- The field label is "Private Notes" — sentence case, capital P only.
+- Never apply ALL CAPS to "PRIVATE NOTES" — the "GM ONLY" badge is the visual differentiator.
+
+### 7.8 Modals
+
+Create and edit forms open as modals. Notes uses an inline panel instead.
+
+- Modal background: `--color-bg-elevated`.
+- Modal border: `--color-border-active`.
+- Corner-bracket decoration via CSS `::before`/`::after` on the container.
+- Max width: 760px for complex forms, 480px for simple forms, 400px for ConfirmDialog.
+- The modal scrolls internally — the StickyFormFooter is sticky within the modal, not the viewport.
+- Background overlay: `rgba(0, 0, 0, 0.65)`.
+- Clicking the overlay → same as Cancel.
+- Escape key → same as Cancel.
+- z-index: `var(--z-modal)` (300).
+
+### 7.9 Helper text
+
+When a control's purpose is not clear from its label alone:
+
+```
+[Label]  ⓘ
+[input]
+[helper text — one line, --text-sm, --color-text-secondary]
+```
+
+- Helper text appears **below** the input, never above.
+- One line maximum.
+- Examples: `"Secret — recipient won't see your name"`, `"(−10 = hostile, +10 = allied)"`.
+- Never rely on hover tooltips as the only way to communicate important information.
+
+### 7.10 Toast notifications
+
+After any create, save, delete, or share action, show a brief toast notification.
+
+```
+✓ Faction created.        ← success — top-right, auto-dismisses after 3s
+✕ Something went wrong.   ← error — stays until manually dismissed
+```
+
+- z-index: `var(--z-toast)` (400).
+- Success toasts auto-dismiss after 3000ms.
+- Error toasts require manual dismissal.
+- Toast text is sentence case.
+- Maximum one toast visible at a time — queue additional ones.
+
+---
+
+## 8. Writing style
+
+### 8.1 Text casing rules
+
+| Element | Rule | CSS |
+|---------|------|-----|
+| Page title (h1) | ALL CAPS | `text-transform: uppercase` |
+| Section group headers (CAMPAIGN, WORLD, GM) | ALL CAPS — structural chrome | `text-transform: uppercase` |
+| Section headers (h2, h3) | Sentence case | `text-transform: none` |
+| Form field labels | Sentence case | `text-transform: none` |
+| Filter tab labels | Sentence case | `text-transform: none` |
+| Button labels | Sentence case | `text-transform: none` |
+| Status badges | Sentence case | `text-transform: none` |
+| Navigation items | Sentence case | `text-transform: none` |
+| Empty state headings | Sentence case | `text-transform: none` |
+| **Card titles / entity names** | **Never transform** | `text-transform: none !important` |
+
+#### The cardinal rule
+
+> `text-transform: uppercase` must **never** be applied to any element that contains or could contain user-generated content.
+
+User-generated content: entity names, descriptions, notes, quest titles, NPC names, faction names, hook titles, creature names, rumour text, session titles, handout titles, calendar event names. When in doubt, assume the field contains user content and leave it untransformed.
+
+### 8.2 Font usage rules
+
+| Context | Font | Token |
+|---------|------|-------|
+| All UI chrome | Sans | `var(--font-sans)` |
+| User-generated prose | Sans | `var(--font-sans)` |
+| In-world dates / numeric codes | Mono | `var(--font-mono)` |
+| Numeric stat values in data tables | Mono | `var(--font-mono)` |
+| Code blocks in rich text | Mono | `var(--font-mono)` |
+| Decorative headings (optional) | Serif | `var(--font-serif)` |
+
+**Monospace is never used on:**
+- Empty state messages
+- Any sentence or paragraph of user content
+- Field placeholder text
+- Error or success messages
+
+**Monospace is only used on:**
+- In-world date values (e.g. `"1320 AE"`, `"Day 42"`)
+- Numeric stat values displayed as data (CR, AC, HP in Combat Tracker)
+- Actual code blocks inside rich text content
+
+### 8.3 Button label conventions
+
+| Action | Label |
+|--------|-------|
+| Create a new entity | `Create` |
+| Save changes to an existing entity | `Save` |
+| Close without saving | `Cancel` |
+| Confirm deletion | `Delete` |
+| Add an item to a list | `Add` |
+| Remove an item from a list | `Remove` |
+| Upload a file | `Upload image` or `Upload portrait` |
+| Proceed to the next step | `Continue` |
+
+**Never use:** OK, Submit, Yes, No, Confirm (the last is reserved for ConfirmDialog's internal implementation only — it never appears as a button label visible to users).
+
+All button labels are sentence case. None are ALL CAPS. None end with punctuation.
+
+### 8.4 Placeholder text
+
+Placeholder text must be evocative and context-appropriate — never generic.
+
+- Written in sentence case
+- Rendered in `--color-text-hint`
+- Describes what belongs in the field, in the voice of the world
+
+**Good (keep these):**
+- `"e.g. Ancient Red Dragon..."`
+- `"They say the blacksmith..."`
+- `"Describe this location — its sights, smells, inhabitants, history..."`
+- `"Secret information, tactics, hidden motivations..."`
+
+**Bad (fix these):**
+- `"Enter character name..."` → use `"Character name"` or a world-appropriate hint
+- `"Type here..."` → replace with a field-specific, evocative prompt
+
+### 8.5 Empty state copy voice
+
+Every EmptyState component uses this three-part structure:
+
+```
+[Icon — 32px, muted]
+
+[Heading — sentence case, --text-lg, --weight-medium]
+[Description — one line, sentence case, --text-sm, --color-text-secondary]
+
+[+ Add [entity type]]
+```
+
+The description line does two things: it tells the GM what is missing *and* what they can do about it. It is specific to the entity type, not a generic "Nothing here yet."
+
+**Voice:** direct, slightly atmospheric, GM-directed.
+
+Examples of the correct voice:
+- Factions: `"Add factions to track the political landscape of your world."`
+- Rumours: `"Plant whispers — some true, some false."`
+- Plot Hooks: `"Add hooks to give players threads to pull."`
+- Bestiary: `"Build your monster roster before the session."`
+
+The CTA label always starts with `+` and names the entity type: `"+ Add faction"`, `"+ Add rumour"`.
+
+### 8.6 Label formatting
+
+Form field labels follow this two-line pattern:
+
+```
+Description (optional)    ← --text-sm, --color-text-secondary, sentence case
+[textarea]                ← --text-base, --color-text-primary
+```
+
+**Optional fields** append `"(optional)"` in the label text, same colour and size — no separate indicator.
+
+**Required fields** use a subtle asterisk in `--color-text-accent`, not a red star or separate required indicator:
+
+```
+Character name *
+[input]
+```
+
+The asterisk is part of the label text, not a separate element. It uses `--color-text-accent` colour only — no additional visual weight.
+
