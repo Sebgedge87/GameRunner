@@ -13,7 +13,8 @@
 3. [GM features](#3-gm-features)
 4. [World-building views](#4-world-building-views)
 5. [Campaign tools](#5-campaign-tools)
-6. Data flow *(coming)*
+6. [GM tools](#6-gm-tools)
+7. Data flow *(coming)*
 7. Key design decisions *(coming)*
 
 ---
@@ -592,6 +593,162 @@ The ⚙ Configure button opens an in-page settings panel with six tabs:
 | Weather | Per-season weather outcomes — each with a label, icon, and relative weight for the random generator |
 
 All configuration is stored as JSON on the campaign record. Changes are saved to `PUT /api/calendar/config`. This lets a GM model virtually any fantasy calendar — the Forgotten Realms Calendar of Harptos, a homebrew 13-month world, multiple moons with different cycles, etc.
+
+---
+
+## 6. GM tools
+
+GM tools are power-user views with no player-facing equivalent. They are accessible to all logged-in campaign members (routing does not apply the `gm` meta flag), but their content is either inherently GM-oriented or dual-mode (GM gets an authoring surface, players get a read-only or interaction surface).
+
+### 6.1 Combat Tracker (`CombatView.vue`)
+
+Route: `/combat`
+
+A **session-local** encounter manager. All state is held in `ref` variables — nothing is persisted to the server. Refreshing the page resets the tracker. This is intentional: combat is ephemeral.
+
+#### Adding combatants
+
+Two entry methods:
+
+1. **Manual form** — name, initiative, max HP, AC, and type (Player / Enemy / Ally / Neutral). Enter key on the name field submits. Added combatants immediately appear in the initiative order.
+
+2. **Import from bestiary** — a dropdown of all bestiary entries in the campaign. The GM selects a creature, sets an import count (1–20), and clicks Import. Each instance is given a numbered suffix (`Goblin 1`, `Goblin 2`, …) and a **randomly rolled** initiative (1–20). HP and AC are pulled from the creature's `stats.hp` / `stats.ac` JSON fields.
+
+#### Initiative order
+
+Combatants are displayed sorted descending by initiative value. The active combatant (the one whose turn it is) is highlighted with a `▶` indicator and a coloured border (`combatant-active`). Dead combatants (HP ≤ 0) are visually dimmed (`combatant-dead`).
+
+Each row shows:
+- Initiative value (accent-coloured)
+- Name, type tag (colour-coded), condition tags (clickable to remove)
+- HP progress bar (colour transitions: green → yellow → red as HP falls)
+- AC value
+- Action buttons: **-HP** (damage) · **+HP** (heal) · **🎲** (add condition) · **📝** (inline notes) · **🗑** (remove)
+
+Damage and heal open a small modal with a number input; Enter key or the Apply button commits the change, clamped to 0–max HP.
+
+Conditions are added via `ui.prompt()`. They appear as red dismissable tags on the combatant row.
+
+Inline notes: clicking the 📝 button reveals a text input. Clicking elsewhere or pressing Enter saves and collapses it back to plain text.
+
+#### Encounter controls
+
+- **▶ Start / ⏸ Pause** — toggles the `active` state; Start resets round and turn to 1
+- **Next Turn →** — advances `currentTurn`; wraps to 0 and increments `round` at the end of each round
+- **Clear** — requires confirmation; resets all combatants and encounter state
+- Round and turn counter shown when active: "Round N — Turn M / Total"
+
+---
+
+### 6.2 Theory Board (`TheoryBoardView.vue`)
+
+Route: `/theory`
+
+An **SVG force-directed graph** built with D3.js for freeform investigation mapping. Players use it as a personal conspiracy board; the GM sees all nodes (including shared ones).
+
+#### Nodes
+
+Five node types, each with a distinct colour:
+
+| Type | Colour |
+|------|--------|
+| Theory | Gold |
+| Fact | Green |
+| NPC | Blue |
+| Location | Green (same as Fact) |
+| Question | Purple |
+
+Nodes are rendered as circles (radius 14 px). Labels are shown below each circle, truncated to 20 characters. Nodes shared with the GM display an 👁 badge above the circle and a coloured stroke border.
+
+#### Interaction
+
+- **Create via panel** — label, type, and notes fields in the right-hand panel; Add button submits to `POST /api/theory/nodes`
+- **Create via double-click** — double-clicking the SVG background prompts for a label via `ui.prompt()` and places the new node at the click coordinates
+- **Select** — clicking a node loads it into the inspector panel (right side); the panel switches from "New node" form to the node editor
+- **Edit** — label, type, notes, and "Share with GM" checkbox; Save submits `PUT /api/theory/nodes/:id`
+- **Delete** — requires `ui.confirm()`
+- **Link** — clicking "Link →" in the inspector enters link mode. Clicking a second node creates an edge (`POST /api/theory/edges`). "Cancel Link" exits link mode
+- **Drag** — D3 drag behaviour; nodes can be repositioned. Positions are not persisted (D3 recalculates layout on reload)
+
+The force simulation uses link distance 100, charge strength −150, center force, and collision radius 30.
+
+Data is loaded from `GET /api/theory` and persisted per-user on the server — each player has their own board.
+
+---
+
+### 6.3 Mindmap (`MindmapView.vue`)
+
+Route: `/mindmap`
+
+A **read-only** D3 force-directed graph that auto-generates connections from the existing campaign data — no manual authoring required. It is a system-derived view, not a GM editing tool.
+
+#### Entity types and colours
+
+Six entity types are plotted:
+
+| Type | Colour |
+|------|--------|
+| Quest | Gold |
+| NPC | Blue |
+| Location | Green |
+| Hook | Purple |
+| Map | Red |
+| Faction | Pink/magenta |
+
+A colour legend is displayed above the graph.
+
+#### Edge generation
+
+Edges are derived at render time from the `connected_*` fields on each entity. The graph supports both legacy text-name references and newer ID-based references (resolved via a `titleMap` for text and `idMap` for IDs). Deduplication is enforced via an edge set keyed on sorted node-ID pairs.
+
+Relationships drawn:
+- Quest → parent quest, connected locations, connected NPCs, connected factions
+- NPC → faction (by `faction_id`), home location (by `home_location_id`), legacy text location
+- Faction → leader NPC, HQ location, member NPCs
+- Locations → linked sub-location chains (`parent_location_id`)
+- Hooks → connected entity text fields
+
+#### Inspector flyout
+
+Clicking a node opens a slide-in panel (CSS `Transition`) showing the entity type label, name, and a 100-character description preview. An "Open \<type\> →" button navigates to the appropriate list view (`router.push`). No editing is possible from this view.
+
+---
+
+### 6.4 Good Boy Cards (`GoodBoyCardsView.vue`)
+
+Route: `/cards`
+
+A reward card system. The GM awards cards to players for good roleplay moments (nat 20s, brilliant decisions, memorable scenes). Players can spend their cards to invoke a mechanical effect.
+
+#### Card types and tiers
+
+**Types:** Good Boy (🐶) — triggered by nat 20s and positive moments; Bad Boy (😈) — triggered by nat 1s and comical failures.
+
+**Tiers:** Minor · Moderate · Major · Legendary (stored as `low` / `mid` / `high` / `huge`). Each tier appears as a label on the card corner.
+
+Each card has a `name` and an `effect` text pulled from a library of pre-defined card definitions (`defs`). The GM can award a specific card or leave it as "Random" to draw from the appropriate type/tier pool.
+
+#### GM view
+
+Tabs across the top — one per non-GM player. Each tab shows a badge count of that player's unplayed cards. The selected player's hand is shown as a grid of styled cards. The GM can remove any unplayed card.
+
+The "+ Award Card" button opens a modal with:
+- Player selector dropdown
+- Type toggle (Good / Bad)
+- Card selector (grouped by tier, with "— Random —" option)
+- Live preview of the selected card's name and effect
+
+Submits to `POST /api/cards`.
+
+#### Player view
+
+Players see their own hand only. Filter tabs: Unplayed · All · Good · Bad. Unplayed cards have a `can-play` class and are clickable.
+
+Clicking an unplayed card (or its "Play" button) opens the play modal, which shows a full card preview and an optional note field ("using it to dodge the fireball…"). The note is stored alongside the `played_at` timestamp. Played cards show a "Played" stamp and their note; they cannot be played again.
+
+A header counts show the player's current unplayed good/bad totals.
+
+The sidebar nav badge for this view is driven by `ui.cardBadge` — incremented when new cards are awarded.
 
 
 
