@@ -554,3 +554,294 @@ Layout rules:
 
 All modals are centred in the viewport. Background overlay: `rgba(0, 0, 0, 0.65)`. Clicking the overlay or pressing Escape closes the modal (same as Cancel).
 
+---
+
+## 5. Component library
+
+All components are registered in `COMPONENTS.md`, which is the single source of truth. Every named component has exactly one spec. Never create a new component for something that matches an existing name — import the existing one instead.
+
+### Component registry
+
+| Component | Status | Purpose |
+|-----------|--------|---------|
+| `OverlayCard` | ✅ Built | Standard entity card — collapsed / expanded, all actions via OverflowMenu |
+| `OverflowMenu` | ✅ Built | ⋯ trigger + action popover — replaces all inline action button rows |
+| `ConfirmDialog` | ✅ Built | Destructive action confirmation modal |
+| `EntityForm` | ✅ Built | Standard create / edit form shell (two-column layout) |
+| `Dropzone` | ✅ Built | File / image upload — replaces all `<input type="file">` |
+| `EmptyState` | ✅ Built | Zero-content placeholder, always centred |
+| `ListPage` | ✅ Built | Standard list page shell (header, search, filters, content area) |
+| `FilterTabs` | ✅ Built | Horizontal status / type filter tabs |
+| `RichTextField` | ✅ Built | Decides rich editor vs plain textarea by field type |
+| `StickyFormFooter` | ✅ Built | Sticky Cancel / Create footer inside forms |
+| `StatusBadge` | ✅ Built | Semantic status pill (Active, Hostile, Allied, etc.) |
+| `RelationshipSlider` | ✅ Built | Faction Hostile → Allied disposition slider |
+
+---
+
+### 5.1 OverlayCard
+
+The standard card used to display any world entity in a list view. Has two visual states (collapsed / expanded) and delegates all actions to an OverflowMenu — it never shows inline action buttons.
+
+#### Anatomy
+
+```
+┌──────────────────────────────────────────────────┐
+│  [icon]  [Title text]         [StatusBadge]  [⋯] │  ← CardHeader
+├──────────────────────────────────────────────────┤
+│  [Body text — max 3 lines, markdown rendered]     │  ← CardBody (expanded only)
+│  [Optional: secondary content slot]               │
+└──────────────────────────────────────────────────┘
+   ↑ corner brackets rendered via CSS ::before/::after
+```
+
+#### Props
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `icon` | node | No | Entity type icon, 16×16 |
+| `title` | string | Yes | Entity name — never transformed to uppercase |
+| `status` | string | No | Passed directly to StatusBadge |
+| `actions` | ActionItem[] | Yes | Array of actions passed to OverflowMenu |
+| `children` | node | No | Body content shown when expanded |
+| `isExpanded` | boolean | No | Controlled expanded state |
+| `onToggle` | function | No | Called when the card header is clicked |
+| `isSelected` | boolean | No | Applies `--color-border-active` border |
+
+#### States
+
+**Collapsed (default)**
+```
+┌──────────────────────────────────────────────────┐
+│  🗡  Faction Name                  [Active]  [⋯] │
+└──────────────────────────────────────────────────┘
+```
+- Visible: icon, title, StatusBadge (if provided), OverflowMenu trigger
+- Border: `1px solid var(--color-border-default)`
+- Background: `var(--color-bg-card)`
+
+**Expanded**
+```
+┌──────────────────────────────────────────────────┐
+│  🗡  Faction Name                  [Active]  [⋯] │
+├──────────────────────────────────────────────────┤
+│  Description text up to three lines before        │
+│  truncating with a "show more" toggle...          │
+│                                                   │
+│  [Secondary content slot — e.g. RelationshipSlider] │
+└──────────────────────────────────────────────────┘
+```
+- Border: `1px solid var(--color-border-active)`
+- Background: `var(--color-bg-card)`
+
+**Selected** (active item in a list+detail layout)
+- Border: `1px solid var(--color-border-active)`
+- Left accent: `3px solid var(--color-text-accent)`
+
+#### Corner brackets
+
+The decorative corner brackets at top-left and bottom-right are a core brand element. They are implemented as CSS pseudo-elements — never as actual DOM nodes.
+
+```css
+.overlay-card { position: relative; }
+
+.overlay-card::before,
+.overlay-card::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-color: var(--color-border-bracket);
+  border-style: solid;
+}
+.overlay-card::before {
+  top: -1px; left: -1px;
+  border-width: 2px 0 0 2px;   /* top-left corner */
+}
+.overlay-card::after {
+  bottom: -1px; right: -1px;
+  border-width: 0 2px 2px 0;   /* bottom-right corner */
+}
+```
+
+#### OverflowMenu actions per entity type
+
+The `actions` array passed to each card is fixed per entity type. The order below is the required order.
+
+| Entity | Actions |
+|--------|---------|
+| Faction | Pin, Share, Edit, `---`, Delete |
+| Plot Hook | Pin, Share, Edit, `---`, Delete |
+| Handout | Pin, Share, Edit, `---`, Delete |
+| Bestiary creature | Pin, Reveal, Edit, `---`, Delete |
+| Rumour | Pin, Share, Edit, `---`, Delete |
+| NPC | Pin, Share, Edit, `---`, Delete |
+| Location | Pin, Share, Edit, `---`, Delete |
+
+`---` = a visual divider item (`{ type: 'divider' }`). Delete always opens ConfirmDialog before executing.
+
+#### Rules
+
+- Action buttons (Pin, Share, Edit, Delete) are **never** shown inline in the card body or header.
+- `text-transform` is **never** applied to the `title` prop.
+- StatusBadge must be visible in the collapsed state whenever a `status` prop is provided.
+- The edit pencil icon may appear on card header hover as a convenience shortcut — this is the **only** inline action permitted, and only on hover.
+- Body text renders markdown but heading tags (H1–H3) are converted to bold text, not actual headings.
+- Body text is capped at 3 lines; overflow is hidden with a "show more" toggle.
+
+#### Example
+
+```jsx
+<OverlayCard
+  icon={<FactionIcon />}
+  title={faction.name}
+  status={faction.standing > 3 ? 'allied' : faction.standing < -3 ? 'hostile' : 'neutral'}
+  actions={[
+    { label: 'Pin',    icon: <PinIcon />,    onClick: handlePin },
+    { label: 'Share',  icon: <ShareIcon />,  onClick: handleShare },
+    { label: 'Edit',   icon: <EditIcon />,   onClick: handleEdit },
+    { type: 'divider' },
+    { label: 'Delete', icon: <DeleteIcon />, onClick: () => setConfirmOpen(true), variant: 'danger' },
+  ]}
+>
+  <p>{faction.description}</p>
+  <RelationshipSlider value={faction.standing} onChange={handleStandingChange} />
+</OverlayCard>
+```
+
+---
+
+### 5.2 OverflowMenu
+
+A ⋯ trigger button that opens a small positioned popover listing actions for an entity. Used inside every OverlayCard. Replaces all inline action button rows.
+
+#### Anatomy
+
+```
+[⋯]  ← trigger, top-right of CardHeader, opacity 0 until hover/focus
+
+      ┌──────────────────┐
+      │  📌  Pin          │
+      │  👁  Share        │
+      │  ✏️  Edit         │
+      ├──────────────────┤  ← divider
+      │  🗑  Delete       │  ← danger colour
+      └──────────────────┘
+```
+
+#### Props
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `actions` | ActionItem[] | Yes | List of action items to render |
+| `placement` | `'bottom-end'` \| `'bottom-start'` | No | Default: `'bottom-end'` |
+
+#### ActionItem type
+
+```ts
+type ActionItem =
+  | {
+      type?: 'action';
+      label: string;               // sentence case
+      icon: ReactNode;             // 16×16
+      onClick: () => void;
+      variant?: 'default' | 'danger';
+      disabled?: boolean;
+    }
+  | { type: 'divider' }
+```
+
+#### Visual spec
+
+```css
+/* Trigger — hidden until parent card is hovered or menu is open */
+.overflow-menu-trigger {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  background: transparent; border: none; cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-default);
+}
+.overlay-card:hover .overflow-menu-trigger,
+.overflow-menu-trigger[aria-expanded="true"] { opacity: 1; }
+.overflow-menu-trigger:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-text-primary);
+}
+
+/* Popover */
+.overflow-menu-popover {
+  position: absolute;
+  z-index: var(--z-dropdown);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  padding: 4px; min-width: 140px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* Action item */
+.overflow-menu-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  cursor: pointer; white-space: nowrap;
+}
+.overflow-menu-item:hover         { background: rgba(255, 255, 255, 0.06); }
+.overflow-menu-item.danger        { color: var(--color-text-danger); }
+.overflow-menu-item.danger:hover  { background: rgba(220, 80, 60, 0.12); }
+
+/* Divider */
+.overflow-menu-divider {
+  height: 1px;
+  background: var(--color-border-default);
+  margin: 4px 0;
+}
+```
+
+#### Behaviour rules
+
+- Popover opens on trigger click.
+- Popover closes when: clicking outside, pressing Escape, or clicking any action item.
+- Default placement is `bottom-end` (right-aligned to trigger). Flips to `top-end` if the popover would overflow the viewport bottom.
+- Only one OverflowMenu may be open at a time — opening a new one closes any existing open menu.
+- The trigger button is `opacity: 0` until the parent card is hovered or the trigger receives keyboard focus.
+- Trigger must have `aria-label="More actions"` and `aria-haspopup="true"`.
+- Popover must have `role="menu"`. Each item must have `role="menuitem"`.
+
+#### Delete action — delegation pattern
+
+OverflowMenu does **not** handle delete confirmation itself. When the Delete item is clicked:
+
+1. The popover closes immediately.
+2. The parent component opens ConfirmDialog.
+3. The actual delete function only executes if the user confirms.
+
+```jsx
+{
+  label: 'Delete',
+  icon: <DeleteIcon />,
+  variant: 'danger',
+  onClick: () => setConfirmDeleteOpen(true),  // opens ConfirmDialog, NOT the delete fn
+}
+```
+
+#### Forbidden pattern
+
+```jsx
+{/* This pattern is forbidden everywhere in the app */}
+<div className="card-actions">
+  <button>📌 Pin</button>
+  <button>👁 Hide</button>
+  <button>🔗 Share</button>
+  <button>✏️ Edit</button>
+  <button className="danger">🗑 Delete</button>
+</div>
+```
+
+Remove any instance of this pattern and replace with OverlayCard + OverflowMenu.
+
