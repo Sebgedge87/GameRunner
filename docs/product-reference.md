@@ -1,0 +1,1198 @@
+# The Chronicle — Product Reference
+
+> Technical reference for developers and contributors. Describes what the
+> application does, how it is structured, and why key decisions were made.
+> For visual and component specifications see `docs/design-system.md`.
+
+---
+
+## Contents
+
+1. [App overview](#1-app-overview)
+2. [Navigation structure](#2-navigation-structure)
+3. [GM features](#3-gm-features)
+4. [World-building views](#4-world-building-views)
+5. [Campaign tools](#5-campaign-tools)
+6. [GM tools](#6-gm-tools)
+7. [Player views](#7-player-views)
+8. [Data model](#8-data-model)
+9. State management *(coming)*
+7. Key design decisions *(coming)*
+
+---
+
+## 1. App overview
+
+### 1.1 What The Chronicle is
+
+The Chronicle is a TTRPG (tabletop role-playing game) campaign management web application. It gives Game Masters a single workspace to build and run a campaign — tracking NPCs, locations, factions, quests, sessions, handouts, and world lore — while giving players a shared view of the information the GM chooses to reveal.
+
+It is built as a Vue 3 single-page application backed by a Node.js/Express API with a SQLite database. All state is server-persisted; the client holds a runtime copy in Pinia stores. The app is self-hosted — there is no SaaS layer.
+
+### 1.2 Who uses it
+
+**Game Masters (GMs)** own and run campaigns. They have access to all pages and all data, including GM-only sections hidden from players. A GM creates the campaign, invites players via an invite code, and controls what information is shared. One GM per campaign is the standard model, though the server supports per-campaign GM role grants.
+
+**Players** join a campaign via invite code. They see the player-facing pages (quests, characters, notes, theory board, handouts, bestiary, locations, inventory, rumours, calendar, timeline, maps, sessions) but cannot see GM-only fields, private notes, or the GM Dashboard. They cannot access Combat Tracker or GM Edit modals.
+
+A user can be a GM in one campaign and a player in another. Role is per-campaign, not per-user globally (though a global `role='gm'` flag on the user record bypasses per-campaign checks for server admin purposes).
+
+### 1.3 What problem it solves
+
+Running a TTRPG campaign generates a large, interconnected body of information: dozens of NPCs with motivations and secrets, locations with histories, faction relationships, quest chains, session notes, player handouts, rumours of varying truth, and a world calendar. This information lives in a GM's head, on paper, or scattered across notes apps — none of which allow the GM to share selective information with players in real time.
+
+The Chronicle centralises that information, enforces the GM/player visibility split, and gives players a living document of their campaign world that the GM populates and curates as play progresses.
+
+### 1.4 Tech stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Vue 3 (`<script setup>`), Vite, Vue Router, Pinia |
+| Styling | Plain CSS with custom properties (no CSS framework) |
+| Backend | Node.js, Express |
+| Database | SQLite via `better-sqlite3` |
+| Auth | JWT (stored in localStorage), per-route navigation guards |
+| Real-time | Server-Sent Events (SSE) for timer broadcasts |
+| File upload | Multipart form upload to local `/api/uploads` endpoint |
+
+---
+
+## 2. Navigation structure
+
+### 2.1 Route guard logic
+
+Three meta flags control route access:
+
+| Flag | Meaning | Redirect on fail |
+|------|---------|-----------------|
+| `auth: true` | User must be logged in (JWT present) | `/login` |
+| `requiresCampaign: true` | An active campaign must be selected | `/home` |
+| `gm: true` | Active campaign role must be GM | `/home` |
+
+Guards are evaluated in order: auth → campaign → GM. The GM Dashboard and Combat Tracker are the only routes with `gm: true`. All campaign pages require both `auth` and `requiresCampaign`. Home and Settings require only `auth`.
+
+The router also uses the native View Transitions API (where available and `prefers-reduced-motion` is not set) to animate page changes as physical turns.
+
+### 2.2 Route table
+
+| Path | View | Auth | Campaign | GM only | Purpose |
+|------|------|------|----------|---------|---------|
+| `/` | — | — | — | — | Redirects to `/home` |
+| `/home` | `HomeView` | ✓ | — | — | Campaign selection, join, create |
+| `/dashboard` | `DashboardView` | ✓ | ✓ | — | Player-facing campaign overview |
+| `/quests` | `QuestsView` | ✓ | ✓ | — | Quest log — active, completed, missed |
+| `/jobs` | `JobsView` | ✓ | ✓ | — | Side jobs / one-shot contracts |
+| `/npcs` | `NpcsView` | ✓ | ✓ | — | NPC roster with GM-private fields |
+| `/locations` | `LocationsView` | ✓ | ✓ | — | Location index with GM notes |
+| `/hooks` | `HooksView` | ✓ | ✓ | — | Plot hooks for the GM to manage |
+| `/factions` | `FactionsView` | ✓ | ✓ | — | Factions with disposition slider |
+| `/timeline` | `TimelineView` | ✓ | ✓ | — | Chronological event timeline |
+| `/calendar` | `CalendarView` | ✓ | ✓ | — | In-world calendar with events |
+| `/maps` | `MapsView` | ✓ | ✓ | — | Campaign maps with party location pin |
+| `/mindmap` | `MindmapView` | ✓ | ✓ | — | Freeform relationship mindmap |
+| `/handouts` | `HandoutsView` | ✓ | ✓ | — | GM-to-player document handouts |
+| `/inventory` | `InventoryView` | ✓ | ✓ | — | Party inventory and key items |
+| `/bestiary` | `BestiaryView` | ✓ | ✓ | — | Creature roster; GM can reveal entries |
+| `/rumours` | `RumoursView` | ✓ | ✓ | — | Rumour mill — true, false, exposed |
+| `/sessions` | `SessionsView` | ✓ | ✓ | — | Session log and recaps |
+| `/characters` | `CharactersView` | ✓ | ✓ | — | Party character sheet overview |
+| `/character-sheet` | `CharacterSheetView` | ✓ | ✓ | — | Individual character sheet |
+| `/notes` | `NotesView` | ✓ | ✓ | — | Player personal notes |
+| `/theory-board` | `TheoryBoardView` | ✓ | ✓ | — | Player speculation / evidence board |
+| `/gm-dashboard` | `GmDashboardView` | ✓ | ✓ | ✓ | GM campaign management hub |
+| `/combat` | `CombatView` | ✓ | ✓ | ✓ | Initiative and combat tracker |
+| `/good-boy-cards` | `GoodBoyCardsView` | ✓ | ✓ | — | Player reward / inspiration cards |
+| `/settings` | `SettingsView` | ✓ | — | — | User preferences and custom theme |
+| `/dev-admin` | `DeveloperConfigView` | — | — | — | Developer-only admin panel; not linked in any nav |
+
+### 2.3 Access patterns by role
+
+**Not logged in:** Only `/login` and `/dev-admin` are reachable. All other routes redirect to `/login`.
+
+**Logged in, no active campaign:** Only `/home` and `/settings` are reachable. All `requiresCampaign` routes redirect to `/home`.
+
+**Logged in, player in active campaign:** All routes except `/gm-dashboard` and `/combat` are accessible. GM-only fields within pages are hidden at the component level, not the route level — the route is reachable but private fields are not rendered.
+
+**Logged in, GM in active campaign:** All routes are accessible.
+
+### 2.4 The home screen
+
+`HomeView` is the campaign hub. A logged-in user without an active campaign lands here and can:
+
+- View all campaigns they are a member of (as tiles)
+- Switch to a different campaign (triggers the `/api/campaigns/:id/activate` endpoint)
+- Create a new campaign (opens a multi-step wizard)
+- Join an existing campaign via invite code
+
+Selecting a campaign sets `activeCampaign` in the Pinia store, applies the campaign's theme class to `<html>`, and unlocks all `requiresCampaign` routes.
+
+---
+
+## 3. GM features
+
+### 3.1 GM Dashboard (`GmDashboardView.vue`)
+
+The GM Dashboard (`/gm-dashboard`) is the GM's primary command centre. It is split into three tabs: **Overview**, **Settings**, and **Stats**. Only users with the GM role on the active campaign can reach this route.
+
+#### 3.1.1 Overview tab
+
+The Overview tab is the default landing state. It contains five sections laid out in a two-column grid.
+
+**Players table** — a full-width table listing every non-GM campaign member. Columns vary by game system:
+
+| Column | Shown when |
+|--------|-----------|
+| Character name / username | Always |
+| Level stepper (−/+) | System uses milestone levelling (`usesMilestone`) |
+| XP total | System uses XP (`usesXP`) |
+| Stress | System has stress (`hasStress`) — Alien RPG, Coriolis |
+| Sanity | System has sanity (`hasSanity`) — Call of Cthulhu, Achtung! Cthulhu |
+| Last seen | Always |
+| Message / Reset password / Delete buttons | Always |
+
+The GM can edit stress and sanity values inline in the table and save them per player. The message button pre-populates the compose flyout with that player's details. Reset password and Delete user are dangerous actions: delete requires a confirm dialog.
+
+**Award XP panel** (XP systems only) — form with amount, optional reason, and a player checkbox list (with a "select all" toggle). Submits to `POST /api/xp`. Shows a status message inline.
+
+**Milestone levelling panel** (milestone systems only) — shows a description of how to adjust levels per player using the stepper buttons in the table, plus a "Level Up All Players" button that increments every player who is not yet at the system maximum level.
+
+**Average party sanity widget** (Call of Cthulhu only) — a number input (0–100) plus a "Set" button. Persists to `avg_sanity` on the campaign record and calls `applyTheme()` to update the CSS filter class (`dynamic-sanity-0` through `dynamic-sanity-4`) in real time, shifting the UI's colour saturation to reflect the party's collective mental state.
+
+**Active Quests** — card grid of quests with `status = 'active'`. Uses the `QuestCard` component. Tapping a card expands it.
+
+**Session Agenda** — list of agenda cards from `GET /api/agenda`. Each card shows its title and body. An "+ Add Agenda Item" button opens the GM edit modal with `type = 'agenda'`.
+
+**Unread Messages** — list of messages where the recipient has not yet read them (from `GET /api/messages?unread=true`). Displays sender, subject, body preview, and timestamp.
+
+**Quick Actions** — a row of shortcut buttons that open the GM edit modal for common entity types: Quest, NPC, Location, Hook, Handout, Session. Also links to the Combat Tracker and a "Backup" button that triggers a full campaign JSON export (`GET /api/backup`).
+
+#### 3.1.2 Settings tab
+
+The Settings tab is a campaign configuration form. Fields:
+
+| Field | Notes |
+|-------|-------|
+| Name | Campaign display name |
+| System | Dropdown selecting the game system (7 options — see §3.1.4) |
+| Great House | Visible only when system = `dune`; selects the Dune house sub-theme |
+| Setting / Plane | Visible only when system = `dnd5e`; selects a D&D setting sub-theme (Ravenloft, Spelljammer, Eberron) |
+| Subtitle | Optional campaign tagline |
+| Playlist URL | Spotify or YouTube URL displayed on the player dashboard |
+| Description | Multi-line plain textarea |
+| Background image | Dropzone upload or paste-a-URL; sets the campaign background |
+| Invite code | Editable code (max 12 chars, auto-uppercased); "Regenerate" randomises it; "Copy" writes it to clipboard |
+
+The Great House and Setting dropdowns call `previewHouse()` / `previewSetting()` on change — these immediately write the new value to `activeCampaign` in the store and call `applyTheme()` so the GM sees a live preview of the theme change. If the GM switches away from the Settings tab without saving, these previews are reverted to the last-persisted values by a `watch(activeTab)` hook.
+
+Saving calls `PUT /api/campaigns/:id` with the full form payload, then calls `loadCampaigns()` and `applyBgImage()` to refresh the store and background.
+
+#### 3.1.3 Stats tab
+
+The Stats tab aggregates campaign-wide metrics. It loads on demand from `GET /api/campaigns/:id/stats`.
+
+**Stat strip** — a row of pill widgets showing: Sessions, Players, Quests, Active Quests, Handouts, Messages, Total XP Awarded.
+
+**Player Progression grid** — one card per non-GM user showing: character name (username as sub-label), total XP, current level, an XP progress bar to the next level threshold (using the D&D 5e XP threshold table), and a "last seen" relative timestamp.
+
+**Recent Activity audit log** — a chronological list of audit log entries from `GET /api/users/audit`. Each row shows: username, action description, optional detail, and formatted timestamp.
+
+#### 3.1.4 Supported game systems
+
+The campaign system field controls which theme, which columns, and which widgets appear throughout the app. `useSystemFeatures()` is a composable that derives per-system flags from `activeCampaign.system`.
+
+| System key | Display name | Theme | XP/Milestone | Stress | Sanity |
+|-----------|-------------|-------|-------------|--------|--------|
+| `dnd5e` | D&D 5e | `theme-dnd5e` | XP (default) or milestone | — | — |
+| `coc` | Call of Cthulhu | `theme-cthulhu` | — | — | ✓ |
+| `alien` | Alien RPG | `theme-alien` | — | ✓ | — |
+| `coriolis` | Coriolis | `theme-coriolis` | — | ✓ | — |
+| `dune` | Dune | `theme-dune` | — | — | — |
+| `achtung` | Achtung! Cthulhu | `theme-achtung` | — | ✓ | ✓ |
+| `custom` | Custom | `theme-custom` | — | — | — |
+
+---
+
+### 3.2 GM edit modal (`GmEditModal.vue`)
+
+`GmEditModal` is the single create/edit form component used everywhere in the GM-facing interface. It is rendered in `AppLayout.vue` and controlled by `ui.gmEditModal` state in the UI store (`client/src/stores/ui.js`).
+
+Any component can open it by calling:
+
+```js
+ui.openGmEdit(type, id, data)
+// type  — entity type key (string)
+// id    — entity id for edits, null for creates
+// data  — pre-populated form values object
+```
+
+#### 3.2.1 Supported entity types
+
+| Type key | Entity | API endpoint | Width |
+|----------|--------|-------------|-------|
+| `quest` | Quest | `/api/quests` | 720px |
+| `npc` | NPC | `/api/npcs` | 720px |
+| `location` | Location | `/api/locations` | 720px |
+| `hook` | Plot hook | `/api/hooks` | 720px |
+| `handout` | Handout | `/api/handouts` | 720px |
+| `faction` | Faction | `/api/factions` | 720px |
+| `map` | Map | `/api/maps` | 720px |
+| `bestiary` | Bestiary entry | `/api/bestiary` | 720px |
+| `rumour` | Rumour | `/api/rumours` | 720px |
+| `inventory` | Inventory item | `/api/inventory` | 720px |
+| `key-item` | Key item | `/api/key-items` | 720px |
+| `session` | Session | `/api/sessions` | 520px |
+| `job` | Side job | `/api/jobs` | 520px |
+| `timeline` | Timeline event | `/api/timeline` | 520px |
+| `agenda` | Agenda card | `/api/agenda` | 520px |
+| `poll` | Session poll | `/api/sessions/polls` | 520px |
+| `schedule` | Scheduling event | `/api/sessions/scheduling` | 520px |
+| `message` | GM→player message | `/api/messages` | 520px |
+
+Types flagged as "migrated" (`quest`, `npc`, `location`, `faction`, `map`, `bestiary`, `handout`, `hook`, `rumour`, `inventory`, `key-item`) render inside the `EntityForm` two-column layout component and suppress the default modal title bar (the form's own header provides the title). All other types use a simpler single-column layout with the standard `modal-title` bar.
+
+#### 3.2.2 Create vs edit flow
+
+The modal uses `isEdit = !!ui.gmEditModal?.id` to determine mode. On open, a `watch(ui.gmEditModal)` resets all form fields, then prefills from `modal.data` if provided. The submit handler POSTs (create) or PUTs (edit) to the entity's API endpoint, calls the appropriate `TYPE_RELOAD` function to refresh the Pinia data store, shows a success toast, and closes the modal.
+
+#### 3.2.3 File upload within the modal
+
+Entity types that accept images (NPCs, locations, maps, handouts, bestiary entries, quests, factions, key items) use the `Dropzone` component in the `sidebar-image` slot of `EntityForm`. On file selection, the file is uploaded to `POST /api/uploads` immediately; the returned URL is stored in the form field. A thumbnail preview with a remove button is shown until the form is submitted or cancelled.
+
+#### 3.2.4 Linked entity selectors
+
+Several forms include relationship fields that use `SearchSelect` — a typeahead component backed by the existing Pinia store data (no extra API call). Examples: Quest → connected NPCs, locations, factions, parent quest; NPC → faction memberships; Faction → leader NPC, HQ location, member list. These multi-select fields serialise to/from comma-delimited ID strings for storage.
+
+---
+
+## 4. World-building views
+
+World-building views are the shared reference layer of the campaign — the places, people, factions, quests, and lore that both the GM and players can browse. All views follow the same structural pattern: a page header with a title and (GM-only) "+ Add" button, a text search bar, optional `FilterTabs` to narrow by status/type, a loading skeleton, an `EmptyState` for a fresh campaign, and the main card grid.
+
+Visibility rules apply across all entity types: records marked `hidden = true` are invisible to players and shown at reduced opacity (0.5) to the GM as a reminder that they are unpublished.
+
+### 4.1 NPCs (`NpcsView.vue`)
+
+Route: `/npcs`
+
+Displays campaign NPCs as a portrait grid (`npc-grid`, `minmax(200px, 1fr)` columns). Each NPC card shows:
+
+- A 160 px portrait image (or a placeholder silhouette emoji if no image is set), with a subtle zoom-on-hover transform
+- Name (Cinzel font), role tag, race tag, disposition tag (colour-coded: `tag-active` for friendly/allied, `tag-inactive` for hostile)
+- Faction affiliation and current location as metadata lines
+
+Clicking a card **expands** it in-place to reveal a truncated description (4-line clamp) and an action row. Available actions:
+
+| Action | Visible to |
+|--------|-----------|
+| Pin | All |
+| Reveal / Hide | GM only — calls `PUT /api/npcs/:id/reveal` |
+| Share | GM only — opens share modal |
+| Edit | GM only — opens `GmEditModal` prefilled |
+| Delete | GM only — requires `ConfirmDialog` |
+
+Filter tabs: All · Friendly · Neutral · Hostile (filters on `npc.disposition`).
+
+Search fields: name, role, faction, location.
+
+### 4.2 Locations (`LocationsView.vue`)
+
+Route: `/locations`
+
+Locations has two top-level tabs: **Locations** (the default entity list) and **Notice Board** (a jobs board scoped to a specific location).
+
+#### Locations tab
+
+Card grid using the `EntityCard` component. Each card shows location type, danger level (as a warning tag), and a "Party here" badge if the GM has pinned the party to that location. Actions in the expanded card:
+
+| Action | Description |
+|--------|-------------|
+| Set as party location | Calls `campaign.setPartyLocation(id)` — persists the party's current location to the campaign store; button turns accent-coloured when active |
+| Notice Board | Switches to the Notice Board tab pre-filtered to this location |
+| Standard entity actions | Pin, Share (GM), Edit (GM), Delete (GM) via `EntityCard` |
+
+The GM can also clear the party location from the page header subtitle (which shows "Party at: \<name\>" when set).
+
+Filter tabs: All · City/Town · Dungeon · Wilderness (filters on `location_type`).
+
+#### Notice Board tab
+
+A jobs board that shows all `job` entities, optionally filtered by a location dropdown. Jobs are displayed as styled cards with a coloured left-border keyed to difficulty:
+
+- Easy — green
+- Medium — default border
+- Hard — blue
+- Deadly — red
+
+Each job card shows: title, difficulty tag, description preview, reward, posted-by name, and status tag. Players see an **Accept** button on open jobs (calls `PUT /api/jobs/:id/accept`). GMs can post new jobs via an "+ Post Job" tile that opens `GmEditModal` with `type = 'job'` pre-seeded with the current board location.
+
+### 4.3 Factions (`FactionsView.vue`)
+
+Route: `/factions`
+
+Card grid using `OverlayCard`. Each faction card shows:
+
+- Description and goals (truncated)
+- A **reputation bar** — a 6-point scale from −3 (Hostile) to +3 (Allied), rendered as a progress bar whose fill colour transitions from red through muted to green/accent
+
+Reputation labels: Hostile (≤ −3) · Unfriendly (−2/−1) · Neutral (0) · Friendly (1/2) · Allied (≥ 3).
+
+Actions: Pin · Share (GM) · Edit (GM) · Delete (GM). No filter tabs — search only (name, description, goals).
+
+### 4.4 Quests (`QuestsView.vue`)
+
+Route: `/quests`
+
+Card grid using the `QuestCard` component (also used in the GM Dashboard overview). Filter tabs: All · Active · Completed · Failed.
+
+Search fields: title, quest type, description.
+
+`QuestCard` handles its own expand/collapse, status badge rendering, urgency styling, reward display, and (GM-only) edit/delete actions — the view itself is intentionally thin, delegating all card presentation to the component.
+
+### 4.5 Timeline (`TimelineView.vue`)
+
+Route: `/timeline`
+
+The Timeline is the only view with a custom horizontal layout rather than a card grid. Events are plotted on a centre horizontal rule with cards alternating above and below (even-indexed events above the line, odd-indexed events below), connected by short vertical stems to dot markers.
+
+Dot size and colour reflect significance:
+
+| Significance | Visual |
+|-------------|--------|
+| `minor` | Small plain dot |
+| `major` | Larger accent-coloured dot |
+| `world-changing` | Large dot with animated pulse ring |
+
+Each card is clickable and opens the `DetailModal` with the full event record.
+
+**Call of Cthulhu era support**: when the active campaign system is `coc`, the page title shows an era badge (e.g. "🐙 1920s Era") and a date format hint beneath it. Era data comes from the `COC_ERAS` constant exported by `useSystemFeatures`.
+
+Filter tabs: All Sessions · Session 1 · Session 2 · … (dynamically generated from the `session_number` values in the timeline data).
+
+Search: event title and description.
+
+### 4.6 Maps (`MapsView.vue`)
+
+Route: `/maps`
+
+Card grid using `EntityCard`. Each map card shows map type (world/region/city/battle) and an image thumbnail. The `EntityCard` expand row includes a **Fullscreen** button (only shown when the map has an image) that opens a custom overlay: the image is displayed at up to 95 vw × 90 vh with `object-fit: contain`. The overlay can be dismissed by clicking outside it or pressing Escape.
+
+### 4.7 Bestiary (`BestiaryView.vue`)
+
+Route: `/bestiary`
+
+Card grid using `OverlayCard`. Each creature card can display:
+
+- Portrait image (full card width, 180 px max height)
+- Stat tags: CR, AC, HP (from a JSON `stats` column)
+- Description
+
+Creatures have a Reveal/Hide toggle (GM only), same as NPCs, via `PUT /api/bestiary/:id/reveal`. Revealed status is shown as an `active` status badge on the card.
+
+### 4.8 Plot Hooks (`HooksView.vue`)
+
+Route: `/hooks`
+
+Card grid using `OverlayCard`. Plot hooks are GM planning tools — breadcrumbs and leads that the GM tracks but may not reveal directly to players.
+
+Each card shows: hook type, description, session it was delivered, linked entities.
+
+Filter tabs: All · Active · Delivered · Missed · Expired.
+
+Status badge mapping:
+- `active` → green
+- `delivered` → done (accent)
+- `missed` / `expired` → red
+
+Actions: Pin · Share (GM) · Edit (GM) · Delete (GM).
+
+---
+
+### 4.9 Common patterns across world-building views
+
+All eight views share the same structural skeleton and conventions:
+
+**Loading state** — shown while `data.loading` is true and the store collection is empty. Renders 4–6 skeleton cards matching the real card proportions.
+
+**Empty state** — shown when the store collection has zero items. Uses the `EmptyState` component with an icon, heading, description, and (GM-only) CTA button that calls `openGmEdit`.
+
+**Lazy loading** — each view calls its `data.load*()` method in `onMounted` only if the store collection is already empty (`if (!data.npcs.length) data.loadNpcs()`). If the user navigated away and back, the data is already in the store and no request is made.
+
+**Markdown stripping** — description fields are passed through `stripMd()` from `@/utils/markdown` before display in card previews to avoid rendering raw Markdown syntax in truncated text.
+
+**Pinning** — all entity types support `data.addPin(type, id, name)` which adds a pinned shortcut to the sidebar.
+
+**GM-only controls** — edit, delete, share, and reveal actions are conditionally rendered with `v-if="campaign.isGm"`. Players see only the browsing surface.
+
+---
+
+## 5. Campaign tools
+
+Campaign tools are the operational layer — the views used during and between sessions to run the game, track resources, and communicate. Unlike world-building views (which the GM primarily authors), several campaign tools are interactive for all players.
+
+### 5.1 Sessions (`SessionsView.vue`)
+
+Route: `/sessions`
+
+The Sessions view is a campaign chronicle combined with a scheduling hub. It has three sections on a single scrollable page.
+
+#### Session list
+
+Sessions are sorted newest-first (descending `number`). The latest session is auto-expanded on mount. Each session card expands/collapses on click and shows:
+
+- **Session number** and optional **title** in the header; formatted play date on the right
+- **Summary** — rendered as full Markdown (using `renderMd()`, not stripped). Displayed in italic body text with the `.prose` class
+- **Player notes** — a list of notes posted by players (and the GM). Each note shows the author's character name and rendered body. A player can edit or delete their own notes; the GM can edit/delete any note. Inline edit uses a textarea that replaces the note in place
+- **Add Note** — available to all users; posts to `POST /api/sessions/:id/notes`
+
+GM action bar (visible when expanded): Edit (opens `GmEditModal`) · Delete (with `ui.confirm()`).
+
+#### Polls section
+
+Below the session list. The GM can create a poll via `GmEditModal` (`type = 'poll'`). Poll cards show the question and option list; each option is clickable to vote (`POST /api/sessions/polls/:id/vote`). Vote counts are shown when `results_public` is true or when the viewer is the GM. GM controls: Reveal Results · Close Poll · Delete.
+
+#### Scheduling section
+
+The GM can propose session dates (`type = 'schedule'`). Each scheduling item shows the proposed date/time and a response matrix (per-player yes/maybe/no). All users can respond with yes/maybe/no buttons (`POST /api/sessions/scheduling/:id/respond`). The GM can mark a date as confirmed (`PUT /api/sessions/scheduling/:id/confirm`).
+
+---
+
+### 5.2 Handouts (`HandoutsView.vue`)
+
+Route: `/handouts`
+
+Card grid using `OverlayCard`. Handouts are documents, images, or artefacts the GM shares with players. Each card can show a full-width image preview (180 px max height), a session delivery number, and a description.
+
+Filter tabs: All · Text · Image · Map · Letter (filters on `handout.type`).
+
+Actions: Pin · Share (GM) · Edit (GM) · Delete (GM).
+
+Players see all non-hidden handouts and can pin them. There is no player-specific reveal flow for handouts — visibility is controlled by the `hidden` flag on the record.
+
+---
+
+### 5.3 Notes (`NotesView.vue`)
+
+Route: `/notes`
+
+Notes is the only view with a **two-panel side-by-side layout** (`notes-layout`). The left column is a searchable list; the right column is a compose/edit panel.
+
+**Note list** — each card shows: title, privacy tag (`private` = red, `public` = green), category tag, shared-with-GM indicator, a 120-character stripped body preview, last-updated date, and a Delete button. Clicking a card loads it into the right panel.
+
+**Compose/edit panel** — fields:
+
+| Field | Values |
+|-------|--------|
+| Title | Free text |
+| Body | `MarkdownEditor` component |
+| Category | Notes · Clues · Plans · Lore |
+| Privacy | Private · Public |
+| Share with GM | Checkbox |
+
+Notes are **per-user** — each player only sees their own notes regardless of privacy setting. The `privacy` field controls whether the note is visible to other players (public) or only the author (private). The "Share with GM" checkbox separately flags the note for GM visibility.
+
+Filter tabs: All · Notes · Clues · Plans · Lore.
+
+---
+
+### 5.4 Inventory (`InventoryView.vue`)
+
+Route: `/inventory`
+
+The Inventory view has two distinct sections on one page: **Party Inventory** and **Key Items**.
+
+#### Party inventory
+
+Standard item tracking (weapons, armour, gear, consumables). Card grid using `EntityCard`. Each card shows:
+
+- Item type and rarity tags (rarity is colour-coded: uncommon = green, rare/very rare = blue, legendary = accent, artifact = red)
+- Holder tag — shows the player's name when an item is held by a specific player rather than the party
+- Quantity, weight, description
+
+**Transfer modal** — any player who owns an item (or the GM for any item) can click "Give ↗" to open a modal with a player selector. Submits to `PUT /api/inventory/:id/transfer`. On success the new owner's name is shown in the toast.
+
+Filter tabs: All · Weapon · Armour · Gear · Consumable.
+
+#### Key items
+
+A separate grid below the party inventory for plot-critical objects (artefacts, quest MacGuffins, unique relics). Uses `EntityCard` with `type = 'key-item'`. Shows linked entities. No filter tabs; search only. No transfer mechanism — key items are not player-holdable.
+
+---
+
+### 5.5 Jobs / Job Board (`JobsView.vue`)
+
+Route: `/jobs`
+
+A standalone card grid view of all campaign jobs (contracts, bounties, escort missions). Mirrors the Notice Board sub-tab of `LocationsView` but without the location filter — it shows all jobs across all locations.
+
+Filter tabs: All · Open · Active · Completed.
+
+Each expanded card shows: description, reward, source location, employer, linked entities, and status tag. Two action-slot buttons:
+
+- **Accept** — visible to players on open jobs; calls `PUT /api/jobs/:id/accept`
+- **→ Quest** — visible to GMs on jobs without an associated quest; calls `PUT /api/jobs/:id` with `{ status: 'taken', promoted_quest_id: -1 }` then reloads both jobs and quests. This workflow promotes a job to a tracked quest in one click.
+
+The GM can also post new jobs from the "+ Add Job" tile at the start of the grid.
+
+---
+
+### 5.6 Rumours (`RumoursView.vue`)
+
+Route: `/rumours`
+
+Card grid using `OverlayCard`. Rumours are whispers the GM plants — some true, some false. Players see all non-hidden rumours but cannot tell which are true (the `is_true` field is only surfaced to the GM via status badges).
+
+**GM status badge logic:**
+- `exposed` → done (accent)
+- `is_true = true`, not exposed → active (green)
+- `is_true = false`, not exposed → missed (red)
+
+Card title is auto-generated from the first 60 characters of the rumour text, wrapped in curly quotes.
+
+Each card shows: source NPC, source location, rumour text.
+
+**Expose action** (GM only) — calls `POST /api/rumours/:id/expose`. Once exposed the rumour is publicly acknowledged as resolved, regardless of truth value.
+
+Filter tabs: All · True · False · Exposed (GM can filter to review their deception layer).
+
+---
+
+### 5.7 Calendar (`CalendarView.vue`)
+
+Route: `/calendar`
+
+The Calendar is the most configurable view in the app. It renders a fully custom in-world calendar system — not the real-world Gregorian calendar — making it suitable for fantasy campaigns with invented timekeeping.
+
+#### Grid and navigation
+
+The view displays a standard month grid: day-of-week header row, blank cells to offset the first day, then numbered day cells. Navigation arrows step one month at a time; a ◎ button jumps to the campaign's current in-world date. The header shows the current month name, year, era suffix, and season (with its colour and icon).
+
+Each day cell can display:
+
+- **Moon phase icons** — one per configured moon, computed from the moon's cycle length and reference phase. Each moon has its own colour
+- **Events** — rendered as labelled chips with a coloured left border. Weather events use a weather icon instead. GM-only events show an 👁 badge
+
+Clicking a day cell (GM only) opens the event creation form. Clicking an existing event (GM only) opens it for editing.
+
+#### GM toolbar
+
+A bar visible only to GMs with two actions:
+
+- **Generate Weather** — auto-populates the entire current month with weather events based on the season's weighted weather table
+- **Advance Date** — inline form to advance the current in-world date by N days, or set it to the first of the viewed month
+
+#### Calendar configuration panel
+
+The ⚙ Configure button opens an in-page settings panel with six tabs:
+
+| Tab | Configures |
+|----|-----------|
+| General | Epoch weekday offset, active era, current date (year/month/day) |
+| Days | Names and short abbreviations for each day of the week |
+| Months | Names, short names, and day counts per month |
+| Eras | Named historical periods with year ranges and suffix labels (e.g. "AE", "DR") |
+| Seasons | Season name, icon, accent colour, and which months belong to each season |
+| Moons | Moon name, colour, cycle length (days), reference phase index, and reference date for phase calculation |
+| Weather | Per-season weather outcomes — each with a label, icon, and relative weight for the random generator |
+
+All configuration is stored as JSON on the campaign record. Changes are saved to `PUT /api/calendar/config`. This lets a GM model virtually any fantasy calendar — the Forgotten Realms Calendar of Harptos, a homebrew 13-month world, multiple moons with different cycles, etc.
+
+---
+
+## 6. GM tools
+
+GM tools are power-user views with no player-facing equivalent. They are accessible to all logged-in campaign members (routing does not apply the `gm` meta flag), but their content is either inherently GM-oriented or dual-mode (GM gets an authoring surface, players get a read-only or interaction surface).
+
+### 6.1 Combat Tracker (`CombatView.vue`)
+
+Route: `/combat`
+
+A **session-local** encounter manager. All state is held in `ref` variables — nothing is persisted to the server. Refreshing the page resets the tracker. This is intentional: combat is ephemeral.
+
+#### Adding combatants
+
+Two entry methods:
+
+1. **Manual form** — name, initiative, max HP, AC, and type (Player / Enemy / Ally / Neutral). Enter key on the name field submits. Added combatants immediately appear in the initiative order.
+
+2. **Import from bestiary** — a dropdown of all bestiary entries in the campaign. The GM selects a creature, sets an import count (1–20), and clicks Import. Each instance is given a numbered suffix (`Goblin 1`, `Goblin 2`, …) and a **randomly rolled** initiative (1–20). HP and AC are pulled from the creature's `stats.hp` / `stats.ac` JSON fields.
+
+#### Initiative order
+
+Combatants are displayed sorted descending by initiative value. The active combatant (the one whose turn it is) is highlighted with a `▶` indicator and a coloured border (`combatant-active`). Dead combatants (HP ≤ 0) are visually dimmed (`combatant-dead`).
+
+Each row shows:
+- Initiative value (accent-coloured)
+- Name, type tag (colour-coded), condition tags (clickable to remove)
+- HP progress bar (colour transitions: green → yellow → red as HP falls)
+- AC value
+- Action buttons: **-HP** (damage) · **+HP** (heal) · **🎲** (add condition) · **📝** (inline notes) · **🗑** (remove)
+
+Damage and heal open a small modal with a number input; Enter key or the Apply button commits the change, clamped to 0–max HP.
+
+Conditions are added via `ui.prompt()`. They appear as red dismissable tags on the combatant row.
+
+Inline notes: clicking the 📝 button reveals a text input. Clicking elsewhere or pressing Enter saves and collapses it back to plain text.
+
+#### Encounter controls
+
+- **▶ Start / ⏸ Pause** — toggles the `active` state; Start resets round and turn to 1
+- **Next Turn →** — advances `currentTurn`; wraps to 0 and increments `round` at the end of each round
+- **Clear** — requires confirmation; resets all combatants and encounter state
+- Round and turn counter shown when active: "Round N — Turn M / Total"
+
+---
+
+### 6.2 Theory Board (`TheoryBoardView.vue`)
+
+Route: `/theory`
+
+An **SVG force-directed graph** built with D3.js for freeform investigation mapping. Players use it as a personal conspiracy board; the GM sees all nodes (including shared ones).
+
+#### Nodes
+
+Five node types, each with a distinct colour:
+
+| Type | Colour |
+|------|--------|
+| Theory | Gold |
+| Fact | Green |
+| NPC | Blue |
+| Location | Green (same as Fact) |
+| Question | Purple |
+
+Nodes are rendered as circles (radius 14 px). Labels are shown below each circle, truncated to 20 characters. Nodes shared with the GM display an 👁 badge above the circle and a coloured stroke border.
+
+#### Interaction
+
+- **Create via panel** — label, type, and notes fields in the right-hand panel; Add button submits to `POST /api/theory/nodes`
+- **Create via double-click** — double-clicking the SVG background prompts for a label via `ui.prompt()` and places the new node at the click coordinates
+- **Select** — clicking a node loads it into the inspector panel (right side); the panel switches from "New node" form to the node editor
+- **Edit** — label, type, notes, and "Share with GM" checkbox; Save submits `PUT /api/theory/nodes/:id`
+- **Delete** — requires `ui.confirm()`
+- **Link** — clicking "Link →" in the inspector enters link mode. Clicking a second node creates an edge (`POST /api/theory/edges`). "Cancel Link" exits link mode
+- **Drag** — D3 drag behaviour; nodes can be repositioned. Positions are not persisted (D3 recalculates layout on reload)
+
+The force simulation uses link distance 100, charge strength −150, center force, and collision radius 30.
+
+Data is loaded from `GET /api/theory` and persisted per-user on the server — each player has their own board.
+
+---
+
+### 6.3 Mindmap (`MindmapView.vue`)
+
+Route: `/mindmap`
+
+A **read-only** D3 force-directed graph that auto-generates connections from the existing campaign data — no manual authoring required. It is a system-derived view, not a GM editing tool.
+
+#### Entity types and colours
+
+Six entity types are plotted:
+
+| Type | Colour |
+|------|--------|
+| Quest | Gold |
+| NPC | Blue |
+| Location | Green |
+| Hook | Purple |
+| Map | Red |
+| Faction | Pink/magenta |
+
+A colour legend is displayed above the graph.
+
+#### Edge generation
+
+Edges are derived at render time from the `connected_*` fields on each entity. The graph supports both legacy text-name references and newer ID-based references (resolved via a `titleMap` for text and `idMap` for IDs). Deduplication is enforced via an edge set keyed on sorted node-ID pairs.
+
+Relationships drawn:
+- Quest → parent quest, connected locations, connected NPCs, connected factions
+- NPC → faction (by `faction_id`), home location (by `home_location_id`), legacy text location
+- Faction → leader NPC, HQ location, member NPCs
+- Locations → linked sub-location chains (`parent_location_id`)
+- Hooks → connected entity text fields
+
+#### Inspector flyout
+
+Clicking a node opens a slide-in panel (CSS `Transition`) showing the entity type label, name, and a 100-character description preview. An "Open \<type\> →" button navigates to the appropriate list view (`router.push`). No editing is possible from this view.
+
+---
+
+### 6.4 Good Boy Cards (`GoodBoyCardsView.vue`)
+
+Route: `/cards`
+
+A reward card system. The GM awards cards to players for good roleplay moments (nat 20s, brilliant decisions, memorable scenes). Players can spend their cards to invoke a mechanical effect.
+
+#### Card types and tiers
+
+**Types:** Good Boy (🐶) — triggered by nat 20s and positive moments; Bad Boy (😈) — triggered by nat 1s and comical failures.
+
+**Tiers:** Minor · Moderate · Major · Legendary (stored as `low` / `mid` / `high` / `huge`). Each tier appears as a label on the card corner.
+
+Each card has a `name` and an `effect` text pulled from a library of pre-defined card definitions (`defs`). The GM can award a specific card or leave it as "Random" to draw from the appropriate type/tier pool.
+
+#### GM view
+
+Tabs across the top — one per non-GM player. Each tab shows a badge count of that player's unplayed cards. The selected player's hand is shown as a grid of styled cards. The GM can remove any unplayed card.
+
+The "+ Award Card" button opens a modal with:
+- Player selector dropdown
+- Type toggle (Good / Bad)
+- Card selector (grouped by tier, with "— Random —" option)
+- Live preview of the selected card's name and effect
+
+Submits to `POST /api/cards`.
+
+#### Player view
+
+Players see their own hand only. Filter tabs: Unplayed · All · Good · Bad. Unplayed cards have a `can-play` class and are clickable.
+
+Clicking an unplayed card (or its "Play" button) opens the play modal, which shows a full card preview and an optional note field ("using it to dodge the fireball…"). The note is stored alongside the `played_at` timestamp. Played cards show a "Played" stamp and their note; they cannot be played again.
+
+A header counts show the player's current unplayed good/bad totals.
+
+The sidebar nav badge for this view is driven by `ui.cardBadge` — incremented when new cards are awarded.
+
+---
+
+## 7. Player views
+
+Player views are the primary interface for non-GM users. The GM can also access most of them, typically gaining an elevated read-only or administrative perspective on the same data.
+
+### 7.1 Dashboard (`DashboardView.vue`)
+
+Route: `/dashboard`
+
+The player's landing page after campaign selection. It aggregates the most important live information in one glanceable screen.
+
+#### Campaign banner
+
+Full-width banner showing the campaign name, subtitle, and three live meta fields that the GM can set: `current_scene`, `current_weather`, `current_time`. These give players ambient context at a glance without needing to navigate elsewhere.
+
+#### Playlist player
+
+Embeds the `PlaylistPlayer` component using the campaign's `playlist_url` or `music_url`. Supports Spotify and YouTube. Hidden when no URL is set.
+
+#### Character shortcut row (players only)
+
+If the player has no characters yet, a dashed "+ Create your character" tile navigates to `/characters`. If they have characters, each one is shown as a clickable tile with:
+- Portrait (circular, 40 px) — or initials fallback
+- Character name and class
+- Arrow indicator → navigates to `/character-sheet?id=:id`
+
+A secondary "🧙 Characters" link at the end navigates to the characters management view.
+
+#### Secret objective card (players only)
+
+Shows the player's personal agenda card from `data.agenda`. Displays a locked state ("🔒 Sealed — awaiting revelation") until the GM marks it revealed, then shows the body text.
+
+#### Stress / Sanity bars (players only, system-dependent)
+
+Shown when `hasStress` or `hasSanity` is true for the active system. Two horizontal progress bars:
+
+- **Stress** — fill colour: green (≤ 40%), amber (40–70%), red (> 70%)
+- **Sanity** — fill colour: green (> 60%), amber (30–60%), red (≤ 30%). An "Indefinite" badge appears when `indefinite_insanity` is set
+
+#### Pinned items
+
+A row of coloured dot chips, one per pinned item. Each chip is clickable and navigates to the item's list view via `PIN_ROUTES`. A ✕ button removes the pin (`data.removePin`). Pin dot colours match the mindmap's entity colour scheme.
+
+#### Stat row
+
+Four clickable summary cards (navigate to the relevant list view): total Quests, Active Quests, NPC count, Open Hooks count.
+
+#### Lower two-column grid
+
+| Left column | Right column |
+|------------|-------------|
+| Active Quests (up to 6, expandable `QuestCard` grid) | Recent Messages (3 most recent, unread badge, open in flyout) |
+| | Recent Handouts (3 most recent by `created_at`, opens handout flyout) |
+| | Next Session (earliest future `proposed_date` from scheduling data) |
+
+---
+
+### 7.2 Characters (`CharactersView.vue`)
+
+Route: `/characters`
+
+A portrait-tile grid of all characters belonging to the current user. The GM sees all players' characters with a username label below each tile.
+
+Each tile shows a 3:4-aspect-ratio portrait (or initials placeholder), character name, a system badge (coloured border, system-specific colour), class, and concept. Clicking a tile navigates to `/character-sheet?id=:id`.
+
+A "+ New Character" dashed tile at the end of the grid opens a creation modal. The modal asks for a character name only — the system is inherited from the campaign and shown as a read-only label. On success, the view navigates directly to the new character's sheet.
+
+Characters are loaded from `GET /api/characters` using the campaign's `X-Campaign-Id` header so that each campaign has its own character pool.
+
+---
+
+### 7.3 Character Sheet (`CharacterSheetView.vue`)
+
+Route: `/character-sheet` (optionally `?id=:id`)
+
+The most complex view in the app at 2,362 lines. It renders a system-specific, auto-saving character sheet inside a styled "document box" with a page-flip animation.
+
+#### Entry modes
+
+- **Player** — loads their own sheet (or the sheet for the character `?id` passed in the query string from `CharactersView`)
+- **GM without `?id`** — shows a player selector dropdown; picking a player loads their sheet in read-only format
+- **GM with `?id`** — views a specific character directly, same as a player but with no editing
+
+#### D&D 5e path
+
+If the active system is `dnd5e` and `hasDndBeyond` is true, the sheet shows a banner with the character name and an "Open in D&D Beyond ↗" link rather than the built-in sheet. Players who have not set a Beyond URL see a nudge to add one.
+
+#### Built-in sheet
+
+For all other systems (`hasBuiltinSheet`), the document is rendered inside a styled A4-proportioned box (`.a4-wrap`, `.document-box`) with a header containing a decorative "Classified" stamp. Two system-specific CSS modes activate on the wrapper:
+
+- `dossier-mode` — for Achtung! Cthulhu (wartime dossier aesthetic)
+- `coc-mode` — for Call of Cthulhu (investigator file aesthetic, adds a circular "Investigator File" stamp)
+
+#### Pages
+
+Three tabs rendered with a CSS page-flip transition (`flip-forward` / `flip-backward` depending on direction):
+
+| Page | Content |
+|------|---------|
+| **Identity** | Portrait URL, D&D Beyond URL (5e), core stats grid, HP/stress/sanity/magic-points/radiation trackers, system-specific derived values (CoC: idea roll, know roll, build, damage bonus), conditions, drives (Dune) |
+| **Skills** | System-specific skill list rendered from `systemSkills` composable — split into General and Advanced groups where applicable; CoC shows percentage values with derived-stat calculations |
+| **Notes** | Free-text personal notes field |
+
+#### Auto-save
+
+The entire `ef` (edit form) ref is watched with `deep: true`. Any change starts a 1.5 s debounce timer that calls `saveSheet()`. A save status indicator in the tab bar shows "Saving…" / "Saved ✓" / "Error ✗". The `_watchSuppressed` flag prevents the watcher firing during the initial form population.
+
+---
+
+### 7.4 Settings (`SettingsView.vue`)
+
+Route: `/settings`
+
+Four stacked settings cards, all users unless noted.
+
+| Card | Fields |
+|------|--------|
+| **Profile** | Character name, character class (displayed in party lists and the dashboard shortcut tile); font size toggle (Small / Medium / Large — applied as a CSS class on `<body>`) |
+| **Appearance** | Theme swatches — one per available theme, with a coloured dot preview. Selecting a swatch calls `applyTheme(key)`. If the `custom` theme is selected, a five-colour picker grid appears (bg, surface, accent, text, border) with live preview; "Apply custom theme" persists the colours |
+| **Accessibility** | Three checkboxes: High contrast · Reduce motion · Disable effects — each toggled writes to `localStorage` and adds/removes a CSS class on `<html>` |
+| **Data** (GM only) | Download backup button — same as the GM Dashboard quick action |
+| **Account** | Change password form (current / new / confirm); calls `PUT /api/users/:id/password` |
+
+---
+
+## 8. Data model
+
+The Chronicle uses a single SQLite database managed by `better-sqlite3`. All schema creation and evolution is handled by `server/src/db/migrations.js`, which runs on every server start. Tables are created with `CREATE TABLE IF NOT EXISTS`; additive changes (new columns, new junction tables) are applied with `ALTER TABLE … ADD COLUMN` wrapped in `try/catch` so they are silently ignored on databases that already have the column.
+
+There is no ORM — all queries are raw SQL prepared statements.
+
+---
+
+### 8.1 Identity and access
+
+#### `users`
+
+The global user table. A user account exists independently of any campaign.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | INTEGER PK | |
+| `username` | TEXT UNIQUE | Login name |
+| `password_hash` | TEXT | bcrypt |
+| `character_name` | TEXT | Display name in party lists |
+| `character_class` | TEXT | Shown on dashboard shortcut tile |
+| `character_level` | INTEGER | Default 1; updated via level stepper |
+| `role` | TEXT | `'player'` or `'gm'` (global role, deprecated in favour of `campaign_members.role`) |
+| `totp_secret` / `totp_enabled` | TEXT / INTEGER | TOTP 2FA fields |
+| `token_version` | INTEGER | Incremented to invalidate all issued JWTs for this user |
+| `preferences` | TEXT | JSON blob — theme, custom colours, font size, accessibility flags |
+| `locked` | INTEGER | If 1, login is refused |
+| `last_seen` | DATETIME | Updated on API activity |
+
+#### `campaign_members`
+
+Per-campaign role assignments. This is the authoritative access table checked by `requireGm` middleware.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `campaign_id` | INTEGER FK → campaigns | |
+| `user_id` | INTEGER FK → users | |
+| `role` | TEXT | `'gm'` or `'player'` |
+
+UNIQUE on `(campaign_id, user_id)`.
+
+---
+
+### 8.2 Campaigns
+
+#### `campaigns`
+
+One row per campaign. Most feature flags and live state are stored here.
+
+| Column | Notes |
+|--------|-------|
+| `name`, `subtitle`, `description` | Basic metadata |
+| `system` | Game system key (`dnd5e`, `coc`, `alien`, `coriolis`, `dune`, `achtung`, `custom`) |
+| `theme` | CSS theme class key (mirrors `system`) |
+| `active` | Legacy single-active-campaign flag; superseded by per-user activation flow |
+| `current_scene`, `current_weather`, `current_time` | Live ambient meta — shown on player dashboard banner |
+| `music_url` / `playlist_url` | Playlist embed URL |
+| `bg_image` | Campaign background image URL |
+| `cover_image` | Cover art URL |
+| `invite_code` | 6-char uppercase join code shared with players |
+| `max_players` | Soft cap; enforced at join time |
+| `current_party_location_id` | FK-as-string to a location (set from Locations view) |
+| `timer_label`, `timer_end`, `timer_remaining`, `timer_running` | Session countdown timer fields |
+| `dune_house` | Selected Dune Great House for Layer 3 theme (`atreides`, `harkonnen`, …) |
+| `avg_sanity` | Integer 0–100; drives CSS sanity filter class on CoC campaigns |
+| `dnd_setting` | Selected D&D setting/plane (`ravenloft`, `spelljammer`, `eberron`) |
+
+---
+
+### 8.3 World entities
+
+All world entity tables follow a common pattern: `campaign_id` FK, `hidden` flag (added via migration), optional `vault_path` legacy column, and `gm_notes` / `player_notes` dual-notes columns added during the World-Engine refactor.
+
+#### `vault_files`
+
+The original storage table, predating the relational World-Engine redesign. NPCs and Locations were originally stored here as typed Markdown files synced from an Obsidian vault. The table is still used as the canonical NPC and Location store; all relational FK columns were added additively.
+
+Key columns added via migration: `race`, `disposition`, `faction_id`, `home_location_id` (NPC-specific); `danger_level`, `location_type`, `parent_location_id` (location-specific); `revealed`, `hidden`, `created_by`, `gm_notes`, `player_notes`, `parent_quest_id`.
+
+`type` column distinguishes record kinds: `'npc'`, `'location'`, `'quest'`, `'hook'`, etc.
+
+#### `factions`
+
+Standalone table (not `vault_files`). Columns of note: `reputation` (score in `faction_reputation` junction table, −3 to +3); `leader_npc_id`, `hq_location_id`, `standing`, `influence`; junction table `faction_members (faction_id, npc_id)` for member lists.
+
+#### `timeline_events`
+
+`significance` (`'minor'`, `'major'`, `'world-changing'`), `in_world_date` (free text), `session_number`. Junction table `timeline_entity_links (event_id, entity_type, entity_id)` for multi-entity tagging.
+
+#### `maps`
+
+`map_type` (`world`, `region`, `city`, `battle`), `image_path`, `hidden`, `gm_notes`, `linked_location_id`, `connected_to` (JSON array of IDs for mindmap edges).
+
+#### `bestiary`
+
+`stats` — JSON blob containing `{ cr, ac, hp, … }`. `revealed` flag. `gm_notes` and `player_notes`.
+
+#### `rumours`
+
+`is_true` (INTEGER 0/1 — hidden from players). Junction table `rumour_exposure (rumour_id, user_id)` tracks per-player exposure.
+
+---
+
+### 8.4 Campaign content tables
+
+These tables are campaign-scoped (all have `campaign_id`) and represent the operational layer.
+
+| Table | Key columns |
+|-------|------------|
+| `sessions` | `number`, `title`, `summary` (Markdown), `played_at`, `in_world_date` |
+| `session_notes` | `session_id`, `player_id`, `body`, `privacy` |
+| `session_polls` | `question`, `options` (JSON array), `results_public`, `closed` |
+| `poll_votes` | `poll_id`, `user_id`, `option_index` — UNIQUE on `(poll_id, user_id)` |
+| `session_scheduling` | `proposed_date`, `confirmed`, `title` |
+| `scheduling_responses` | `scheduling_id`, `user_id`, `availability` (`yes`/`maybe`/`no`) — UNIQUE on pair |
+| `handouts` | `title`, `body`, `file_path`, `file_type`, `requires_ack` |
+| `handout_permissions` | `handout_id`, `user_id`, `acked_at`, `can_reshare` — UNIQUE on pair |
+| `inventory` | `name`, `quantity`, `holder` (`'party'` or username), `owner_id`, `hidden` |
+| `key_items` | `name`, `significance`, `linked_quest` |
+| `jobs` | `title`, `reward`, `difficulty`, `status` (`open`/`active`/`completed`/`failed`), `source_location_id`, `accepted_by_id`, `accepted_at`, `promoted_quest_id`, `job_type`, `hidden` |
+| `agenda_cards` | `user_id`, `title`, `body`, `revealed` — UNIQUE on `(campaign_id, user_id)` |
+| `notes` | `player_id`, `title` (Markdown body stored in `vault_files.body`), `category`, `privacy`, `shared_with_gm` |
+| `messages` | `from_user_id`, `to_user_id`, `subject`, `body`, `campaign_id`, `reply_to_id`, `read_at` |
+| `notifications` | `user_id`, `type`, `title`, `body`, `link`, `read_at` |
+| `xp_awards` | `awarded_to`, `amount`, `reason`, `awarded_by` |
+| `stress_sanity` | `user_id`, `campaign_id`, `stress`, `stress_max`, `sanity`, `sanity_max`, `exhaustion`, `indefinite_insanity` — UNIQUE on `(user_id, campaign_id)` |
+
+---
+
+### 8.5 Character data
+
+#### `character_sheets`
+
+Legacy single-sheet-per-user-per-campaign model. UNIQUE on `(user_id, campaign_id)`. `sheet_data` is a JSON blob containing all field values. `dnd_beyond_url` column added for 5e.
+
+#### `characters`
+
+Newer multi-character model. Multiple characters per user per campaign. `sheet_data` JSON blob. `portrait_url`. Cascade deletes on user/campaign deletion.
+
+#### `ship_sheets`
+
+Campaign-level ship or vehicle sheet. `system` (default `alien`), `sheet_data` JSON blob.
+
+---
+
+### 8.6 Tool tables
+
+| Table | Purpose |
+|-------|---------|
+| `theory_nodes` | Per-user investigation board nodes: `label`, `node_type`, `notes`, `shared_with_gm`, `x`/`y` position |
+| `theory_edges` | Directed edges between theory nodes: `source_id`, `target_id` |
+| `pins` | User sidebar shortcuts: `item_type`, `item_id`, `item_title` — UNIQUE on `(user_id, item_type, item_id)` |
+| `audit_log` | `action`, `target_type`, `target_id`, `detail`, `ip` — append-only activity log |
+| `item_shares` | Per-item visibility grants: `item_type`, `item_id`, `user_id` — UNIQUE on trio |
+| `npc_relationships` | Typed relationships between NPC vault_file records: `relationship_type`, `notes` |
+
+---
+
+### 8.7 Calendar tables
+
+| Table | Purpose |
+|-------|---------|
+| `campaign_calendars` | One row per campaign; `config` is the full JSON calendar specification (days, months, eras, seasons, moons, weather tables) |
+| `calendar_events` | Placed events: `era_index`, `year`, `month`, `day`, `title`, `type`, `color`, `weather_icon`, `is_gm_only` |
+
+---
+
+### 8.8 Good Boy Cards tables
+
+| Table | Purpose |
+|-------|---------|
+| `good_boy_card_defs` | Static card library: `type` (`good`/`bad`), `tier` (`low`/`mid`/`high`/`huge`), `name`, `effect`. Seeded on first run (120 cards). |
+| `player_good_boy_cards` | Awarded instances: `campaign_id`, `user_id`, `card_def_id`, `awarded_by`, `awarded_at`, `played_at`, `played_note` |
+
+---
+
+### 8.9 Schema evolution strategy
+
+Migrations run on every server start via `runMigrations()` in `server/src/db/migrations.js`. The strategy has two tiers:
+
+1. **Initial schema** — all core tables are inside a single `db.exec(CREATE TABLE IF NOT EXISTS …)` block. Safe to re-run.
+2. **Additive migrations** — every column addition or new junction table added after initial release is wrapped in `try { db.exec('ALTER TABLE …') } catch (_) {}`. The catch silently swallows the "duplicate column" error on databases that already have the change. This avoids a versioned migration system while remaining idempotent.
+
+The tradeoff is that column removals are never performed and the schema can accumulate unused columns. This is acceptable for a self-hosted SQLite app where storage cost is negligible.
+
+---
+
+## 9. State management and key decisions
+
+### 9.1 Pinia stores
+
+The client has four stores, all written using the composable (`setup`) API.
+
+#### `auth` (`stores/auth.js`)
+
+Owns the JWT token and current user object.
+
+| Concern | How |
+|---------|-----|
+| Token persistence | Read from and written to `localStorage` under key `chronicle_token` on every `setToken()` call |
+| Session restore | `restoreSession()` — called on app mount; `GET /api/auth/me` with the stored token. If the request succeeds the session is live; if it returns 401 the token is cleared |
+| Preferences | Fetched from `GET /api/users/me/preferences` after login and session restore; applies theme and custom colours from the server-side JSON blob to `localStorage` and `<html>` immediately |
+| TOTP | `login()` detects `requires_totp: true` in the response and surfaces it to the caller to trigger a second-factor prompt |
+| Logout | Calls `POST /api/auth/logout` (best-effort server-side token invalidation via `token_version` increment), then clears local state |
+
+#### `campaign` (`stores/campaign.js`)
+
+Owns the active campaign, the GM role flag, and all theme application logic.
+
+| Concern | How |
+|---------|-----|
+| Active campaign | `activeCampaign` is a `ref(null)`. Set by `loadCampaigns()` from `GET /api/campaigns/active` |
+| GM role | `isGm` is a plain `ref(false)`. Set from `my_role` field returned by `GET /api/campaigns` |
+| `apif()` | Injects `Authorization` and `X-Campaign-Id` headers into every `fetch` call. The check `!headers['X-Campaign-Id'] && activeCampaign.value?.id` ensures explicitly-passed headers (e.g. `switchCampaign`) are never overwritten |
+| Theme application | `applyTheme(system)` applies a three-layer class system to `<html>`: Layer 1 (`theme-*`), Layer 2 (`fx-*` ambient effects), Layer 3 (`dynamic-*` sub-theme modifiers). Also sets `data-theme` for legacy CSS variable fallback |
+| Background image | `applyBgImage(url)` sets `#main`'s `backgroundImage` style and toggles `has-bg-image` class |
+| Campaign switch | `switchCampaign(id)` sets active campaign locally and (for GMs only) calls `PUT /api/campaigns/:id/activate` to persist the activation server-side |
+| Timer | The countdown timer state is hydrated from `activeCampaign` on load and mutated by `setTimer()` |
+
+#### `data` (`stores/data.js`)
+
+The campaign data cache — a flat collection of `ref([])` arrays, one per entity type.
+
+| Concern | How |
+|---------|-----|
+| Entity collections | 22 `ref` arrays: `quests`, `npcs`, `locations`, `hooks`, `factions`, `timeline`, `inventory`, `keyItems`, `maps`, `bestiary`, `rumours`, `jobs`, `notes`, `handouts`, `users`, `sessions`, `polls`, `scheduling`, `pins`, plus scalar refs `agenda` and `stress` |
+| `loadAll()` | Called once on app boot (from `AppLayout` after campaign load). Fires all 18 load functions in parallel with `Promise.all`. Sets `loading = true` for skeleton display |
+| Lazy loading | Each view also calls its own `load*()` in `onMounted` when the collection is empty. This covers direct-URL navigation where `loadAll` has not yet run |
+| `safe()` wrapper | Every load function runs inside `safe(fn, label)`. On failure: logs to console, adds the resource name to the `errors` Set, and shows a toast. The `errors` Set allows views to show targeted error states instead of silent blanks |
+| `apif()` | A local copy that also calls `auth.logout()` on a 401. Slightly different from `campaign.apif()` — no `X-Campaign-Id` guard (always injects when active campaign exists). Views that import `useDataStore` call `data.apif()` directly for mutations |
+| `deleteItem()` | Centralised delete dispatcher: maps entity type strings to their REST endpoint and calls `DELETE` |
+| `toggleHidden()` | Centralised hidden-flag toggler: routes vault types (`npc`, `quest`, etc.) to `/api/vault/:id/hidden` and non-vault types to their own endpoints |
+
+#### `ui` (`stores/ui.js`)
+
+Ephemeral UI state only — nothing persisted.
+
+| Concern | How |
+|---------|-----|
+| Toasts | A `ref([])` array. `showToast` pushes an entry and sets a 5 s timeout to remove it |
+| Sidebar | `sidebarOpen` (mobile drawer) and `sidebarCollapsed` (desktop collapse, persisted to `localStorage`) |
+| Flyouts | `activeFlyout` — a string key controlling which overlay panel is open (`'msgs'`, `'msg-view'`, `'handout'`). `openFlyout` / `closeFlyout` |
+| GM edit modal | `gmEditModal` — `{ type, id, data }` or `null`. `openGmEdit` / `closeGmEdit` |
+| Detail modal | `detailModal` — `{ type, item }` or `null`. `openDetail` / `closeDetail` |
+| Share modal | `shareModal` — `{ itemType, itemId, title }` or `null` |
+| Confirm/prompt | `confirmDialog` — a promise-based dialog. `confirm(message)` and `prompt(message, default)` return Promises resolved by `resolveConfirm(result)` |
+| Badges | `unreadNotifCount`, `unreadMsgCount`, `unreadHandoutCount`, `cardBadge` — set by their respective data loaders |
+
+---
+
+### 9.2 Application bootstrap
+
+On first load, `App.vue` (or `AppLayout.vue`) runs:
+
+1. `auth.restoreSession()` — validates the stored JWT and loads user preferences
+2. `campaign.loadCampaigns()` — fetches active campaign, all campaigns, sets `isGm`, applies theme and background
+3. `data.loadAll()` — parallel fetch of all 18 entity collections
+
+Navigation guards in `router/index.js` run after this. The `meta.auth` guard checks `auth.isAuthenticated`; `meta.requiresCampaign` checks `campaign.activeCampaign`; `meta.gm` checks `campaign.isGm`.
+
+---
+
+### 9.3 The `X-Campaign-Id` header pattern
+
+Campaign scoping is enforced via an `X-Campaign-Id` request header rather than a URL path segment. The `requireGm` and campaign-scoped middleware on the server reads this header and validates the requesting user's membership in `campaign_members`.
+
+This was chosen over URL-based routing (e.g. `/campaigns/:id/npcs`) to keep view URLs stable and short. The tradeoff is that the header must be correctly injected on every API call — which is why both `campaign.apif()` and `data.apif()` exist as centralised wrappers, and why `switchCampaign` explicitly passes `'X-Campaign-Id': id` before the activation call (to avoid the old active campaign's ID being sent for the switch request itself).
+
+---
+
+### 9.4 Why SQLite / no ORM
+
+SQLite was chosen for self-hosted simplicity: zero configuration, a single file to back up, no separate database process. `better-sqlite3` is used because its synchronous API eliminates callback complexity; the Node.js event loop is not blocked in practice because all queries are fast and the app has no high-concurrency requirement (it is a private, single-table-top-group tool).
+
+No ORM was used because the schema is small and well-understood, query construction is straightforward, and an ORM would add abstraction overhead for marginal benefit. Raw prepared statements are explicit, auditable, and performant.
+
+---
+
+### 9.5 Why the composable Pinia API
+
+All stores use `defineStore('id', () => { … })` (the composable form) rather than the options API form. This was chosen because:
+
+- It composes naturally with Vue 3's `ref`/`computed`/`watch` primitives — no need to learn a separate options vocabulary
+- Cross-store calls (`useAuthStore()` inside `useCampaignStore()`) are straightforward function calls
+- The store body reads like a regular `<script setup>` component, keeping mental context consistent
+
+---
+
+### 9.6 Data flow summary
+
+```
+User action (button click, form submit)
+  │
+  ▼
+View calls data.apif() or campaign.apif()
+  │  (injects Authorization + X-Campaign-Id headers)
+  ▼
+Express route on server
+  │  (requireAuth middleware validates JWT, checks token_version)
+  │  (requireGm middleware validates campaign membership from X-Campaign-Id)
+  ▼
+better-sqlite3 prepared statement
+  │
+  ▼
+Server returns JSON
+  │
+  ▼
+View calls the relevant data.load*() to refresh the store collection
+  │
+  ▼
+Vue reactivity propagates the updated ref to all consuming components
+```
+
+The pattern is deliberately simple: **no optimistic updates, no WebSocket sync, no client-side cache invalidation strategy**. Every mutation is immediately followed by a server refetch of the affected collection. This trades some latency for correctness — there is never stale data displayed after a write.
+
+
+
