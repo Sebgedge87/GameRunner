@@ -1064,5 +1064,135 @@ Migrations run on every server start via `runMigrations()` in `server/src/db/mig
 
 The tradeoff is that column removals are never performed and the schema can accumulate unused columns. This is acceptable for a self-hosted SQLite app where storage cost is negligible.
 
+---
+
+## 9. State management and key decisions
+
+### 9.1 Pinia stores
+
+The client has four stores, all written using the composable (`setup`) API.
+
+#### `auth` (`stores/auth.js`)
+
+Owns the JWT token and current user object.
+
+| Concern | How |
+|---------|-----|
+| Token persistence | Read from and written to `localStorage` under key `chronicle_token` on every `setToken()` call |
+| Session restore | `restoreSession()` — called on app mount; `GET /api/auth/me` with the stored token. If the request succeeds the session is live; if it returns 401 the token is cleared |
+| Preferences | Fetched from `GET /api/users/me/preferences` after login and session restore; applies theme and custom colours from the server-side JSON blob to `localStorage` and `<html>` immediately |
+| TOTP | `login()` detects `requires_totp: true` in the response and surfaces it to the caller to trigger a second-factor prompt |
+| Logout | Calls `POST /api/auth/logout` (best-effort server-side token invalidation via `token_version` increment), then clears local state |
+
+#### `campaign` (`stores/campaign.js`)
+
+Owns the active campaign, the GM role flag, and all theme application logic.
+
+| Concern | How |
+|---------|-----|
+| Active campaign | `activeCampaign` is a `ref(null)`. Set by `loadCampaigns()` from `GET /api/campaigns/active` |
+| GM role | `isGm` is a plain `ref(false)`. Set from `my_role` field returned by `GET /api/campaigns` |
+| `apif()` | Injects `Authorization` and `X-Campaign-Id` headers into every `fetch` call. The check `!headers['X-Campaign-Id'] && activeCampaign.value?.id` ensures explicitly-passed headers (e.g. `switchCampaign`) are never overwritten |
+| Theme application | `applyTheme(system)` applies a three-layer class system to `<html>`: Layer 1 (`theme-*`), Layer 2 (`fx-*` ambient effects), Layer 3 (`dynamic-*` sub-theme modifiers). Also sets `data-theme` for legacy CSS variable fallback |
+| Background image | `applyBgImage(url)` sets `#main`'s `backgroundImage` style and toggles `has-bg-image` class |
+| Campaign switch | `switchCampaign(id)` sets active campaign locally and (for GMs only) calls `PUT /api/campaigns/:id/activate` to persist the activation server-side |
+| Timer | The countdown timer state is hydrated from `activeCampaign` on load and mutated by `setTimer()` |
+
+#### `data` (`stores/data.js`)
+
+The campaign data cache — a flat collection of `ref([])` arrays, one per entity type.
+
+| Concern | How |
+|---------|-----|
+| Entity collections | 22 `ref` arrays: `quests`, `npcs`, `locations`, `hooks`, `factions`, `timeline`, `inventory`, `keyItems`, `maps`, `bestiary`, `rumours`, `jobs`, `notes`, `handouts`, `users`, `sessions`, `polls`, `scheduling`, `pins`, plus scalar refs `agenda` and `stress` |
+| `loadAll()` | Called once on app boot (from `AppLayout` after campaign load). Fires all 18 load functions in parallel with `Promise.all`. Sets `loading = true` for skeleton display |
+| Lazy loading | Each view also calls its own `load*()` in `onMounted` when the collection is empty. This covers direct-URL navigation where `loadAll` has not yet run |
+| `safe()` wrapper | Every load function runs inside `safe(fn, label)`. On failure: logs to console, adds the resource name to the `errors` Set, and shows a toast. The `errors` Set allows views to show targeted error states instead of silent blanks |
+| `apif()` | A local copy that also calls `auth.logout()` on a 401. Slightly different from `campaign.apif()` — no `X-Campaign-Id` guard (always injects when active campaign exists). Views that import `useDataStore` call `data.apif()` directly for mutations |
+| `deleteItem()` | Centralised delete dispatcher: maps entity type strings to their REST endpoint and calls `DELETE` |
+| `toggleHidden()` | Centralised hidden-flag toggler: routes vault types (`npc`, `quest`, etc.) to `/api/vault/:id/hidden` and non-vault types to their own endpoints |
+
+#### `ui` (`stores/ui.js`)
+
+Ephemeral UI state only — nothing persisted.
+
+| Concern | How |
+|---------|-----|
+| Toasts | A `ref([])` array. `showToast` pushes an entry and sets a 5 s timeout to remove it |
+| Sidebar | `sidebarOpen` (mobile drawer) and `sidebarCollapsed` (desktop collapse, persisted to `localStorage`) |
+| Flyouts | `activeFlyout` — a string key controlling which overlay panel is open (`'msgs'`, `'msg-view'`, `'handout'`). `openFlyout` / `closeFlyout` |
+| GM edit modal | `gmEditModal` — `{ type, id, data }` or `null`. `openGmEdit` / `closeGmEdit` |
+| Detail modal | `detailModal` — `{ type, item }` or `null`. `openDetail` / `closeDetail` |
+| Share modal | `shareModal` — `{ itemType, itemId, title }` or `null` |
+| Confirm/prompt | `confirmDialog` — a promise-based dialog. `confirm(message)` and `prompt(message, default)` return Promises resolved by `resolveConfirm(result)` |
+| Badges | `unreadNotifCount`, `unreadMsgCount`, `unreadHandoutCount`, `cardBadge` — set by their respective data loaders |
+
+---
+
+### 9.2 Application bootstrap
+
+On first load, `App.vue` (or `AppLayout.vue`) runs:
+
+1. `auth.restoreSession()` — validates the stored JWT and loads user preferences
+2. `campaign.loadCampaigns()` — fetches active campaign, all campaigns, sets `isGm`, applies theme and background
+3. `data.loadAll()` — parallel fetch of all 18 entity collections
+
+Navigation guards in `router/index.js` run after this. The `meta.auth` guard checks `auth.isAuthenticated`; `meta.requiresCampaign` checks `campaign.activeCampaign`; `meta.gm` checks `campaign.isGm`.
+
+---
+
+### 9.3 The `X-Campaign-Id` header pattern
+
+Campaign scoping is enforced via an `X-Campaign-Id` request header rather than a URL path segment. The `requireGm` and campaign-scoped middleware on the server reads this header and validates the requesting user's membership in `campaign_members`.
+
+This was chosen over URL-based routing (e.g. `/campaigns/:id/npcs`) to keep view URLs stable and short. The tradeoff is that the header must be correctly injected on every API call — which is why both `campaign.apif()` and `data.apif()` exist as centralised wrappers, and why `switchCampaign` explicitly passes `'X-Campaign-Id': id` before the activation call (to avoid the old active campaign's ID being sent for the switch request itself).
+
+---
+
+### 9.4 Why SQLite / no ORM
+
+SQLite was chosen for self-hosted simplicity: zero configuration, a single file to back up, no separate database process. `better-sqlite3` is used because its synchronous API eliminates callback complexity; the Node.js event loop is not blocked in practice because all queries are fast and the app has no high-concurrency requirement (it is a private, single-table-top-group tool).
+
+No ORM was used because the schema is small and well-understood, query construction is straightforward, and an ORM would add abstraction overhead for marginal benefit. Raw prepared statements are explicit, auditable, and performant.
+
+---
+
+### 9.5 Why the composable Pinia API
+
+All stores use `defineStore('id', () => { … })` (the composable form) rather than the options API form. This was chosen because:
+
+- It composes naturally with Vue 3's `ref`/`computed`/`watch` primitives — no need to learn a separate options vocabulary
+- Cross-store calls (`useAuthStore()` inside `useCampaignStore()`) are straightforward function calls
+- The store body reads like a regular `<script setup>` component, keeping mental context consistent
+
+---
+
+### 9.6 Data flow summary
+
+```
+User action (button click, form submit)
+  │
+  ▼
+View calls data.apif() or campaign.apif()
+  │  (injects Authorization + X-Campaign-Id headers)
+  ▼
+Express route on server
+  │  (requireAuth middleware validates JWT, checks token_version)
+  │  (requireGm middleware validates campaign membership from X-Campaign-Id)
+  ▼
+better-sqlite3 prepared statement
+  │
+  ▼
+Server returns JSON
+  │
+  ▼
+View calls the relevant data.load*() to refresh the store collection
+  │
+  ▼
+Vue reactivity propagates the updated ref to all consuming components
+```
+
+The pattern is deliberately simple: **no optimistic updates, no WebSocket sync, no client-side cache invalidation strategy**. Every mutation is immediately followed by a server refetch of the affected collection. This trades some latency for correctness — there is never stale data displayed after a write.
+
 
 
