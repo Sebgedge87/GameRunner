@@ -15,7 +15,8 @@
 5. [Campaign tools](#5-campaign-tools)
 6. [GM tools](#6-gm-tools)
 7. [Player views](#7-player-views)
-8. Data flow *(coming)*
+8. [Data model](#8-data-model)
+9. State management *(coming)*
 7. Key design decisions *(coming)*
 
 ---
@@ -875,6 +876,193 @@ Four stacked settings cards, all users unless noted.
 | **Accessibility** | Three checkboxes: High contrast · Reduce motion · Disable effects — each toggled writes to `localStorage` and adds/removes a CSS class on `<html>` |
 | **Data** (GM only) | Download backup button — same as the GM Dashboard quick action |
 | **Account** | Change password form (current / new / confirm); calls `PUT /api/users/:id/password` |
+
+---
+
+## 8. Data model
+
+The Chronicle uses a single SQLite database managed by `better-sqlite3`. All schema creation and evolution is handled by `server/src/db/migrations.js`, which runs on every server start. Tables are created with `CREATE TABLE IF NOT EXISTS`; additive changes (new columns, new junction tables) are applied with `ALTER TABLE … ADD COLUMN` wrapped in `try/catch` so they are silently ignored on databases that already have the column.
+
+There is no ORM — all queries are raw SQL prepared statements.
+
+---
+
+### 8.1 Identity and access
+
+#### `users`
+
+The global user table. A user account exists independently of any campaign.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | INTEGER PK | |
+| `username` | TEXT UNIQUE | Login name |
+| `password_hash` | TEXT | bcrypt |
+| `character_name` | TEXT | Display name in party lists |
+| `character_class` | TEXT | Shown on dashboard shortcut tile |
+| `character_level` | INTEGER | Default 1; updated via level stepper |
+| `role` | TEXT | `'player'` or `'gm'` (global role, deprecated in favour of `campaign_members.role`) |
+| `totp_secret` / `totp_enabled` | TEXT / INTEGER | TOTP 2FA fields |
+| `token_version` | INTEGER | Incremented to invalidate all issued JWTs for this user |
+| `preferences` | TEXT | JSON blob — theme, custom colours, font size, accessibility flags |
+| `locked` | INTEGER | If 1, login is refused |
+| `last_seen` | DATETIME | Updated on API activity |
+
+#### `campaign_members`
+
+Per-campaign role assignments. This is the authoritative access table checked by `requireGm` middleware.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `campaign_id` | INTEGER FK → campaigns | |
+| `user_id` | INTEGER FK → users | |
+| `role` | TEXT | `'gm'` or `'player'` |
+
+UNIQUE on `(campaign_id, user_id)`.
+
+---
+
+### 8.2 Campaigns
+
+#### `campaigns`
+
+One row per campaign. Most feature flags and live state are stored here.
+
+| Column | Notes |
+|--------|-------|
+| `name`, `subtitle`, `description` | Basic metadata |
+| `system` | Game system key (`dnd5e`, `coc`, `alien`, `coriolis`, `dune`, `achtung`, `custom`) |
+| `theme` | CSS theme class key (mirrors `system`) |
+| `active` | Legacy single-active-campaign flag; superseded by per-user activation flow |
+| `current_scene`, `current_weather`, `current_time` | Live ambient meta — shown on player dashboard banner |
+| `music_url` / `playlist_url` | Playlist embed URL |
+| `bg_image` | Campaign background image URL |
+| `cover_image` | Cover art URL |
+| `invite_code` | 6-char uppercase join code shared with players |
+| `max_players` | Soft cap; enforced at join time |
+| `current_party_location_id` | FK-as-string to a location (set from Locations view) |
+| `timer_label`, `timer_end`, `timer_remaining`, `timer_running` | Session countdown timer fields |
+| `dune_house` | Selected Dune Great House for Layer 3 theme (`atreides`, `harkonnen`, …) |
+| `avg_sanity` | Integer 0–100; drives CSS sanity filter class on CoC campaigns |
+| `dnd_setting` | Selected D&D setting/plane (`ravenloft`, `spelljammer`, `eberron`) |
+
+---
+
+### 8.3 World entities
+
+All world entity tables follow a common pattern: `campaign_id` FK, `hidden` flag (added via migration), optional `vault_path` legacy column, and `gm_notes` / `player_notes` dual-notes columns added during the World-Engine refactor.
+
+#### `vault_files`
+
+The original storage table, predating the relational World-Engine redesign. NPCs and Locations were originally stored here as typed Markdown files synced from an Obsidian vault. The table is still used as the canonical NPC and Location store; all relational FK columns were added additively.
+
+Key columns added via migration: `race`, `disposition`, `faction_id`, `home_location_id` (NPC-specific); `danger_level`, `location_type`, `parent_location_id` (location-specific); `revealed`, `hidden`, `created_by`, `gm_notes`, `player_notes`, `parent_quest_id`.
+
+`type` column distinguishes record kinds: `'npc'`, `'location'`, `'quest'`, `'hook'`, etc.
+
+#### `factions`
+
+Standalone table (not `vault_files`). Columns of note: `reputation` (score in `faction_reputation` junction table, −3 to +3); `leader_npc_id`, `hq_location_id`, `standing`, `influence`; junction table `faction_members (faction_id, npc_id)` for member lists.
+
+#### `timeline_events`
+
+`significance` (`'minor'`, `'major'`, `'world-changing'`), `in_world_date` (free text), `session_number`. Junction table `timeline_entity_links (event_id, entity_type, entity_id)` for multi-entity tagging.
+
+#### `maps`
+
+`map_type` (`world`, `region`, `city`, `battle`), `image_path`, `hidden`, `gm_notes`, `linked_location_id`, `connected_to` (JSON array of IDs for mindmap edges).
+
+#### `bestiary`
+
+`stats` — JSON blob containing `{ cr, ac, hp, … }`. `revealed` flag. `gm_notes` and `player_notes`.
+
+#### `rumours`
+
+`is_true` (INTEGER 0/1 — hidden from players). Junction table `rumour_exposure (rumour_id, user_id)` tracks per-player exposure.
+
+---
+
+### 8.4 Campaign content tables
+
+These tables are campaign-scoped (all have `campaign_id`) and represent the operational layer.
+
+| Table | Key columns |
+|-------|------------|
+| `sessions` | `number`, `title`, `summary` (Markdown), `played_at`, `in_world_date` |
+| `session_notes` | `session_id`, `player_id`, `body`, `privacy` |
+| `session_polls` | `question`, `options` (JSON array), `results_public`, `closed` |
+| `poll_votes` | `poll_id`, `user_id`, `option_index` — UNIQUE on `(poll_id, user_id)` |
+| `session_scheduling` | `proposed_date`, `confirmed`, `title` |
+| `scheduling_responses` | `scheduling_id`, `user_id`, `availability` (`yes`/`maybe`/`no`) — UNIQUE on pair |
+| `handouts` | `title`, `body`, `file_path`, `file_type`, `requires_ack` |
+| `handout_permissions` | `handout_id`, `user_id`, `acked_at`, `can_reshare` — UNIQUE on pair |
+| `inventory` | `name`, `quantity`, `holder` (`'party'` or username), `owner_id`, `hidden` |
+| `key_items` | `name`, `significance`, `linked_quest` |
+| `jobs` | `title`, `reward`, `difficulty`, `status` (`open`/`active`/`completed`/`failed`), `source_location_id`, `accepted_by_id`, `accepted_at`, `promoted_quest_id`, `job_type`, `hidden` |
+| `agenda_cards` | `user_id`, `title`, `body`, `revealed` — UNIQUE on `(campaign_id, user_id)` |
+| `notes` | `player_id`, `title` (Markdown body stored in `vault_files.body`), `category`, `privacy`, `shared_with_gm` |
+| `messages` | `from_user_id`, `to_user_id`, `subject`, `body`, `campaign_id`, `reply_to_id`, `read_at` |
+| `notifications` | `user_id`, `type`, `title`, `body`, `link`, `read_at` |
+| `xp_awards` | `awarded_to`, `amount`, `reason`, `awarded_by` |
+| `stress_sanity` | `user_id`, `campaign_id`, `stress`, `stress_max`, `sanity`, `sanity_max`, `exhaustion`, `indefinite_insanity` — UNIQUE on `(user_id, campaign_id)` |
+
+---
+
+### 8.5 Character data
+
+#### `character_sheets`
+
+Legacy single-sheet-per-user-per-campaign model. UNIQUE on `(user_id, campaign_id)`. `sheet_data` is a JSON blob containing all field values. `dnd_beyond_url` column added for 5e.
+
+#### `characters`
+
+Newer multi-character model. Multiple characters per user per campaign. `sheet_data` JSON blob. `portrait_url`. Cascade deletes on user/campaign deletion.
+
+#### `ship_sheets`
+
+Campaign-level ship or vehicle sheet. `system` (default `alien`), `sheet_data` JSON blob.
+
+---
+
+### 8.6 Tool tables
+
+| Table | Purpose |
+|-------|---------|
+| `theory_nodes` | Per-user investigation board nodes: `label`, `node_type`, `notes`, `shared_with_gm`, `x`/`y` position |
+| `theory_edges` | Directed edges between theory nodes: `source_id`, `target_id` |
+| `pins` | User sidebar shortcuts: `item_type`, `item_id`, `item_title` — UNIQUE on `(user_id, item_type, item_id)` |
+| `audit_log` | `action`, `target_type`, `target_id`, `detail`, `ip` — append-only activity log |
+| `item_shares` | Per-item visibility grants: `item_type`, `item_id`, `user_id` — UNIQUE on trio |
+| `npc_relationships` | Typed relationships between NPC vault_file records: `relationship_type`, `notes` |
+
+---
+
+### 8.7 Calendar tables
+
+| Table | Purpose |
+|-------|---------|
+| `campaign_calendars` | One row per campaign; `config` is the full JSON calendar specification (days, months, eras, seasons, moons, weather tables) |
+| `calendar_events` | Placed events: `era_index`, `year`, `month`, `day`, `title`, `type`, `color`, `weather_icon`, `is_gm_only` |
+
+---
+
+### 8.8 Good Boy Cards tables
+
+| Table | Purpose |
+|-------|---------|
+| `good_boy_card_defs` | Static card library: `type` (`good`/`bad`), `tier` (`low`/`mid`/`high`/`huge`), `name`, `effect`. Seeded on first run (120 cards). |
+| `player_good_boy_cards` | Awarded instances: `campaign_id`, `user_id`, `card_def_id`, `awarded_by`, `awarded_at`, `played_at`, `played_note` |
+
+---
+
+### 8.9 Schema evolution strategy
+
+Migrations run on every server start via `runMigrations()` in `server/src/db/migrations.js`. The strategy has two tiers:
+
+1. **Initial schema** — all core tables are inside a single `db.exec(CREATE TABLE IF NOT EXISTS …)` block. Safe to re-run.
+2. **Additive migrations** — every column addition or new junction table added after initial release is wrapped in `try { db.exec('ALTER TABLE …') } catch (_) {}`. The catch silently swallows the "duplicate column" error on databases that already have the change. This avoids a versioned migration system while remaining idempotent.
+
+The tradeoff is that column removals are never performed and the schema can accumulate unused columns. This is acceptable for a self-hosted SQLite app where storage cost is negligible.
 
 
 
