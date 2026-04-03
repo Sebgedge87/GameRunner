@@ -14,7 +14,8 @@
 4. [World-building views](#4-world-building-views)
 5. [Campaign tools](#5-campaign-tools)
 6. [GM tools](#6-gm-tools)
-7. Data flow *(coming)*
+7. [Player views](#7-player-views)
+8. Data flow *(coming)*
 7. Key design decisions *(coming)*
 
 ---
@@ -749,6 +750,131 @@ Clicking an unplayed card (or its "Play" button) opens the play modal, which sho
 A header counts show the player's current unplayed good/bad totals.
 
 The sidebar nav badge for this view is driven by `ui.cardBadge` — incremented when new cards are awarded.
+
+---
+
+## 7. Player views
+
+Player views are the primary interface for non-GM users. The GM can also access most of them, typically gaining an elevated read-only or administrative perspective on the same data.
+
+### 7.1 Dashboard (`DashboardView.vue`)
+
+Route: `/dashboard`
+
+The player's landing page after campaign selection. It aggregates the most important live information in one glanceable screen.
+
+#### Campaign banner
+
+Full-width banner showing the campaign name, subtitle, and three live meta fields that the GM can set: `current_scene`, `current_weather`, `current_time`. These give players ambient context at a glance without needing to navigate elsewhere.
+
+#### Playlist player
+
+Embeds the `PlaylistPlayer` component using the campaign's `playlist_url` or `music_url`. Supports Spotify and YouTube. Hidden when no URL is set.
+
+#### Character shortcut row (players only)
+
+If the player has no characters yet, a dashed "+ Create your character" tile navigates to `/characters`. If they have characters, each one is shown as a clickable tile with:
+- Portrait (circular, 40 px) — or initials fallback
+- Character name and class
+- Arrow indicator → navigates to `/character-sheet?id=:id`
+
+A secondary "🧙 Characters" link at the end navigates to the characters management view.
+
+#### Secret objective card (players only)
+
+Shows the player's personal agenda card from `data.agenda`. Displays a locked state ("🔒 Sealed — awaiting revelation") until the GM marks it revealed, then shows the body text.
+
+#### Stress / Sanity bars (players only, system-dependent)
+
+Shown when `hasStress` or `hasSanity` is true for the active system. Two horizontal progress bars:
+
+- **Stress** — fill colour: green (≤ 40%), amber (40–70%), red (> 70%)
+- **Sanity** — fill colour: green (> 60%), amber (30–60%), red (≤ 30%). An "Indefinite" badge appears when `indefinite_insanity` is set
+
+#### Pinned items
+
+A row of coloured dot chips, one per pinned item. Each chip is clickable and navigates to the item's list view via `PIN_ROUTES`. A ✕ button removes the pin (`data.removePin`). Pin dot colours match the mindmap's entity colour scheme.
+
+#### Stat row
+
+Four clickable summary cards (navigate to the relevant list view): total Quests, Active Quests, NPC count, Open Hooks count.
+
+#### Lower two-column grid
+
+| Left column | Right column |
+|------------|-------------|
+| Active Quests (up to 6, expandable `QuestCard` grid) | Recent Messages (3 most recent, unread badge, open in flyout) |
+| | Recent Handouts (3 most recent by `created_at`, opens handout flyout) |
+| | Next Session (earliest future `proposed_date` from scheduling data) |
+
+---
+
+### 7.2 Characters (`CharactersView.vue`)
+
+Route: `/characters`
+
+A portrait-tile grid of all characters belonging to the current user. The GM sees all players' characters with a username label below each tile.
+
+Each tile shows a 3:4-aspect-ratio portrait (or initials placeholder), character name, a system badge (coloured border, system-specific colour), class, and concept. Clicking a tile navigates to `/character-sheet?id=:id`.
+
+A "+ New Character" dashed tile at the end of the grid opens a creation modal. The modal asks for a character name only — the system is inherited from the campaign and shown as a read-only label. On success, the view navigates directly to the new character's sheet.
+
+Characters are loaded from `GET /api/characters` using the campaign's `X-Campaign-Id` header so that each campaign has its own character pool.
+
+---
+
+### 7.3 Character Sheet (`CharacterSheetView.vue`)
+
+Route: `/character-sheet` (optionally `?id=:id`)
+
+The most complex view in the app at 2,362 lines. It renders a system-specific, auto-saving character sheet inside a styled "document box" with a page-flip animation.
+
+#### Entry modes
+
+- **Player** — loads their own sheet (or the sheet for the character `?id` passed in the query string from `CharactersView`)
+- **GM without `?id`** — shows a player selector dropdown; picking a player loads their sheet in read-only format
+- **GM with `?id`** — views a specific character directly, same as a player but with no editing
+
+#### D&D 5e path
+
+If the active system is `dnd5e` and `hasDndBeyond` is true, the sheet shows a banner with the character name and an "Open in D&D Beyond ↗" link rather than the built-in sheet. Players who have not set a Beyond URL see a nudge to add one.
+
+#### Built-in sheet
+
+For all other systems (`hasBuiltinSheet`), the document is rendered inside a styled A4-proportioned box (`.a4-wrap`, `.document-box`) with a header containing a decorative "Classified" stamp. Two system-specific CSS modes activate on the wrapper:
+
+- `dossier-mode` — for Achtung! Cthulhu (wartime dossier aesthetic)
+- `coc-mode` — for Call of Cthulhu (investigator file aesthetic, adds a circular "Investigator File" stamp)
+
+#### Pages
+
+Three tabs rendered with a CSS page-flip transition (`flip-forward` / `flip-backward` depending on direction):
+
+| Page | Content |
+|------|---------|
+| **Identity** | Portrait URL, D&D Beyond URL (5e), core stats grid, HP/stress/sanity/magic-points/radiation trackers, system-specific derived values (CoC: idea roll, know roll, build, damage bonus), conditions, drives (Dune) |
+| **Skills** | System-specific skill list rendered from `systemSkills` composable — split into General and Advanced groups where applicable; CoC shows percentage values with derived-stat calculations |
+| **Notes** | Free-text personal notes field |
+
+#### Auto-save
+
+The entire `ef` (edit form) ref is watched with `deep: true`. Any change starts a 1.5 s debounce timer that calls `saveSheet()`. A save status indicator in the tab bar shows "Saving…" / "Saved ✓" / "Error ✗". The `_watchSuppressed` flag prevents the watcher firing during the initial form population.
+
+---
+
+### 7.4 Settings (`SettingsView.vue`)
+
+Route: `/settings`
+
+Four stacked settings cards, all users unless noted.
+
+| Card | Fields |
+|------|--------|
+| **Profile** | Character name, character class (displayed in party lists and the dashboard shortcut tile); font size toggle (Small / Medium / Large — applied as a CSS class on `<body>`) |
+| **Appearance** | Theme swatches — one per available theme, with a coloured dot preview. Selecting a swatch calls `applyTheme(key)`. If the `custom` theme is selected, a five-colour picker grid appears (bg, surface, accent, text, border) with live preview; "Apply custom theme" persists the colours |
+| **Accessibility** | Three checkboxes: High contrast · Reduce motion · Disable effects — each toggled writes to `localStorage` and adds/removes a CSS class on `<html>` |
+| **Data** (GM only) | Download backup button — same as the GM Dashboard quick action |
+| **Account** | Change password form (current / new / confirm); calls `PUT /api/users/:id/password` |
 
 
 
