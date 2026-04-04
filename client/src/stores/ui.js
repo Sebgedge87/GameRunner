@@ -28,6 +28,14 @@ export const useUiStore = defineStore('ui', () => {
     localStorage.setItem('sidebar_collapsed', sidebarCollapsed.value ? '1' : '0')
   }
 
+  // Theme mode
+  const lightMode = ref(localStorage.getItem('chronicle_theme_mode') === 'light')
+  function toggleLightMode() {
+    lightMode.value = !lightMode.value
+    localStorage.setItem('chronicle_theme_mode', lightMode.value ? 'light' : 'dark')
+    document.documentElement.classList.toggle('light-mode', lightMode.value)
+  }
+
   // Notifications
   const notifications = ref([])
   const unreadNotifCount = ref(0)
@@ -129,6 +137,7 @@ export const useUiStore = defineStore('ui', () => {
     toasts, showToast, dismissToast,
     sidebarOpen, toggleSidebar, closeSidebar,
     sidebarCollapsed, toggleSidebarCollapse,
+    lightMode, toggleLightMode,
     notifications, unreadNotifCount, setNotifications,
     messages, unreadMsgCount, setMessages,
     unreadHandoutCount, cardBadge,

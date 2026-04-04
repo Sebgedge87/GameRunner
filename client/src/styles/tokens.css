@@ -5,41 +5,101 @@
   --topbar-h: 52px;
   --line-height: 32px;
 
-  /* Fallback palette (dnd5e-like) */
-  --bg: #0f0d0a;
-  --bg2: #151109;
-  --bg3: #1c1610;
-  --surface: #221b12;
-  --surface2: #2c2418;
-  --border: #2a241e;
-  --border2: #3d3228;
-  --accent: #c5a059;
-  --accent2: #e8c97a;
-  --accent-dim: rgba(197, 160, 89, 0.14);
-  --text: #f0e8d0;
-  --text2: #b0a080;
-  --text3: #706040;
+  /* Global Dark Mode (Deep Charcoal) */
+  --bg: #121212;
+  --bg2: #1e1e1e;
+  --bg3: #2c2c2c;
+  --surface: #1a1a1a;
+  --surface2: #242424;
+  --border: #333333;
+  --border2: #444444;
+  --accent: #5c8aff;
+  --accent2: #8aadff;
+  --accent-dim: rgba(92, 138, 255, 0.15);
+  --text: #f5f5f5;
+  --text2: #b3b3b3;
+  --text3: #808080;
 
   /* Fixed semantic colours */
-  --red: #c94c4c;
-  --green: #4caf7d;
+  --red: #e04b4b;
+  --green: #4cab71;
   --blue: #4c7ac9;
   --purple: #8b4cc9;
   --gold: #c9a84c;
   --gold2: #e8c96a;
   --gold-dim: rgba(201, 168, 76, 0.15);
 
-  /* Theme-overridable */
-  --icon-tint: #a69980;
-  --card-inner: #c5a059;
-  --card-outer: #2a241e;
-  --hover-glow: inset 0 0 15px rgba(197, 160, 89, 0.18);
+  /* Overridable */
+  --icon-tint: #808080;
+  --card-inner: #5c8aff;
+  --card-outer: #333333;
+  --hover-glow: 0 4px 14px rgba(0,0,0, 0.4);
   --input-bg: rgba(0, 0, 0, 0.4);
-  --font-header: 'Cinzel', Georgia, serif;
-  --font-body: 'Crimson Pro', Georgia, serif;
-  --radius: 4px;
-  --h-spacing: 0.15em;
+  
+  /* Typography */
+  --font-header: 'Inter', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  
+  /* Rounded Corners */
+  --radius: 8px;
+  --h-spacing: 0.04em;
 
+  /* Baseline grid */
+  --line-height: 32px;
+
+  /* Ink aesthetic (disabled globally, applied by themes specifically) */
+  --ink-color: transparent;
+  --ink-blur: 0px;
+
+  /* Aliases */
+  --anim-speed: 0.25s;
+
+  /* ── Semantic surface tokens ───────────────────────────────────────────── */
+  --color-bg-page:          #121212;
+  --color-bg-card:          #1e1e1e;
+  --color-bg-elevated:      #242424;
+  --color-bg-input:         #1a1a1a;
+  --color-bg-subtle:        #151515;
+  --color-bg-gm:            #1a1a1a;
+
+  /* ── Border tokens ────────────────────────────────────────────────────── */
+  --color-border-default:   #333333;
+  --color-border-active:    #555555;
+  --color-border-hover:     #444444;
+  --color-border-gm:        rgba(224, 75, 75, 0.30);
+  --color-border-bracket:   #444444;
+  --color-border-danger:    rgba(224, 75, 75, 0.50);
+
+  /* ── Text tokens ──────────────────────────────────────────────────────── */
+  --color-text-primary:     #f5f5f5;
+  --color-text-secondary:   #b3b3b3;
+  --color-text-hint:        #808080;
+  --color-text-accent:      #5c8aff;
+  --color-text-danger:      #e04b4b;
+  --color-text-success:     #4cab71;
+  --color-text-gm:          #e04b4b;
+  --color-text-disabled:    #4a4a4a;
+
+  /* ── Status / Semantic tokens ─────────────────────────────────────────── */
+  --color-status-active:    #3b7b3b;
+  --color-status-active-bg: rgba(59, 123, 59, 0.20);
+  --color-status-done:      #4c7ac9;
+  --color-status-done-bg:   rgba(76, 122, 201, 0.20);
+  --color-status-missed:    #b35a39;
+  --color-status-missed-bg: rgba(179, 90, 57, 0.20);
+  --color-hostile:          #b83b3b;
+  --color-hostile-bg:       rgba(184, 59, 59, 0.20);
+  --color-neutral:          #858585;
+  --color-neutral-bg:       rgba(133, 133, 133, 0.20);
+  --color-allied:           #3b7b3b;
+  --color-allied-bg:        rgba(59, 123, 59, 0.20);
+
+  /* ── Overlays & shadows ───────────────────────────────────────────────── */
+  --color-bg-overlay-light:  rgba(0, 0, 0, 0.55);
+  --color-bg-overlay-medium: rgba(0, 0, 0, 0.70);
+  --color-bg-overlay-heavy:  rgba(0, 0, 0, 0.85);
+  --color-shadow-card:       rgba(0, 0, 0, 0.30);
+  --color-shadow-menu:       rgba(0, 0, 0, 0.40);
   /* Baseline grid */
   --line-height: 32px;
 
@@ -108,16 +168,16 @@
   --space-sidebar-width: 240px;
 
   /* ── Border radius ────────────────────────────────────────────────────── */
-  --radius-xs: 2px;
-  --radius-sm: 3px;
-  --radius-md: 4px;
-  --radius-lg: 6px;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
   --radius-pill: 100px;
 
   /* ── Typography ───────────────────────────────────────────────────────── */
-  --font-sans: 'Cinzel', serif;
-  --font-serif: 'Crimson Pro', serif;
-  --font-display: 'Cinzel Decorative', serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-serif: 'Inter', system-ui, sans-serif;
+  --font-display: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Courier New', monospace;
   --text-xs: 11px;
   --text-sm: 12px;
@@ -193,6 +253,51 @@
   --z-modal: 300;
   --z-toast: 400;
   --z-top: 500;
+}
+
+html.light-mode {
+  /* Global Light Mode (Soft White) */
+  --bg: #f5f5f5;
+  --bg2: #ffffff;
+  --bg3: #e0e0e0;
+  --surface: #ffffff;
+  --surface2: #f0f0f0;
+  --border: #cccccc;
+  --border2: #bbbbbb;
+  --accent: #2c66d6;
+  --accent2: #4c7ac9;
+  --accent-dim: rgba(44, 102, 214, 0.15);
+  --text: #1a1a1a;
+  --text2: #4d4d4d;
+  --text3: #6c6c6c;
+
+  --input-bg: #eaeaea;
+  --hover-glow: 0 4px 14px rgba(0,0,0, 0.1);
+  --icon-tint: #6c6c6c;
+  --card-inner: #2c66d6;
+  --card-outer: #cccccc;
+
+  --color-bg-page:          #f5f5f5;
+  --color-bg-card:          #ffffff;
+  --color-bg-elevated:      #f0f0f0;
+  --color-bg-input:         #eaeaea;
+  --color-bg-subtle:        #fcfcfc;
+  --color-bg-gm:            #f5f0f0;
+
+  --color-border-default:   #cccccc;
+  --color-border-active:    #999999;
+  --color-border-hover:     #aaaaaa;
+  --color-border-gm:        rgba(224, 75, 75, 0.40);
+  --color-border-bracket:   #bbbbbb;
+  --color-border-danger:    rgba(224, 75, 75, 0.50);
+
+  --color-text-primary:     #1a1a1a;
+  --color-text-secondary:   #4d4d4d;
+  --color-text-hint:        #6c6c6c;
+  --color-text-accent:      #2c66d6;
+  --color-text-disabled:    #a0a0a0;
+
+  --color-bg-hover-surface: rgba(0, 0, 0, 0.04);
 }
 
 /* ── Autofill override — prevents browser white flash on dark inputs ──────── */

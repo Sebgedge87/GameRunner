@@ -1,25 +1,62 @@
 const express = require('express');
+const path = require('path');
+const fs = require('fs');
+const matter = require('gray-matter');
 const { getDb, getCampaignId } = require('../db/database');
 const { requireAuth, requireGm } = require('../auth/authMiddleware');
-const { makeHiddenToggle } = require('../utils/routeHelpers');
+const { makeHiddenToggle, slug } = require('../utils/routeHelpers');
+const { vaultPath } = require('../config');
+const { syncFile } = require('../vault/vaultWatcher');
+const { auditLog } = require('../utils/auditLog');
 
 const router = express.Router();
 
+function getFactionsDir(campSlug) {
+  return campSlug ? path.join(vaultPath, campSlug, 'Factions') : path.join(vaultPath, 'Factions');
+}
+
 function enrichFaction(db, f) {
-  const rep = db.prepare('SELECT score FROM faction_reputation WHERE faction_id = ?').get(f.id);
+  let fm = {};
+  try { fm = JSON.parse(f.frontmatter || '{}'); } catch (e) {}
+  
+  // Backwards compatibility with frontmatter fields mapping to top level
+  // and reputation mapping vs standing.
+  const standing = fm.standing || 0;
+  
   const members = db.prepare(`
     SELECT vf.id, vf.title AS name FROM faction_members fm
     JOIN vault_files vf ON fm.npc_id = vf.id
     WHERE fm.faction_id = ?
     ORDER BY vf.title
   `).all(f.id);
-  const leader = f.leader_npc_id
-    ? db.prepare('SELECT id, title AS name FROM vault_files WHERE id = ?').get(f.leader_npc_id)
+  
+  const leader = fm.leader_npc_id
+    ? db.prepare('SELECT id, title AS name FROM vault_files WHERE id = ?').get(fm.leader_npc_id)
     : null;
-  const hq = f.hq_location_id
-    ? db.prepare('SELECT id, title AS name FROM vault_files WHERE id = ?').get(f.hq_location_id)
+    
+  const hq = fm.hq_location_id
+    ? db.prepare('SELECT id, title AS name FROM vault_files WHERE id = ?').get(fm.hq_location_id)
     : null;
-  return { ...f, reputation: rep ? rep.score : 0, members, leader, hq };
+    
+  return { 
+    id: f.id, 
+    path: f.path,
+    name: f.title, 
+    description: fm.description || '', 
+    goals: fm.goals || '', 
+    image_path: fm.image_path || '', 
+    standing, 
+    reputation: standing,
+    influence: fm.influence || 3, 
+    leader_npc_id: fm.leader_npc_id || null, 
+    hq_location_id: fm.hq_location_id || null, 
+    gm_notes: fm.gm_notes || '', 
+    player_notes: fm.player_notes || '',
+    members, 
+    leader, 
+    hq,
+    hidden: f.hidden || 0
+  };
 }
 
 router.get('/', requireAuth, (req, res) => {
@@ -27,67 +64,101 @@ router.get('/', requireAuth, (req, res) => {
   const campId = getCampaignId(req);
   const hiddenClause = req.user.isGm ? '' : 'AND (hidden IS NULL OR hidden = 0)';
   if (!campId) return res.json({ factions: [] });
-  const factions = db.prepare(`SELECT * FROM factions WHERE campaign_id = ? ${hiddenClause} ORDER BY name`).all(campId);
-  res.json({ factions: factions.map(f => enrichFaction(db, f)) });
+  const rows = db.prepare(`SELECT * FROM vault_files WHERE type = 'faction' AND campaign_id = ? ${hiddenClause} ORDER BY title`).all(campId);
+  res.json({ factions: rows.map(r => enrichFaction(db, r)) });
 });
 
 router.get('/:id', requireAuth, (req, res) => {
   const db = getDb();
-  const faction = db.prepare('SELECT * FROM factions WHERE id = ?').get(req.params.id);
-  if (!faction) return res.status(404).json({ error: 'Not found' });
-  res.json({ faction: enrichFaction(db, faction) });
+  const row = db.prepare("SELECT * FROM vault_files WHERE type='faction' AND id = ?").get(req.params.id);
+  if (!row) return res.status(404).json({ error: 'Not found' });
+  res.json({ faction: enrichFaction(db, row) });
 });
 
 router.post('/', requireGm, (req, res) => {
-  const { name, description, goals, image_path, standing = 0, influence = 3, leader_npc_id, hq_location_id, gm_notes, player_notes } = req.body;
+  const { name, description = '', goals, image_path, standing = 0, influence = 3, leader_npc_id, hq_location_id, gm_notes, player_notes } = req.body;
   if (!name) return res.status(400).json({ error: 'name is required' });
-  const db = getDb();
-  const campId = getCampaignId(req);
-  const result = db.prepare(`
-    INSERT INTO factions (campaign_id, name, description, goals, image_path, standing, influence, leader_npc_id, hq_location_id, gm_notes, player_notes, created_by)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(campId || null, name, description || null, goals || null, image_path || null,
-     standing, influence, leader_npc_id || null, hq_location_id || null, gm_notes || null, player_notes || null, req.user.id);
-  db.prepare('INSERT INTO faction_reputation (faction_id, campaign_id, score) VALUES (?, ?, 0)')
-    .run(result.lastInsertRowid, campId || null);
-  const faction = db.prepare('SELECT * FROM factions WHERE id = ?').get(result.lastInsertRowid);
-  res.status(201).json({ faction: enrichFaction(db, faction) });
+  
+  const filename = `${slug(name)}-${Date.now()}.md`;
+  const fm = { type: 'faction', title: name, description, goals, standing, influence, image_path, gm_notes, player_notes };
+  if (leader_npc_id) fm.leader_npc_id = leader_npc_id;
+  if (hq_location_id) fm.hq_location_id = hq_location_id;
+  
+  const content = matter.stringify(description || '', fm);
+  const camp = getDb().prepare('SELECT id, name FROM campaigns WHERE active = 1 LIMIT 1').get();
+  const campSlug = camp ? slug(camp.name) : null;
+  const targetDir = getFactionsDir(campSlug);
+  
+  if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
+  const relPath = campSlug ? `${campSlug}/Factions/${filename}` : `Factions/${filename}`;
+  const fullPath = path.join(targetDir, filename);
+  
+  fs.writeFileSync(fullPath, content, 'utf8');
+  syncFile(fullPath);
+  
+  const db2 = getDb();
+  const row = db2.prepare(`SELECT * FROM vault_files WHERE path = ?`).get(relPath);
+  
+  const faction = row ? enrichFaction(db2, row) : { id: null, name, status: 'synced', description, standing };
+  auditLog(req, 'create', 'faction', row?.id ?? null, name);
+  res.status(201).json({ faction });
 });
 
 router.put('/:id', requireGm, (req, res) => {
-  const { name, description, goals, image_path, standing, influence, leader_npc_id, hq_location_id, gm_notes, player_notes } = req.body;
   const db = getDb();
-  const leaderVal = leader_npc_id !== undefined ? (leader_npc_id || null) : undefined;
-  const hqVal = hq_location_id !== undefined ? (hq_location_id || null) : undefined;
-  db.prepare(`
-    UPDATE factions SET
-      name = COALESCE(?, name),
-      description = COALESCE(?, description),
-      goals = COALESCE(?, goals),
-      image_path = COALESCE(?, image_path),
-      standing = COALESCE(?, standing),
-      influence = COALESCE(?, influence),
-      leader_npc_id = CASE WHEN ? IS NOT NULL THEN ? ELSE leader_npc_id END,
-      hq_location_id = CASE WHEN ? IS NOT NULL THEN ? ELSE hq_location_id END,
-      gm_notes = COALESCE(?, gm_notes),
-      player_notes = COALESCE(?, player_notes)
-    WHERE id = ?
-  `).run(name, description, goals, image_path, standing, influence,
-     leaderVal, leaderVal, hqVal, hqVal, gm_notes, player_notes, req.params.id);
-  const faction = db.prepare('SELECT * FROM factions WHERE id = ?').get(req.params.id);
-  res.json({ faction: enrichFaction(db, faction) });
+  const row = db.prepare(`SELECT * FROM vault_files WHERE id = ? AND type='faction'`).get(req.params.id);
+  if (!row) return res.status(404).json({ error: 'Not found' });
+  
+  // Map incoming body
+  const { name, description, goals, image_path, standing, influence, leader_npc_id, hq_location_id, gm_notes, player_notes } = req.body;
+  
+  const fullPath = path.join(vaultPath, row.path);
+  const existing = JSON.parse(row.frontmatter || '{}');
+  
+  const fm = { ...existing };
+  if (name !== undefined) fm.title = name;
+  if (description !== undefined) fm.description = description;
+  if (goals !== undefined) fm.goals = goals;
+  if (image_path !== undefined) fm.image_path = image_path;
+  if (standing !== undefined) fm.standing = standing;
+  if (influence !== undefined) fm.influence = influence;
+  
+  if (leader_npc_id !== undefined) fm.leader_npc_id = leader_npc_id || null;
+  if (hq_location_id !== undefined) fm.hq_location_id = hq_location_id || null;
+  if (gm_notes !== undefined) fm.gm_notes = gm_notes;
+  if (player_notes !== undefined) fm.player_notes = player_notes;
+  
+  const content = matter.stringify(fm.description || existing.description || '', fm);
+  if (fs.existsSync(fullPath)) {
+    fs.writeFileSync(fullPath, content, 'utf8');
+    syncFile(fullPath);
+  }
+  
+  auditLog(req, 'update', 'faction', Number(req.params.id), fm.title || row.title);
+  
+  const updatedRow = db.prepare(`SELECT * FROM vault_files WHERE id = ?`).get(req.params.id);
+  res.json({ faction: enrichFaction(db, updatedRow) });
 });
 
-makeHiddenToggle(router, 'factions');
+makeHiddenToggle(router, 'vault_files');
 
 router.put('/:id/reputation', requireGm, (req, res) => {
   const { score } = req.body;
   if (score === undefined) return res.status(400).json({ error: 'score required' });
   const db = getDb();
-  const campId = getCampaignId(req);
-  db.prepare('INSERT OR REPLACE INTO faction_reputation (faction_id, campaign_id, score, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)')
-    .run(req.params.id, campId || null, Math.max(-3, Math.min(3, score)));
-  res.json({ success: true });
+  const row = db.prepare(`SELECT * FROM vault_files WHERE id = ?`).get(req.params.id);
+  if (!row) return res.status(404).json({ error: 'Not found' });
+  
+  const fullPath = path.join(vaultPath, row.path);
+  const existing = JSON.parse(row.frontmatter || '{}');
+  existing.standing = Math.max(-3, Math.min(3, score));
+  
+  const content = matter.stringify(existing.description || '', existing);
+  if (fs.existsSync(fullPath)) {
+    fs.writeFileSync(fullPath, content, 'utf8');
+    syncFile(fullPath);
+  }
+  res.json({ success: true, faction: enrichFaction(db, db.prepare(`SELECT * FROM vault_files WHERE id = ?`).get(req.params.id)) });
 });
 
 // ── Members ───────────────────────────────────────────────────────────────────
@@ -114,9 +185,14 @@ router.delete('/:id/members/:npcId', requireGm, (req, res) => {
 
 router.delete('/:id', requireGm, (req, res) => {
   const db = getDb();
-  db.prepare('DELETE FROM faction_reputation WHERE faction_id = ?').run(req.params.id);
+  const row = db.prepare(`SELECT * FROM vault_files WHERE id = ?`).get(req.params.id);
+  if (!row) return res.status(404).json({ error: 'Not found' });
+  
+  const fullPath = path.join(vaultPath, row.path);
+  if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
+  
   db.prepare('DELETE FROM faction_members WHERE faction_id = ?').run(req.params.id);
-  db.prepare('DELETE FROM factions WHERE id = ?').run(req.params.id);
+  auditLog(req, 'delete', 'faction', Number(req.params.id), row.title);
   res.json({ success: true });
 });
 

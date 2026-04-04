@@ -17,11 +17,16 @@ export const useDataStore = defineStore('data', () => {
   async function safe(fn, label) {
     errors.value.delete(label)
     try {
-      const result = await fn()
-      return result
+      return await fn()
     } catch (e) {
       console.error(`[data] ${label}:`, e)
       errors.value = new Set([...errors.value, label])
+      
+      // Silently ignore 404s for optional system-specific endpoints in Generic mode
+      if (e.message === '404' && ['agenda', 'stress'].includes(label)) {
+        return
+      }
+      
       ui.showToast(`Failed to load ${label}`, 'Check connection or reload', '✕')
     }
   }

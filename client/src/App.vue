@@ -46,6 +46,10 @@ onMounted(async () => {
   if (a11y.effects) document.body.classList.add('no-effects')
   const sz = localStorage.getItem('chronicle_font_size') || 'medium'
   document.body.setAttribute('data-font-size', sz)
+  
+  if (localStorage.getItem('chronicle_theme_mode') === 'light') {
+    document.documentElement.classList.add('light-mode')
+  }
   // Restore session
   await auth.restoreSession()
 })

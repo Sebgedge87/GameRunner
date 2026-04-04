@@ -63,6 +63,10 @@
 
     <!-- Icons -->
     <div class="topbar-icons">
+      <!-- Theme Toggle -->
+      <button class="topbar-icon-btn" @click="ui.toggleLightMode()" :title="ui.lightMode ? 'Switch to Dark Mode' : 'Switch to Light Mode'">
+        {{ ui.lightMode ? '☾' : '☀' }}
+      </button>
       <!-- Messages -->
       <button class="topbar-icon-btn" @click="ui.openFlyout('msgs')">
         ✉

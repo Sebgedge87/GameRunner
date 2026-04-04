@@ -3,34 +3,7 @@
    Each theme overrides CSS variables and gets specific overlay/texture styles
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Default — Modern Clean Dark ─────────────────────────────────────────── */
-:root,
-[data-theme="default"] {
-  --bg: #0d0f14;
-  --bg2: #111318;
-  --bg3: #171a22;
-  --surface: #1c2030;
-  --surface2: #222638;
-  --border: rgba(107, 140, 255, 0.14);
-  --border2: rgba(107, 140, 255, 0.28);
-  --accent: #6b8cff;
-  --accent2: #94aaff;
-  --accent-dim: rgba(107, 140, 255, 0.12);
-  --text: #e2e8f0;
-  --text2: #8a9ab8;
-  --text3: #4a5568;
-  /* Theme-specific */
-  --icon-tint: #6b8cff;
-  --card-inner: #6b8cff;
-  --card-outer: rgba(107, 140, 255, 0.1);
-  --hover-glow: 0 0 20px rgba(107, 140, 255, 0.10);
-  --input-bg: rgba(0, 0, 0, 0.35);
-  --font-header: 'Inter', system-ui, sans-serif;
-  --font-body: 'Inter', system-ui, sans-serif;
-  --radius: 8px;
-  --h-spacing: 0.04em;
-  --red: #e05260;
-}
+/* ── Default — Modern Clean Dark (Now controlled by tokens.css) ─────────── */
 
 
 [data-theme="dnd5e"] {
@@ -239,48 +212,8 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ── Layer 0: No campaign (home / login) ─────────────────────────────────── */
-.theme-none {
-  --color-bg-page:          #0d1014;
-  --color-bg-card:          #141820;
-  --color-bg-elevated:      #1a2028;
-  --color-bg-input:         #1e2530;
-  --color-bg-subtle:        #10141a;
-  --color-bg-gm:            #10141a;
 
-  --color-accent:           #5a7a8a;
-  --color-accent-muted:     rgba(90, 122, 138, 0.18);
-
-  --color-text-primary:     #c8d8e4;
-  --color-text-secondary:   #3a5060;
-  --color-text-hint:        #1e3040;
-
-  --color-border-default:   rgba(80, 120, 150, 0.14);
-  --color-border-active:    rgba(80, 120, 150, 0.55);
-  --color-border-gm:        rgba(80, 120, 150, 0.14);
-  --color-border-bracket:   rgba(80, 120, 150, 0.30);
-}
-
-/* ── Default — warm amber ────────────────────────────────────────────────── */
-.theme-default {
-  --color-bg-page:          #0e0b08;
-  --color-bg-card:          #1c1510;
-  --color-bg-elevated:      #231a12;
-  --color-bg-input:         #2a1f15;
-  --color-bg-subtle:        #160e06;
-  --color-bg-gm:            #1a0e06;
-
-  --color-accent:           #b87828;
-  --color-accent-muted:     rgba(184, 120, 40, 0.16);
-
-  --color-text-primary:     #e8d5b5;
-  --color-text-secondary:   #7a5a3a;
-  --color-text-hint:        #4e3520;
-
-  --color-border-default:   rgba(185, 125, 55, 0.18);
-  --color-border-active:    rgba(185, 125, 55, 0.65);
-  --color-border-gm:        rgba(180, 70, 30, 0.30);
-  --color-border-bracket:   rgba(185, 125, 55, 0.45);
-}
+/* ── Default — Modern Clean ──────────────────────────────────────────────── */
 
 /* ── D&D 5e — forgotten realms crimson ──────────────────────────────────── */
 .theme-dnd5e {

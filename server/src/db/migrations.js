@@ -176,77 +176,9 @@ function runMigrations() {
       UNIQUE(scheduling_id, user_id)
     );
 
-    -- ── Factions ───────────────────────────────────────────────────────────────
-    CREATE TABLE IF NOT EXISTS factions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      campaign_id INTEGER REFERENCES campaigns(id),
-      name TEXT NOT NULL,
-      description TEXT,
-      goals TEXT,
-      image_path TEXT,
-      vault_path TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
 
-    CREATE TABLE IF NOT EXISTS faction_reputation (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      faction_id INTEGER REFERENCES factions(id),
-      campaign_id INTEGER REFERENCES campaigns(id),
-      score INTEGER DEFAULT 0,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(faction_id, campaign_id)
-    );
 
-    -- ── Timeline ───────────────────────────────────────────────────────────────
-    CREATE TABLE IF NOT EXISTS timeline_events (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      campaign_id INTEGER REFERENCES campaigns(id),
-      title TEXT NOT NULL,
-      description TEXT,
-      in_world_date TEXT,
-      session_number INTEGER,
-      linked_type TEXT,
-      linked_id INTEGER,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
 
-    -- ── Inventory ──────────────────────────────────────────────────────────────
-    CREATE TABLE IF NOT EXISTS inventory (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      campaign_id INTEGER REFERENCES campaigns(id),
-      name TEXT NOT NULL,
-      description TEXT,
-      quantity INTEGER DEFAULT 1,
-      holder TEXT DEFAULT 'party',
-      image_path TEXT,
-      vault_path TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-
-    -- ── Key Items ──────────────────────────────────────────────────────────────
-    CREATE TABLE IF NOT EXISTS key_items (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      campaign_id INTEGER REFERENCES campaigns(id),
-      name TEXT NOT NULL,
-      description TEXT,
-      significance TEXT,
-      image_path TEXT,
-      linked_quest TEXT,
-      vault_path TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-
-    -- ── Maps ───────────────────────────────────────────────────────────────────
-    CREATE TABLE IF NOT EXISTS maps (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      campaign_id INTEGER REFERENCES campaigns(id),
-      title TEXT NOT NULL,
-      description TEXT,
-      image_path TEXT NOT NULL,
-      map_type TEXT DEFAULT 'world',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
 
     -- ── Bestiary ───────────────────────────────────────────────────────────────
     CREATE TABLE IF NOT EXISTS bestiary (
@@ -280,24 +212,7 @@ function runMigrations() {
       UNIQUE(rumour_id, user_id)
     );
 
-    -- ── Jobs ───────────────────────────────────────────────────────────────────
-    CREATE TABLE IF NOT EXISTS jobs (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      campaign_id INTEGER REFERENCES campaigns(id),
-      title TEXT NOT NULL,
-      description TEXT,
-      reward TEXT,
-      difficulty TEXT DEFAULT 'medium',
-      posted_by TEXT,
-      location TEXT,
-      expires_at DATETIME,
-      status TEXT DEFAULT 'open',
-      image_path TEXT,
-      requires_contact INTEGER DEFAULT 0,
-      vault_path TEXT,
-      promoted_quest_id INTEGER,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
+
 
     -- ── Combat ─────────────────────────────────────────────────────────────────
     CREATE TABLE IF NOT EXISTS combat_encounters (
@@ -471,26 +386,7 @@ function runMigrations() {
   // Add max_players and invite_code to campaigns
   try { db.exec('ALTER TABLE campaigns ADD COLUMN max_players INTEGER DEFAULT 4'); } catch (_) {}
   try { db.exec('ALTER TABLE campaigns ADD COLUMN invite_code TEXT'); } catch (_) {}
-  // Add hidden column to vault_files if not already present
-  try { db.exec('ALTER TABLE vault_files ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
-  // Add hidden column to maps if not already present
-  try { db.exec('ALTER TABLE maps ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
-  // Add locked column to users if not already present (P10: lock login)
-  try { db.exec('ALTER TABLE users ADD COLUMN locked INTEGER DEFAULT 0'); } catch (_) {}
-  // Add shared_with_gm column to theory_nodes (P5)
-  try { db.exec('ALTER TABLE theory_nodes ADD COLUMN shared_with_gm INTEGER DEFAULT 0'); } catch (_) {}
-  // Add hidden column to non-vault tables (P3)
-  try { db.exec('ALTER TABLE factions ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
-  try { db.exec('ALTER TABLE timeline_events ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
-  try { db.exec('ALTER TABLE inventory ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
-  try { db.exec('ALTER TABLE key_items ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
-  try { db.exec('ALTER TABLE jobs ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
-  try { db.exec('ALTER TABLE bestiary ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
-  try { db.exec('ALTER TABLE rumours ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
-  // Maps: GM notes, linked location, mindmap connections
-  try { db.exec('ALTER TABLE maps ADD COLUMN gm_notes TEXT'); } catch (_) {}
-  try { db.exec('ALTER TABLE maps ADD COLUMN linked_location_id INTEGER REFERENCES vault_files(id)'); } catch (_) {}
-  try { db.exec('ALTER TABLE maps ADD COLUMN connected_to TEXT'); } catch (_) {}
+
 
   // campaign scoping for messages
   try { db.exec('ALTER TABLE messages ADD COLUMN campaign_id INTEGER REFERENCES campaigns(id)'); } catch (_) {}
@@ -567,54 +463,20 @@ function runMigrations() {
   try { db.exec('ALTER TABLE vault_files ADD COLUMN location_type TEXT'); } catch (_) {}
   try { db.exec('ALTER TABLE vault_files ADD COLUMN parent_location_id INTEGER REFERENCES vault_files(id)'); } catch (_) {}
 
-  // factions: relational + standing/influence
-  try { db.exec('ALTER TABLE factions ADD COLUMN standing INTEGER DEFAULT 0'); } catch (_) {}
-  try { db.exec('ALTER TABLE factions ADD COLUMN influence INTEGER DEFAULT 3'); } catch (_) {}
-  try { db.exec('ALTER TABLE factions ADD COLUMN leader_npc_id INTEGER REFERENCES vault_files(id)'); } catch (_) {}
-  try { db.exec('ALTER TABLE factions ADD COLUMN hq_location_id INTEGER REFERENCES vault_files(id)'); } catch (_) {}
-  try { db.exec('ALTER TABLE factions ADD COLUMN gm_notes TEXT'); } catch (_) {}
-  try { db.exec('ALTER TABLE factions ADD COLUMN player_notes TEXT'); } catch (_) {}
-  try { db.exec('ALTER TABLE factions ADD COLUMN created_by INTEGER REFERENCES users(id)'); } catch (_) {}
-
   // faction_members junction table
   db.exec(`CREATE TABLE IF NOT EXISTS faction_members (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    faction_id INTEGER NOT NULL REFERENCES factions(id) ON DELETE CASCADE,
+    faction_id INTEGER NOT NULL REFERENCES vault_files(id) ON DELETE CASCADE,
     npc_id INTEGER NOT NULL REFERENCES vault_files(id) ON DELETE CASCADE,
     campaign_id INTEGER REFERENCES campaigns(id),
     added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(faction_id, npc_id)
   )`);
 
-  // jobs: source location FK + acceptance tracking
-  try { db.exec('ALTER TABLE jobs ADD COLUMN source_location_id INTEGER REFERENCES vault_files(id)'); } catch (_) {}
-  try { db.exec('ALTER TABLE jobs ADD COLUMN accepted_by_id INTEGER REFERENCES users(id)'); } catch (_) {}
-  try { db.exec('ALTER TABLE jobs ADD COLUMN accepted_at DATETIME'); } catch (_) {}
-  try { db.exec('ALTER TABLE jobs ADD COLUMN job_type TEXT DEFAULT \'bounty\''); } catch (_) {}
-  try { db.exec('ALTER TABLE jobs ADD COLUMN gm_notes TEXT'); } catch (_) {}
-  try { db.exec('ALTER TABLE jobs ADD COLUMN player_notes TEXT'); } catch (_) {}
-  try { db.exec('ALTER TABLE jobs ADD COLUMN created_by INTEGER REFERENCES users(id)'); } catch (_) {}
-
-  // inventory: ownership tracking
-  try { db.exec('ALTER TABLE inventory ADD COLUMN owner_id INTEGER REFERENCES users(id)'); } catch (_) {}
-  try { db.exec('ALTER TABLE inventory ADD COLUMN created_by INTEGER REFERENCES users(id)'); } catch (_) {}
-
-  // key_items: ownership
-  try { db.exec('ALTER TABLE key_items ADD COLUMN created_by INTEGER REFERENCES users(id)'); } catch (_) {}
-
-  // campaigns: party location tracking
-  try { db.exec("ALTER TABLE campaigns ADD COLUMN current_party_location_id TEXT DEFAULT NULL"); } catch (_) {}
-
-  // timeline_events: significance + notes + creator
-  try { db.exec('ALTER TABLE timeline_events ADD COLUMN significance TEXT DEFAULT \'minor\''); } catch (_) {}
-  try { db.exec('ALTER TABLE timeline_events ADD COLUMN gm_notes TEXT'); } catch (_) {}
-  try { db.exec('ALTER TABLE timeline_events ADD COLUMN player_notes TEXT'); } catch (_) {}
-  try { db.exec('ALTER TABLE timeline_events ADD COLUMN created_by INTEGER REFERENCES users(id)'); } catch (_) {}
-
   // timeline_entity_links: multi-entity connections for timeline events
   db.exec(`CREATE TABLE IF NOT EXISTS timeline_entity_links (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    event_id INTEGER NOT NULL REFERENCES timeline_events(id) ON DELETE CASCADE,
+    event_id INTEGER NOT NULL REFERENCES vault_files(id) ON DELETE CASCADE,
     entity_type TEXT NOT NULL,
     entity_id INTEGER NOT NULL,
     campaign_id INTEGER REFERENCES campaigns(id),

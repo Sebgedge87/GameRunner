@@ -288,7 +288,7 @@ const SYSTEM_FEATURES = {
     ],
   },
   custom: {
-    hasStress: true, hasSanity: true,
+    hasStress: false, hasSanity: false,
     usesXP: true, usesMilestone: false,
     hasDndBeyond: false, hasBuiltinSheet: true,
     maxLevel: 20,
@@ -305,7 +305,7 @@ const SYSTEM_FEATURES = {
 }
 
 const DEFAULTS = {
-  hasStress: true, hasSanity: true,
+  hasStress: false, hasSanity: false,
   usesXP: true, usesMilestone: false,
   hasDndBeyond: false, hasBuiltinSheet: true,
   maxLevel: 20, sheetLabel: 'Character Sheet',
