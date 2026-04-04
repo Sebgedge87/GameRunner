@@ -14,21 +14,12 @@
 
       <!-- Campaign section -->
       <div v-if="campaign.activeCampaign">
-        <div class="nav-section" :class="{ collapsed: collapsed.campaign }" @click="toggle('campaign')">
-          Campaign
-        </div>
-        <div class="nav-group" :class="{ collapsed: collapsed.campaign }">
-          <RouterLink to="/dashboard" class="nav-item" active-class="active" @click="ui.closeSidebar()">
-            <span class="nav-icon">⚔</span>Dashboard
-          </RouterLink>
-          <RouterLink to="/quests" class="nav-item" active-class="active" @click="ui.closeSidebar()">
-            <span class="nav-icon">📜</span>Quests
-          </RouterLink>
-          <RouterLink to="/jobs" class="nav-item" active-class="active" @click="ui.closeSidebar()">
-            <span class="nav-icon">📌</span>Job Board
-          </RouterLink>
-        </div>
+        <!-- Dashboard/Home is the primary Command Centre -->
+        <RouterLink to="/dashboard" class="nav-item" active-class="active" @click="ui.closeSidebar()">
+          <span class="nav-icon">⚔</span>Command Centre
+        </RouterLink>
 
+        <!-- World -->
         <div class="nav-section" :class="{ collapsed: collapsed.world }" @click="toggle('world')">
           World
         </div>
@@ -39,30 +30,54 @@
           <RouterLink to="/locations" class="nav-item" active-class="active" @click="ui.closeSidebar()">
             <span class="nav-icon">🗺</span>Locations
           </RouterLink>
-          <RouterLink to="/hooks" class="nav-item" active-class="active" @click="ui.closeSidebar()">
-            <span class="nav-icon">🪝</span>Hooks
-          </RouterLink>
           <RouterLink to="/factions" class="nav-item" active-class="active" @click="ui.closeSidebar()">
             <span class="nav-icon">⚑</span>Factions
           </RouterLink>
+          <RouterLink to="/bestiary" class="nav-item" active-class="active" @click="ui.closeSidebar()">
+            <span class="nav-icon">🐉</span>Bestiary
+          </RouterLink>
+        </div>
+
+        <!-- Chronology -->
+        <div class="nav-section" :class="{ collapsed: collapsed.chronology }" @click="toggle('chronology')">
+          Chronology
+        </div>
+        <div class="nav-group" :class="{ collapsed: collapsed.chronology }">
           <RouterLink to="/timeline" class="nav-item" active-class="active" @click="ui.closeSidebar()">
             <span class="nav-icon">⏳</span>Timeline
           </RouterLink>
           <RouterLink to="/calendar" class="nav-item" active-class="active" @click="ui.closeSidebar()">
             <span class="nav-icon">📅</span>Calendar
           </RouterLink>
+          <RouterLink to="/sessions" class="nav-item" active-class="active" @click="ui.closeSidebar()">
+            <span class="nav-icon">🎲</span>Sessions
+          </RouterLink>
+        </div>
+
+        <!-- Knowledge -->
+        <div class="nav-section" :class="{ collapsed: collapsed.knowledge }" @click="toggle('knowledge')">
+          Knowledge
+        </div>
+        <div class="nav-group" :class="{ collapsed: collapsed.knowledge }">
           <RouterLink to="/maps" class="nav-item" active-class="active" @click="ui.closeSidebar()">
             <span class="nav-icon">🗾</span>Maps
           </RouterLink>
           <RouterLink to="/mindmap" class="nav-item" active-class="active" @click="ui.closeSidebar()">
             <span class="nav-icon">🕸</span>Mindmap
           </RouterLink>
+          <RouterLink to="/theory-board" class="nav-item" active-class="active" @click="ui.closeSidebar()">
+            <span class="nav-icon">🔍</span>Theory Board
+          </RouterLink>
+          <RouterLink to="/notes" class="nav-item" active-class="active" @click="ui.closeSidebar()">
+            <span class="nav-icon">📝</span>Notes
+          </RouterLink>
         </div>
 
-        <div class="nav-section" :class="{ collapsed: collapsed.player }" @click="toggle('player')">
-          Player
+        <!-- Player Bag -->
+        <div class="nav-section" :class="{ collapsed: collapsed.player_bag }" @click="toggle('player_bag')">
+          Player Bag
         </div>
-        <div class="nav-group" :class="{ collapsed: collapsed.player }">
+        <div class="nav-group" :class="{ collapsed: collapsed.player_bag }">
           <RouterLink to="/handouts" class="nav-item" active-class="active" @click="ui.closeSidebar()">
             <span class="nav-icon">📄</span>Handouts
             <span v-if="ui.unreadHandoutCount > 0" class="nav-badge">{{ ui.unreadHandoutCount }}</span>
@@ -70,33 +85,19 @@
           <RouterLink to="/inventory" class="nav-item" active-class="active" @click="ui.closeSidebar()">
             <span class="nav-icon">🎒</span>Inventory
           </RouterLink>
-          <RouterLink to="/bestiary" class="nav-item" active-class="active" @click="ui.closeSidebar()">
-            <span class="nav-icon">🐉</span>Bestiary
-          </RouterLink>
-          <RouterLink to="/rumours" class="nav-item" active-class="active" @click="ui.closeSidebar()">
-            <span class="nav-icon">💬</span>Rumours
-          </RouterLink>
-          <RouterLink to="/sessions" class="nav-item" active-class="active" @click="ui.closeSidebar()">
-            <span class="nav-icon">🎲</span>Sessions
-          </RouterLink>
           <RouterLink to="/good-boy-cards" class="nav-item" active-class="active" @click="ui.closeSidebar(); ui.cardBadge = 0">
             <span class="nav-icon">🃏</span>Cards
             <span v-if="ui.cardBadge > 0" class="nav-badge">{{ ui.cardBadge }}</span>
           </RouterLink>
-        </div>
-
-        <div class="nav-section" :class="{ collapsed: collapsed.tools }" @click="toggle('tools')">
-          Tools
-        </div>
-        <div class="nav-group" :class="{ collapsed: collapsed.tools }">
+          <RouterLink to="/hooks-rumours" class="nav-item" active-class="active" @click="ui.closeSidebar()">
+            <span class="nav-icon">🪝</span>Hooks & Rumours
+          </RouterLink>
+          <!-- Keep Quests and Characters here as they are extremely relevant to players -->
+          <RouterLink to="/quests" class="nav-item" active-class="active" @click="ui.closeSidebar()">
+            <span class="nav-icon">📜</span>Quests
+          </RouterLink>
           <RouterLink to="/characters" class="nav-item" active-class="active" @click="ui.closeSidebar()">
             <span class="nav-icon">🧙</span>Characters
-          </RouterLink>
-          <RouterLink to="/notes" class="nav-item" active-class="active" @click="ui.closeSidebar()">
-            <span class="nav-icon">📝</span>Notes
-          </RouterLink>
-          <RouterLink to="/theory-board" class="nav-item" active-class="active" @click="ui.closeSidebar()">
-            <span class="nav-icon">🔍</span>Theory Board
           </RouterLink>
         </div>
 
@@ -167,16 +168,16 @@ const userLabel = computed(() => {
 // Collapsible nav sections
 const saved = JSON.parse(localStorage.getItem('nav_collapsed') || '{}')
 const collapsed = reactive({
-  campaign: !!saved.Campaign,
   world: !!saved.World,
-  player: !!saved.Player,
-  tools: !!saved.Tools,
+  chronology: !!saved.Chronology,
+  knowledge: !!saved.Knowledge,
+  player_bag: !!saved['Player Bag'],
   gm: !!saved.GM,
 })
 
 function toggle(section) {
   collapsed[section] = !collapsed[section]
-  const labels = { campaign: 'Campaign', world: 'World', player: 'Player', tools: 'Tools', gm: 'GM' }
+  const labels = { world: 'World', chronology: 'Chronology', knowledge: 'Knowledge', player_bag: 'Player Bag', gm: 'GM' }
   const state = JSON.parse(localStorage.getItem('nav_collapsed') || '{}')
   state[labels[section]] = collapsed[section]
   localStorage.setItem('nav_collapsed', JSON.stringify(state))

@@ -1,6 +1,6 @@
 <template>
   <div class="page-content">
-    <div class="page-header"><div class="page-title">Dashboard</div></div>
+    <div class="page-header"><div class="page-title">Command Centre</div></div>
 
     <!-- Campaign banner -->
     <div v-if="campaign.activeCampaign" class="campaign-banner">
@@ -23,7 +23,6 @@
       </div>
     </div>
 
-    <!-- Playlist player -->
     <PlaylistPlayer :url="playlistUrl" />
 
     <!-- Character shortcut (player only) -->
@@ -33,12 +32,7 @@
         <span>Create your character</span>
       </div>
       <template v-else>
-        <div
-          v-for="c in myCharacters"
-          :key="c.id"
-          class="char-shortcut-tile"
-          @click="router.push(`/character-sheet?id=${c.id}`)"
-        >
+        <div v-for="c in myCharacters" :key="c.id" class="char-shortcut-tile" @click="router.push(`/character-sheet?id=${c.id}`)">
           <div class="char-shortcut-portrait">
             <img v-if="c.portrait_url" :src="c.portrait_url" :alt="c.name" class="char-shortcut-img" />
             <div v-else class="char-shortcut-initials">{{ initials(c.name) }}</div>
@@ -53,37 +47,6 @@
           <span class="nav-icon">🧙</span> Characters
         </div>
       </template>
-    </div>
-
-    <!-- Agenda card (player only) -->
-    <div v-if="data.agenda && !campaign.isGm" class="agenda-card">
-      <div class="agenda-card-title">Secret objective</div>
-      <div v-if="!data.agenda.revealed" class="agenda-locked">🔒 Sealed — awaiting revelation</div>
-      <div v-else class="agenda-body">{{ data.agenda.body || data.agenda.title }}</div>
-    </div>
-
-    <!-- Stress/Sanity bar (player only, system-dependent) -->
-    <div v-if="data.stress && !campaign.isGm && (hasStress || hasSanity)" class="stress-wrap">
-      <div v-if="hasStress" class="stress-col">
-        <div class="stress-bar-label">
-          <span>Stress</span>
-          <span>{{ data.stress.stress }}/{{ data.stress.stress_max }}</span>
-        </div>
-        <div class="stress-track">
-          <div class="stress-fill" :style="`width:${stressPct}%;background:${stressPct > 70 ? 'var(--red)' : stressPct > 40 ? '#c9a84c' : 'var(--green)'}`"></div>
-        </div>
-      </div>
-      <div v-if="hasSanity" class="stress-col">
-        <div class="stress-bar-label">
-          <span>Sanity</span>
-          <span>{{ data.stress.sanity }}/{{ data.stress.sanity_max }}
-            <span v-if="data.stress.indefinite_insanity" class="sanity-critical">Indefinite</span>
-          </span>
-        </div>
-        <div class="stress-track">
-          <div class="stress-fill" :style="`width:${sanityPct}%;background:${sanityPct > 60 ? 'var(--green)' : sanityPct > 30 ? '#c9a84c' : 'var(--red)'}`"></div>
-        </div>
-      </div>
     </div>
 
     <!-- Pinned items -->
@@ -103,74 +66,82 @@
       </div>
     </div>
 
-    <!-- Stats row -->
-    <div class="dash-grid">
-      <div class="stat-card stat-card-link" @click="router.push('/quests')">
-        <div class="stat-num">{{ data.quests.length }}</div>
-        <div class="stat-label">Quests</div>
-      </div>
-      <div class="stat-card stat-card-link" @click="router.push('/quests')">
-        <div class="stat-num">{{ activeQuests.length }}</div>
-        <div class="stat-label">Active</div>
-      </div>
-      <div class="stat-card stat-card-link" @click="router.push('/npcs')">
-        <div class="stat-num">{{ data.npcs.length }}</div>
-        <div class="stat-label">NPCs</div>
-      </div>
-      <div class="stat-card stat-card-link" @click="router.push('/hooks')">
-        <div class="stat-num">{{ openHooks }}</div>
-        <div class="stat-label">Open Hooks</div>
-      </div>
+    <!-- Quick Links (Mirrors Sidebar Clusters) -->
+    <div class="dash-section" style="margin-top:16px;">Quick Links</div>
+    <div class="dash-grid" style="margin-bottom: 24px;">
+      <!-- World -->
+      <div class="stat-card stat-card-link" @click="router.push('/npcs')"><div class="stat-label">NPCs</div></div>
+      <div class="stat-card stat-card-link" @click="router.push('/locations')"><div class="stat-label">Locations</div></div>
+      <div class="stat-card stat-card-link" @click="router.push('/factions')"><div class="stat-label">Factions</div></div>
+      <div class="stat-card stat-card-link" @click="router.push('/bestiary')"><div class="stat-label">Bestiary</div></div>
+      <!-- Knowledge & Chronology -->
+      <div class="stat-card stat-card-link" @click="router.push('/timeline')"><div class="stat-label">Timeline</div></div>
+      <div class="stat-card stat-card-link" @click="router.push('/maps')"><div class="stat-label">Maps</div></div>
+      <div class="stat-card stat-card-link" @click="router.push('/theory-board')"><div class="stat-label">Theory</div></div>
+      <div class="stat-card stat-card-link" @click="router.push('/notes')"><div class="stat-label">Notes</div></div>
+      <!-- Player Bag -->
+      <div class="stat-card stat-card-link" @click="router.push('/inventory')"><div class="stat-label">Inventory</div></div>
+      <div class="stat-card stat-card-link" @click="router.push('/handouts')"><div class="stat-label">Handouts</div></div>
+      <div class="stat-card stat-card-link" @click="router.push('/hooks-rumours')"><div class="stat-label">Rumours/Hooks</div></div>
+      <div class="stat-card stat-card-link" @click="router.push('/quests')"><div class="stat-label">Quests</div></div>
     </div>
 
     <!-- ── 2-column lower dashboard ─────────────────────── -->
     <div class="dash-lower">
 
-      <!-- LEFT: Active Quests -->
+      <!-- LEFT: Job Board & Quests -->
       <div class="dash-lower-col">
+        <!-- Local Job Board -->
+        <div class="dash-section-row">
+          <div class="dash-section">Local Job Board</div>
+          <router-link to="/jobs" class="dash-view-all">Manage →</router-link>
+        </div>
+        
+        <div style="margin-bottom: 16px;">
+          <div v-if="campaign.isGm" style="display:flex; align-items:center; gap:8px;">
+            <label style="font-size: 12px; color: var(--text3);">Party Location:</label>
+            <select v-model="partyLocationModel" @change="updatePartyLocation" class="form-input" style="max-width:200px; padding:4px 8px; font-size:12px;">
+              <option value="">-- Nowhere --</option>
+              <option v-for="l in data.locations" :key="l.id" :value="l.id">{{ l.name }}</option>
+            </select>
+          </div>
+          <div v-else-if="campaign.currentPartyLocationId" style="font-size: 12px; color: var(--text3);">
+            Current Location: <span style="color: var(--text); font-weight: 600;">{{ partyLocationName }}</span>
+          </div>
+        </div>
+
+        <div class="card-grid" style="margin-bottom: 24px;">
+          <div v-for="job in localJobs" :key="job.id" class="card" style="padding: 12px;">
+            <div style="font-weight: 600; margin-bottom: 4px;">📌 {{ job.title }}</div>
+            <div style="font-size: 12px; color: var(--text2); margin-bottom: 8px;">{{ job.client }}</div>
+            <div style="font-size: 12px; color: var(--text3);">Reward: {{ job.reward || 'Negotiable' }}</div>
+          </div>
+          <div v-if="!localJobs.length" class="empty-state dash-empty">No jobs available here.</div>
+        </div>
+
+        <!-- Active Quests -->
         <div class="dash-section-row">
           <div class="dash-section">Active Quests</div>
           <router-link to="/quests" class="dash-view-all">View all →</router-link>
         </div>
         <div class="card-grid">
-          <QuestCard
-            v-for="q in activeQuests.slice(0, 6)"
-            :key="q.id"
-            :quest="q"
-            :expanded="expandedId === q.id"
-            @toggle="toggleExpand(q.id)"
-          />
+          <QuestCard v-for="q in activeQuests.slice(0, 6)" :key="q.id" :quest="q" :expanded="expandedId === q.id" @toggle="toggleExpand(q.id)" />
           <div v-if="activeQuests.length === 0" class="empty-state dash-empty">No active quests.</div>
         </div>
       </div>
 
-      <!-- RIGHT: Messages, Handouts, Next Session -->
+      <!-- RIGHT: Messages, Next Session -->
       <div class="dash-lower-col">
-
-        <!-- Recent messages -->
+        <!-- Next session -->
         <div class="dash-section-row">
-          <div class="dash-section">
-            Recent Messages
-            <span v-if="ui.unreadMsgCount" class="dash-badge">{{ ui.unreadMsgCount }} unread</span>
-          </div>
-          <a class="dash-view-all" @click="ui.openFlyout('msgs')">View all →</a>
+          <div class="dash-section">Next Session</div>
+          <router-link to="/sessions" class="dash-view-all">View all →</router-link>
         </div>
-        <div>
-          <div v-if="!ui.messages.length" class="empty-state dash-empty">No messages.</div>
-          <div
-            v-for="m in ui.messages.slice(0, 3)"
-            :key="m.id"
-            class="msg-item"
-            :class="{ unread: !m.read_at }"
-            @click="openMessage(m)"
-          >
-            <div class="msg-header">
-              <div class="msg-subject">{{ m.subject }}</div>
-              <div class="msg-meta">{{ fmt(m.created_at) }}</div>
-            </div>
-            <div class="msg-preview">{{ (m.body || '').slice(0, 80) }}</div>
-          </div>
+        <div v-if="nextSession" class="card">
+          <div class="card-title">{{ nextSession.title || 'Proposed date' }}</div>
+          <div class="card-meta next-session-date">{{ fmtTime(nextSession.proposed_date) }}</div>
         </div>
+        <div v-else class="empty-state dash-empty">No upcoming session.</div>
 
         <!-- Recent handouts -->
         <div class="dash-section-row" style="margin-top:20px">
@@ -182,31 +153,13 @@
         </div>
         <div>
           <div v-if="!recentHandouts.length" class="empty-state dash-empty">No handouts.</div>
-          <div
-            v-for="h in recentHandouts"
-            :key="h.id"
-            class="msg-item msg-item-link"
-            @click="ui.openHandout(h)"
-          >
+          <div v-for="h in recentHandouts" :key="h.id" class="msg-item msg-item-link" @click="ui.openHandout(h)">
             <div class="msg-header">
               <div class="msg-subject">{{ h.title }}</div>
               <div class="msg-meta">{{ fmt(h.created_at) }}</div>
             </div>
-            <div v-if="h.description" class="msg-preview">{{ h.description.slice(0, 80) }}</div>
           </div>
         </div>
-
-        <!-- Next session -->
-        <div class="dash-section-row" style="margin-top:20px">
-          <div class="dash-section">Next Session</div>
-          <router-link to="/sessions" class="dash-view-all">View all →</router-link>
-        </div>
-        <div v-if="nextSession" class="card">
-          <div class="card-title">{{ nextSession.title || 'Proposed date' }}</div>
-          <div class="card-meta next-session-date">{{ fmtTime(nextSession.proposed_date) }}</div>
-        </div>
-        <div v-else class="empty-state dash-empty">No upcoming session scheduled.</div>
-
       </div>
     </div><!-- /dash-lower -->
   </div>
@@ -263,9 +216,9 @@ const TYPE_COLORS = {
 }
 
 const PIN_ROUTES = {
-  quest: '/quests', npc: '/npcs', location: '/locations', hook: '/hooks',
+  quest: '/quests', npc: '/npcs', location: '/locations', hook: '/hooks-rumours',
   faction: '/factions', job: '/jobs', bestiary: '/bestiary', handout: '/handouts',
-  inventory: '/inventory', 'key-item': '/inventory', rumour: '/rumours',
+  inventory: '/inventory', 'key-item': '/inventory', rumour: '/hooks-rumours',
   timeline: '/timeline', map: '/maps', note: '/notes', session: '/sessions',
 }
 
@@ -275,13 +228,25 @@ const recentHandouts = computed(() =>
   [...data.handouts].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 3)
 )
 
-const stressPct = computed(() => {
-  if (!data.stress) return 0
-  return Math.min(100, Math.round((data.stress.stress / data.stress.stress_max) * 100))
+const partyLocationModel = ref(campaign.currentPartyLocationId || '')
+const partyLocationName = computed(() => {
+  const loc = data.locations.find(l => l.id == campaign.currentPartyLocationId)
+  return loc ? loc.name : 'Unknown'
 })
-const sanityPct = computed(() => {
-  if (!data.stress) return 0
-  return Math.min(100, Math.round((data.stress.sanity / data.stress.sanity_max) * 100))
+
+async function updatePartyLocation(e) {
+  const val = e.target.value
+  await campaign.setPartyLocation(val)
+}
+
+const localJobs = computed(() => {
+  if (!campaign.currentPartyLocationId) return []
+  // If GM, show all for location to manage. If player, maybe just open jobs?
+  // The plan requested: GM sees all for location, players see jobs for location.
+  return data.jobs.filter(j => 
+    j.location_id == campaign.currentPartyLocationId &&
+    (campaign.isGm || j.status === 'open')
+  )
 })
 
 const playlistUrl = computed(() => {

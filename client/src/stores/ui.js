@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { useCampaignStore } from './campaign'
 
 export const useUiStore = defineStore('ui', () => {
   // Toasts
@@ -103,7 +104,14 @@ export const useUiStore = defineStore('ui', () => {
 
   // GM edit modal
   const gmEditModal = ref(null) // { type, id, data }
-  function openGmEdit(type, id, data = null) { gmEditModal.value = { type, id, data } }
+  function openGmEdit(type, id, data = null) {
+    const campaign = useCampaignStore()
+    if (!campaign.isGm) {
+      showToast('Access Denied', 'Only the GM can edit this entity', '🚫')
+      return
+    }
+    gmEditModal.value = { type, id, data }
+  }
   function closeGmEdit() { gmEditModal.value = null }
 
   // Share modal
