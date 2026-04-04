@@ -9,7 +9,7 @@
     <nav class="sidebar-nav">
       <!-- Lobby -->
       <RouterLink to="/home" class="nav-item" active-class="active" @click="goHome">
-        <span class="nav-icon">⌂</span>Home
+        <span class="nav-icon">⌂</span>Campaign Lobby
       </RouterLink>
 
       <!-- Campaign section -->
