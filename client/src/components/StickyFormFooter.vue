@@ -31,63 +31,66 @@ defineProps({
 .sticky-form-footer {
   position: sticky;
   bottom: 0;
-  padding: var(--space-4) var(--space-6);
-  background: var(--color-bg-elevated);
-  border-top: 1px solid var(--color-border-default);
+  padding: 14px 28px;
+  background: #070910;
+  border-top: 1px solid rgba(26,120,255,0.2);
   display: flex;
-  gap: var(--space-3);
+  gap: 10px;
   justify-content: flex-start;
   align-items: center;
-  z-index: 1;
+  z-index: 10;
+  flex-shrink: 0;
 }
 
 .sff-cancel {
-  padding: 7px var(--space-4);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border-default);
+  padding: 8px 18px;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.14);
   background: transparent;
-  color: var(--color-text-secondary);
-  font-family: var(--font-sans);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-regular);
+  color: rgba(255,255,255,0.45);
+  font-family: var(--font-header, 'Cinzel', serif);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: border-color var(--duration-fast) var(--ease-default),
-              color var(--duration-fast) var(--ease-default);
+  transition: border-color 0.15s, color 0.15s;
 }
 .sff-cancel:hover {
-  border-color: var(--color-border-hover);
-  color: var(--color-text-primary);
+  border-color: rgba(255,255,255,0.3);
+  color: rgba(255,255,255,0.75);
 }
 
 .sff-primary {
-  padding: 7px var(--space-4);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border-active);
-  background: transparent;
-  color: var(--color-text-accent);
-  font-family: var(--font-sans);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-regular);
+  padding: 8px 22px;
+  border-radius: 4px;
+  border: 1px solid rgba(26,120,255,0.7);
+  background: rgba(26,120,255,0.12);
+  color: #3d9bff;
+  font-family: var(--font-header, 'Cinzel', serif);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  transition: background var(--duration-fast) var(--ease-default),
-              border-color var(--duration-fast) var(--ease-default);
+  gap: 8px;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
 }
 .sff-primary:hover:not(:disabled) {
-  background: var(--color-bg-hover-surface);
+  background: rgba(26,120,255,0.22);
+  border-color: rgba(26,120,255,0.9);
+  box-shadow: 0 0 16px rgba(26,120,255,0.2);
 }
 .sff-primary:disabled {
-  opacity: 0.45;
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
 .sff-spinner {
   width: 12px;
   height: 12px;
-  border: 2px solid var(--color-border-active);
-  border-top-color: transparent;
+  border: 2px solid rgba(26,120,255,0.4);
+  border-top-color: #3d9bff;
   border-radius: 50%;
   display: inline-block;
   flex-shrink: 0;

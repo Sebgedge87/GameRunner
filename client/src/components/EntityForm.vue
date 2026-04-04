@@ -72,139 +72,164 @@ const hasSidebar = computed(() =>
 .entity-form {
   display: flex;
   flex-direction: column;
+  gap: 0;
 }
 
-/* The h2 picks up global .modal-title font/colour; we only add spacing here */
+/* ── Title — picks up global .modal-title, spacing only ─────────────────── */
 .ef-title {
-  margin-bottom: var(--space-3);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: #3d9bff;
+  margin-bottom: 4px;
+  font-family: var(--font-header, 'Cinzel', serif);
 }
 
-/* Name row */
-.ef-name-row {
-  margin-bottom: var(--space-4);
+/* Entity type sub-label, e.g. "Create NPC" */
+.ef-type-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.3);
+  font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 20px;
 }
-/* Suppress the global form-group bottom-margin inside the name row */
+
+/* ── Name row ─────────────────────────────────────────────────────────── */
+.ef-name-row {
+  margin-bottom: 20px;
+}
 .ef-name-row :deep(.form-group) {
   margin-bottom: 0;
 }
-
-/* Banner image (Map) — full width above the sidebar/main split */
-.ef-banner-row {
-  margin-bottom: var(--space-4);
+/* Name input is slightly larger to give it hero weight */
+.ef-name-row :deep(.form-input) {
+  font-size: 15px;
+  padding: 12px 16px;
+  letter-spacing: 0.02em;
 }
 
-/* ── Layout grid ─────────────────────────────────────────────────────────── */
+/* ── Banner image row (Map) ───────────────────────────────────────────── */
+.ef-banner-row {
+  margin-bottom: 20px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* ── Two-column layout ────────────────────────────────────────────────── */
 .ef-layout {
   display: grid;
-  grid-template-columns: var(--space-sidebar-width) 1fr;
-  gap: var(--space-5);
+  grid-template-columns: 220px 1fr;
+  gap: 20px;
   align-items: flex-start;
 }
-
 .ef-layout--no-sidebar {
   grid-template-columns: 1fr;
 }
 
-/* ── Sidebar ─────────────────────────────────────────────────────────────── */
+/* ── Sidebar column ───────────────────────────────────────────────────── */
 .ef-sidebar {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: 16px;
+  position: sticky;
+  top: 0;
 }
 
+/* Portrait/image upload zone */
 .ef-sidebar-image {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-2);
+  gap: 8px;
+  background: rgba(255,255,255,0.03);
+  border: 1px dashed rgba(255,255,255,0.12);
+  border-radius: 6px;
+  padding: 16px 12px;
 }
-
 .ef-sidebar-label {
-  font-family: var(--font-sans);
-  font-size: var(--text-xs);
-  color: var(--color-text-secondary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: rgba(255,255,255,0.3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-/* Details card */
+/* Details metadata card */
 .ef-details-card {
-  background: var(--color-bg-subtle);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-md);
-  padding: var(--space-4);
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: 12px;
 }
-
 .ef-details-title {
-  font-family: var(--font-sans);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
-  color: var(--color-text-secondary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.25);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding-bottom: var(--space-2);
-  margin-bottom: var(--space-1);
-  border-bottom: 1px solid var(--color-border-default);
+  letter-spacing: 0.16em;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
 }
-
-/* Suppress global form-group bottom-margin inside the details card;
-   card uses its own flex gap instead */
 .ef-details-card :deep(.form-group) {
   margin-bottom: 0;
 }
 
-/* ── Main content column ─────────────────────────────────────────────────── */
+/* ── Main content column ──────────────────────────────────────────────── */
 .ef-main {
   display: flex;
   flex-direction: column;
-  gap: var(--space-form-gap);
+  gap: 16px;
+  min-width: 0;
 }
-
-/* Suppress global form-group bottom-margin inside ef-main;
-   ef-main uses its own flex gap instead */
 .ef-main :deep(.form-group) {
   margin-bottom: 0;
 }
 
-/* ── GM Only section ─────────────────────────────────────────────────────── */
+/* ── GM-Only section ──────────────────────────────────────────────────── */
 .ef-gm-section {
-  background: var(--color-bg-gm);
-  border: 1px solid var(--color-border-gm);
-  border-radius: var(--radius-md);
-  padding: var(--space-4);
+  background: rgba(180, 40, 40, 0.06);
+  border: 1px solid rgba(180, 40, 40, 0.22);
+  border-radius: 6px;
+  padding: 16px;
+  margin-top: 4px;
 }
-
 .ef-gm-header {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  margin-bottom: var(--space-3);
+  gap: 10px;
+  margin-bottom: 12px;
 }
-
 .ef-gm-badge {
-  font-family: var(--font-sans);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
-  color: var(--color-text-gm);
-  background: var(--color-bg-gm);
-  border: 1px solid var(--color-border-gm);
-  border-radius: var(--radius-xs);
-  padding: 2px var(--space-2);
-  letter-spacing: 0.04em;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  color: #e05050;
+  background: rgba(180, 40, 40, 0.18);
+  border: 1px solid rgba(180, 40, 40, 0.4);
+  border-radius: 3px;
+  padding: 2px 7px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
-
 .ef-gm-label {
-  font-family: var(--font-sans);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  color: var(--color-text-gm);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: 0.06em;
 }
 
-/* Mobile: stack sidebar above main content */
+/* ── Mobile: stack sidebar above main ────────────────────────────────── */
 @media (max-width: 640px) {
   .ef-layout {
     grid-template-columns: 1fr;
+  }
+  .ef-sidebar {
+    position: static;
   }
 }
 </style>
