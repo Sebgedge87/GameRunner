@@ -23,7 +23,7 @@ export const useUiStore = defineStore('ui', () => {
   function toggleSidebar() { sidebarOpen.value = !sidebarOpen.value }
   function closeSidebar() { sidebarOpen.value = false }
 
-  const sidebarCollapsed = ref(localStorage.getItem('sidebar_collapsed') === '1')
+  const sidebarCollapsed = ref(localStorage.getItem('sidebar_collapsed') !== '0')
   function toggleSidebarCollapse() {
     sidebarCollapsed.value = !sidebarCollapsed.value
     localStorage.setItem('sidebar_collapsed', sidebarCollapsed.value ? '1' : '0')
