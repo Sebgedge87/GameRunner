@@ -1,7 +1,7 @@
 /* ── Design Tokens — fallback defaults (overridden by theme) ──────────────── */
 :root {
   /* Layout */
-  --sidebar-w: 220px;
+  --sidebar-w: 64px;
   --topbar-h: 52px;
   --line-height: 32px;
 
@@ -55,26 +55,29 @@
   --anim-speed: 0.25s;
 
   /* ── Semantic surface tokens ───────────────────────────────────────────── */
-  --color-bg-page:          #121212;
-  --color-bg-card:          #1e1e1e;
-  --color-bg-elevated:      #242424;
-  --color-bg-input:         #1a1a1a;
-  --color-bg-subtle:        #151515;
-  --color-bg-gm:            #1a1a1a;
+  --color-bg-page:          #040508;
+  --color-bg-card:          #0a0d14;
+  --color-bg-elevated:      #121622;
+  --color-bg-input:         #1a2033;
+  --color-bg-subtle:        #080a11;
+  --color-bg-gm:            #171220;
+
+  --color-accent:           #3b82f6;
+  --color-accent-muted:     rgba(59, 130, 246, 0.16);
 
   /* ── Border tokens ────────────────────────────────────────────────────── */
-  --color-border-default:   #333333;
-  --color-border-active:    #555555;
-  --color-border-hover:     #444444;
+  --color-border-default:   #1c2130;
+  --color-border-active:    #2a3652;
+  --color-border-hover:     #32416b;
   --color-border-gm:        rgba(224, 75, 75, 0.30);
-  --color-border-bracket:   #444444;
+  --color-border-bracket:   #1c2130;
   --color-border-danger:    rgba(224, 75, 75, 0.50);
 
   /* ── Text tokens ──────────────────────────────────────────────────────── */
-  --color-text-primary:     #f5f5f5;
-  --color-text-secondary:   #b3b3b3;
-  --color-text-hint:        #808080;
-  --color-text-accent:      #5c8aff;
+  --color-text-primary:     #f0f6fc;
+  --color-text-secondary:   #8b9eb3;
+  --color-text-hint:        #6b7d8f;
+  --color-text-accent:      #60a5fa;
   --color-text-danger:      #e04b4b;
   --color-text-success:     #4cab71;
   --color-text-gm:          #e04b4b;

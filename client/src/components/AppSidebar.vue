@@ -139,11 +139,6 @@
         </div>
       </div>
     </nav>
-    <!-- Sidebar collapse toggle -->
-    <div class="sidebar-collapse-btn" @click="ui.toggleSidebarCollapse()" :title="ui.sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'">
-      <span class="sidebar-collapse-icon">{{ ui.sidebarCollapsed ? '›' : '‹' }}</span>
-      <span class="sidebar-collapse-label">Collapse</span>
-    </div>
   </div>
 </template>
 

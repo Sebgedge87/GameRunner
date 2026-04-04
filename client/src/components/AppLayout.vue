@@ -1,5 +1,5 @@
 <template>
-  <div id="app-shell" :class="{ 'sidebar-icon-only': ui.sidebarCollapsed }">
+  <div id="app-shell">
     <!-- Sidebar overlay for mobile -->
     <div id="sidebar-overlay"
       :class="{ open: ui.sidebarOpen }"
