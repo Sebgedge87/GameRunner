@@ -120,7 +120,8 @@
           <template #name-field>
             <div class="form-group">
               <label>Name</label>
-              <input v-model="f.name" class="form-input" placeholder="Character name…" />
+              <input v-model="f.name" class="form-input" :class="{ 'input-error': fieldErrors.name }" placeholder="Character name…" />
+              <span v-if="fieldErrors.name" class="field-error">{{ fieldErrors.name }}</span>
             </div>
           </template>
 
@@ -185,7 +186,8 @@
           <template #name-field>
             <div class="form-group">
               <label>Name</label>
-              <input v-model="f.name" class="form-input" />
+              <input v-model="f.name" class="form-input" :class="{ 'input-error': fieldErrors.name }" />
+              <span v-if="fieldErrors.name" class="field-error">{{ fieldErrors.name }}</span>
             </div>
           </template>
 
@@ -248,7 +250,8 @@
           <template #name-field>
             <div class="form-group">
               <label>Title</label>
-              <input v-model="f.title" class="form-input" />
+              <input v-model="f.title" class="form-input" :class="{ 'input-error': fieldErrors.title }" />
+              <span v-if="fieldErrors.title" class="field-error">{{ fieldErrors.title }}</span>
             </div>
           </template>
 
@@ -276,7 +279,8 @@
           <template #name-field>
             <div class="form-group">
               <label>Title</label>
-              <input v-model="f.title" class="form-input" />
+              <input v-model="f.title" class="form-input" :class="{ 'input-error': fieldErrors.title }" />
+              <span v-if="fieldErrors.title" class="field-error">{{ fieldErrors.title }}</span>
             </div>
           </template>
 
@@ -309,7 +313,11 @@
 
         <!-- Session -->
         <template v-else-if="type === 'session'">
-          <div class="form-group"><label>Title</label><input v-model="f.title" class="form-input" /></div>
+          <div class="form-group">
+            <label>Title</label>
+            <input v-model="f.title" class="form-input" :class="{ 'input-error': fieldErrors.title }" />
+            <span v-if="fieldErrors.title" class="field-error">{{ fieldErrors.title }}</span>
+          </div>
           <div class="form-group"><label>Summary</label><textarea v-model="f.description" class="form-input" rows="4"></textarea></div>
           <div class="form-group"><label>Session Date</label><input v-model="f.date" class="form-input" type="date" /></div>
         </template>
@@ -320,7 +328,8 @@
           <template #name-field>
             <div class="form-group">
               <label>Title</label>
-              <input v-model="f.title" class="form-input" />
+              <input v-model="f.title" class="form-input" :class="{ 'input-error': fieldErrors.title }" />
+              <span v-if="fieldErrors.title" class="field-error">{{ fieldErrors.title }}</span>
             </div>
           </template>
 
@@ -387,7 +396,8 @@
           <template #name-field>
             <div class="form-group">
               <label>Name</label>
-              <input v-model="f.name" class="form-input" />
+              <input v-model="f.name" class="form-input" :class="{ 'input-error': fieldErrors.name }" />
+              <span v-if="fieldErrors.name" class="field-error">{{ fieldErrors.name }}</span>
             </div>
           </template>
 
@@ -444,7 +454,11 @@
 
         <!-- Timeline -->
         <template v-else-if="type === 'timeline'">
-          <div class="form-group"><label>Title</label><input v-model="f.title" class="form-input" /></div>
+          <div class="form-group">
+            <label>Title</label>
+            <input v-model="f.title" class="form-input" :class="{ 'input-error': fieldErrors.title }" />
+            <span v-if="fieldErrors.title" class="field-error">{{ fieldErrors.title }}</span>
+          </div>
           <div class="entity-form-grid">
             <div class="efg-sidebar">
               <div class="efg-stat-block" style="margin-top:0">
@@ -491,7 +505,8 @@
           <template #name-field>
             <div class="form-group">
               <label>Item name</label>
-              <input v-model="f.name" class="form-input" />
+              <input v-model="f.name" class="form-input" :class="{ 'input-error': fieldErrors.name }" />
+              <span v-if="fieldErrors.name" class="field-error">{{ fieldErrors.name }}</span>
             </div>
           </template>
 
@@ -521,7 +536,8 @@
           <template #name-field>
             <div class="form-group">
               <label>Name</label>
-              <input v-model="f.name" class="form-input" />
+              <input v-model="f.name" class="form-input" :class="{ 'input-error': fieldErrors.name }" />
+              <span v-if="fieldErrors.name" class="field-error">{{ fieldErrors.name }}</span>
             </div>
           </template>
 
@@ -565,7 +581,11 @@
 
         <!-- Job -->
         <template v-else-if="type === 'job'">
-          <div class="form-group"><label>Title</label><input v-model="f.title" class="form-input" placeholder="Escort the merchant…" /></div>
+          <div class="form-group">
+            <label>Title</label>
+            <input v-model="f.title" class="form-input" :class="{ 'input-error': fieldErrors.title }" placeholder="Escort the merchant…" />
+            <span v-if="fieldErrors.title" class="field-error">{{ fieldErrors.title }}</span>
+          </div>
           <div class="entity-form-grid">
             <div class="efg-sidebar">
               <div class="efg-stat-block" style="margin-top:0">
@@ -620,7 +640,8 @@
           <template #name-field>
             <div class="form-group">
               <label>Creature name</label>
-              <input v-model="f.name" class="form-input" placeholder="e.g. Ancient Red Dragon…" />
+              <input v-model="f.name" class="form-input" :class="{ 'input-error': fieldErrors.name }" placeholder="e.g. Ancient Red Dragon…" />
+              <span v-if="fieldErrors.name" class="field-error">{{ fieldErrors.name }}</span>
             </div>
           </template>
 
@@ -745,7 +766,7 @@
         </template>
       </div>
 
-      <div v-if="saveError" class="status-msg status-err" style="margin-bottom:8px;padding:0 var(--space-6)">{{ saveError }}</div>
+      <div v-if="saveError" class="status-msg status-err" style="margin: 0; padding: 8px 28px; font-size: 12px;">{{ saveError }}</div>
 
       <StickyFormFooter
         :primary-label="isEdit ? 'Save' : 'Create'"
@@ -784,10 +805,42 @@ watch(() => route.path, () => {
 const portraitFile = ref(null)     // File object for portrait/image uploads
 const questImgFile = ref(null)     // File object for quest banner upload
 const saving = ref(false)
-const saveError = ref('')
+const saveError = ref('')          // Only for server/network errors
+const fieldErrors = reactive({})   // Per-field inline validation errors
 const portraitPreview = ref('')
 const mapImgPreview = ref('')
 const handoutImgPreview = ref('')
+
+/** Clear all field errors (call on each save attempt) */
+function clearErrors() {
+  Object.keys(fieldErrors).forEach(k => delete fieldErrors[k])
+  saveError.value = ''
+}
+
+/** Run client-side validation; returns true if valid */
+function validate() {
+  clearErrors()
+  const t = type.value
+  let valid = true
+
+  // Title-based entities
+  if (['quest','hook','handout','session','map','timeline','job'].includes(t)) {
+    if (!f.title?.trim()) { fieldErrors.title = 'Title is required'; valid = false }
+  }
+  // Name-based entities
+  if (['npc','location','faction','inventory','key-item','bestiary'].includes(t)) {
+    if (!f.name?.trim()) { fieldErrors.name = 'Name is required'; valid = false }
+  }
+  // Rumour
+  if (t === 'rumour' && !f.text?.trim()) {
+    fieldErrors.text = 'Rumour text is required'; valid = false
+  }
+  // Map image
+  if (t === 'map' && !isEdit.value && !portraitFile.value) {
+    fieldErrors.map_image = 'A map image is required'; valid = false
+  }
+  return valid
+}
 
 function handlePortraitChange(file) {
   portraitFile.value = file
@@ -1018,6 +1071,7 @@ async function uploadImage() {
 }
 
 async function save() {
+  if (!validate()) return    // stop if client-side validation fails
   saving.value = true
   saveError.value = ''
   try {
@@ -1135,6 +1189,20 @@ async function save() {
 </script>
 
 <style scoped>
+
+/* ── Inline field validation errors ───────────────────────────────────────── */
+.field-error {
+  display: block;
+  margin-top: 5px;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  color: #e05050;
+  letter-spacing: 0.04em;
+}
+:deep(.input-error) {
+  border-color: rgba(220, 60, 60, 0.7) !important;
+  box-shadow: 0 0 0 2px rgba(220, 60, 60, 0.12) !important;
+}
 
 /* ── Quest banner image preview ─────────────────────────────────────────── */
 .quest-img-preview {

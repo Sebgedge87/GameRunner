@@ -666,6 +666,9 @@ body[data-font-size="small"] .nav-item{font-size:12px;}
 .form-input option{background:var(--bg2);color:var(--text);}
 textarea.form-input{resize:vertical;line-height:1.6;}
 select.form-input{cursor:pointer;}
+/* Validation error state */
+.form-input.input-error{border-color:rgba(220,60,60,0.7)!important;box-shadow:0 0 0 2px rgba(220,60,60,0.12)!important;}
+.field-error{display:block;margin-top:5px;font-size:11px;font-family:'JetBrains Mono',monospace;color:#e05050;letter-spacing:0.04em;}
 /* Alien: command-line style input */
 [data-theme="alien"] .form-input{font-family:'JetBrains Mono',monospace;letter-spacing:0.04em;}
 [data-theme="alien"] .form-input:focus{border-color:#39ff14;box-shadow:0 0 6px rgba(57,255,20,0.3);}
