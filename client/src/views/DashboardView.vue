@@ -68,22 +68,46 @@
 
     <!-- Quick Links (Mirrors Sidebar Clusters) -->
     <div class="dash-section" style="margin-top:16px;">Quick Links</div>
-    <div class="dash-grid" style="margin-bottom: 24px;">
+    <div class="dash-grid quick-links-grid" style="margin-bottom: 24px;">
       <!-- World -->
-      <div class="stat-card stat-card-link" @click="router.push('/npcs')"><div class="stat-label">NPCs</div></div>
-      <div class="stat-card stat-card-link" @click="router.push('/locations')"><div class="stat-label">Locations</div></div>
-      <div class="stat-card stat-card-link" @click="router.push('/factions')"><div class="stat-label">Factions</div></div>
-      <div class="stat-card stat-card-link" @click="router.push('/bestiary')"><div class="stat-label">Bestiary</div></div>
+      <div class="stat-card stat-card-link quick-link-card" @click="router.push('/npcs')">
+        <div class="ql-icon">👤</div><div class="ql-label">NPCs</div>
+      </div>
+      <div class="stat-card stat-card-link quick-link-card" @click="router.push('/locations')">
+        <div class="ql-icon">🗺</div><div class="ql-label">Locations</div>
+      </div>
+      <div class="stat-card stat-card-link quick-link-card" @click="router.push('/factions')">
+        <div class="ql-icon">⚑</div><div class="ql-label">Factions</div>
+      </div>
+      <div class="stat-card stat-card-link quick-link-card" @click="router.push('/bestiary')">
+        <div class="ql-icon">🐉</div><div class="ql-label">Bestiary</div>
+      </div>
       <!-- Knowledge & Chronology -->
-      <div class="stat-card stat-card-link" @click="router.push('/timeline')"><div class="stat-label">Timeline</div></div>
-      <div class="stat-card stat-card-link" @click="router.push('/maps')"><div class="stat-label">Maps</div></div>
-      <div class="stat-card stat-card-link" @click="router.push('/theory-board')"><div class="stat-label">Theory</div></div>
-      <div class="stat-card stat-card-link" @click="router.push('/notes')"><div class="stat-label">Notes</div></div>
+      <div class="stat-card stat-card-link quick-link-card" @click="router.push('/timeline')">
+        <div class="ql-icon">⏳</div><div class="ql-label">Timeline</div>
+      </div>
+      <div class="stat-card stat-card-link quick-link-card" @click="router.push('/maps')">
+        <div class="ql-icon">🗾</div><div class="ql-label">Maps</div>
+      </div>
+      <div class="stat-card stat-card-link quick-link-card" @click="router.push('/theory-board')">
+        <div class="ql-icon">🔍</div><div class="ql-label">Theory</div>
+      </div>
+      <div class="stat-card stat-card-link quick-link-card" @click="router.push('/notes')">
+        <div class="ql-icon">📝</div><div class="ql-label">Notes</div>
+      </div>
       <!-- Player Bag -->
-      <div class="stat-card stat-card-link" @click="router.push('/inventory')"><div class="stat-label">Inventory</div></div>
-      <div class="stat-card stat-card-link" @click="router.push('/handouts')"><div class="stat-label">Handouts</div></div>
-      <div class="stat-card stat-card-link" @click="router.push('/hooks-rumours')"><div class="stat-label">Rumours/Hooks</div></div>
-      <div class="stat-card stat-card-link" @click="router.push('/quests')"><div class="stat-label">Quests</div></div>
+      <div class="stat-card stat-card-link quick-link-card" @click="router.push('/inventory')">
+        <div class="ql-icon">🎒</div><div class="ql-label">Inventory</div>
+      </div>
+      <div class="stat-card stat-card-link quick-link-card" @click="router.push('/handouts')">
+        <div class="ql-icon">📄</div><div class="ql-label">Handouts</div>
+      </div>
+      <div class="stat-card stat-card-link quick-link-card" @click="router.push('/hooks-rumours')">
+        <div class="ql-icon">🪝</div><div class="ql-label">Hooks / Rumours</div>
+      </div>
+      <div class="stat-card stat-card-link quick-link-card" @click="router.push('/quests')">
+        <div class="ql-icon">📜</div><div class="ql-label">Quests</div>
+      </div>
     </div>
 
     <!-- ── 2-column lower dashboard ─────────────────────── -->
@@ -338,7 +362,7 @@ onMounted(async () => {
   margin-top: 4px;
   margin-bottom: 10px;
 }
-.dash-section { margin: 0; flex: 1; }
+.dash-section { margin: 0; }
 .dash-view-all {
   font-size: 11px;
   color: var(--accent);
@@ -360,6 +384,28 @@ onMounted(async () => {
 
 /* Next session */
 .next-session-date { color: var(--text3); }
+
+/* Quick Links Overrides */
+.quick-links-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)) !important;
+  gap: 12px;
+}
+.quick-link-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 6px);
+  text-align: center;
+}
+.quick-link-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 12px var(--color-bg-overlay-light); }
+.ql-icon { font-size: 24px; line-height: 1; }
+.ql-label { font-family: var(--font-sans); font-size: 11px; color: var(--text2); font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; line-height: 1.3; word-break: break-word; }
 
 /* 2-column lower layout */
 .dash-lower {
