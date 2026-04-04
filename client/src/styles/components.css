@@ -77,7 +77,7 @@
 .card-title{font-family:var(--font-sans);font-weight:600;font-size:14px;color:var(--text);margin-bottom:6px;letter-spacing:0.02em;}
 .card-meta{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:8px;display:flex;flex-wrap:wrap;gap:7px;align-items:center;}
 .card-body{font-size:13px;color:var(--text2);line-height:1.65;font-family:var(--font-body,'Crimson Pro',serif);}
-.card-overview{font-size:12px;color:var(--text2);line-height:1.55;font-family:var(--font-body,'Crimson Pro',serif);margin-top:6px;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;opacity:0.75;}
+.card-overview{font-size:12px;color:var(--text2);line-height:1.55;font-family:var(--font-body,'Crimson Pro',serif);margin-top:6px;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;opacity:0.75;}
 .card-actions{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;}
 
 /* ── Quest Card — Inline GM Edit HUD ─────────────────────────────────────── */
@@ -328,7 +328,7 @@
 .camp-card-role-player{color:var(--text3);border-color:var(--border);background:var(--bg3);font-size:10px;font-family:'JetBrains Mono',monospace;padding:2px 7px;border-radius:3px;}
 .camp-card-name{font-family:var(--font-header,'Cinzel',serif);font-size:17px;color:var(--text);line-height:1.3;}
 .camp-card-sub{font-size:12px;color:var(--text3);}
-.camp-card-desc{font-size:13px;color:var(--text2);line-height:1.6;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+.camp-card-desc{font-size:13px;color:var(--text2);line-height:1.6;display:-webkit-box;-webkit-line-clamp:3;line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
 .camp-card-footer{display:flex;align-items:center;gap:14px;margin-top:auto;padding-top:8px;border-top:1px solid var(--border);}
 .camp-card-stat{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;}
 .camp-card-enter{margin-left:auto;font-size:11px;color:var(--accent2);font-family:'JetBrains Mono',monospace;letter-spacing:.04em;}
@@ -483,14 +483,51 @@ body[data-font-size="small"] .nav-item{font-size:12px;}
 .toast-title{font-family:var(--font-header,'Cinzel',serif);font-size:12px;color:var(--accent);letter-spacing:1px;margin-bottom:2px;}
 .toast-body{font-size:12px;color:var(--text2);}
 .toast-close{background:none;border:none;color:var(--text3);font-size:14px;padding:0 2px;flex-shrink:0;}
-/* ── Modal ───────────────────────────────────────────────────────────────────── */
-.modal-overlay{display:none;position:fixed;inset:0;background:var(--color-bg-overlay-heavy);z-index:200;align-items:center;justify-content:center;}
+/* ── Modal — Black & Blue SaaS Aesthetic ─────────────────────────────────── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:200;align-items:center;justify-content:center;}
 .modal-overlay.open{display:flex;}
-.modal{background:var(--surface);border:1px solid var(--card-inner,var(--accent));outline:1px solid var(--card-outer,var(--border));outline-offset:-3px;border-radius:var(--radius,4px);padding:26px;max-width:620px;width:92%;max-height:88vh;overflow-y:auto;animation:fade-in .2s ease;position:relative;}
-.modal::before,.modal::after{content:'';position:absolute;width:10px;height:10px;border-color:var(--card-inner,var(--accent));border-style:solid;opacity:0.6;}
-.modal::before{top:5px;left:5px;border-width:1px 0 0 1px;}
-.modal::after{bottom:5px;right:5px;border-width:0 1px 1px 0;}
-.modal-title{font-family:var(--font-header,'Cinzel',serif);font-size:16px;color:var(--accent);margin-bottom:14px;}
+.modal{
+  background: #0a0c12;
+  border: 1px solid rgba(26,120,255,0.35);
+  border-radius: 6px;
+  padding: 28px 28px 20px;
+  max-width: 660px;
+  width: 94%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: fade-in .2s ease;
+  position: relative;
+  box-shadow: 0 0 0 1px rgba(26,120,255,0.12), 0 24px 64px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+/* Vivid blue corner brackets */
+.modal::before,.modal::after{
+  content:'';
+  position:absolute;
+  width:14px;height:14px;
+  border-color:rgba(26,120,255,0.8);
+  border-style:solid;
+  transition:opacity .3s;
+}
+.modal::before{top:8px;left:8px;border-width:2px 0 0 2px;border-radius:2px 0 0 0;}
+.modal::after{bottom:8px;right:8px;border-width:0 2px 2px 0;border-radius:0 0 2px 2px;}
+.modal:hover::before,.modal:hover::after{opacity:1;}
+.modal-title{
+  font-family:var(--font-header,'Cinzel',serif);
+  font-size:18px;
+  font-weight:600;
+  color:#3d9bff;
+  margin-bottom:6px;
+  letter-spacing:0.06em;
+  line-height:1.2;
+}
+.modal-subtitle{
+  font-size:11px;
+  color:rgba(255,255,255,0.35);
+  font-family:'JetBrains Mono',monospace;
+  letter-spacing:0.08em;
+  margin-bottom:20px;
+  text-transform:uppercase;
+}
 .modal-from{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px;}
 .modal-body{font-size:14px;color:var(--text2);line-height:1.75;white-space:pre-wrap;}
 .modal-body.prose{white-space:normal;}
@@ -506,13 +543,28 @@ body[data-font-size="small"] .nav-item{font-size:12px;}
 .modal-body.prose hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
 .modal-img{max-width:100%;border-radius:4px;margin-bottom:12px;}
 .modal-actions{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;}
-.modal-close{background:none;border:1px solid var(--border);color:var(--text2);padding:7px 18px;border-radius:4px;font-family:var(--font-header,'Cinzel',serif);font-size:11px;letter-spacing:1px;transition:color .2s,border-color .2s;}
-.modal-close:hover{color:var(--text);border-color:var(--border2);}
+.modal-close{background:none;border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);padding:7px 18px;border-radius:4px;font-family:var(--font-header,'Cinzel',serif);font-size:11px;letter-spacing:1px;transition:color .2s,border-color .2s;}
+.modal-close:hover{color:var(--text);border-color:rgba(255,255,255,0.3);}
 .modal-secret-badge{display:inline-block;background:#140f20;border:1px solid #4a2a70;color:var(--purple);font-size:10px;padding:2px 7px;border-radius:3px;font-family:'JetBrains Mono',monospace;margin-bottom:10px;}
+
+/* ── GM Edit Modal — wider for the EntityForm layout ──────────────────────── */
+.modal.gm-edit-modal {
+  max-width: 780px;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.gm-modal-body {
+  padding: 24px 28px 12px;
+  overflow-y: auto;
+  flex: 1;
+  max-height: calc(90vh - 72px);
+}
 /* ── Detail Modal ────────────────────────────────────────────────────────────── */
 .detail-grid{display:flex;flex-direction:column;gap:16px;margin-top:4px;}
 .detail-sidebar-col{display:flex;flex-direction:column;gap:16px;}
-.detail-sidebar-section{}
+.detail-sidebar-section{display:block;}
 .detail-sidebar-label{font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:5px;border-bottom:1px solid var(--border);padding-bottom:3px;}
 .detail-sidebar-value{font-size:13px;color:var(--text2);font-family:'JetBrains Mono',monospace;}
 .detail-body-col{display:flex;flex-direction:column;gap:12px;min-width:0;}
@@ -577,27 +629,38 @@ body[data-font-size="small"] .nav-item{font-size:12px;}
 .upload-zone:hover{border-color:var(--accent-dim);}
 .upload-zone input[type=file]{display:none;}
 .upload-preview{margin-top:8px;font-size:12px;color:var(--accent);font-family:'JetBrains Mono',monospace;}
-/* ── Form inputs ─────────────────────────────────────────────────────────────── */
-.form-group{margin-bottom:14px;}
-.form-group label{display:block;font-size:11px;color:var(--text3);margin-bottom:5px;font-family:'JetBrains Mono',monospace;letter-spacing:.5px;}
+/* ── Form inputs — Black & Blue SaaS ────────────────────────────────────────── */
+.form-group{margin-bottom:16px;}
+.form-group label{
+  display:block;
+  font-size:10px;
+  color:rgba(255,255,255,0.4);
+  margin-bottom:6px;
+  font-family:'JetBrains Mono',monospace;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+}
 .form-input{
   width:100%;
-  background:var(--input-bg,var(--bg3));
-  border:1px solid var(--border);
-  color:var(--text);
-  padding:9px 12px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.1);
+  border-bottom-color:rgba(255,255,255,0.18);
+  color:rgba(255,255,255,0.9);
+  padding:10px 14px;
   border-radius:var(--radius,4px);
   font-size:13px;
   font-family:var(--font-body,'Crimson Pro',serif);
   outline:none;
   box-sizing:border-box;
-  transition:border-color .2s,box-shadow .2s;
+  transition:border-color .2s,box-shadow .2s,background .2s;
   appearance:none;
   -webkit-appearance:none;
 }
+.form-input::placeholder{color:rgba(255,255,255,0.22);}
 .form-input:focus{
-  border-color:var(--accent);
-  box-shadow:0 0 0 2px var(--accent-dim);
+  border-color:rgba(26,120,255,0.7);
+  background:rgba(26,120,255,0.05);
+  box-shadow:0 0 0 2px rgba(26,120,255,0.15);
 }
 .form-input::placeholder{color:var(--text3);}
 .form-input option{background:var(--bg2);color:var(--text);}

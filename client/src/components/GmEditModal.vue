@@ -1,7 +1,7 @@
 <template>
   <div v-if="ui.gmEditModal" class="modal-overlay open" @click.self="ui.closeGmEdit()">
-    <div class="modal" :style="{ maxWidth: modalMaxWidth }">
-      <div v-if="!isMigratedType" class="modal-title">{{ title }}</div>
+    <div class="modal gm-edit-modal">
+      <div v-if="!isMigratedType" class="modal-title" style="padding: 24px 28px 0;">{{ title }}</div>
       <div class="gm-modal-body">
         <!-- Quest — migrated to EntityForm -->
         <EntityForm v-if="type === 'quest'" :entity-type="title">
