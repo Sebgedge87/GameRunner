@@ -2,7 +2,7 @@
   <div
     class="card entity-card"
     :class="{ 'ec--hidden': entity.hidden }"
-    @click="ui.openDetail(type, entity)"
+    @click="handleClick"
     :title="title"
   >
     <!-- Portrait / image (always visible) -->
@@ -37,6 +37,7 @@
 
 <script setup>
 import { useUiStore } from '@/stores/ui'
+import { useCampaignStore } from '@/stores/campaign'
 
 const props = defineProps({
   entity:    { type: Object,   required: true },
@@ -46,14 +47,21 @@ const props = defineProps({
   image:     { type: String,   default: null },
   showShare: { type: Boolean,  default: true },
   reloadFn:  { type: Function, default: () => {} },
-  // Legacy props — kept for interface compat, no longer used internally
   expanded:  { type: Boolean,  default: false },
 })
 
-// Legacy emit — kept for compat so callers don't crash
 defineEmits(['toggle'])
 
-const ui = useUiStore()
+const ui       = useUiStore()
+const campaign = useCampaignStore()
+
+function handleClick() {
+  if (campaign.isGm) {
+    ui.openGmEdit(props.type, props.entity.id, props.entity)
+  } else {
+    ui.openDetail(props.type, props.entity)
+  }
+}
 </script>
 
 <style scoped>

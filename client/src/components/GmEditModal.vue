@@ -111,7 +111,11 @@
           <template #gm-section>
             <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Secret information, tactics, hidden motivations…" />
           </template>
-
+          <template v-if="isEdit" #gm-actions>
+            <button class="gm-action-btn" @click="gmPin">?? Pin</button>
+            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '?? Reveal' : '?? Hide' }}</button>
+            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">?? Delete</button>
+          </template>
         </EntityForm>
 
         <!-- NPC — migrated to EntityForm -->
@@ -177,7 +181,11 @@
           <template #gm-section>
             <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Secrets, motivations, hidden knowledge…" />
           </template>
-
+          <template v-if="isEdit" #gm-actions>
+            <button class="gm-action-btn" @click="gmPin">?? Pin</button>
+            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '?? Reveal' : '?? Hide' }}</button>
+            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">?? Delete</button>
+          </template>
         </EntityForm>
 
         <!-- Location — migrated to EntityForm -->
@@ -241,7 +249,11 @@
           <template #gm-section>
             <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Hidden traps, secret doors, GM-only lore…" />
           </template>
-
+          <template v-if="isEdit" #gm-actions>
+            <button class="gm-action-btn" @click="gmPin">?? Pin</button>
+            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '?? Reveal' : '?? Hide' }}</button>
+            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">?? Delete</button>
+          </template>
         </EntityForm>
 
         <!-- Hook — migrated to EntityForm -->
@@ -270,7 +282,11 @@
               <MarkdownEditor v-model="f.description" :minRows="5" placeholder="Describe this plot hook — what draws the players in?" />
             </div>
           </template>
-
+          <template v-if="isEdit" #gm-actions>
+            <button class="gm-action-btn" @click="gmPin">?? Pin</button>
+            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '?? Reveal' : '?? Hide' }}</button>
+            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">?? Delete</button>
+          </template>
         </EntityForm>
 
         <!-- Handout — migrated to EntityForm (no sidebar) -->
@@ -308,7 +324,11 @@
               />
             </div>
           </template>
-
+          <template v-if="isEdit" #gm-actions>
+            <button class="gm-action-btn" @click="gmPin">?? Pin</button>
+            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '?? Reveal' : '?? Hide' }}</button>
+            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">?? Delete</button>
+          </template>
         </EntityForm>
 
         <!-- Session -->
@@ -387,7 +407,11 @@
           <template #gm-section>
             <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Private — players never see this…" />
           </template>
-
+          <template v-if="isEdit" #gm-actions>
+            <button class="gm-action-btn" @click="gmPin">?? Pin</button>
+            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '?? Reveal' : '?? Hide' }}</button>
+            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">?? Delete</button>
+          </template>
         </EntityForm>
 
         <!-- Faction — migrated to EntityForm -->
@@ -449,7 +473,11 @@
           <template #gm-section>
             <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Internal tensions, secret agendas, hidden members…" />
           </template>
-
+          <template v-if="isEdit" #gm-actions>
+            <button class="gm-action-btn" @click="gmPin">?? Pin</button>
+            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '?? Reveal' : '?? Hide' }}</button>
+            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">?? Delete</button>
+          </template>
         </EntityForm>
 
         <!-- Timeline -->
@@ -527,7 +555,11 @@
               <MarkdownEditor v-model="f.description" :minRows="3" placeholder="Describe this item…" />
             </div>
           </template>
-
+          <template v-if="isEdit" #gm-actions>
+            <button class="gm-action-btn" @click="gmPin">?? Pin</button>
+            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '?? Reveal' : '?? Hide' }}</button>
+            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">?? Delete</button>
+          </template>
         </EntityForm>
 
         <!-- Key-item — migrated to EntityForm -->
@@ -576,7 +608,11 @@
               <MarkdownEditor v-model="f.description" :minRows="5" placeholder="Describe this item's appearance, history, and properties…" />
             </div>
           </template>
-
+          <template v-if="isEdit" #gm-actions>
+            <button class="gm-action-btn" @click="gmPin">?? Pin</button>
+            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '?? Reveal' : '?? Hide' }}</button>
+            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">?? Delete</button>
+          </template>
         </EntityForm>
 
         <!-- Job -->
@@ -685,7 +721,11 @@
           <template #gm-section>
             <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Secret information, hidden motivations, encounter tactics…" />
           </template>
-
+          <template v-if="isEdit" #gm-actions>
+            <button class="gm-action-btn" @click="gmPin">?? Pin</button>
+            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '?? Reveal' : '?? Hide' }}</button>
+            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">?? Delete</button>
+          </template>
         </EntityForm>
 
         <!-- Rumour — migrated to EntityForm -->
@@ -715,7 +755,11 @@
               <input v-model="f.source_location" class="form-input" />
             </div>
           </template>
-
+          <template v-if="isEdit" #gm-actions>
+            <button class="gm-action-btn" @click="gmPin">?? Pin</button>
+            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '?? Reveal' : '?? Hide' }}</button>
+            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">?? Delete</button>
+          </template>
         </EntityForm>
 
         <!-- Poll -->
@@ -796,32 +840,6 @@ const ui = useUiStore()
 const data = useDataStore()
 const campaign = useCampaignStore()
 const route = useRoute()
-
-// Close modal automatically when the user navigates away
-watch(() => route.path, () => {
-  if (ui.gmEditModal) ui.closeGmEdit()
-})
-
-const portraitFile = ref(null)     // File object for portrait/image uploads
-const questImgFile = ref(null)     // File object for quest banner upload
-const saving = ref(false)
-const saveError = ref('')          // Only for server/network errors
-const fieldErrors = reactive({})   // Per-field inline validation errors
-const portraitPreview = ref('')
-const mapImgPreview = ref('')
-const handoutImgPreview = ref('')
-
-/** Clear all field errors (call on each save attempt) */
-function clearErrors() {
-  Object.keys(fieldErrors).forEach(k => delete fieldErrors[k])
-  saveError.value = ''
-}
-
-/** Run client-side validation; returns true if valid */
-function validate() {
-  clearErrors()
-  const t = type.value
-  let valid = true
 
   // Title-based entities
   if (['quest','hook','handout','session','map','timeline','job'].includes(t)) {

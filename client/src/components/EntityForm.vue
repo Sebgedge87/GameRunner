@@ -45,6 +45,10 @@
             <span class="ef-gm-label">Private notes</span>
           </div>
           <slot name="gm-section" />
+          <!-- GM action buttons injected from parent when editing existing entity -->
+          <div v-if="slots['gm-actions']" class="ef-gm-actions">
+            <slot name="gm-actions" />
+          </div>
         </div>
       </div>
 
@@ -221,6 +225,41 @@ const hasSidebar = computed(() =>
   font-size: 11px;
   color: rgba(255,255,255,0.35);
   letter-spacing: 0.06em;
+}
+
+/* GM action buttons (Pin / Hide / Delete) inside the GM section */
+.ef-gm-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(180,40,40,0.18);
+}
+.ef-gm-actions :deep(.gm-action-btn) {
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: transparent;
+  color: rgba(255,255,255,0.55);
+  transition: border-color 0.15s, color 0.15s;
+}
+.ef-gm-actions :deep(.gm-action-btn:hover) {
+  border-color: rgba(255,255,255,0.3);
+  color: rgba(255,255,255,0.85);
+}
+.ef-gm-actions :deep(.gm-action-btn--danger) {
+  border-color: rgba(220,60,60,0.3);
+  color: #e05050;
+}
+.ef-gm-actions :deep(.gm-action-btn--danger:hover) {
+  border-color: rgba(220,60,60,0.6);
+  background: rgba(220,60,60,0.08);
 }
 
 /* ── Mobile: stack sidebar above main ────────────────────────────────── */

@@ -41,7 +41,7 @@
           v-for="npc in filteredNpcs" :key="npc.id"
           class="npc-card"
           :class="{ 'npc-card--hidden': npc.hidden }"
-          @click="ui.openDetail('npc', npc)"
+          @click="campaign.isGm ? ui.openGmEdit('npc', npc.id, npc) : ui.openDetail('npc', npc)"
           :title="npc.name"
         >
           <!-- Portrait area -->
