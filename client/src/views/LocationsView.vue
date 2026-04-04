@@ -48,8 +48,8 @@
             v-for="loc in filteredLocations" :key="loc.id"
             :entity="loc" type="location" :title="loc.title || loc.name" icon="📍"
             :image="loc.image_url || loc.image || null"
-            :expanded="expandedId === loc.id" :reload-fn="data.loadLocations"
-            @toggle="toggleExpand(loc.id)"
+            :reload-fn="data.loadLocations"
+            
           >
             <template #badges>
               <span v-if="loc.location_type" class="tag">{{ loc.location_type }}</span>

@@ -15,8 +15,7 @@
       <EntityCard
         v-for="job in filteredJobs" :key="job.id"
         :entity="job" type="job" :title="job.title" icon="💼"
-        :expanded="expandedId === job.id" :reload-fn="data.loadJobs"
-        @toggle="toggleExpand(job.id)"
+        :reload-fn="data.loadJobs"
       >
         <template #badges>
           <span v-if="job.type" class="tag">{{ job.type }}</span>
@@ -58,7 +57,7 @@ const campaign = useCampaignStore()
 const ui = useUiStore()
 const search = ref('')
 const activeTab = ref('all')
-const expandedId = ref(null)
+const expandedId = ref(null) // kept for legacy compat, unused
 
 const tabs = [
   { value: 'all', label: 'All' },
@@ -82,7 +81,7 @@ const filteredJobs = computed(() => {
   return list
 })
 
-function toggleExpand(id) { expandedId.value = expandedId.value === id ? null : id }
+
 
 function statusClass(s) {
   const v = s?.toLowerCase()

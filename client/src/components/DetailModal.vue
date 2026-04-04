@@ -10,10 +10,33 @@
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="modal-close" @click="ui.closeDetail()">Close</button>
           <button class="btn btn-sm" title="Pin" @click="pinItem">📌 Pin</button>
+
+          <!-- Job: player can Accept open jobs -->
+          <button
+            v-if="ui.detailModal?.type === 'job' && ui.detailModal?.item?.status === 'open' && !campaign.isGm"
+            class="btn btn-sm btn-primary"
+            @click="acceptJob"
+          >Accept Job</button>
+
           <template v-if="campaign.isGm">
+            <!-- Job: promote to quest -->
+            <button
+              v-if="ui.detailModal?.type === 'job' && !ui.detailModal?.item?.promoted_quest_id"
+              class="btn btn-sm"
+              @click="promoteJobToQuest"
+            >→ Promote to Quest</button>
+
+            <!-- Location: set as party location -->
+            <button
+              v-if="ui.detailModal?.type === 'location'"
+              class="btn btn-sm"
+              :class="isPartyLocation ? 'btn-primary' : ''"
+              @click="togglePartyLocation"
+            >{{ isPartyLocation ? '📍 Party here ✓' : 'Set Party Location' }}</button>
+
             <button class="btn btn-sm" @click="toggleHiddenItem">{{ ui.detailModal?.item?.hidden ? '👁 Reveal' : '🙈 Hide' }}</button>
-            <button class="btn btn-sm" @click="editItem">Edit</button>
-            <button class="btn btn-sm btn-danger" @click="deleteItem">Delete</button>
+            <button class="btn btn-sm" @click="editItem">✏️ Edit</button>
+            <button class="btn btn-sm btn-danger" @click="deleteItem">🗑 Delete</button>
           </template>
         </div>
       </div>
@@ -31,6 +54,12 @@ import { useDataStore } from '@/stores/data'
 const ui = useUiStore()
 const campaign = useCampaignStore()
 const data = useDataStore()
+
+/** Is the currently viewed location the party's active location? */
+const isPartyLocation = computed(() => {
+  if (ui.detailModal?.type !== 'location') return false
+  return String(campaign.currentPartyLocationId) === String(ui.detailModal?.item?.id)
+})
 
 const TYPE_LABELS = {
   quest: 'Quest', npc: 'NPC', location: 'Location', hook: 'Plot Hook',
@@ -243,5 +272,34 @@ async function deleteItem() {
   } catch (e) {
     ui.showToast('Delete failed', e.message, '✕')
   }
+}
+
+async function acceptJob() {
+  const { item } = ui.detailModal
+  const r = await data.apif(`/api/jobs/${item.id}/accept`, { method: 'PUT' })
+  if (r.ok) {
+    ui.showToast('Job accepted!', item.title, '✓')
+    data.loadJobs()
+    ui.closeDetail()
+  } else {
+    const d = await r.json().catch(() => ({}))
+    ui.showToast('Could not accept', d.error || '', '✗')
+  }
+}
+
+async function promoteJobToQuest() {
+  const { item } = ui.detailModal
+  await data.apif(`/api/jobs/${item.id}`, { method: 'PUT', body: JSON.stringify({ status: 'taken', promoted_quest_id: -1 }) })
+  ui.showToast('Job promoted to Quest', '', '→')
+  data.loadJobs()
+  data.loadQuests()
+  ui.closeDetail()
+}
+
+async function togglePartyLocation() {
+  const { item } = ui.detailModal
+  const newVal = isPartyLocation.value ? null : item.id
+  await campaign.setPartyLocation(newVal)
+  ui.showToast(newVal ? 'Party location set' : 'Party location cleared', item.title || item.name || '', '📍')
 }
 </script>

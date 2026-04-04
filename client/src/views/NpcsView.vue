@@ -9,11 +9,13 @@
     <FilterTabs :tabs="tabs" :active="activeTab" :on-change="v => activeTab = v" />
 
     <!-- Skeleton -->
-    <div v-if="data.loading && !data.npcs.length" class="card-grid">
-      <div v-for="n in 6" :key="n" class="skeleton-card">
-        <div class="skeleton-line skeleton-img"></div>
-        <div class="skeleton-line skeleton-title"></div>
-        <div class="skeleton-line skeleton-sub"></div>
+    <div v-if="data.loading && !data.npcs.length" class="npc-grid">
+      <div v-for="n in 6" :key="n" class="npc-card npc-card--skeleton">
+        <div class="npc-skel-img"></div>
+        <div class="npc-skel-body">
+          <div class="npc-skel-line npc-skel-line--title"></div>
+          <div class="npc-skel-line"></div>
+        </div>
       </div>
     </div>
 
@@ -27,58 +29,46 @@
     <!-- NPC portrait grid -->
     <template v-else-if="data.npcs.length || campaign.isGm">
       <div class="npc-grid">
+
+        <!-- Create tile (GM only) -->
         <div v-if="campaign.isGm" class="create-card" @click="ui.openGmEdit('npc', null, {})">
           <span class="create-card-icon">+</span>
           <span>Add NPC</span>
         </div>
+
+        <!-- NPC portrait card — click opens detail modal -->
         <div
           v-for="npc in filteredNpcs" :key="npc.id"
-          class="npc-card card"
-          :class="{ 'npc-hidden': npc.hidden, 'npc-expanded': expandedId === npc.id }"
-          @click="toggleExpand(npc.id)"
+          class="npc-card"
+          :class="{ 'npc-card--hidden': npc.hidden }"
+          @click="ui.openDetail('npc', npc)"
+          :title="npc.name"
         >
-          <!-- Portrait -->
+          <!-- Portrait area -->
           <div class="npc-portrait">
             <img v-if="npc.image_url" :src="npc.image_url" class="npc-portrait-img" alt="" />
             <div v-else class="npc-portrait-empty">👤</div>
+            <!-- Hover name overlay -->
+            <div class="npc-hover-overlay">
+              <span class="npc-hover-name">{{ npc.name }}</span>
+            </div>
           </div>
 
-          <!-- Always-visible info -->
+          <!-- Info bar: always visible below portrait -->
           <div class="npc-info">
-            <div class="npc-name-row">
-              <span class="npc-name">{{ npc.name }}</span>
-              <button
-                v-if="campaign.isGm"
-                class="btn btn-xs npc-edit-btn"
-                title="Edit"
-                @click.stop="ui.openGmEdit('npc', npc.id, npc)"
-              >✏️</button>
-            </div>
+            <div class="npc-name">{{ npc.name }}</div>
             <div class="npc-tags">
               <span v-if="npc.role" class="tag">{{ npc.role }}</span>
               <span v-if="npc.race" class="tag">{{ npc.race }}</span>
-              <span v-if="npc.disposition" class="tag" :class="dispositionClass(npc.disposition)">{{ npc.disposition }}</span>
+              <span
+                v-if="npc.disposition"
+                class="tag"
+                :class="dispositionClass(npc.disposition)"
+              >{{ npc.disposition }}</span>
             </div>
-            <div v-if="npc.faction" class="npc-meta">⚔️ {{ npc.faction }}</div>
-            <div v-if="npc.location" class="npc-meta">📍 {{ npc.location }}</div>
           </div>
-
-          <!-- Expanded detail -->
-          <template v-if="expandedId === npc.id">
-            <div v-if="npc.description" class="npc-body">
-              {{ stripMd(npc.description) }}
-            </div>
-            <div class="npc-actions">
-              <button class="btn btn-sm" @click.stop="data.addPin('npc', npc.id, npc.name)">📌 Pin</button>
-              <button v-if="campaign.isGm" class="btn btn-sm" @click.stop="revealNpc(npc.id, !npc.revealed)">
-                {{ npc.revealed ? '👁 Hide' : '⭐ Reveal' }}
-              </button>
-              <button v-if="campaign.isGm" class="btn btn-sm" @click.stop="ui.openShare('npc', npc.id, npc.name)">🔗 Share</button>
-              <button v-if="campaign.isGm" class="btn btn-sm" @click.stop="ui.openGmEdit('npc', npc.id, npc)">✏️ Edit</button>
-              <button v-if="campaign.isGm" class="btn btn-sm btn-danger" @click.stop="confirmDeleteNpc(npc)">🗑 Delete</button>
-            </div>
-          </template>
         </div>
+
       </div>
       <p v-if="!filteredNpcs.length" class="no-matches-msg">No matches — try a different search or filter.</p>
     </template>
@@ -94,7 +84,6 @@
 </template>
 
 <script setup>
-import { stripMd } from '@/utils/markdown'
 import { ref, computed, onMounted } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'
@@ -108,7 +97,6 @@ const campaign = useCampaignStore()
 const ui       = useUiStore()
 const search        = ref('')
 const activeTab     = ref('all')
-const expandedId    = ref(null)
 const confirmDelete = ref(null)
 
 const tabs = [
@@ -133,23 +121,11 @@ const filteredNpcs = computed(() => {
   return list
 })
 
-function toggleExpand(id) { expandedId.value = expandedId.value === id ? null : id }
-
 function dispositionClass(d) {
   const s = d?.toLowerCase()
   if (s === 'friendly' || s === 'allied') return 'tag-active'
   if (s === 'hostile' || s === 'unfriendly') return 'tag-inactive'
   return ''
-}
-
-async function revealNpc(id, val) {
-  await data.apif(`/api/npcs/${id}/reveal`, { method: 'PUT', body: JSON.stringify({ revealed: val }) })
-  ui.showToast(val ? 'NPC revealed to players' : 'NPC hidden', '', val ? '⭐' : '👁')
-  await data.loadNpcs()
-}
-
-function confirmDeleteNpc(npc) {
-  confirmDelete.value = { id: npc.id, name: npc.name }
 }
 
 async function doDelete() {
@@ -162,98 +138,116 @@ onMounted(() => { if (!data.npcs.length) data.loadNpcs() })
 </script>
 
 <style scoped>
+/* ── Grid ─────────────────────────────────────────────────────────────────── */
 .npc-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 16px;
   align-items: start;
 }
 
+/* ── Portrait Card ───────────────────────────────────────────────────────── */
 .npc-card {
-  padding: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 6px);
   overflow: hidden;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+  position: relative;
 }
+.npc-card:hover {
+  border-color: var(--accent, #1a78ff);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.35), 0 0 0 1px rgba(26,120,255,0.15);
+  transform: translateY(-2px);
+}
+.npc-card--hidden { opacity: 0.45; filter: grayscale(0.4); }
 
-/* Portrait */
+/* ── Portrait area ───────────────────────────────────────────────────────── */
 .npc-portrait {
   width: 100%;
-  height: 160px;
+  aspect-ratio: 3 / 4;
   flex-shrink: 0;
   overflow: hidden;
   background: var(--bg3);
-  border-bottom: 1px solid var(--border);
+  position: relative;
 }
 .npc-portrait-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 0.3s ease;
+  transition: transform 0.35s ease;
 }
-.npc-card:hover .npc-portrait-img { transform: scale(1.04); }
+.npc-card:hover .npc-portrait-img { transform: scale(1.05); }
 .npc-portrait-empty {
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 48px;
-  opacity: 0.2;
+  font-size: 52px;
+  opacity: 0.18;
   background: var(--surface2);
 }
 
-/* Info area */
+/* Hover name overlay: slides up from bottom */
+.npc-hover-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 55%);
+  display: flex;
+  align-items: flex-end;
+  padding: 10px 10px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+.npc-card:hover .npc-hover-overlay { opacity: 1; }
+.npc-hover-name {
+  font-family: var(--font-header, 'Cinzel', serif);
+  font-size: 12px;
+  color: #fff;
+  letter-spacing: 0.06em;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+}
+
+/* ── Info bar ────────────────────────────────────────────────────────────── */
 .npc-info {
-  padding: 10px 14px 10px;
+  padding: 10px 12px 12px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  flex: 1;
-}
-.npc-name-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 .npc-name {
   font-family: var(--font-header, 'Cinzel', serif);
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text);
   letter-spacing: 0.05em;
-  text-transform: none;
-  flex: 1;
   line-height: 1.3;
-}
-.npc-edit-btn { opacity: 0.4; padding: 2px 5px; font-size: 11px; transition: opacity 0.15s; flex-shrink: 0; }
-.npc-edit-btn:hover { opacity: 1; }
-.npc-tags { display: flex; flex-wrap: wrap; gap: 4px; }
-.npc-meta { font-size: 11px; color: var(--text3); font-family: 'JetBrains Mono', monospace; }
-
-/* Hidden NPC */
-.npc-hidden { opacity: 0.5; }
-
-/* Expanded detail */
-.npc-body {
-  padding: 8px 14px;
-  border-top: 1px solid var(--border);
-  font-size: 12px;
-  color: var(--text2);
-  line-height: 1.6;
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
-.npc-actions {
-  display: flex;
-  gap: 5px;
-  flex-wrap: wrap;
-  padding: 8px 14px 10px;
-  border-top: 1px solid var(--border);
+.npc-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+
+/* ── Skeleton loader ────────────────────────────────────────────────────── */
+.npc-card--skeleton {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 6px);
+  overflow: hidden;
+  pointer-events: none;
+  animation: shimmer 1.5s infinite;
+  background-size: 200% 100%;
+  background-image: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
 }
-.npc-actions .btn { font-size: 11px; padding: 3px 8px; }
+.npc-skel-img { aspect-ratio: 3/4; background: var(--bg3); }
+.npc-skel-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.npc-skel-line { height: 10px; background: var(--border); border-radius: 3px; }
+.npc-skel-line--title { width: 70%; height: 12px; }
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 </style>
+
