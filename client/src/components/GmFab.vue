@@ -33,14 +33,19 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
 
 const campaign = useCampaignStore()
 const ui = useUiStore()
+const route = useRoute()
 
 const isOpen = ref(false)
+
+// Close flyout on navigation
+watch(() => route.path, () => { isOpen.value = false })
 
 const actions = [
   { type: 'npc',      label: 'Add NPC',      icon: '🧑' },

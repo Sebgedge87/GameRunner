@@ -759,6 +759,7 @@
 
 <script setup>
 import { ref, reactive, computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'
@@ -773,6 +774,12 @@ import RelationshipSlider from './RelationshipSlider.vue'
 const ui = useUiStore()
 const data = useDataStore()
 const campaign = useCampaignStore()
+const route = useRoute()
+
+// Close modal automatically when the user navigates away
+watch(() => route.path, () => {
+  if (ui.gmEditModal) ui.closeGmEdit()
+})
 
 const portraitFile = ref(null)     // File object for portrait/image uploads
 const questImgFile = ref(null)     // File object for quest banner upload
