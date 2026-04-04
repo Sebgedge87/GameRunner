@@ -5,7 +5,6 @@
         <div class="page-title">Handouts</div>
         <div class="page-sub">Documents &amp; artefacts</div>
       </div>
-      <button v-if="campaign.isGm" class="btn-add" @click="ui.openGmEdit('handout', null, {})">+ Add handout</button>
     </div>
     <div class="search-row" style="margin-bottom:12px">
       <input v-model="search" class="form-input" placeholder="Search handouts…" style="max-width:320px" />
@@ -21,19 +20,20 @@
       </div>
     </div>
 
-    <!-- Empty state -->
     <EmptyState
-      v-else-if="!data.handouts.length"
+      v-else-if="!data.handouts.length && !campaign.isGm"
       icon="📜"
       heading="No handouts yet"
       description="Share letters, maps and artefacts directly with players."
-      :cta-label="campaign.isGm ? '+ Add handout' : null"
-      :on-cta="campaign.isGm ? () => ui.openGmEdit('handout', null, {}) : null"
     />
 
     <!-- Card grid -->
-    <template v-else>
+    <template v-else-if="data.handouts.length || campaign.isGm">
       <div class="card-grid">
+        <div v-if="campaign.isGm" class="create-card" @click="ui.openGmEdit('handout', null, {})">
+          <span class="create-card-icon">+</span>
+          <span>Add Handout</span>
+        </div>
         <OverlayCard
           v-for="handout in filteredHandouts"
           :key="handout.id"

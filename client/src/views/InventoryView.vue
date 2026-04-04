@@ -33,7 +33,6 @@
     <!-- ── Party Inventory ──────────────────────────────────────── -->
     <div class="section-head">
       <span>Party Inventory</span>
-      <button v-if="campaign.isGm" class="btn-add" @click="ui.openGmEdit('inventory', null, {})">+ Add item</button>
     </div>
 
     <div class="search-row" style="margin-bottom:12px">
@@ -48,13 +47,15 @@
       icon="🎒"
       heading="No items yet"
       description="Track the party's weapons, armour, gear and consumables."
-      :cta-label="campaign.isGm ? '+ Add item' : null"
-      :on-cta="campaign.isGm ? () => ui.openGmEdit('inventory', null, {}) : null"
     />
 
     <!-- Inventory card grid -->
     <template v-else>
       <div class="card-grid">
+        <div class="create-card" @click="ui.openGmEdit('inventory', null, {})">
+          <span class="create-card-icon">+</span>
+          <span>Add Item</span>
+        </div>
         <EntityCard
           v-for="item in filteredInventory" :key="item.id"
           :entity="item" type="inventory" :title="item.name" icon="🎒"
@@ -83,7 +84,6 @@
     <!-- ── Key Items ────────────────────────────────────────────── -->
     <div class="section-head" style="margin-top:32px">
       <span>Key Items</span>
-      <button v-if="campaign.isGm" class="btn-add" @click="ui.openGmEdit('key-item', null, {})">+ Add key item</button>
     </div>
 
     <div class="search-row" style="margin-bottom:16px">
@@ -96,13 +96,15 @@
       icon="🗝️"
       heading="No key items yet"
       description="Add artefacts, quest items and plot-critical objects."
-      :cta-label="campaign.isGm ? '+ Add key item' : null"
-      :on-cta="campaign.isGm ? () => ui.openGmEdit('key-item', null, {}) : null"
     />
 
     <!-- Key items card grid -->
     <template v-else>
       <div class="card-grid">
+        <div class="create-card" @click="ui.openGmEdit('key-item', null, {})">
+          <span class="create-card-icon">+</span>
+          <span>Add Key Item</span>
+        </div>
         <EntityCard
           v-for="item in filteredKeyItems" :key="item.id"
           :entity="item" type="key-item" :title="item.name" icon="🗝️"

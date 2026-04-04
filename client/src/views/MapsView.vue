@@ -2,7 +2,6 @@
   <div class="page-content">
     <div class="page-header">
       <div class="page-title">Maps</div>
-      <button v-if="campaign.isGm" class="btn-add" @click="ui.openGmEdit('map', null, {})">+ Add map</button>
     </div>
     <div class="search-row" style="margin-bottom:16px">
       <input v-model="search" class="form-input" placeholder="Search maps…" style="max-width:320px" />
@@ -17,19 +16,20 @@
       </div>
     </div>
 
-    <!-- Empty state -->
     <EmptyState
-      v-else-if="!data.maps.length"
+      v-else-if="!data.maps.length && !campaign.isGm"
       icon="🗺️"
       heading="No maps yet"
       description="Upload battle maps, regional maps and area layouts."
-      :cta-label="campaign.isGm ? '+ Add map' : null"
-      :on-cta="campaign.isGm ? () => ui.openGmEdit('map', null, {}) : null"
     />
 
     <!-- Card grid -->
-    <template v-else>
+    <template v-else-if="data.maps.length || campaign.isGm">
       <div class="card-grid">
+        <div v-if="campaign.isGm" class="create-card" @click="ui.openGmEdit('map', null, {})">
+          <span class="create-card-icon">+</span>
+          <span>Add Map</span>
+        </div>
         <EntityCard
           v-for="map in filteredMaps" :key="map.id"
           :entity="map" type="map" :title="map.title" icon="🗺️"

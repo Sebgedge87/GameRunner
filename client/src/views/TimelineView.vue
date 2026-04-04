@@ -5,9 +5,6 @@
         Timeline
         <span v-if="cocEraLabel" class="tl-era-badge">🐙 {{ cocEraLabel }}</span>
       </div>
-      <div v-if="campaign.isGm" style="margin-left:auto">
-        <button class="btn btn-primary btn-sm" @click="ui.openGmEdit('timeline', null, {})">+ Add Event</button>
-      </div>
     </div>
     <div v-if="cocEraHint" style="font-size:0.75em;opacity:0.45;margin-bottom:12px;font-style:italic">
       Date format hint: {{ cocEraHint }}
@@ -28,12 +25,19 @@
       >Session {{ sn }}</button>
     </div>
 
-    <div v-if="filteredTimeline.length === 0" class="empty-state">No timeline events yet.</div>
+    <div v-if="filteredTimeline.length === 0 && !campaign.isGm" class="empty-state">No timeline events yet.</div>
 
     <!-- ── Horizontal timeline ── -->
-    <div v-else class="tl-scroll">
+    <div v-else-if="filteredTimeline.length || campaign.isGm" class="tl-scroll">
       <div class="tl-row">
         <div class="tl-line"></div>
+
+        <div v-if="campaign.isGm" class="tl-event" style="justify-content: center; padding-right: 20px;">
+          <div class="create-card" @click="ui.openGmEdit('timeline', null, {})" style="min-height:128px; width: 140px; margin: 0 auto;">
+            <span class="create-card-icon">+</span>
+            <span style="font-size:10px">Add Event</span>
+          </div>
+        </div>
 
         <div
           v-for="(event, i) in filteredTimeline"

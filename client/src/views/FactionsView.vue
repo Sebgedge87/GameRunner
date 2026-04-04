@@ -2,7 +2,6 @@
   <div class="page-content">
     <div class="page-header">
       <div class="page-title">Factions</div>
-      <button v-if="campaign.isGm" class="btn-add" @click="ui.openGmEdit('faction', null, {})">+ Add faction</button>
     </div>
     <div class="search-row" style="margin-bottom:16px">
       <input v-model="search" class="form-input" placeholder="Search factions…" style="max-width:320px" />
@@ -17,19 +16,20 @@
       </div>
     </div>
 
-    <!-- Empty state -->
     <EmptyState
-      v-else-if="!data.factions.length"
+      v-else-if="!data.factions.length && !campaign.isGm"
       icon="⚔️"
       heading="No factions yet"
       description="Define the guilds, cults and powers that shape your world."
-      :cta-label="campaign.isGm ? '+ Add faction' : null"
-      :on-cta="campaign.isGm ? () => ui.openGmEdit('faction', null, {}) : null"
     />
 
     <!-- Card grid -->
-    <template v-else>
+    <template v-else-if="data.factions.length || campaign.isGm">
       <div class="card-grid">
+        <div v-if="campaign.isGm" class="create-card" @click="ui.openGmEdit('faction', null, {})">
+          <span class="create-card-icon">+</span>
+          <span>Add Faction</span>
+        </div>
         <OverlayCard
           v-for="faction in filteredFactions"
           :key="faction.id"

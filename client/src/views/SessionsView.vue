@@ -3,14 +3,15 @@
     <div class="page-header">
       <div class="page-title">Sessions</div>
       <div class="page-sub">Campaign history &amp; scheduling</div>
-      <div v-if="campaign.isGm" class="page-header-actions">
-        <button class="btn btn-sm" @click="ui.openGmEdit('session', null, {})">+ New Session</button>
-      </div>
     </div>
 
     <!-- Sessions list -->
     <div class="card-grid" style="grid-template-columns:1fr">
-      <div v-if="!data.sessions.length" class="empty-state">
+      <div v-if="campaign.isGm" class="create-card" @click="ui.openGmEdit('session', null, {})" style="min-height: 80px; flex-direction: row; gap: 8px;">
+        <span class="create-card-icon">+</span>
+        <span>New Session</span>
+      </div>
+      <div v-if="!data.sessions.length && !campaign.isGm" class="empty-state">
         <span class="empty-state-icon">📖</span>
         <div class="empty-state-title">No Sessions Yet</div>
         <div class="empty-state-hint">GM: record each session to build a campaign chronicle.</div>
@@ -82,10 +83,10 @@
       </div>
     </div>
 
-    <!-- Polls -->
     <div class="section-divider" style="margin-top:24px">Polls</div>
-    <div v-if="campaign.isGm" style="margin-bottom:10px">
-      <button class="btn btn-primary btn-sm" @click="ui.openGmEdit('poll', null, null)">+ Create Poll</button>
+    <div v-if="campaign.isGm" class="create-card" @click="ui.openGmEdit('poll', null, null)" style="min-height: 60px; flex-direction: row; gap: 8px; margin-bottom: 16px;">
+      <span class="create-card-icon" style="font-size:20px">+</span>
+      <span>Create Poll</span>
     </div>
     <div v-if="!data.polls.length" class="empty-state" style="padding:16px">No polls.</div>
     <div v-for="p in data.polls" :key="p.id" class="poll-card">
@@ -115,8 +116,9 @@
 
     <!-- Scheduling -->
     <div class="section-divider" style="margin-top:24px">Scheduling</div>
-    <div v-if="campaign.isGm" style="margin-bottom:10px">
-      <button class="btn btn-primary btn-sm" @click="ui.openGmEdit('schedule', null, null)">+ Propose Date</button>
+    <div v-if="campaign.isGm" class="create-card" @click="ui.openGmEdit('schedule', null, null)" style="min-height: 60px; flex-direction: row; gap: 8px; margin-bottom: 16px;">
+      <span class="create-card-icon" style="font-size:20px">+</span>
+      <span>Propose Date</span>
     </div>
     <div v-if="!data.scheduling.length" class="empty-state" style="padding:16px">No proposed dates.</div>
     <div v-for="d in data.scheduling" :key="d.id" class="sched-item">

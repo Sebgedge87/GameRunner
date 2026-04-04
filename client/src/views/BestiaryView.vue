@@ -2,7 +2,6 @@
   <div class="page-content">
     <div class="page-header">
       <div class="page-title">Bestiary</div>
-      <button v-if="campaign.isGm" class="btn-add" @click="ui.openGmEdit('bestiary', null, {})">+ Add creature</button>
     </div>
     <div class="search-row" style="margin-bottom:16px">
       <input v-model="search" class="form-input" placeholder="Search creatures…" style="max-width:320px" />
@@ -17,19 +16,20 @@
       </div>
     </div>
 
-    <!-- Empty state -->
     <EmptyState
-      v-else-if="!data.bestiary.length"
+      v-else-if="!data.bestiary.length && !campaign.isGm"
       icon="🐉"
       heading="Bestiary empty"
       description="Catalogue the creatures your party may encounter."
-      :cta-label="campaign.isGm ? '+ Add creature' : null"
-      :on-cta="campaign.isGm ? () => ui.openGmEdit('bestiary', null, {}) : null"
     />
 
     <!-- Card grid -->
-    <template v-else>
+    <template v-else-if="data.bestiary.length || campaign.isGm">
       <div class="card-grid">
+        <div v-if="campaign.isGm" class="create-card" @click="ui.openGmEdit('bestiary', null, {})">
+          <span class="create-card-icon">+</span>
+          <span>Add Creature</span>
+        </div>
         <OverlayCard
           v-for="creature in filteredBestiary"
           :key="creature.id"

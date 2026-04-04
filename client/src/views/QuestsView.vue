@@ -2,9 +2,6 @@
   <div class="page-content">
     <div class="page-header">
       <div class="page-title">Quests</div>
-      <div v-if="campaign.isGm" class="page-header-actions">
-        <button class="btn btn-sm" @click="ui.openGmEdit('quest', null, {})">+ New Quest</button>
-      </div>
     </div>
 
     <div class="search-row" style="margin-bottom:12px">
@@ -28,6 +25,10 @@
       </div>
     </div>
     <div v-else class="card-grid">
+      <div v-if="campaign.isGm" class="create-card" @click="ui.openGmEdit('quest', null, {})">
+        <span class="create-card-icon">+</span>
+        <span>New Quest</span>
+      </div>
       <QuestCard
         v-for="quest in filteredQuests"
         :key="quest.id"

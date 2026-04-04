@@ -2,10 +2,6 @@
   <div class="page-content">
     <div class="page-header">
       <div class="page-title">Hooks & Rumours</div>
-      <div v-if="campaign.isGm" style="display:flex; gap:8px;">
-        <button class="btn-add" @click="ui.openGmEdit('hook', null, {})">+ Hook</button>
-        <button class="btn-add" @click="ui.openGmEdit('rumour', null, {})">+ Rumour</button>
-      </div>
     </div>
     
     <div class="search-row" style="margin-bottom:12px; display:flex; gap:16px;">
@@ -29,15 +25,17 @@
         </div>
       </div>
       <EmptyState
-        v-else-if="!data.hooks.length"
+        v-else-if="!data.hooks.length && !campaign.isGm"
         icon="🪝"
         heading="No hooks yet"
         description="Plant clues and leads to draw players into the story."
-        :cta-label="campaign.isGm ? '+ Add hook' : null"
-        :on-cta="campaign.isGm ? () => ui.openGmEdit('hook', null, {}) : null"
       />
-      <template v-else>
+      <template v-else-if="data.hooks.length || campaign.isGm">
         <div class="card-grid">
+          <div v-if="campaign.isGm" class="create-card" @click="ui.openGmEdit('hook', null, {})">
+            <span class="create-card-icon">+</span>
+            <span>Add Hook</span>
+          </div>
           <OverlayCard
             v-for="hook in filteredHooks"
             :key="'h_'+hook.id"
@@ -68,15 +66,17 @@
         </div>
       </div>
       <EmptyState
-        v-else-if="!data.rumours.length"
+        v-else-if="!data.rumours.length && !campaign.isGm"
         icon="🗣️"
         heading="No rumours yet"
         description="Plant whispers — some true, some false. Players won't know which."
-        :cta-label="campaign.isGm ? '+ Add rumour' : null"
-        :on-cta="campaign.isGm ? () => ui.openGmEdit('rumour', null, {}) : null"
       />
-      <template v-else>
+      <template v-else-if="data.rumours.length || campaign.isGm">
         <div class="card-grid">
+          <div v-if="campaign.isGm" class="create-card" @click="ui.openGmEdit('rumour', null, {})">
+            <span class="create-card-icon">+</span>
+            <span>Add Rumour</span>
+          </div>
           <OverlayCard
             v-for="rumour in filteredRumours"
             :key="'r_'+rumour.id"

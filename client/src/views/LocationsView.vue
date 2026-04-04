@@ -8,12 +8,7 @@
           <button class="btn btn-xs" style="margin-left:8px" @click="campaign.setPartyLocation(null)">Clear</button>
         </div>
       </div>
-      <!-- Add button only shown on Locations tab, not Notice Board -->
-      <button
-        v-if="campaign.isGm && mainTab === 'locations'"
-        class="btn-add"
-        @click="ui.openGmEdit('location', null, {})"
-      >+ Add location</button>
+      <!-- Removed add button to use unified tile -->
     </div>
 
     <!-- Top-level tabs: Locations vs Notice Board -->
@@ -35,19 +30,20 @@
         </div>
       </div>
 
-      <!-- Empty state -->
       <EmptyState
-        v-else-if="!data.locations.length"
+        v-else-if="!data.locations.length && !campaign.isGm"
         icon="📍"
         heading="No locations yet"
         description="Map the world — taverns, dungeons, cities and beyond."
-        :cta-label="campaign.isGm ? '+ Add location' : null"
-        :on-cta="campaign.isGm ? () => ui.openGmEdit('location', null, {}) : null"
       />
 
       <!-- Card grid -->
-      <template v-else>
+      <template v-else-if="data.locations.length || campaign.isGm">
         <div class="card-grid">
+          <div v-if="campaign.isGm" class="create-card" @click="ui.openGmEdit('location', null, {})">
+            <span class="create-card-icon">+</span>
+            <span>Add Location</span>
+          </div>
           <EntityCard
             v-for="loc in filteredLocations" :key="loc.id"
             :entity="loc" type="location" :title="loc.title || loc.name" icon="📍"
@@ -91,8 +87,9 @@
         </div>
       </div>
       <div class="card-grid" style="margin-top:12px">
-        <div v-if="campaign.isGm" class="add-tile" @click="ui.openGmEdit('job', null, { source_location_id: boardLocationId || null })">
-          <div class="add-tile-icon">+</div><div class="add-tile-label">Post Job</div>
+        <div v-if="campaign.isGm" class="create-card" @click="ui.openGmEdit('job', null, { source_location_id: boardLocationId || null })">
+          <div class="create-card-icon">+</div>
+          <span>Post Job</span>
         </div>
         <div v-if="boardJobs.length === 0" class="empty-state" style="grid-column:1/-1">No jobs posted here.</div>
         <div v-for="job in boardJobs" :key="job.id" class="nb-job-card" :class="`nb-diff--${job.difficulty || 'medium'}`">

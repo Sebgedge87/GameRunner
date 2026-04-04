@@ -70,44 +70,44 @@
     <div class="dash-section" style="margin-top:16px;">Quick Links</div>
     <div class="dash-grid quick-links-grid" style="margin-bottom: 24px;">
       <!-- World -->
-      <div class="stat-card stat-card-link quick-link-card" @click="router.push('/npcs')">
+      <router-link to="/npcs" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
         <div class="ql-icon">👤</div><div class="ql-label">NPCs</div>
-      </div>
-      <div class="stat-card stat-card-link quick-link-card" @click="router.push('/locations')">
+      </router-link>
+      <router-link to="/locations" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
         <div class="ql-icon">🗺</div><div class="ql-label">Locations</div>
-      </div>
-      <div class="stat-card stat-card-link quick-link-card" @click="router.push('/factions')">
+      </router-link>
+      <router-link to="/factions" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
         <div class="ql-icon">⚑</div><div class="ql-label">Factions</div>
-      </div>
-      <div class="stat-card stat-card-link quick-link-card" @click="router.push('/bestiary')">
+      </router-link>
+      <router-link to="/bestiary" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
         <div class="ql-icon">🐉</div><div class="ql-label">Bestiary</div>
-      </div>
+      </router-link>
       <!-- Knowledge & Chronology -->
-      <div class="stat-card stat-card-link quick-link-card" @click="router.push('/timeline')">
+      <router-link to="/timeline" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
         <div class="ql-icon">⏳</div><div class="ql-label">Timeline</div>
-      </div>
-      <div class="stat-card stat-card-link quick-link-card" @click="router.push('/maps')">
+      </router-link>
+      <router-link to="/maps" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
         <div class="ql-icon">🗾</div><div class="ql-label">Maps</div>
-      </div>
-      <div class="stat-card stat-card-link quick-link-card" @click="router.push('/theory-board')">
+      </router-link>
+      <router-link to="/theory-board" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
         <div class="ql-icon">🔍</div><div class="ql-label">Theory</div>
-      </div>
-      <div class="stat-card stat-card-link quick-link-card" @click="router.push('/notes')">
+      </router-link>
+      <router-link to="/notes" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
         <div class="ql-icon">📝</div><div class="ql-label">Notes</div>
-      </div>
+      </router-link>
       <!-- Player Bag -->
-      <div class="stat-card stat-card-link quick-link-card" @click="router.push('/inventory')">
+      <router-link to="/inventory" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
         <div class="ql-icon">🎒</div><div class="ql-label">Inventory</div>
-      </div>
-      <div class="stat-card stat-card-link quick-link-card" @click="router.push('/handouts')">
+      </router-link>
+      <router-link to="/handouts" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
         <div class="ql-icon">📄</div><div class="ql-label">Handouts</div>
-      </div>
-      <div class="stat-card stat-card-link quick-link-card" @click="router.push('/hooks-rumours')">
+      </router-link>
+      <router-link to="/hooks-rumours" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
         <div class="ql-icon">🪝</div><div class="ql-label">Hooks / Rumours</div>
-      </div>
-      <div class="stat-card stat-card-link quick-link-card" @click="router.push('/quests')">
+      </router-link>
+      <router-link to="/quests" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
         <div class="ql-icon">📜</div><div class="ql-label">Quests</div>
-      </div>
+      </router-link>
     </div>
 
     <!-- ── 2-column lower dashboard ─────────────────────── -->

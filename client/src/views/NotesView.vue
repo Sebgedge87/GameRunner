@@ -23,6 +23,10 @@
             <div class="empty-state-title">No Notes Yet</div>
             <div class="empty-state-hint">Click New Note to start writing. Notes can be private or shared with the GM.</div>
           </div>
+          <div class="create-card" @click="selectNote(null)" style="min-height: 60px; flex-direction: row; gap: 8px; margin-bottom: 12px">
+            <span class="create-card-icon" style="font-size:20px">+</span>
+            <span>New Note</span>
+          </div>
           <div v-for="n in filteredNotes" :key="n.id" class="note-card" style="cursor:pointer" @click="selectNote(n)">
             <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
               <div class="note-card-title" style="flex:1">{{ n.title }}</div>

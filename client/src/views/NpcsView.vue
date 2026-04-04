@@ -2,7 +2,6 @@
   <div class="page-content">
     <div class="page-header">
       <div class="page-title">NPCs</div>
-      <button v-if="campaign.isGm" class="btn-add" @click="ui.openGmEdit('npc', null, {})">+ Add NPC</button>
     </div>
     <div class="search-row" style="margin-bottom:12px">
       <input v-model="search" class="form-input" placeholder="Search NPCs…" style="max-width:320px" />
@@ -18,19 +17,20 @@
       </div>
     </div>
 
-    <!-- Empty state -->
     <EmptyState
-      v-else-if="!data.npcs.length"
+      v-else-if="!data.npcs.length && !campaign.isGm"
       icon="👤"
       heading="No NPCs yet"
       description="Add the people who populate your world."
-      :cta-label="campaign.isGm ? '+ Add NPC' : null"
-      :on-cta="campaign.isGm ? () => ui.openGmEdit('npc', null, {}) : null"
     />
 
     <!-- NPC portrait grid -->
-    <template v-else>
+    <template v-else-if="data.npcs.length || campaign.isGm">
       <div class="npc-grid">
+        <div v-if="campaign.isGm" class="create-card" @click="ui.openGmEdit('npc', null, {})">
+          <span class="create-card-icon">+</span>
+          <span>Add NPC</span>
+        </div>
         <div
           v-for="npc in filteredNpcs" :key="npc.id"
           class="npc-card card"
