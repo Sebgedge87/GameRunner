@@ -1,6 +1,6 @@
 <template>
   <div class="page-content">
-    <div class="page-header"><div class="page-title">Command Centre</div></div>
+    <div class="page-header"><div class="page-title">Campaign Home</div></div>
 
     <!-- Campaign banner -->
     <div v-if="campaign.activeCampaign" class="campaign-banner">

@@ -8,15 +8,15 @@
     <!-- Navigation -->
     <nav class="sidebar-nav">
       <!-- Lobby -->
-      <RouterLink to="/home" class="nav-item" active-class="active" @click="goHome">
-        <span class="nav-icon">⌂</span>Campaign Lobby
+      <RouterLink to="/home" class="nav-item" active-class="active" @click="goHome" :title="ui.sidebarCollapsed ? 'Main Menu' : ''">
+        <span class="nav-icon">⌂</span>Main Menu
       </RouterLink>
 
       <!-- Campaign section -->
       <div v-if="campaign.activeCampaign">
-        <!-- Dashboard/Home is the primary Command Centre -->
-        <RouterLink to="/dashboard" class="nav-item" active-class="active" @click="ui.closeSidebar()">
-          <span class="nav-icon">⚔</span>Command Centre
+        <!-- Dashboard/Home is the primary Campaign Home -->
+        <RouterLink to="/dashboard" class="nav-item" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'Campaign Home' : ''">
+          <span class="nav-icon">⚔</span>Campaign Home
         </RouterLink>
 
         <!-- World -->
@@ -24,16 +24,16 @@
           World
         </div>
         <div class="nav-group" :class="{ collapsed: collapsed.world }">
-          <RouterLink to="/npcs" class="nav-item" active-class="active" @click="ui.closeSidebar()">
+          <RouterLink to="/npcs" class="nav-item" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'NPCs' : ''">
             <span class="nav-icon">👤</span>NPCs
           </RouterLink>
-          <RouterLink to="/locations" class="nav-item" active-class="active" @click="ui.closeSidebar()">
+          <RouterLink to="/locations" class="nav-item" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'Locations' : ''">
             <span class="nav-icon">🗺</span>Locations
           </RouterLink>
-          <RouterLink to="/factions" class="nav-item" active-class="active" @click="ui.closeSidebar()">
+          <RouterLink to="/factions" class="nav-item" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'Factions' : ''">
             <span class="nav-icon">⚑</span>Factions
           </RouterLink>
-          <RouterLink to="/bestiary" class="nav-item" active-class="active" @click="ui.closeSidebar()">
+          <RouterLink to="/bestiary" class="nav-item" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'Bestiary' : ''">
             <span class="nav-icon">🐉</span>Bestiary
           </RouterLink>
         </div>
@@ -43,13 +43,13 @@
           Chronology
         </div>
         <div class="nav-group" :class="{ collapsed: collapsed.chronology }">
-          <RouterLink to="/timeline" class="nav-item" active-class="active" @click="ui.closeSidebar()">
+          <RouterLink to="/timeline" class="nav-item" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'Timeline' : ''">
             <span class="nav-icon">⏳</span>Timeline
           </RouterLink>
-          <RouterLink to="/calendar" class="nav-item" active-class="active" @click="ui.closeSidebar()">
+          <RouterLink to="/calendar" class="nav-item" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'Calendar' : ''">
             <span class="nav-icon">📅</span>Calendar
           </RouterLink>
-          <RouterLink to="/sessions" class="nav-item" active-class="active" @click="ui.closeSidebar()">
+          <RouterLink to="/sessions" class="nav-item" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'Sessions' : ''">
             <span class="nav-icon">🎲</span>Sessions
           </RouterLink>
         </div>
@@ -59,16 +59,16 @@
           Knowledge
         </div>
         <div class="nav-group" :class="{ collapsed: collapsed.knowledge }">
-          <RouterLink to="/maps" class="nav-item" active-class="active" @click="ui.closeSidebar()">
+          <RouterLink to="/maps" class="nav-item" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'Maps' : ''">
             <span class="nav-icon">🗾</span>Maps
           </RouterLink>
-          <RouterLink to="/mindmap" class="nav-item" active-class="active" @click="ui.closeSidebar()">
+          <RouterLink to="/mindmap" class="nav-item" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'Mindmap' : ''">
             <span class="nav-icon">🕸</span>Mindmap
           </RouterLink>
-          <RouterLink to="/theory-board" class="nav-item" active-class="active" @click="ui.closeSidebar()">
+          <RouterLink to="/theory-board" class="nav-item" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'Theory Board' : ''">
             <span class="nav-icon">🔍</span>Theory Board
           </RouterLink>
-          <RouterLink to="/notes" class="nav-item" active-class="active" @click="ui.closeSidebar()">
+          <RouterLink to="/notes" class="nav-item" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'Notes' : ''">
             <span class="nav-icon">📝</span>Notes
           </RouterLink>
         </div>
@@ -78,25 +78,25 @@
           Player Bag
         </div>
         <div class="nav-group" :class="{ collapsed: collapsed.player_bag }">
-          <RouterLink to="/handouts" class="nav-item" active-class="active" @click="ui.closeSidebar()">
+          <RouterLink to="/handouts" class="nav-item" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'Handouts' : ''">
             <span class="nav-icon">📄</span>Handouts
             <span v-if="ui.unreadHandoutCount > 0" class="nav-badge">{{ ui.unreadHandoutCount }}</span>
           </RouterLink>
-          <RouterLink to="/inventory" class="nav-item" active-class="active" @click="ui.closeSidebar()">
+          <RouterLink to="/inventory" class="nav-item" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'Inventory' : ''">
             <span class="nav-icon">🎒</span>Inventory
           </RouterLink>
-          <RouterLink to="/good-boy-cards" class="nav-item" active-class="active" @click="ui.closeSidebar(); ui.cardBadge = 0">
+          <RouterLink to="/good-boy-cards" class="nav-item" active-class="active" @click="ui.closeSidebar(); ui.cardBadge = 0" :title="ui.sidebarCollapsed ? 'Cards' : ''">
             <span class="nav-icon">🃏</span>Cards
             <span v-if="ui.cardBadge > 0" class="nav-badge">{{ ui.cardBadge }}</span>
           </RouterLink>
-          <RouterLink to="/hooks-rumours" class="nav-item" active-class="active" @click="ui.closeSidebar()">
+          <RouterLink to="/hooks-rumours" class="nav-item" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'Hooks & Rumours' : ''">
             <span class="nav-icon">🪝</span>Hooks & Rumours
           </RouterLink>
           <!-- Keep Quests and Characters here as they are extremely relevant to players -->
-          <RouterLink to="/quests" class="nav-item" active-class="active" @click="ui.closeSidebar()">
+          <RouterLink to="/quests" class="nav-item" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'Quests' : ''">
             <span class="nav-icon">📜</span>Quests
           </RouterLink>
-          <RouterLink to="/characters" class="nav-item" active-class="active" @click="ui.closeSidebar()">
+          <RouterLink to="/characters" class="nav-item" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'Characters' : ''">
             <span class="nav-icon">🧙</span>Characters
           </RouterLink>
         </div>
@@ -107,10 +107,10 @@
             GM
           </div>
           <div class="nav-group" :class="{ collapsed: collapsed.gm }">
-            <RouterLink to="/gm-dashboard" class="nav-item gm-only" active-class="active" @click="ui.closeSidebar()">
+            <RouterLink to="/gm-dashboard" class="nav-item gm-only" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'GM Dashboard' : ''">
               <span class="nav-icon">👁</span>GM Dashboard
             </RouterLink>
-            <RouterLink to="/combat" class="nav-item gm-only" active-class="active" @click="ui.closeSidebar()">
+            <RouterLink to="/combat" class="nav-item gm-only" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'Combat' : ''">
               <span class="nav-icon">⚔</span>Combat
             </RouterLink>
           </div>
@@ -118,12 +118,12 @@
       </div>
 
       <!-- Settings always visible -->
-      <RouterLink to="/settings" class="nav-item" active-class="active" @click="ui.closeSidebar()">
+      <RouterLink to="/settings" class="nav-item" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'Settings' : ''">
         <span class="nav-icon">⚙</span>Settings
       </RouterLink>
 
       <!-- Logout -->
-      <div class="nav-item" style="margin-top:auto;color:var(--text3)" @click="confirmLogout">
+      <div class="nav-item" style="margin-top:auto;color:var(--text3)" @click="confirmLogout" :title="ui.sidebarCollapsed ? 'Logout' : ''">
         <span class="nav-icon">⇥</span>Logout
       </div>
 
@@ -139,6 +139,12 @@
         </div>
       </div>
     </nav>
+
+    <!-- Sidebar collapse toggle -->
+    <div class="sidebar-collapse-btn" @click="ui.toggleSidebarCollapse()" :title="ui.sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+      <span class="sidebar-collapse-icon">{{ ui.sidebarCollapsed ? '›' : '‹' }}</span>
+      <span class="sidebar-collapse-label">Collapse</span>
+    </div>
   </div>
 </template>
 

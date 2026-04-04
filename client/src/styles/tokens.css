@@ -1,7 +1,7 @@
 /* ── Design Tokens — fallback defaults (overridden by theme) ──────────────── */
 :root {
   /* Layout */
-  --sidebar-w: 64px;
+  --sidebar-w: 240px;
   --topbar-h: 52px;
   --line-height: 32px;
 
