@@ -48,11 +48,17 @@
           <div class="npc-portrait">
             <img v-if="npc.image_url" :src="npc.image_url" class="npc-portrait-img" alt="" />
             <div v-else class="npc-portrait-empty">👤</div>
-            <!-- Hover name overlay -->
+            <!-- Hover detail overlay -->
             <div class="npc-hover-overlay">
-              <span class="npc-hover-name">{{ npc.name }}</span>
+              <div class="npc-hover-name">{{ npc.name }}</div>
+              <div class="npc-hover-tags">
+                <span v-if="npc.role" class="tag">{{ npc.role }}</span>
+                <span v-if="npc.race" class="tag">{{ npc.race }}</span>
+                <span v-if="npc.disposition" class="tag" :class="dispositionClass(npc.disposition)">{{ npc.disposition }}</span>
+              </div>
             </div>
           </div>
+
 
           <!-- Info bar: always visible below portrait -->
           <div class="npc-info">
@@ -193,26 +199,31 @@ onMounted(() => { if (!data.npcs.length) data.loadNpcs() })
   background: var(--surface2);
 }
 
-/* Hover name overlay: slides up from bottom */
+/* Hover detail overlay: slides up from bottom */
 .npc-hover-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 55%);
+  background: linear-gradient(to top, rgba(6,8,18,0.92) 0%, rgba(6,8,18,0.3) 55%, transparent 100%);
   display: flex;
-  align-items: flex-end;
-  padding: 10px 10px;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 10px 12px;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transform: translateY(6px);
+  transition: opacity 0.22s ease, transform 0.22s ease;
   pointer-events: none;
 }
-.npc-card:hover .npc-hover-overlay { opacity: 1; }
+.npc-card:hover .npc-hover-overlay { opacity: 1; transform: translateY(0); }
 .npc-hover-name {
   font-family: var(--font-header, 'Cinzel', serif);
   font-size: 12px;
   color: #fff;
   letter-spacing: 0.06em;
-  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+  margin-bottom: 5px;
 }
+.npc-hover-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+
 
 /* ── Info bar ────────────────────────────────────────────────────────────── */
 .npc-info {

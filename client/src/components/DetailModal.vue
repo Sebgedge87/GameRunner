@@ -1,48 +1,65 @@
 <template>
-  <div v-if="ui.detailModal" class="flyout-overlay open" @click.self="ui.closeDetail()">
-    <div class="flyout open">
-      <div class="flyout-header">
-        <div class="flyout-title">{{ typeLabel }}</div>
-        <button class="flyout-close" @click="ui.closeDetail()">✕</button>
-      </div>
-      <div class="flyout-body" @click="handleModalClick" v-html="renderedContent"></div>
-      <div class="flyout-compose">
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="modal-close" @click="ui.closeDetail()">Close</button>
-          <button class="btn btn-sm" title="Pin" @click="pinItem">📌 Pin</button>
+  <Teleport to="body">
+    <div v-if="ui.detailModal" class="dm-overlay" @click.self="ui.closeDetail()">
+      <div class="dm-panel">
 
-          <!-- Job: player can Accept open jobs -->
+        <!-- Corner bracket top-left -->
+        <div class="dm-bracket-tl">⌜</div>
+
+        <!-- Header -->
+        <div class="dm-header">
+          <span class="dm-type-label">{{ typeLabel }}</span>
+          <button class="dm-close" @click="ui.closeDetail()" aria-label="Close">✕</button>
+        </div>
+
+        <!-- Scrollable content -->
+        <div class="dm-body" @click="handleModalClick" v-html="renderedContent"></div>
+
+        <!-- Player contextual actions (non-GM) -->
+        <div v-if="hasPlayerActions" class="dm-player-actions">
           <button
             v-if="ui.detailModal?.type === 'job' && ui.detailModal?.item?.status === 'open' && !campaign.isGm"
-            class="btn btn-sm btn-primary"
+            class="dm-btn dm-btn-primary"
             @click="acceptJob"
           >Accept Job</button>
+          <button class="dm-btn dm-btn-ghost" @click="pinItem">📌 Pin</button>
+        </div>
 
-          <template v-if="campaign.isGm">
-            <!-- Job: promote to quest -->
+        <!-- GM-only section -->
+        <div v-if="campaign.isGm" class="dm-gm-section">
+          <div class="dm-gm-label">GM ONLY</div>
+          <div class="dm-gm-actions">
+            <!-- Contextual GM actions -->
             <button
               v-if="ui.detailModal?.type === 'job' && !ui.detailModal?.item?.promoted_quest_id"
-              class="btn btn-sm"
+              class="dm-btn dm-btn-ghost"
               @click="promoteJobToQuest"
-            >→ Promote to Quest</button>
-
-            <!-- Location: set as party location -->
+            >→ Quest</button>
             <button
               v-if="ui.detailModal?.type === 'location'"
-              class="btn btn-sm"
-              :class="isPartyLocation ? 'btn-primary' : ''"
+              class="dm-btn"
+              :class="isPartyLocation ? 'dm-btn-active' : 'dm-btn-ghost'"
               @click="togglePartyLocation"
-            >{{ isPartyLocation ? '📍 Party here ✓' : 'Set Party Location' }}</button>
+            >{{ isPartyLocation ? '📍 Party Here ✓' : 'Set Party Location' }}</button>
 
-            <button class="btn btn-sm" @click="toggleHiddenItem">{{ ui.detailModal?.item?.hidden ? '👁 Reveal' : '🙈 Hide' }}</button>
-            <button class="btn btn-sm" @click="editItem">✏️ Edit</button>
-            <button class="btn btn-sm btn-danger" @click="deleteItem">🗑 Delete</button>
-          </template>
+            <!-- Universal GM actions -->
+            <button class="dm-btn dm-btn-ghost" @click="pinItem">📌 Pin</button>
+            <button class="dm-btn dm-btn-ghost" @click="toggleHiddenItem">
+              {{ ui.detailModal?.item?.hidden ? '👁 Reveal' : '🙈 Hide' }}
+            </button>
+            <button class="dm-btn dm-btn-ghost" @click="editItem">✏️ Edit</button>
+            <button class="dm-btn dm-btn-danger" @click="deleteItem">🗑 Delete</button>
+          </div>
         </div>
+
+        <!-- Corner bracket bottom-right -->
+        <div class="dm-bracket-br">⌟</div>
+
       </div>
     </div>
-  </div>
+  </Teleport>
 </template>
+
 
 <script setup>
 import { computed } from 'vue'
@@ -68,6 +85,15 @@ const TYPE_LABELS = {
 }
 
 const typeLabel = computed(() => TYPE_LABELS[ui.detailModal?.type] || 'Detail')
+
+/** Show the player action bar when there's a non-GM contextual action */
+const hasPlayerActions = computed(() => {
+  if (campaign.isGm) return false
+  const m = ui.detailModal
+  if (!m) return false
+  if (m.type === 'job' && m.item?.status === 'open') return true
+  return false
+})
 
 const TYPE_RELOAD = {
   quest: () => data.loadQuests(),
@@ -303,3 +329,228 @@ async function togglePartyLocation() {
   ui.showToast(newVal ? 'Party location set' : 'Party location cleared', item.title || item.name || '', '📍')
 }
 </script>
+
+<style scoped>
+/* ── Overlay ─────────────────────────────────────────────────────────────── */
+.dm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+/* ── Panel ───────────────────────────────────────────────────────────────── */
+.dm-panel {
+  position: relative;
+  background: #0a0c12;
+  border: 1px solid rgba(26,120,255,0.25);
+  border-radius: 6px;
+  width: 100%;
+  max-width: 640px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(26,120,255,0.08);
+  animation: dm-in 0.18s ease;
+}
+@keyframes dm-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Corner brackets */
+.dm-bracket-tl {
+  position: absolute;
+  top: -2px; left: -2px;
+  font-size: 24px;
+  color: #1a78ff;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+}
+.dm-bracket-br {
+  position: absolute;
+  bottom: -2px; right: -2px;
+  font-size: 24px;
+  color: #1a78ff;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.dm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px 12px;
+  border-bottom: 1px solid rgba(26,120,255,0.15);
+  flex-shrink: 0;
+}
+.dm-type-label {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #3d9bff;
+}
+.dm-close {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.4);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 3px;
+  transition: color 0.15s;
+  line-height: 1;
+}
+.dm-close:hover { color: rgba(255,255,255,0.85); }
+
+/* ── Body (scrollable content) ───────────────────────────────────────────── */
+.dm-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+  min-height: 0;
+
+  /* Inherit detail-* classes from DetailModal rendered HTML */
+  color: var(--text2, rgba(255,255,255,0.75));
+  font-size: 13px;
+  line-height: 1.6;
+}
+.dm-body :deep(.detail-title) {
+  font-family: 'Cinzel', serif;
+  font-size: 20px;
+  color: #fff;
+  letter-spacing: 0.04em;
+  margin-bottom: 10px;
+  line-height: 1.2;
+}
+.dm-body :deep(.detail-img) {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.dm-body :deep(.detail-meta) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.dm-body :deep(.detail-body) {
+  margin-bottom: 12px;
+}
+.dm-body :deep(.detail-field) {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 10px;
+}
+.dm-body :deep(.detail-field-label) {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+}
+.dm-body :deep(.detail-gm-box) {
+  background: rgba(180,40,40,0.07);
+  border: 1px solid rgba(180,40,40,0.2);
+  border-radius: 4px;
+  padding: 10px 14px;
+  margin-top: 10px;
+}
+.dm-body :deep(.detail-gm-label) {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: #e05050;
+  margin-bottom: 6px;
+}
+
+/* ── Player actions ──────────────────────────────────────────────────────── */
+.dm-player-actions {
+  display: flex;
+  gap: 8px;
+  padding: 10px 24px 12px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+
+/* ── GM section ──────────────────────────────────────────────────────────── */
+.dm-gm-section {
+  border-top: 1px solid rgba(180,40,40,0.2);
+  background: rgba(180,40,40,0.04);
+  padding: 10px 24px 14px;
+  flex-shrink: 0;
+}
+.dm-gm-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: #e05050;
+  margin-bottom: 8px;
+  opacity: 0.8;
+}
+.dm-gm-actions {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.dm-btn {
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  white-space: nowrap;
+}
+.dm-btn-ghost {
+  background: transparent;
+  border-color: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.55);
+}
+.dm-btn-ghost:hover {
+  border-color: rgba(255,255,255,0.28);
+  color: rgba(255,255,255,0.85);
+}
+.dm-btn-primary {
+  background: rgba(26,120,255,0.15);
+  border-color: rgba(26,120,255,0.6);
+  color: #3d9bff;
+}
+.dm-btn-primary:hover {
+  background: rgba(26,120,255,0.25);
+  box-shadow: 0 0 12px rgba(26,120,255,0.2);
+}
+.dm-btn-active {
+  background: rgba(26,120,255,0.18);
+  border-color: rgba(26,120,255,0.7);
+  color: #3d9bff;
+}
+.dm-btn-danger {
+  background: transparent;
+  border-color: rgba(220,60,60,0.35);
+  color: #e05050;
+}
+.dm-btn-danger:hover {
+  background: rgba(220,60,60,0.1);
+  border-color: rgba(220,60,60,0.6);
+}
+</style>
