@@ -165,17 +165,165 @@ function parseSingleJsonObj(src) {
   return { result, warnings: [...new Set(warnings)], format: 'json' }
 }
 
+/* ── Full campaign document parser ─────────────────────── */
+const SECTION_TYPE_MAP = {
+  NPC:      [/^npc/, /^character/, /^people/, /^persons?/],
+  Location: [/^location/, /^place/, /^area/, /^region/, /^site/],
+  Faction:  [/^faction/, /^group/, /^organi[sz]/, /^guild/, /^order/],
+  Quest:    [/^quest/, /^mission/, /^task/, /^objective/, /^job/],
+  Rumour:   [/^rumou?r/, /^gossip/, /^whisper/, /^hearsay/],
+  Timeline: [/^timeline/, /^event/, /^histor/, /^chronicle/],
+}
+
+function detectSectionType(header) {
+  const h = header.toLowerCase().replace(/[^a-z]/g, '')
+  for (const [type, patterns] of Object.entries(SECTION_TYPE_MAP)) {
+    if (patterns.some(p => p.test(h))) return type
+  }
+  return null
+}
+
+function blankResult(type) {
+  if (type === 'Rumour')   return { text: '', source_npc: '', source_location: '' }
+  if (type === 'Timeline') return { name: '', description: '', notes: '', date: '', significance: 'minor' }
+  return { name: '', role: '', location: '', description: '', notes: '' }
+}
+
+function parseMarkdownDocument(raw) {
+  const lines    = raw.split('\n')
+  const entities = []
+  let currentSection = null   // entity type string e.g. 'NPC'
+  let cur = null              // {type, result, notesLines, descLines, inNotes}
+
+  function flush() {
+    if (!cur) return
+    if (!cur.result.notes && cur.notesLines.length) cur.result.notes = cur.notesLines.join('\n')
+    if (!cur.result.description && cur.descLines.length) cur.result.description = cur.descLines.join(' ')
+    const hasContent = cur.type === 'Rumour' ? cur.result.text?.trim() : cur.result.name?.trim()
+    if (hasContent) entities.push({ type: cur.type, result: cur.result, warnings: [], format: 'markdown' })
+    cur = null
+  }
+
+  function startEntity(name, type) {
+    return { type, result: blankResult(type), notesLines: [], descLines: [], inNotes: false, name }
+  }
+
+  for (const line of lines) {
+    const s = line.trim()
+
+    // # H1 — document title, skip
+    if (/^#(?!#)/.test(s)) continue
+
+    // ## H2 — section heading (entity type) or notes block
+    if (/^##(?!#)/.test(s)) {
+      const heading = s.replace(/^#+\s*/, '')
+      const detected = detectSectionType(heading)
+      if (detected) {
+        flush()
+        currentSection = detected
+        cur = null
+      } else if (cur) {
+        // notes sub-block inside an entity
+        cur.inNotes = /notes?|background|backstory|secrets?|gm.?notes?|details?/i.test(heading)
+      }
+      continue
+    }
+
+    // ### H3 — individual entity within a section
+    if (/^###(?!#)/.test(s)) {
+      flush()
+      if (currentSection) {
+        const name = s.replace(/^#+\s*/, '')
+        cur = startEntity(name, currentSection)
+        if (cur.type !== 'Rumour' && cur.type !== 'Timeline') cur.result.name = name
+        else if (cur.type === 'Timeline') cur.result.name = name
+      }
+      continue
+    }
+
+    if (!s) continue
+
+    // No entity context yet but in a Rumour section: list items are individual rumours
+    if (!cur && currentSection === 'Rumour' && /^[-*]\s+/.test(s)) {
+      entities.push({ type: 'Rumour', result: { text: s.replace(/^[-*]\s+/, ''), source_npc: '', source_location: '' }, warnings: [], format: 'markdown' })
+      continue
+    }
+
+    if (!cur) continue
+
+    // Notes sub-block toggle
+    if (/^#{1,6}\s+(notes?|background|backstory|secrets?|gm.?notes?|details?)/i.test(s)) { cur.inNotes = true; continue }
+    if (/^#{1,6}/.test(s)) { cur.inNotes = false; continue }
+    if (cur.inNotes) { cur.notesLines.push(s); continue }
+
+    // Key: Value  /  **Key:** Value
+    const kv = s.match(/^\*{1,2}([^*:]+)\*{0,2}:\*{0,2}\s+(.+)$/) ||
+               s.match(/^([A-Za-z][A-Za-z _/-]{1,28}):\s+(.+)$/)
+    if (kv) {
+      const key = kv[1].toLowerCase().trim().replace(/[\s_-]+/g, '_')
+      const val = kv[2].replace(/\*\*/g, '').trim()
+      const r   = cur.result
+      if (cur.type === 'Rumour') {
+        if (/^(source|source_npc|npc)$/.test(key))          r.source_npc = val
+        else if (/^(location|source_location|place)$/.test(key)) r.source_location = val
+        else if (/^(text|rumou?r|content)$/.test(key))      r.text = val
+      } else if (cur.type === 'Timeline') {
+        if (/^(date|in_world_date|when)$/.test(key))        r.date = val
+        else if (/^(significance|importance)$/.test(key))   r.significance = val
+        else if (/^(description|summary|desc)$/.test(key))  r.description = val
+        else if (/^(notes?|gm_notes?)$/.test(key))          r.notes = val
+      } else {
+        const field = aliasToField(kv[1])
+        if (field && !r[field]) r[field] = val
+      }
+      continue
+    }
+
+    // List item — append to desc or use as rumour text
+    if (/^[-*]\s+/.test(s)) {
+      const text = s.replace(/^[-*]\s+/, '')
+      if (cur.type === 'Rumour' && !cur.result.text) cur.result.text = text
+      else cur.descLines.push(text)
+      continue
+    }
+
+    // Plain paragraph
+    if (s.length > 4) {
+      if (cur.type === 'Rumour' && !cur.result.text) cur.result.text = s
+      else cur.descLines.push(s)
+    }
+  }
+
+  flush()
+  return entities
+}
+
 function parseAllEntities(raw) {
   const trimmed = raw.trim()
+
+  // JSON array
   if (trimmed.startsWith('[')) {
     try {
       const arr = JSON.parse(trimmed)
-      if (Array.isArray(arr) && arr.length > 0) {
-        return arr.filter(x => x && typeof x === 'object').map(parseSingleJsonObj)
-      }
+      if (Array.isArray(arr) && arr.length > 0)
+        return arr.filter(x => x && typeof x === 'object').map(src => ({ ...parseSingleJsonObj(src), type: entityForm.type }))
     } catch {}
   }
-  return [parseEntityText(raw)]
+
+  // Single JSON object
+  if (trimmed.startsWith('{')) {
+    try {
+      const obj = JSON.parse(trimmed)
+      return [{ ...parseSingleJsonObj(obj), type: entityForm.type }]
+    } catch {}
+  }
+
+  // Full markdown campaign document (has section headers)
+  const mdEntities = parseMarkdownDocument(raw)
+  if (mdEntities.length > 0) return mdEntities
+
+  // Single-entity markdown fallback
+  return [{ ...parseEntityText(raw), type: entityForm.type }]
 }
 
 function runPaste() {
@@ -218,41 +366,45 @@ function processUploadedFile(file) {
 }
 
 /* ── Batch save ─────────────────────────────────────────── */
+function entityEndpointAndBody(ent) {
+  const type = ent.type || entityForm.type
+  const r    = ent.result
+  if (type === 'NPC')
+    return { endpoint: '/api/npcs', body: { name: r.name, role: r.role, description: r.description, gm_notes: r.notes }, valid: !!r.name?.trim() }
+  if (type === 'Location')
+    return { endpoint: '/api/locations', body: { name: r.name, description: r.description, gm_notes: r.notes }, valid: !!r.name?.trim() }
+  if (type === 'Faction')
+    return { endpoint: '/api/factions', body: { name: r.name, description: r.description, gm_notes: r.notes }, valid: !!r.name?.trim() }
+  if (type === 'Quest')
+    return { endpoint: '/api/quests', body: { title: r.name, description: r.description, gm_notes: r.notes, status: 'active', quest_type: 'main' }, valid: !!r.name?.trim() }
+  if (type === 'Rumour')
+    return { endpoint: '/api/rumours', body: { text: r.text, is_true: false, source_npc: r.source_npc || null, source_location: r.source_location || null }, valid: !!r.text?.trim() }
+  if (type === 'Timeline')
+    return { endpoint: '/api/timeline', body: { title: r.name, description: r.description, gm_notes: r.notes, in_world_date: r.date, significance: r.significance || 'minor' }, valid: !!r.name?.trim() }
+  return null
+}
+
 async function saveAllEntities() {
   if (!parsedEntities.value.length) return
   entitySaving.value = true
   let saved = 0, failed = 0
   try {
     for (const ent of parsedEntities.value) {
-      if (!ent.result.name?.trim()) { failed++; continue }
+      const info = entityEndpointAndBody(ent)
+      if (!info || !info.valid) { failed++; continue }
       try {
-        const type = entityForm.type
-        let endpoint, body
-        if (type === 'NPC') {
-          endpoint = '/api/npcs'
-          body = { name: ent.result.name, role: ent.result.role, description: ent.result.description, gm_notes: ent.result.notes }
-        } else if (type === 'Location') {
-          endpoint = '/api/locations'
-          body = { name: ent.result.name, description: ent.result.description, gm_notes: ent.result.notes }
-        } else if (type === 'Faction') {
-          endpoint = '/api/factions'
-          body = { name: ent.result.name, description: ent.result.description, gm_notes: ent.result.notes }
-        } else {
-          endpoint = '/api/quests'
-          body = { title: ent.result.name, description: ent.result.description, gm_notes: ent.result.notes, status: 'active', quest_type: 'main' }
-        }
-        const r = await apif(endpoint, { method: 'POST', body: JSON.stringify(body) })
+        const r = await apif(info.endpoint, { method: 'POST', body: JSON.stringify(info.body) })
         if (!r.ok) { failed++; continue }
         saved++
       } catch { failed++ }
     }
-    if (failed > 0 && saved > 0) ui.showToast(`${failed} item${failed > 1 ? 's' : ''} failed`, '', '✕')
+    if (failed > 0 && saved > 0) ui.showToast(`${failed} item${failed > 1 ? 's' : ''} could not be saved`, '', '✕')
     if (saved > 0) {
-      ui.showToast(`${saved} ${saved === 1 ? 'entity' : 'entities'} added!`, '', '✓')
+      ui.showToast(`${saved} ${saved === 1 ? 'entity' : 'entities'} imported!`, '', '✓')
       emit('close')
       router.push('/dashboard')
     } else {
-      ui.showToast('No entities could be saved — check names are present', '', '✕')
+      ui.showToast('Nothing was saved — check that entries have names/text', '', '✕')
     }
   } catch (e) {
     ui.showToast(e.message || 'Failed to save', '', '✕')
@@ -708,7 +860,10 @@ function skipEntity() {
               />
             </div>
             <div class="wiz-paste-hint">
-              Supports JSON objects and Markdown with <code>**Field:** value</code> or <code>## Notes</code> sections.
+              Paste a single entity, a JSON array, or a full campaign document with
+              <code>## NPCs</code> / <code>## Locations</code> / <code>## Factions</code> /
+              <code>## Quests</code> / <code>## Rumors</code> / <code>## Timeline</code> sections —
+              individual entries under <code>### Name</code> headings with <code>**Field:** value</code> pairs.
             </div>
             <div style="display:flex;justify-content:flex-end;margin-top:10px">
               <button class="wiz-parse-btn-main" :disabled="!pasteRaw.trim()" @click="runPaste">
@@ -717,11 +872,10 @@ function skipEntity() {
             </div>
 
             <div v-if="parsedEntities.length > 1" class="wiz-entity-queue" style="margin-top:10px">
-              <div class="wiz-queue-header">
-                {{ parsedEntities.length }} entities detected
-              </div>
+              <div class="wiz-queue-header">{{ parsedEntities.length }} entities detected</div>
               <div v-for="(e, i) in parsedEntities" :key="i" class="wiz-queue-item">
-                <span class="wiz-queue-name">{{ e.result.name || '(unnamed)' }}</span>
+                <span v-if="e.type" class="wiz-type-badge" :data-type="e.type">{{ e.type }}</span>
+                <span class="wiz-queue-name">{{ e.type === 'Rumour' ? (e.result.text?.slice(0,50) + (e.result.text?.length > 50 ? '…' : '')) : (e.result.name || '(unnamed)') }}</span>
                 <span v-if="e.result.role" class="wiz-queue-role">{{ e.result.role }}</span>
               </div>
             </div>
@@ -753,7 +907,7 @@ function skipEntity() {
                 <template v-if="parsedEntities.length">
                   {{ parsedEntities.length }} {{ parsedEntities.length === 1 ? 'entity' : 'entities' }} detected — click to replace
                 </template>
-                <template v-else>Supports JSON arrays, single JSON objects, and Markdown</template>
+                <template v-else>Campaign docs with ## NPCs / ## Locations / ## Factions / ## Quests / ## Rumors / ## Timeline sections are fully supported</template>
               </div>
               <div class="wiz-file-badges">
                 <span class="wiz-file-badge">.json</span>
@@ -761,7 +915,8 @@ function skipEntity() {
               </div>
             </div>
 
-            <div class="wiz-field-row" style="margin-top:12px;margin-bottom:0">
+            <!-- Fallback type selector only shown when types weren't auto-detected -->
+            <div v-if="parsedEntities.length && parsedEntities.every(e => !e.type)" class="wiz-field-row" style="margin-top:12px;margin-bottom:0">
               <div class="wiz-field">
                 <label>Entity type for imported items</label>
                 <select v-model="entityForm.type">
@@ -775,9 +930,10 @@ function skipEntity() {
                 {{ parsedEntities.length }} {{ parsedEntities.length === 1 ? 'entity' : 'entities' }} ready to import
               </div>
               <div v-for="(e, i) in parsedEntities" :key="i" class="wiz-queue-item">
-                <span class="wiz-queue-name">{{ e.result.name || '(unnamed)' }}</span>
+                <span class="wiz-type-badge" :data-type="e.type">{{ e.type }}</span>
+                <span class="wiz-queue-name">{{ e.type === 'Rumour' ? (e.result.text?.slice(0,50) + (e.result.text?.length > 50 ? '…' : '')) : (e.result.name || '(unnamed)') }}</span>
                 <span v-if="e.result.role" class="wiz-queue-role">{{ e.result.role }}</span>
-                <span v-if="e.result.description" class="wiz-queue-desc">{{ e.result.description.slice(0, 60) }}{{ e.result.description.length > 60 ? '…' : '' }}</span>
+                <span v-else-if="e.result.description" class="wiz-queue-desc">{{ e.result.description.slice(0,50) }}{{ e.result.description.length > 50 ? '…' : '' }}</span>
               </div>
             </div>
           </div>
@@ -1136,9 +1292,29 @@ function skipEntity() {
   font-size: 12px;
 }
 .wiz-queue-item:last-child { border-bottom: none; }
-.wiz-queue-name { color: var(--color-text-primary); font-weight: 500; flex-shrink: 0; }
+.wiz-queue-name { color: var(--color-text-primary); font-weight: 500; flex-shrink: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wiz-queue-role { color: var(--color-text-hint); font-size: 11px; flex-shrink: 0; }
 .wiz-queue-desc { color: var(--color-text-hint); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Type badges in queue */
+.wiz-type-badge {
+  flex-shrink: 0;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--color-bg-elevated);
+  color: var(--color-text-hint);
+  border: 0.5px solid var(--color-border-default);
+}
+.wiz-type-badge[data-type="NPC"]      { background: #1a2e3a; color: #5bb8e8; border-color: #2a4e6a; }
+.wiz-type-badge[data-type="Location"] { background: #1e2e1e; color: #6dbf6d; border-color: #2e4e2e; }
+.wiz-type-badge[data-type="Faction"]  { background: #2d1e38; color: #b87de8; border-color: #4d2e6a; }
+.wiz-type-badge[data-type="Quest"]    { background: #2e2410; color: #e8a83d; border-color: #5a4010; }
+.wiz-type-badge[data-type="Rumour"]   { background: #2e1a1a; color: #e86d6d; border-color: #5a2a2a; }
+.wiz-type-badge[data-type="Timeline"] { background: #1e2830; color: #6daae8; border-color: #2e4860; }
 
 /* ── Paste tab ────────────────────────────────────────── */
 .wiz-paste-area {
