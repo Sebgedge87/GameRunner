@@ -338,7 +338,101 @@ function runPaste() {
   // multiple: stay on paste tab and show the queue
 }
 
-/* ── File upload ────────────────────────────────────────── */
+/* ── Import template ────────────────────────────────────── */
+const IMPORT_TEMPLATE = `# Campaign Name
+
+## NPCs
+
+### NPC Name
+**Role:** Merchant / Guard / Villain / Cultist…
+**Location:** Where they are usually found
+**Description:** One-line summary visible to players
+**Notes:** GM-only secrets, motivations, connections
+
+### Example — Sister Agatha
+**Role:** Rogue Priest
+**Location:** The Sunken Chapel, Ashford
+**Description:** A severe woman in grey robes who speaks in riddles.
+**Notes:** Secretly the cult's liaison to the Merchant Council. Carries a brass key.
+
+---
+
+## Locations
+
+### Location Name
+**Description:** What players see and know
+**Notes:** Hidden details, traps, secrets, exits
+
+### Example — The Old Mill
+**Description:** A crumbling watermill on the edge of town, long abandoned.
+**Notes:** Basement trapdoor leads to the tunnel network. Cult robes stashed in a barrel.
+
+---
+
+## Factions
+
+### Faction Name
+**Description:** Public reputation and known activities
+**Goals:** What this faction is trying to achieve
+**Notes:** Leadership structure, internal tensions, secret agenda
+
+### Example — The Merchant Council
+**Description:** A powerful trade guild that controls the city's commerce and courts.
+**Goals:** Monopolise the northern spice trade and install a puppet governor.
+**Notes:** Funded by House Vane. The inner circle worships the Sea God in secret.
+
+---
+
+## Quests
+
+### Quest Title
+**Description:** What the players know and are being asked to do
+**Notes:** GM context — red herrings, true culprit, possible outcomes, rewards
+
+### Example — The Missing Shipment
+**Description:** Merchant Aldred's cargo of fine cloth vanished on the Ashford road. He's offering a reward.
+**Notes:** Stolen by the Council to frame a rival. The cargo hides contraband letters implicating Lord Harwick.
+
+---
+
+## Rumors
+
+- The king's adviser has not been seen at court in three days.
+- Strange lights appear near the old mill every night at midnight.
+- A farmer swears he saw soldiers in unmarked armour crossing the north road before dawn.
+- The innkeeper at the Silver Flagon pays good coin for useful information.
+
+---
+
+## Timeline
+
+### Event Title
+**Date:** In-world date (e.g. 3rd Frost Moon, Year 412)
+**Significance:** minor / major / legendary
+**Description:** What happened — player-visible account
+**Notes:** GM context: true causes, hidden consequences, follow-on hooks
+
+### Example — The Night of Embers
+**Date:** 14th Harvest Moon, Year 401
+**Significance:** major
+**Description:** The capital's merchant quarter burned to the ground overnight. Hundreds were left homeless.
+**Notes:** Arson ordered by House Vane to destroy a rival's warehouse and the damning ledgers inside.
+`
+
+function downloadTemplate() {
+  const blob = new Blob([IMPORT_TEMPLATE], { type: 'text/markdown' })
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  a.href     = url
+  a.download = 'campaign-import-template.md'
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function fillTemplate() {
+  pasteRaw.value = IMPORT_TEMPLATE
+  parsedEntities.value = []
+}
 function handleFileDrop(e) {
   const file = e.dataTransfer?.files?.[0]
   if (file) processUploadedFile(file)
@@ -852,7 +946,13 @@ function skipEntity() {
               </div>
             </div>
             <div class="wiz-field" style="margin-bottom:10px">
-              <label>Paste JSON or Markdown</label>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+                <label style="margin-bottom:0">Paste JSON or Markdown</label>
+                <button class="wiz-tpl-btn" title="Fill with import template" @click="fillTemplate">
+                  <svg viewBox="0 0 14 14" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2" y="1" width="8" height="10" rx="1"/><line x1="4" y1="4" x2="8" y2="4"/><line x1="4" y1="6.5" x2="8" y2="6.5"/><line x1="4" y1="9" x2="6.5" y2="9"/></svg>
+                  Use template
+                </button>
+              </div>
               <textarea
                 v-model="pasteRaw"
                 class="wiz-paste-area"
@@ -913,6 +1013,13 @@ function skipEntity() {
                 <span class="wiz-file-badge">.json</span>
                 <span class="wiz-file-badge">.md</span>
               </div>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;margin-top:10px">
+              <button class="wiz-tpl-btn" @click="downloadTemplate">
+                <svg viewBox="0 0 14 14" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 2v7M4 6l3 3 3-3"/><path d="M2 11h10"/></svg>
+                Download template .md
+              </button>
             </div>
 
             <!-- Fallback type selector only shown when types weren't auto-detected -->
@@ -1361,6 +1468,23 @@ function skipEntity() {
 }
 .wiz-parse-btn-main:hover:not(:disabled) { background: var(--accent-dim); }
 .wiz-parse-btn-main:disabled { opacity: .35; cursor: default; }
+
+.wiz-tpl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  font-size: 11px; font-weight: 500;
+  border: 0.5px solid var(--color-border-default);
+  border-radius: 6px;
+  background: var(--color-bg-elevated);
+  color: var(--color-text-hint);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.wiz-tpl-btn:hover { color: var(--color-text-primary); border-color: var(--color-border-hover); }
 
 /* ── Parse warnings on guided form ───────────────────── */
 .wiz-parse-notice {
