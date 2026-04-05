@@ -112,9 +112,9 @@
             <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Secret information, tactics, hidden motivations…" />
           </template>
           <template v-if="isEdit" #gm-actions>
-            <button class="gm-action-btn" @click="gmPin">?? Pin</button>
-            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '?? Reveal' : '?? Hide' }}</button>
-            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">?? Delete</button>
+            <button class="gm-action-btn" @click="gmTogglePin">📌 {{ isPinned ? 'Unpin' : 'Pin' }}</button>
+            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '👁 Show' : '🙈 Hide' }}</button>
+            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">🗑 Delete</button>
           </template>
         </EntityForm>
 
@@ -182,9 +182,9 @@
             <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Secrets, motivations, hidden knowledge…" />
           </template>
           <template v-if="isEdit" #gm-actions>
-            <button class="gm-action-btn" @click="gmPin">?? Pin</button>
-            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '?? Reveal' : '?? Hide' }}</button>
-            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">?? Delete</button>
+            <button class="gm-action-btn" @click="gmTogglePin">📌 {{ isPinned ? 'Unpin' : 'Pin' }}</button>
+            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '👁 Show' : '🙈 Hide' }}</button>
+            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">🗑 Delete</button>
           </template>
         </EntityForm>
 
@@ -250,9 +250,9 @@
             <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Hidden traps, secret doors, GM-only lore…" />
           </template>
           <template v-if="isEdit" #gm-actions>
-            <button class="gm-action-btn" @click="gmPin">?? Pin</button>
-            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '?? Reveal' : '?? Hide' }}</button>
-            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">?? Delete</button>
+            <button class="gm-action-btn" @click="gmTogglePin">📌 {{ isPinned ? 'Unpin' : 'Pin' }}</button>
+            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '👁 Show' : '🙈 Hide' }}</button>
+            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">🗑 Delete</button>
           </template>
         </EntityForm>
 
@@ -283,9 +283,9 @@
             </div>
           </template>
           <template v-if="isEdit" #gm-actions>
-            <button class="gm-action-btn" @click="gmPin">?? Pin</button>
-            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '?? Reveal' : '?? Hide' }}</button>
-            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">?? Delete</button>
+            <button class="gm-action-btn" @click="gmTogglePin">📌 {{ isPinned ? 'Unpin' : 'Pin' }}</button>
+            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '👁 Show' : '🙈 Hide' }}</button>
+            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">🗑 Delete</button>
           </template>
         </EntityForm>
 
@@ -325,9 +325,9 @@
             </div>
           </template>
           <template v-if="isEdit" #gm-actions>
-            <button class="gm-action-btn" @click="gmPin">?? Pin</button>
-            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '?? Reveal' : '?? Hide' }}</button>
-            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">?? Delete</button>
+            <button class="gm-action-btn" @click="gmTogglePin">📌 {{ isPinned ? 'Unpin' : 'Pin' }}</button>
+            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '👁 Show' : '🙈 Hide' }}</button>
+            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">🗑 Delete</button>
           </template>
         </EntityForm>
 
@@ -408,9 +408,9 @@
             <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Private — players never see this…" />
           </template>
           <template v-if="isEdit" #gm-actions>
-            <button class="gm-action-btn" @click="gmPin">?? Pin</button>
-            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '?? Reveal' : '?? Hide' }}</button>
-            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">?? Delete</button>
+            <button class="gm-action-btn" @click="gmTogglePin">📌 {{ isPinned ? 'Unpin' : 'Pin' }}</button>
+            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '👁 Show' : '🙈 Hide' }}</button>
+            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">🗑 Delete</button>
           </template>
         </EntityForm>
 
@@ -474,9 +474,9 @@
             <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Internal tensions, secret agendas, hidden members…" />
           </template>
           <template v-if="isEdit" #gm-actions>
-            <button class="gm-action-btn" @click="gmPin">?? Pin</button>
-            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '?? Reveal' : '?? Hide' }}</button>
-            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">?? Delete</button>
+            <button class="gm-action-btn" @click="gmTogglePin">📌 {{ isPinned ? 'Unpin' : 'Pin' }}</button>
+            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '👁 Show' : '🙈 Hide' }}</button>
+            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">🗑 Delete</button>
           </template>
         </EntityForm>
 
@@ -556,9 +556,9 @@
             </div>
           </template>
           <template v-if="isEdit" #gm-actions>
-            <button class="gm-action-btn" @click="gmPin">?? Pin</button>
-            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '?? Reveal' : '?? Hide' }}</button>
-            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">?? Delete</button>
+            <button class="gm-action-btn" @click="gmTogglePin">📌 {{ isPinned ? 'Unpin' : 'Pin' }}</button>
+            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '👁 Show' : '🙈 Hide' }}</button>
+            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">🗑 Delete</button>
           </template>
         </EntityForm>
 
@@ -609,9 +609,9 @@
             </div>
           </template>
           <template v-if="isEdit" #gm-actions>
-            <button class="gm-action-btn" @click="gmPin">?? Pin</button>
-            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '?? Reveal' : '?? Hide' }}</button>
-            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">?? Delete</button>
+            <button class="gm-action-btn" @click="gmTogglePin">📌 {{ isPinned ? 'Unpin' : 'Pin' }}</button>
+            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '👁 Show' : '🙈 Hide' }}</button>
+            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">🗑 Delete</button>
           </template>
         </EntityForm>
 
@@ -722,9 +722,9 @@
             <MarkdownEditor v-model="f.gm_notes" :minRows="3" placeholder="Secret information, hidden motivations, encounter tactics…" />
           </template>
           <template v-if="isEdit" #gm-actions>
-            <button class="gm-action-btn" @click="gmPin">?? Pin</button>
-            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '?? Reveal' : '?? Hide' }}</button>
-            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">?? Delete</button>
+            <button class="gm-action-btn" @click="gmTogglePin">📌 {{ isPinned ? 'Unpin' : 'Pin' }}</button>
+            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '👁 Show' : '🙈 Hide' }}</button>
+            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">🗑 Delete</button>
           </template>
         </EntityForm>
 
@@ -756,9 +756,9 @@
             </div>
           </template>
           <template v-if="isEdit" #gm-actions>
-            <button class="gm-action-btn" @click="gmPin">?? Pin</button>
-            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '?? Reveal' : '?? Hide' }}</button>
-            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">?? Delete</button>
+            <button class="gm-action-btn" @click="gmTogglePin">📌 {{ isPinned ? 'Unpin' : 'Pin' }}</button>
+            <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '👁 Show' : '🙈 Hide' }}</button>
+            <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">🗑 Delete</button>
           </template>
         </EntityForm>
 
@@ -859,18 +859,36 @@ function clearErrors() {
 }
 
 // GM quick-actions (Pin / Hide / Delete — shown inside the edit form)
-async function gmPin() {
-  const { id } = ui.gmEditModal
-  const label = f.title || f.name || type.value
-  await data.addPin(type.value, id, label)
-  ui.showToast('Pinned', label, '📌')
+const isPinned = computed(() => {
+  const modalId = ui.gmEditModal?.id
+  if (!modalId) return false
+  return data.pins.some(p => p.item_id == modalId && p.item_type === type.value)
+})
+
+async function gmTogglePin() {
+  const modal = ui.gmEditModal
+  if (isPinned.value) {
+    const pin = data.pins.find(p => p.item_id == modal.id && p.item_type === type.value)
+    if (pin) {
+      await data.removePin(pin.id)
+      ui.showToast('Unpinned', '', '📌')
+    }
+  } else {
+    const label = f.title || f.name || type.value
+    await data.addPin(type.value, modal.id, label)
+    ui.showToast('Pinned', label, '📌')
+  }
 }
 
 async function gmToggleHidden() {
   const modal = ui.gmEditModal
   await data.toggleHidden(type.value, modal.id)
   await TYPE_RELOAD[type.value]?.()
-  ui.showToast(modal.data?.hidden ? 'Revealed' : 'Hidden', '', '👁')
+  
+  // Locally update the UI data so the button label reacts
+  if (modal.data) modal.data.hidden = !modal.data.hidden
+  
+  ui.showToast(modal.data?.hidden ? 'Hidden' : 'Revealed', '', '👁')
 }
 
 async function gmDelete() {
