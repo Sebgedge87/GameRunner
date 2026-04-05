@@ -835,25 +835,66 @@ import Dropzone from './Dropzone.vue'
 import StickyFormFooter from './StickyFormFooter.vue'
 import EntityForm from './EntityForm.vue'
 import RelationshipSlider from './RelationshipSlider.vue'
-
 const ui = useUiStore()
 const data = useDataStore()
 const campaign = useCampaignStore()
 const route = useRoute()
 
-  // Title-based entities
+watch(() => route.path, () => {
+  if (ui.gmEditModal) ui.closeGmEdit()
+})
+
+const portraitFile = ref(null)
+const questImgFile = ref(null)
+const saving = ref(false)
+const saveError = ref('')
+const fieldErrors = reactive({})
+const portraitPreview = ref('')
+const mapImgPreview = ref('')
+const handoutImgPreview = ref('')
+
+function clearErrors() {
+  Object.keys(fieldErrors).forEach(k => delete fieldErrors[k])
+  saveError.value = ''
+}
+
+// GM quick-actions (Pin / Hide / Delete — shown inside the edit form)
+async function gmPin() {
+  const { id } = ui.gmEditModal
+  const label = f.title || f.name || type.value
+  await data.addPin(type.value, id, label)
+  ui.showToast('Pinned', label, '📌')
+}
+
+async function gmToggleHidden() {
+  const modal = ui.gmEditModal
+  await data.toggleHidden(type.value, modal.id)
+  await TYPE_RELOAD[type.value]?.()
+  ui.showToast(modal.data?.hidden ? 'Revealed' : 'Hidden', '', '👁')
+}
+
+async function gmDelete() {
+  const label = f.title || f.name || type.value
+  if (!await ui.confirm('Delete "' + label + '"?')) return
+  await data.deleteItem(type.value, ui.gmEditModal.id)
+  await TYPE_RELOAD[type.value]?.()
+  ui.closeGmEdit()
+  ui.showToast('Deleted', label, '✓')
+}
+
+function validate() {
+  clearErrors()
+  const t = type.value
+  let valid = true
   if (['quest','hook','handout','session','map','timeline','job'].includes(t)) {
     if (!f.title?.trim()) { fieldErrors.title = 'Title is required'; valid = false }
   }
-  // Name-based entities
   if (['npc','location','faction','inventory','key-item','bestiary'].includes(t)) {
     if (!f.name?.trim()) { fieldErrors.name = 'Name is required'; valid = false }
   }
-  // Rumour
   if (t === 'rumour' && !f.text?.trim()) {
     fieldErrors.text = 'Rumour text is required'; valid = false
   }
-  // Map image
   if (t === 'map' && !isEdit.value && !portraitFile.value) {
     fieldErrors.map_image = 'A map image is required'; valid = false
   }
