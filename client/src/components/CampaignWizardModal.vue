@@ -36,8 +36,11 @@ const entityForm   = reactive({
 })
 
 /* ── Paste parser ──────────────────────────────────────── */
-const pasteRaw      = ref('')
-const parseWarnings = ref([])  // field names that were inferred, not explicit
+const pasteRaw       = ref('')
+const parseWarnings  = ref([])  // field names that were inferred, not explicit
+const parsedEntities = ref([])  // [{result, warnings, format}] – multi-entity queue
+const uploadFile     = ref(null)
+const fileInputRef   = ref(null)
 
 // Field name aliases → canonical field
 const FIELD_ALIASES = {
@@ -64,22 +67,24 @@ function parseEntityText(raw) {
   const trimmed = raw.trim()
   if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
     try {
-      const obj = JSON.parse(trimmed.startsWith('[') ? trimmed[0] : trimmed)
-      const src = Array.isArray(obj) ? obj[0] : obj
-      for (const [key, val] of Object.entries(src)) {
-        if (typeof val !== 'string' && typeof val !== 'number') continue
-        const field = aliasToField(key)
-        if (field && !result[field]) result[field] = String(val)
-      }
-      // Flag fields that were filled from a non-obvious alias
-      for (const [key, val] of Object.entries(src)) {
-        if (typeof val !== 'string' && typeof val !== 'number') continue
-        const field = aliasToField(key)
-        if (field && !FIELD_ALIASES[field][0].includes(key.toLowerCase())) {
-          warnings.push(field)
+      const parsed = JSON.parse(trimmed)
+      const src = Array.isArray(parsed) ? parsed[0] : parsed
+      if (src && typeof src === 'object') {
+        for (const [key, val] of Object.entries(src)) {
+          if (typeof val !== 'string' && typeof val !== 'number') continue
+          const field = aliasToField(key)
+          if (field && !result[field]) result[field] = String(val)
         }
+        // Flag fields that were filled from a non-obvious alias
+        for (const [key, val] of Object.entries(src)) {
+          if (typeof val !== 'string' && typeof val !== 'number') continue
+          const field = aliasToField(key)
+          if (field && !FIELD_ALIASES[field][0].includes(key.toLowerCase())) {
+            warnings.push(field)
+          }
+        }
+        return { result, warnings, format: 'json' }
       }
-      return { result, warnings, format: 'json' }
     } catch { /* fall through to markdown */ }
   }
 
@@ -145,12 +150,115 @@ function parseEntityText(raw) {
   return { result, warnings: [...new Set(warnings)], format: 'markdown' }
 }
 
+/* ── Multi-entity parse (JSON arrays) ──────────────────── */
+function parseSingleJsonObj(src) {
+  const result   = { name: '', role: '', location: '', description: '', notes: '' }
+  const warnings = []
+  for (const [key, val] of Object.entries(src)) {
+    if (typeof val !== 'string' && typeof val !== 'number') continue
+    const field = aliasToField(key)
+    if (field && !result[field]) {
+      result[field] = String(val)
+      if (!FIELD_ALIASES[field][0].includes(key.toLowerCase().trim())) warnings.push(field)
+    }
+  }
+  return { result, warnings: [...new Set(warnings)], format: 'json' }
+}
+
+function parseAllEntities(raw) {
+  const trimmed = raw.trim()
+  if (trimmed.startsWith('[')) {
+    try {
+      const arr = JSON.parse(trimmed)
+      if (Array.isArray(arr) && arr.length > 0) {
+        return arr.filter(x => x && typeof x === 'object').map(parseSingleJsonObj)
+      }
+    } catch {}
+  }
+  return [parseEntityText(raw)]
+}
+
 function runPaste() {
   if (!pasteRaw.value.trim()) return
-  const { result, warnings } = parseEntityText(pasteRaw.value)
-  Object.assign(entityForm, result)
-  parseWarnings.value = warnings
-  importTab.value = 0  // switch to guided to review
+  const entities = parseAllEntities(pasteRaw.value)
+  parsedEntities.value = entities
+  if (entities.length === 1) {
+    Object.assign(entityForm, entities[0].result)
+    parseWarnings.value = entities[0].warnings
+    importTab.value = 0  // switch to guided to review
+  }
+  // multiple: stay on paste tab and show the queue
+}
+
+/* ── File upload ────────────────────────────────────────── */
+function handleFileDrop(e) {
+  const file = e.dataTransfer?.files?.[0]
+  if (file) processUploadedFile(file)
+}
+
+function handleFileChange(e) {
+  const file = e.target?.files?.[0]
+  if (file) processUploadedFile(file)
+}
+
+function processUploadedFile(file) {
+  uploadFile.value = file
+  parsedEntities.value = []
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    const text = e.target.result
+    const entities = parseAllEntities(text)
+    parsedEntities.value = entities
+    if (entities.length === 1) {
+      Object.assign(entityForm, entities[0].result)
+      parseWarnings.value = entities[0].warnings
+    }
+  }
+  reader.readAsText(file)
+}
+
+/* ── Batch save ─────────────────────────────────────────── */
+async function saveAllEntities() {
+  if (!parsedEntities.value.length) return
+  entitySaving.value = true
+  let saved = 0, failed = 0
+  try {
+    for (const ent of parsedEntities.value) {
+      if (!ent.result.name?.trim()) { failed++; continue }
+      try {
+        const type = entityForm.type
+        let endpoint, body
+        if (type === 'NPC') {
+          endpoint = '/api/npcs'
+          body = { name: ent.result.name, role: ent.result.role, description: ent.result.description, gm_notes: ent.result.notes }
+        } else if (type === 'Location') {
+          endpoint = '/api/locations'
+          body = { name: ent.result.name, description: ent.result.description, gm_notes: ent.result.notes }
+        } else if (type === 'Faction') {
+          endpoint = '/api/factions'
+          body = { name: ent.result.name, description: ent.result.description, gm_notes: ent.result.notes }
+        } else {
+          endpoint = '/api/quests'
+          body = { title: ent.result.name, description: ent.result.description, gm_notes: ent.result.notes, status: 'active', quest_type: 'main' }
+        }
+        const r = await apif(endpoint, { method: 'POST', body: JSON.stringify(body) })
+        if (!r.ok) { failed++; continue }
+        saved++
+      } catch { failed++ }
+    }
+    if (failed > 0 && saved > 0) ui.showToast(`${failed} item${failed > 1 ? 's' : ''} failed`, '', '✕')
+    if (saved > 0) {
+      ui.showToast(`${saved} ${saved === 1 ? 'entity' : 'entities'} added!`, '', '✓')
+      emit('close')
+      router.push('/dashboard')
+    } else {
+      ui.showToast('No entities could be saved — check names are present', '', '✕')
+    }
+  } catch (e) {
+    ui.showToast(e.message || 'Failed to save', '', '✕')
+  } finally {
+    entitySaving.value = false
+  }
 }
 
 /* ─────────────────────────────────────────────────────────
@@ -607,34 +715,103 @@ function skipEntity() {
                 Parse and prefill fields →
               </button>
             </div>
+
+            <div v-if="parsedEntities.length > 1" class="wiz-entity-queue" style="margin-top:10px">
+              <div class="wiz-queue-header">
+                {{ parsedEntities.length }} entities detected
+              </div>
+              <div v-for="(e, i) in parsedEntities" :key="i" class="wiz-queue-item">
+                <span class="wiz-queue-name">{{ e.result.name || '(unnamed)' }}</span>
+                <span v-if="e.result.role" class="wiz-queue-role">{{ e.result.role }}</span>
+              </div>
+            </div>
           </div>
 
           <!-- Upload -->
           <div v-if="importTab === 2">
-            <div class="wiz-upload-zone">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="32" height="32" style="margin:0 auto 10px;display:block;opacity:.3">
+            <input
+              ref="fileInputRef"
+              type="file"
+              accept=".json,.md,.markdown,.txt"
+              style="display:none"
+              @change="handleFileChange"
+            />
+            <div
+              class="wiz-upload-zone"
+              :class="{ 'wiz-upload-has-file': uploadFile }"
+              @click="fileInputRef.click()"
+              @dragover.prevent
+              @drop.prevent="handleFileDrop"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="32" height="32" style="margin:0 auto 10px;display:block;opacity:.4">
                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
               </svg>
-              <div class="wiz-upload-label">Drop a file here or click to browse</div>
-              <div class="wiz-upload-hint">File upload is coming soon</div>
+              <div class="wiz-upload-label">
+                {{ uploadFile ? uploadFile.name : 'Drop a file here or click to browse' }}
+              </div>
+              <div class="wiz-upload-hint">
+                <template v-if="parsedEntities.length">
+                  {{ parsedEntities.length }} {{ parsedEntities.length === 1 ? 'entity' : 'entities' }} detected — click to replace
+                </template>
+                <template v-else>Supports JSON arrays, single JSON objects, and Markdown</template>
+              </div>
               <div class="wiz-file-badges">
                 <span class="wiz-file-badge">.json</span>
                 <span class="wiz-file-badge">.md</span>
-                <span class="wiz-file-badge">.csv</span>
+              </div>
+            </div>
+
+            <div class="wiz-field-row" style="margin-top:12px;margin-bottom:0">
+              <div class="wiz-field">
+                <label>Entity type for imported items</label>
+                <select v-model="entityForm.type">
+                  <option v-for="t in ENTITY_TYPES" :key="t">{{ t }}</option>
+                </select>
+              </div>
+            </div>
+
+            <div v-if="parsedEntities.length" class="wiz-entity-queue">
+              <div class="wiz-queue-header">
+                {{ parsedEntities.length }} {{ parsedEntities.length === 1 ? 'entity' : 'entities' }} ready to import
+              </div>
+              <div v-for="(e, i) in parsedEntities" :key="i" class="wiz-queue-item">
+                <span class="wiz-queue-name">{{ e.result.name || '(unnamed)' }}</span>
+                <span v-if="e.result.role" class="wiz-queue-role">{{ e.result.role }}</span>
+                <span v-if="e.result.description" class="wiz-queue-desc">{{ e.result.description.slice(0, 60) }}{{ e.result.description.length > 60 ? '…' : '' }}</span>
               </div>
             </div>
           </div>
 
           <div class="wiz-btn-row" style="margin-top:16px">
             <button class="wiz-btn ghost" @click="skipEntity">Skip for now</button>
+            <!-- Multiple entities queued (paste or upload) -->
             <button
-              v-if="importTab === 0"
+              v-if="parsedEntities.length > 1"
+              class="wiz-btn primary"
+              :disabled="entitySaving"
+              @click="saveAllEntities"
+            >
+              {{ entitySaving ? 'Saving…' : `Add all ${parsedEntities.length} entities →` }}
+            </button>
+            <!-- Single entity from upload tab -->
+            <button
+              v-else-if="importTab === 2 && parsedEntities.length === 1"
+              class="wiz-btn primary"
+              :disabled="entitySaving || !parsedEntities[0].result.name?.trim()"
+              @click="saveAllEntities"
+            >
+              {{ entitySaving ? 'Saving…' : 'Add entity & enter campaign' }}
+            </button>
+            <!-- Guided form (tab 0) or no parse result yet -->
+            <button
+              v-else-if="importTab === 0 || importTab === 1"
               class="wiz-btn primary"
               :disabled="entitySaving || !entityForm.name.trim()"
               @click="saveEntity"
             >
               {{ entitySaving ? 'Saving…' : 'Add entity & enter campaign' }}
             </button>
+            <!-- Upload tab with no file yet -->
             <button v-else class="wiz-btn primary" @click="skipEntity">Enter campaign →</button>
           </div>
         </template>
@@ -920,9 +1097,11 @@ function skipEntity() {
   padding: 28px;
   text-align: center;
   cursor: pointer;
-  transition: border-color .15s;
+  transition: border-color .15s, background .15s;
   color: var(--color-text-hint);
 }
+.wiz-upload-zone:hover { border-color: var(--color-border-hover); background: var(--color-bg-elevated); }
+.wiz-upload-has-file  { border-color: var(--accent); border-style: solid; background: var(--accent-dim); }
 .wiz-upload-label { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 4px; }
 .wiz-upload-hint  { font-size: 11px; color: var(--color-text-hint); margin-bottom: 10px; }
 .wiz-file-badges  { display: flex; justify-content: center; gap: 6px; }
@@ -931,6 +1110,35 @@ function skipEntity() {
   background: var(--color-bg-elevated); color: var(--color-text-hint);
   border: 0.5px solid var(--color-border-default);
 }
+
+/* ── Entity queue (multi-import preview) ──────────────── */
+.wiz-entity-queue {
+  border: 0.5px solid var(--color-border-default);
+  border-radius: 8px;
+  background: var(--color-bg-subtle);
+  overflow: hidden;
+  margin-top: 10px;
+}
+.wiz-queue-header {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--accent);
+  padding: 7px 12px;
+  background: var(--accent-dim);
+  border-bottom: 0.5px solid var(--color-border-default);
+}
+.wiz-queue-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 0.5px solid var(--color-border-default);
+  font-size: 12px;
+}
+.wiz-queue-item:last-child { border-bottom: none; }
+.wiz-queue-name { color: var(--color-text-primary); font-weight: 500; flex-shrink: 0; }
+.wiz-queue-role { color: var(--color-text-hint); font-size: 11px; flex-shrink: 0; }
+.wiz-queue-desc { color: var(--color-text-hint); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ── Paste tab ────────────────────────────────────────── */
 .wiz-paste-area {
