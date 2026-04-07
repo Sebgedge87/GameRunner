@@ -739,6 +739,7 @@ function skipEntity() {
               :key="key"
               class="wiz-sys-card"
               :class="{ selected: selectedSystem === key, custom: key === 'custom' }"
+              :data-sys="key"
               @click="selectedSystem = key"
             >
               <div class="wiz-sys-icon">{{ meta.icon }}</div>
@@ -1101,7 +1102,7 @@ function skipEntity() {
 
 .wiz-card {
   position: relative;
-  background: var(--surface2, #1e2120);
+  background: var(--color-bg-elevated);
   border: 0.5px solid var(--color-border-default);
   border-radius: 12px;
   width: 100%;
@@ -1147,7 +1148,7 @@ function skipEntity() {
   letter-spacing: .5px;
   white-space: nowrap;
 }
-.wiz-step.active { color: var(--accent); }
+.wiz-step.active { color: var(--color-accent); }
 .wiz-step.done   { color: var(--color-text-secondary); }
 
 .wiz-step-num {
@@ -1158,9 +1159,9 @@ function skipEntity() {
   font-size: 11px; font-weight: 500; flex-shrink: 0;
 }
 .wiz-step.active .wiz-step-num {
-  border-color: var(--accent);
-  background: var(--accent-dim);
-  color: var(--accent);
+  border-color: var(--color-accent);
+  background: var(--color-accent-muted);
+  color: var(--color-accent);
 }
 .wiz-step.done .wiz-step-num {
   border-color: var(--color-border-hover);
@@ -1174,7 +1175,7 @@ function skipEntity() {
 .wiz-step-line {
   flex: 1;
   height: 1px;
-  background: var(--border);
+  background: var(--color-border-default);
   margin: 0 8px;
   min-width: 8px;
 }
@@ -1190,7 +1191,7 @@ function skipEntity() {
   color: var(--color-text-hint);
   margin-bottom: 22px;
 }
-.wiz-req { color: var(--accent); }
+.wiz-req { color: var(--color-accent); }
 .wiz-opt { color: var(--color-text-hint); font-size: 10px; font-weight: 400; }
 
 /* ── Fields ───────────────────────────────────────────── */
@@ -1221,7 +1222,7 @@ function skipEntity() {
 .wiz-field input::placeholder,
 .wiz-field textarea::placeholder { color: var(--color-text-disabled); }
 .wiz-field textarea { resize: vertical; min-height: 80px; font-family: monospace; font-size: 12px; }
-.wiz-field select option { background: var(--bg, #1c1f1a); }
+.wiz-field select option { background: var(--color-bg-elevated); }
 
 /* ── System cards ─────────────────────────────────────── */
 .wiz-system-grid {
@@ -1238,9 +1239,23 @@ function skipEntity() {
   transition: border-color .15s, background .15s;
   background: var(--color-bg-card);
 }
-.wiz-sys-card:hover   { border-color: var(--color-border-hover); background: var(--accent-dim); }
-.wiz-sys-card.selected { border-color: var(--accent); background: var(--accent-dim); }
-.wiz-sys-card.custom  { border-style: dashed; }
+.wiz-sys-card:hover                      { border-color: var(--color-border-hover); background: var(--color-accent-muted); }
+.wiz-sys-card.selected                   { border-color: var(--color-accent); background: var(--color-accent-muted); }
+.wiz-sys-card.custom                     { border-style: dashed; }
+/* Per-system identity colours override the generic accent on selection */
+.wiz-sys-card[data-sys="dnd5e"].selected    { border-color: rgba(197,160,89,.8);  background: rgba(197,160,89,.10); }
+.wiz-sys-card[data-sys="coc"].selected      { border-color: rgba(154,124,30,.8);  background: rgba(154,124,30,.10); }
+.wiz-sys-card[data-sys="alien"].selected    { border-color: rgba(57,255,20,.6);   background: rgba(57,255,20,.07);  }
+.wiz-sys-card[data-sys="coriolis"].selected { border-color: rgba(0,210,255,.65);  background: rgba(0,210,255,.08);  }
+.wiz-sys-card[data-sys="dune"].selected     { border-color: rgba(226,114,34,.8);  background: rgba(226,114,34,.10); }
+.wiz-sys-card[data-sys="achtung"].selected  { border-color: rgba(139,0,0,.8);     background: rgba(139,0,0,.12);    }
+/* Hover tint matches selection tint for a cohesive feel */
+.wiz-sys-card[data-sys="dnd5e"]:hover    { border-color: rgba(197,160,89,.4); background: rgba(197,160,89,.06); }
+.wiz-sys-card[data-sys="coc"]:hover      { border-color: rgba(154,124,30,.4); background: rgba(154,124,30,.06); }
+.wiz-sys-card[data-sys="alien"]:hover    { border-color: rgba(57,255,20,.3);  background: rgba(57,255,20,.04);  }
+.wiz-sys-card[data-sys="coriolis"]:hover { border-color: rgba(0,210,255,.35); background: rgba(0,210,255,.05);  }
+.wiz-sys-card[data-sys="dune"]:hover     { border-color: rgba(226,114,34,.4); background: rgba(226,114,34,.06); }
+.wiz-sys-card[data-sys="achtung"]:hover  { border-color: rgba(139,0,0,.4);    background: rgba(139,0,0,.07);    }
 .wiz-sys-icon {
   width: 30px; height: 30px;
   border-radius: 6px;
@@ -1283,8 +1298,8 @@ function skipEntity() {
 .wiz-tag {
   display: inline-block;
   font-size: 10px;
-  background: var(--accent-dim);
-  color: var(--accent);
+  background: var(--color-accent-muted);
+  color: var(--color-accent);
   border-radius: 4px;
   padding: 2px 5px;
   margin: 2px 2px 0 0;
@@ -1307,7 +1322,7 @@ function skipEntity() {
 }
 .wiz-btn:hover:not(:disabled) { background: var(--color-bg-elevated); color: var(--color-text-primary); }
 .wiz-btn:disabled { opacity: .4; cursor: default; }
-.wiz-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--color-bg-card); }
+.wiz-btn.primary { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-bg-page); }
 .wiz-btn.primary:hover:not(:disabled) { filter: brightness(1.1); }
 .wiz-btn.ghost { border-color: transparent; color: var(--color-text-hint); }
 .wiz-btn.ghost:hover:not(:disabled) { color: var(--color-text-secondary); background: transparent; }
@@ -1329,7 +1344,7 @@ function skipEntity() {
   transition: color .15s;
   font-family: inherit;
 }
-.wiz-itab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.wiz-itab.active { color: var(--color-accent); border-bottom-color: var(--color-accent); }
 .wiz-itab:hover:not(.active) { color: var(--color-text-secondary); }
 
 /* ── Warning / error ──────────────────────────────────── */
@@ -1344,7 +1359,7 @@ function skipEntity() {
 .wiz-warning-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); flex-shrink: 0; }
 
 .wiz-error {
-  color: var(--red);
+  color: var(--color-text-danger);
   font-size: 12px;
   margin-bottom: 8px;
   padding: 6px 10px;
@@ -1364,7 +1379,7 @@ function skipEntity() {
   color: var(--color-text-hint);
 }
 .wiz-upload-zone:hover { border-color: var(--color-border-hover); background: var(--color-bg-elevated); }
-.wiz-upload-has-file  { border-color: var(--accent); border-style: solid; background: var(--accent-dim); }
+.wiz-upload-has-file  { border-color: var(--color-accent); border-style: solid; background: var(--color-accent-muted); }
 .wiz-upload-label { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 4px; }
 .wiz-upload-hint  { font-size: 11px; color: var(--color-text-hint); margin-bottom: 10px; }
 .wiz-file-badges  { display: flex; justify-content: center; gap: 6px; }
@@ -1385,9 +1400,9 @@ function skipEntity() {
 .wiz-queue-header {
   font-size: 10px;
   letter-spacing: 1px;
-  color: var(--accent);
+  color: var(--color-accent);
   padding: 7px 12px;
-  background: var(--accent-dim);
+  background: var(--color-accent-muted);
   border-bottom: 0.5px solid var(--color-border-default);
 }
 .wiz-queue-item {
@@ -1416,12 +1431,12 @@ function skipEntity() {
   color: var(--color-text-hint);
   border: 0.5px solid var(--color-border-default);
 }
-.wiz-type-badge[data-type="NPC"]      { background: #1a2e3a; color: #5bb8e8; border-color: #2a4e6a; }
-.wiz-type-badge[data-type="Location"] { background: #1e2e1e; color: #6dbf6d; border-color: #2e4e2e; }
-.wiz-type-badge[data-type="Faction"]  { background: #2d1e38; color: #b87de8; border-color: #4d2e6a; }
-.wiz-type-badge[data-type="Quest"]    { background: #2e2410; color: #e8a83d; border-color: #5a4010; }
-.wiz-type-badge[data-type="Rumour"]   { background: #2e1a1a; color: #e86d6d; border-color: #5a2a2a; }
-.wiz-type-badge[data-type="Timeline"] { background: #1e2830; color: #6daae8; border-color: #2e4860; }
+.wiz-type-badge[data-type="NPC"]      { background: rgba(59,130,220,.14); color: #4a9ecc; border-color: rgba(59,130,220,.35); }
+.wiz-type-badge[data-type="Location"] { background: rgba(76,171,113,.14); color: #3a9a5a; border-color: rgba(76,171,113,.35); }
+.wiz-type-badge[data-type="Faction"]  { background: rgba(168,100,220,.14); color: #a060d8; border-color: rgba(168,100,220,.35); }
+.wiz-type-badge[data-type="Quest"]    { background: rgba(220,168,60,.14);  color: #b88a20; border-color: rgba(220,168,60,.35);  }
+.wiz-type-badge[data-type="Rumour"]   { background: rgba(220,80,80,.14);   color: #c04040; border-color: rgba(220,80,80,.35);   }
+.wiz-type-badge[data-type="Timeline"] { background: rgba(100,160,220,.14); color: #4a88c8; border-color: rgba(100,160,220,.35); }
 
 /* ── Paste tab ────────────────────────────────────────── */
 .wiz-paste-area {
@@ -1460,13 +1475,13 @@ function skipEntity() {
   font-size: 12px; font-weight: 500;
   border: 0.5px solid var(--color-border-active);
   border-radius: 8px;
-  background: var(--accent-dim);
-  color: var(--accent);
+  background: var(--color-accent-muted);
+  color: var(--color-accent);
   cursor: pointer;
   font-family: inherit;
   transition: all .15s;
 }
-.wiz-parse-btn-main:hover:not(:disabled) { background: var(--accent-dim); }
+.wiz-parse-btn-main:hover:not(:disabled) { filter: brightness(1.1); }
 .wiz-parse-btn-main:disabled { opacity: .35; cursor: default; }
 
 .wiz-tpl-btn {
