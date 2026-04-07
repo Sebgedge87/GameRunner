@@ -1071,17 +1071,16 @@ function skipEntity() {
                 <span class="wiz-file-badge">.json</span>
                 <span class="wiz-file-badge">.md</span>
               </div>
+            </div>
 
-              <!-- Template download — lives inside the zone so it's always visible -->
-              <div class="wiz-upload-tpl-row" @click.stop>
-                <span class="wiz-upload-tpl-label">Don't have a file yet?</span>
-                <button class="wiz-upload-tpl-btn" @click="downloadTemplate">
-                  <svg viewBox="0 0 14 14" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
-                    <path d="M7 2v7M4 6l3 3 3-3"/><path d="M2 11h10"/>
-                  </svg>
-                  Download template .md
-                </button>
-              </div>
+            <!-- Template download — below the drop zone -->
+            <div class="wiz-upload-tpl-row">
+              <button class="wiz-btn wiz-tpl-dl-btn" @click="downloadTemplate">
+                <svg viewBox="0 0 14 14" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+                  <path d="M7 2v7M4 6l3 3 3-3"/><path d="M2 11h10"/>
+                </svg>
+                Download template .md
+              </button>
             </div>
 
             <!-- Fallback type selector only shown when types weren't auto-detected -->
@@ -1849,4 +1848,11 @@ function skipEntity() {
   display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;
 }
 .wiz-prog-done-count { font-size: 18px; font-weight: 500; color: var(--color-text-primary); }
+
+/* ── Upload tab: download template button ─────────────── */
+.wiz-upload-tpl-row { display: flex; align-items: center; margin-top: 10px; }
+.wiz-tpl-dl-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px; font-size: 12px;
+}
 </style>
