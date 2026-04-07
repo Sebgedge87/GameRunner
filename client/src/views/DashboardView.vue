@@ -1,7 +1,15 @@
 <template>
   <div class="page-content">
     <div class="page-header"><div class="page-title">Campaign Home</div></div>
+    <div class="gm-tabs">
+      <button class="gm-tab" :class="{ active: activeTab === 'overview' }" @click="activeTab = 'overview'">Overview</button>
+      <template v-if="campaign.isGm">
+        <button class="gm-tab" :class="{ active: activeTab === 'gm' }" @click="activeTab = 'gm'">GM Dashboard</button>
+        <button class="gm-tab" :class="{ active: activeTab === 'combat' }" @click="activeTab = 'combat'">Combat</button>
+      </template>
+    </div>
 
+    <template v-if="activeTab === 'overview'">
     <!-- Campaign banner -->
     <div v-if="campaign.activeCampaign" class="campaign-banner">
       <div>
@@ -186,6 +194,14 @@
         </div>
       </div>
     </div><!-- /dash-lower -->
+    </template>
+
+    <template v-else-if="activeTab === 'gm' && campaign.isGm">
+      <GmDashboardView />
+    </template>
+    <template v-else-if="activeTab === 'combat' && campaign.isGm">
+      <CombatView />
+    </template>
   </div>
 </template>
 
@@ -199,6 +215,8 @@ import { useAuthStore } from '@/stores/auth'
 import { useSystemFeatures } from '@/composables/useSystemFeatures'
 import PlaylistPlayer from '@/components/PlaylistPlayer.vue'
 import QuestCard from '@/components/QuestCard.vue'
+import GmDashboardView from '@/views/GmDashboardView.vue'
+import CombatView from '@/views/CombatView.vue'
 
 const campaign = useCampaignStore()
 const ui = useUiStore()
@@ -206,6 +224,7 @@ const data = useDataStore()
 const auth = useAuthStore()
 const router = useRouter()
 const { hasStress, hasSanity } = useSystemFeatures()
+const activeTab = ref('overview')
 
 // Characters for the current player
 const myCharacters = ref([])
@@ -298,6 +317,7 @@ function fmtTime(ts) {
 function openMessage(m) { ui.openMessage(m) }
 
 onMounted(async () => {
+  if (!campaign.isGm) activeTab.value = 'overview'
   if (!data.scheduling.length) await data.loadSessions()
   await loadMyCharacters()
 })
@@ -305,6 +325,27 @@ onMounted(async () => {
 
 <style scoped>
 .campaign-subtitle { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.gm-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.gm-tab {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  text-decoration: none;
+  color: var(--text2);
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  cursor: pointer;
+}
+.gm-tab.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in oklab, var(--accent) 10%, transparent);
+}
 
 /* Character shortcut row */
 .char-shortcut-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; align-items: center; }
