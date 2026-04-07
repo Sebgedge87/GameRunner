@@ -184,6 +184,17 @@ export const useCampaignStore = defineStore('campaign', () => {
     return d.campaign
   }
 
+  async function deleteCampaign(id) {
+    const r = await apif(`/api/campaigns/${id}`, { method: 'DELETE' })
+    const d = await r.json()
+    if (!r.ok) throw new Error(d.error || 'Failed to delete campaign')
+    if (activeCampaign.value?.id === id) {
+      activeCampaign.value = null
+      isGm.value = false
+    }
+    allCampaigns.value = allCampaigns.value.filter(c => c.id !== id)
+  }
+
   const currentPartyLocationId = computed(() => activeCampaign.value?.current_party_location_id || null)
 
   async function setPartyLocation(locId) {
@@ -208,6 +219,6 @@ export const useCampaignStore = defineStore('campaign', () => {
     activeCampaign, allCampaigns, isGm, currentPartyLocationId, timer, calendarVersion,
     SYSTEM_META, SYSTEM_THEME_MAP,
     applyTheme, applyCustomTheme, applyBgImage,
-    loadCampaigns, switchCampaign, createCampaign, joinCampaign, updateCampaign, setPartyLocation, leaveCampaign, setTimer,
+    loadCampaigns, switchCampaign, createCampaign, joinCampaign, updateCampaign, deleteCampaign, setPartyLocation, leaveCampaign, setTimer,
   }
 })
