@@ -24,9 +24,9 @@
 
     <!-- GM tab strip — only visible to GMs -->
     <div v-if="campaign.isGm" class="dash-tabs">
-      <button class="dash-tab" :class="{ active: activeTab === 'overview' }" @click="activeTab = 'overview'">Overview</button>
-      <button class="dash-tab" :class="{ active: activeTab === 'gm' }" @click="activeTab = 'gm'">GM Dashboard</button>
-      <button class="dash-tab" :class="{ active: activeTab === 'combat' }" @click="activeTab = 'combat'">Combat</button>
+      <button class="dash-tab" :class="{ active: activeTab === 'overview' }" @click="setTab('overview')">Overview</button>
+      <button class="dash-tab" :class="{ active: activeTab === 'gm' }" @click="setTab('gm')">GM Dashboard</button>
+      <button class="dash-tab" :class="{ active: activeTab === 'combat' }" @click="setTab('combat')">Combat</button>
     </div>
 
     <!-- ── OVERVIEW tab ───────────────────────────────────────── -->
@@ -201,8 +201,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
 import { useDataStore } from '@/stores/data'
@@ -218,8 +218,14 @@ const ui = useUiStore()
 const data = useDataStore()
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 const { hasStress, hasSanity } = useSystemFeatures()
 const activeTab = ref('overview')
+
+// Sync tab from URL query param (e.g. ?tab=gm from sidebar links)
+watch(() => route.query.tab, (tab) => {
+  if (tab && ['overview', 'gm', 'combat'].includes(tab)) activeTab.value = tab
+}, { immediate: true })
 
 // Characters for the current player
 const myCharacters = ref([])
@@ -242,6 +248,11 @@ async function loadMyCharacters() {
 
 function initials(name) {
   return (name || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+}
+
+function setTab(tab) {
+  activeTab.value = tab
+  if (route.query.tab) router.replace({ query: {} })
 }
 
 const expandedId = ref(null)
