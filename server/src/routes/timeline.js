@@ -62,7 +62,7 @@ router.post('/', requireGm, (req, res) => {
   if (!title) return res.status(400).json({ error: 'title is required' });
   
   const filename = `${slug(title)}-${Date.now()}.md`;
-  const fm = { type: 'timeline_event', title, description, in_world_date, session_number, linked_type, linked_id, significance, gm_notes, player_notes };
+  const fm = { type: 'timeline_event', title, description: description || null, in_world_date: in_world_date || null, session_number: session_number || null, linked_type: linked_type || null, linked_id: linked_id || null, significance, gm_notes: gm_notes || null, player_notes: player_notes || null };
   
   const content = matter.stringify(description || '', fm);
   const camp = getDb().prepare('SELECT id, name FROM campaigns WHERE active = 1 LIMIT 1').get();

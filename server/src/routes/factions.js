@@ -80,7 +80,7 @@ router.post('/', requireGm, (req, res) => {
   if (!name) return res.status(400).json({ error: 'name is required' });
   
   const filename = `${slug(name)}-${Date.now()}.md`;
-  const fm = { type: 'faction', title: name, description, goals, standing, influence, image_path, gm_notes, player_notes };
+  const fm = { type: 'faction', title: name, description, goals: goals || null, standing, influence, image_path: image_path || null, gm_notes: gm_notes || null, player_notes: player_notes || null };
   if (leader_npc_id) fm.leader_npc_id = leader_npc_id;
   if (hq_location_id) fm.hq_location_id = hq_location_id;
   
