@@ -1,12 +1,19 @@
 <template>
   <div class="page-content">
     <div class="page-header"><div class="page-title">Campaign Home</div></div>
+    <div class="gm-tabs">
+      <button class="gm-tab" :class="{ active: activeTab === 'overview' }" @click="activeTab = 'overview'">Overview</button>
+      <template v-if="campaign.isGm">
+        <button class="gm-tab" :class="{ active: activeTab === 'gm' }" @click="activeTab = 'gm'">GM Dashboard</button>
+        <button class="gm-tab" :class="{ active: activeTab === 'combat' }" @click="activeTab = 'combat'">Combat</button>
+      </template>
     <div v-if="campaign.isGm" class="gm-tabs">
       <router-link to="/dashboard" class="gm-tab" :class="{ active: route.path === '/dashboard' }">Overview</router-link>
       <router-link to="/gm-dashboard" class="gm-tab" :class="{ active: route.path === '/gm-dashboard' }">GM Dashboard</router-link>
       <router-link to="/combat" class="gm-tab" :class="{ active: route.path === '/combat' }">Combat</router-link>
     </div>
 
+    <template v-if="activeTab === 'overview'">
     <!-- Campaign banner -->
     <div v-if="campaign.activeCampaign" class="campaign-banner">
       <div>
@@ -191,6 +198,14 @@
         </div>
       </div>
     </div><!-- /dash-lower -->
+    </template>
+
+    <template v-else-if="activeTab === 'gm' && campaign.isGm">
+      <GmDashboardView />
+    </template>
+    <template v-else-if="activeTab === 'combat' && campaign.isGm">
+      <CombatView />
+    </template>
   </div>
 </template>
 
@@ -204,6 +219,8 @@ import { useAuthStore } from '@/stores/auth'
 import { useSystemFeatures } from '@/composables/useSystemFeatures'
 import PlaylistPlayer from '@/components/PlaylistPlayer.vue'
 import QuestCard from '@/components/QuestCard.vue'
+import GmDashboardView from '@/views/GmDashboardView.vue'
+import CombatView from '@/views/CombatView.vue'
 
 const campaign = useCampaignStore()
 const ui = useUiStore()
@@ -212,6 +229,7 @@ const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 const { hasStress, hasSanity } = useSystemFeatures()
+const activeTab = ref('overview')
 
 // Characters for the current player
 const myCharacters = ref([])
@@ -304,6 +322,7 @@ function fmtTime(ts) {
 function openMessage(m) { ui.openMessage(m) }
 
 onMounted(async () => {
+  if (!campaign.isGm) activeTab.value = 'overview'
   if (!data.scheduling.length) await data.loadSessions()
   await loadMyCharacters()
 })
@@ -317,6 +336,7 @@ onMounted(async () => {
   margin-bottom: 14px;
 }
 .gm-tab {
+  background: transparent;
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 6px 10px;
@@ -324,6 +344,7 @@ onMounted(async () => {
   color: var(--text2);
   font-size: 12px;
   font-family: 'JetBrains Mono', monospace;
+  cursor: pointer;
 }
 .gm-tab.active {
   border-color: var(--accent);

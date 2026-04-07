@@ -22,6 +22,7 @@
           <RouterLink to="/dashboard" class="nav-item" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'Campaign Home' : ''">
             <span class="nav-icon">⚔</span>Campaign Home
           </RouterLink>
+        </div>
           <template v-if="campaign.isGm">
             <RouterLink to="/gm-dashboard" class="nav-item gm-only" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'GM Dashboard' : ''">
               <span class="nav-icon">👁</span>GM Dashboard
