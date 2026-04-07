@@ -19,7 +19,7 @@ router.get('/', requireAuth, (req, res) => {
   const hooks = db.prepare(`SELECT id, title, json_extract(frontmatter,'$.type') as subtitle, 'hook' as type FROM vault_files WHERE type='hook' ${visClause} AND title LIKE ? LIMIT 5`).all(like);
   const items = db.prepare("SELECT id, name as title, holder as subtitle, 'inventory' as type FROM inventory WHERE name LIKE ? LIMIT 5").all(like);
   const keyItems = db.prepare("SELECT id, name as title, significance as subtitle, 'key-item' as type FROM key_items WHERE name LIKE ? LIMIT 5").all(like);
-  const factions = db.prepare("SELECT id, name as title, '' as subtitle, 'faction' as type FROM factions WHERE name LIKE ? LIMIT 5").all(like);
+  const factions = db.prepare(`SELECT id, title, '' as subtitle, 'faction' as type FROM vault_files WHERE type='faction' ${visClause} AND title LIKE ? LIMIT 5`).all(like);
 
   let notes = [];
   if (req.user.isGm) {
