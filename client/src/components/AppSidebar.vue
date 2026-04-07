@@ -101,20 +101,6 @@
           </RouterLink>
         </div>
 
-        <!-- GM section -->
-        <template v-if="campaign.isGm">
-          <div class="nav-section" :class="{ collapsed: collapsed.gm }" @click="toggle('gm')">
-            GM
-          </div>
-          <div class="nav-group" :class="{ collapsed: collapsed.gm }">
-            <RouterLink to="/gm-dashboard" class="nav-item gm-only" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'GM Dashboard' : ''">
-              <span class="nav-icon">👁</span>GM Dashboard
-            </RouterLink>
-            <RouterLink to="/combat" class="nav-item gm-only" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'Combat' : ''">
-              <span class="nav-icon">⚔</span>Combat
-            </RouterLink>
-          </div>
-        </template>
       </div>
 
       <!-- Settings always visible -->
@@ -173,12 +159,11 @@ const collapsed = reactive({
   chronology: !!saved.Chronology,
   knowledge: !!saved.Knowledge,
   player_bag: !!saved['Player Bag'],
-  gm: !!saved.GM,
 })
 
 function toggle(section) {
   collapsed[section] = !collapsed[section]
-  const labels = { world: 'World', chronology: 'Chronology', knowledge: 'Knowledge', player_bag: 'Player Bag', gm: 'GM' }
+  const labels = { world: 'World', chronology: 'Chronology', knowledge: 'Knowledge', player_bag: 'Player Bag' }
   const state = JSON.parse(localStorage.getItem('nav_collapsed') || '{}')
   state[labels[section]] = collapsed[section]
   localStorage.setItem('nav_collapsed', JSON.stringify(state))
