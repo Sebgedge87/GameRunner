@@ -193,8 +193,11 @@ export const useCampaignStore = defineStore('campaign', () => {
     if (activeCampaign.value?.id === id) {
       activeCampaign.value = null
       isGm.value = false
+      applyTheme('none')
+      applyBgImage(null)
     }
     allCampaigns.value = allCampaigns.value.filter(c => c.id !== id)
+    await loadCampaigns()
   }
 
   const currentPartyLocationId = computed(() => activeCampaign.value?.current_party_location_id || null)

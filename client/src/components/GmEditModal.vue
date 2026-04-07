@@ -363,6 +363,7 @@
               :on-remove="handleMapImgRemove"
               hint="PNG, JPG — map image required"
             />
+            <span v-if="fieldErrors.map_image" class="field-error" style="display:block;margin-top:6px">{{ fieldErrors.map_image }}</span>
           </template>
 
           <template #sidebar-details>
@@ -946,6 +947,7 @@ function handleHandoutImgRemove() {
 function handleMapImgChange(file) {
   portraitFile.value = file
   mapImgPreview.value = URL.createObjectURL(file)
+  delete fieldErrors.map_image
 }
 function handleMapImgRemove() {
   portraitFile.value = null

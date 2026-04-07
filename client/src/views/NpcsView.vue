@@ -6,7 +6,13 @@
     <div class="search-row" style="margin-bottom:12px">
       <input v-model="search" class="form-input" placeholder="Search NPCs…" style="max-width:320px" />
     </div>
-    <FilterTabs :tabs="tabs" :active="activeTab" :on-change="v => activeTab = v" />
+    <FilterTabs
+      :tabs="tabs"
+      :active="activeTabs"
+      :multi="true"
+      :on-change="v => activeTabs = v"
+      :on-clear="clearNpcFilters"
+    />
 
     <!-- Skeleton -->
     <div v-if="data.loading && !data.npcs.length" class="npc-grid">
@@ -102,19 +108,31 @@ const data     = useDataStore()
 const campaign = useCampaignStore()
 const ui       = useUiStore()
 const search        = ref('')
-const activeTab     = ref('all')
+const activeTabs    = ref(['all'])
 const confirmDelete = ref(null)
 
 const tabs = [
-  { value: 'all',      label: 'All' },
-  { value: 'friendly', label: 'Friendly' },
-  { value: 'neutral',  label: 'Neutral' },
-  { value: 'hostile',  label: 'Hostile' },
+  { value: 'all',        label: 'All' },
+  { value: 'unknown',    label: 'Unknown' },
+  { value: 'friendly',   label: 'Friendly' },
+  { value: 'neutral',    label: 'Neutral' },
+  { value: 'suspicious', label: 'Suspicious' },
+  { value: 'hostile',    label: 'Hostile' },
+  { value: 'helpful',    label: 'Helpful' },
+  { value: 'fearful',    label: 'Fearful' },
 ]
 
 const filteredNpcs = computed(() => {
   let list = data.npcs
-  if (activeTab.value !== 'all') list = list.filter(n => n.disposition?.toLowerCase() === activeTab.value)
+  const selected = new Set(activeTabs.value || ['all'])
+  if (!selected.has('all')) {
+    list = list.filter(n => {
+      const disposition = n.disposition?.toLowerCase()
+      const isUnknown = !disposition || disposition === 'unknown'
+      if (isUnknown && selected.has('unknown')) return true
+      return disposition ? selected.has(disposition) : false
+    })
+  }
   if (search.value.trim()) {
     const q = search.value.toLowerCase()
     list = list.filter(n =>
@@ -132,6 +150,10 @@ function dispositionClass(d) {
   if (s === 'friendly' || s === 'allied') return 'tag-active'
   if (s === 'hostile' || s === 'unfriendly') return 'tag-inactive'
   return ''
+}
+
+function clearNpcFilters() {
+  activeTabs.value = ['all']
 }
 
 async function doDelete() {
@@ -261,4 +283,3 @@ onMounted(() => { if (!data.npcs.length) data.loadNpcs() })
 .npc-skel-line--title { width: 70%; height: 12px; }
 @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 </style>
-

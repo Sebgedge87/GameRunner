@@ -19,7 +19,7 @@
       <div class="search-row" style="margin-bottom:12px">
         <input v-model="search" class="form-input" placeholder="Search locations…" style="max-width:320px" />
       </div>
-      <FilterTabs :tabs="tabs" :active="activeTab" :on-change="v => activeTab = v" />
+      <FilterTabs :tabs="tabs" :active="activeTabs" :multi="true" :on-change="v => activeTabs = v" :on-clear="() => activeTabs = ['all']" />
 
       <!-- Skeleton -->
       <div v-if="data.loading && !data.locations.length" class="card-grid">
@@ -126,7 +126,7 @@ const data     = useDataStore()
 const campaign = useCampaignStore()
 const ui       = useUiStore()
 const search         = ref('')
-const activeTab      = ref('all')
+const activeTabs     = ref(['all'])
 const expandedId     = ref(null)
 const mainTab        = ref('locations')
 const boardLocationId = ref('')
@@ -137,10 +137,18 @@ const mainTabs = [
 ]
 
 const tabs = [
-  { value: 'all',         label: 'All' },
-  { value: 'city',        label: 'City/Town' },
-  { value: 'dungeon',     label: 'Dungeon' },
-  { value: 'wilderness',  label: 'Wilderness' },
+  { value: 'all',        label: 'All' },
+  { value: 'unknown',    label: 'Unknown' },
+  { value: 'city',       label: 'City' },
+  { value: 'town',       label: 'Town' },
+  { value: 'village',    label: 'Village' },
+  { value: 'dungeon',    label: 'Dungeon' },
+  { value: 'forest',     label: 'Forest' },
+  { value: 'keep',       label: 'Keep' },
+  { value: 'tavern',     label: 'Tavern' },
+  { value: 'temple',     label: 'Temple' },
+  { value: 'region',     label: 'Region' },
+  { value: 'wilderness', label: 'Wilderness' },
 ]
 
 const partyLocationName = computed(() => {
@@ -156,8 +164,13 @@ const boardJobs = computed(() => {
 
 const filteredLocations = computed(() => {
   let list = data.locations
-  if (activeTab.value !== 'all') {
-    list = list.filter(l => l.location_type?.toLowerCase().includes(activeTab.value.toLowerCase()))
+  const selected = new Set(activeTabs.value || ['all'])
+  if (!selected.has('all')) {
+    list = list.filter(l => {
+      const type = l.location_type?.toLowerCase() || ''
+      if (!type) return selected.has('unknown')
+      return [...selected].some(s => type.includes(s.toLowerCase()))
+    })
   }
   if (search.value.trim()) {
     const q = search.value.toLowerCase()
