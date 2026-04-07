@@ -6,6 +6,13 @@
     <div class="search-row" style="margin-bottom:16px">
       <input v-model="search" class="form-input" placeholder="Search factions…" style="max-width:320px" />
     </div>
+    <FilterTabs
+      :tabs="tabs"
+      :active="activeTabs"
+      :multi="true"
+      :on-change="v => activeTabs = v"
+      :on-clear="() => activeTabs = ['all']"
+    />
 
     <!-- Skeleton -->
     <div v-if="data.loading && !data.factions.length" class="card-grid">
@@ -77,18 +84,32 @@ import { useUiStore } from '@/stores/ui'
 import OverlayCard from '@/components/OverlayCard.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import EmptyState from '@/components/EmptyState.vue'
+import FilterTabs from '@/components/FilterTabs.vue'
 
 const data     = useDataStore()
 const campaign = useCampaignStore()
 const ui       = useUiStore()
 const search        = ref('')
+const activeTabs    = ref(['all'])
 const expandedId    = ref(null)
 const confirmDelete = ref(null)
 
+const tabs = [
+  { value: 'all', label: 'All' },
+  { value: 'hostile', label: 'Hostile' },
+  { value: 'neutral', label: 'Neutral' },
+  { value: 'allied', label: 'Allied' },
+]
+
 const filteredFactions = computed(() => {
-  if (!search.value.trim()) return data.factions
+  let list = data.factions
+  const selected = new Set(activeTabs.value || ['all'])
+  if (!selected.has('all')) {
+    list = list.filter(f => selected.has(reputationStatus(f.reputation)))
+  }
+  if (!search.value.trim()) return list
   const q = search.value.toLowerCase()
-  return data.factions.filter(f =>
+  return list.filter(f =>
     f.name?.toLowerCase().includes(q) ||
     f.description?.toLowerCase().includes(q) ||
     f.goals?.toLowerCase().includes(q)

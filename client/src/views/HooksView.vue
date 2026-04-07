@@ -7,7 +7,7 @@
     <div class="search-row" style="margin-bottom:12px">
       <input v-model="search" class="form-input" placeholder="Search hooks…" style="max-width:320px" />
     </div>
-    <FilterTabs :tabs="tabs" :active="activeTab" :on-change="v => activeTab = v" />
+    <FilterTabs :tabs="tabs" :active="activeTabs" :multi="true" :on-change="v => activeTabs = v" :on-clear="() => activeTabs = ['all']" />
 
     <!-- Skeleton -->
     <div v-if="data.loading && !data.hooks.length" class="card-grid">
@@ -77,7 +77,7 @@ const data     = useDataStore()
 const campaign = useCampaignStore()
 const ui       = useUiStore()
 const search        = ref('')
-const activeTab     = ref('all')
+const activeTabs    = ref(['all'])
 const expandedId    = ref(null)
 const confirmDelete = ref(null)
 
@@ -91,7 +91,8 @@ const tabs = [
 
 const filteredHooks = computed(() => {
   let list = data.hooks
-  if (activeTab.value !== 'all') list = list.filter(h => h.status?.toLowerCase() === activeTab.value)
+  const selected = new Set(activeTabs.value || ['all'])
+  if (!selected.has('all')) list = list.filter(h => selected.has(h.status?.toLowerCase()))
   if (search.value.trim()) {
     const q = search.value.toLowerCase()
     list = list.filter(h =>
