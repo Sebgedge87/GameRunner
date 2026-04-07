@@ -7,7 +7,7 @@
     <div class="search-row" style="margin-bottom:12px">
       <input v-model="search" class="form-input" placeholder="Search jobs…" style="max-width:320px" />
     </div>
-    <FilterTabs :tabs="tabs" :active="activeTab" :on-change="v => activeTab = v" />
+    <FilterTabs :tabs="tabs" :active="activeTabs" :multi="true" :on-change="v => activeTabs = v" :on-clear="() => activeTabs = ['all']" />
     <div class="card-grid">
       <div v-if="campaign.isGm" class="create-card" @click="ui.openGmEdit('job', null, {})">
         <div class="create-card-icon">+</div><span>Add Job</span>
@@ -56,7 +56,7 @@ const data = useDataStore()
 const campaign = useCampaignStore()
 const ui = useUiStore()
 const search = ref('')
-const activeTab = ref('all')
+const activeTabs = ref(['all'])
 const expandedId = ref(null) // kept for legacy compat, unused
 
 const tabs = [
@@ -68,7 +68,8 @@ const tabs = [
 
 const filteredJobs = computed(() => {
   let list = data.jobs
-  if (activeTab.value !== 'all') list = list.filter(j => j.status?.toLowerCase() === activeTab.value)
+  const selected = new Set(activeTabs.value || ['all'])
+  if (!selected.has('all')) list = list.filter(j => selected.has(j.status?.toLowerCase()))
   if (search.value.trim()) {
     const q = search.value.toLowerCase()
     list = list.filter(j =>

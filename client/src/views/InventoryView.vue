@@ -39,7 +39,7 @@
       <input v-model="invSearch" class="form-input" placeholder="Search items…" style="max-width:300px" />
     </div>
 
-    <FilterTabs :tabs="invTabs" :active="invTab" :on-change="v => invTab = v" />
+    <FilterTabs :tabs="invTabs" :active="invTabsActive" :multi="true" :on-change="v => invTabsActive = v" :on-clear="() => invTabsActive = ['all']" />
 
     <!-- Inventory empty state -->
     <EmptyState
@@ -180,7 +180,7 @@ async function doTransfer() {
 }
 
 const invSearch     = ref('')
-const invTab        = ref('all')
+const invTabsActive = ref(['all'])
 const keySearch     = ref('')
 const invExpandedId = ref(null)
 const keyExpandedId = ref(null)
@@ -195,7 +195,8 @@ const invTabs = [
 
 const filteredInventory = computed(() => {
   let list = data.inventory
-  if (invTab.value !== 'all') list = list.filter(i => i.type?.toLowerCase() === invTab.value)
+  const selected = new Set(invTabsActive.value || ['all'])
+  if (!selected.has('all')) list = list.filter(i => selected.has(i.type?.toLowerCase()))
   if (invSearch.value.trim()) {
     const q = invSearch.value.toLowerCase()
     list = list.filter(i =>

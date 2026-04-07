@@ -6,7 +6,13 @@
     <div class="search-row" style="margin-bottom:12px">
       <input v-model="search" class="form-input" placeholder="Search NPCs…" style="max-width:320px" />
     </div>
-    <FilterTabs :tabs="tabs" :active="activeTab" :on-change="v => activeTab = v" />
+    <FilterTabs
+      :tabs="tabs"
+      :active="activeTabs"
+      :multi="true"
+      :on-change="v => activeTabs = v"
+      :on-clear="clearNpcFilters"
+    />
 
     <!-- Skeleton -->
     <div v-if="data.loading && !data.npcs.length" class="npc-grid">
@@ -102,7 +108,7 @@ const data     = useDataStore()
 const campaign = useCampaignStore()
 const ui       = useUiStore()
 const search        = ref('')
-const activeTab     = ref('all')
+const activeTabs    = ref(['all'])
 const confirmDelete = ref(null)
 
 const tabs = [
@@ -118,10 +124,14 @@ const tabs = [
 
 const filteredNpcs = computed(() => {
   let list = data.npcs
-  if (activeTab.value === 'unknown') {
-    list = list.filter(n => !n.disposition || n.disposition.toLowerCase() === 'unknown')
-  } else if (activeTab.value !== 'all') {
-    list = list.filter(n => n.disposition?.toLowerCase() === activeTab.value)
+  const selected = new Set(activeTabs.value || ['all'])
+  if (!selected.has('all')) {
+    list = list.filter(n => {
+      const disposition = n.disposition?.toLowerCase()
+      const isUnknown = !disposition || disposition === 'unknown'
+      if (isUnknown && selected.has('unknown')) return true
+      return disposition ? selected.has(disposition) : false
+    })
   }
   if (search.value.trim()) {
     const q = search.value.toLowerCase()
@@ -140,6 +150,10 @@ function dispositionClass(d) {
   if (s === 'friendly' || s === 'allied') return 'tag-active'
   if (s === 'hostile' || s === 'unfriendly') return 'tag-inactive'
   return ''
+}
+
+function clearNpcFilters() {
+  activeTabs.value = ['all']
 }
 
 async function doDelete() {
