@@ -161,6 +161,9 @@ export const useCampaignStore = defineStore('campaign', () => {
     const r = await apif('/api/campaigns', { method: 'POST', body: JSON.stringify(body) })
     const d = await r.json()
     if (!r.ok) throw new Error(d.error || 'Failed to create')
+    // Creator is always GM — set immediately so step 3 of wizard sees isGm=true
+    isGm.value = true
+    activeCampaign.value = { ...d.campaign, my_role: 'gm' }
     await loadCampaigns()
     return d.campaign
   }

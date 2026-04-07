@@ -1,20 +1,7 @@
 <template>
   <div class="page-content">
     <div class="page-header"><div class="page-title">Campaign Home</div></div>
-    <div class="gm-tabs">
-      <button class="gm-tab" :class="{ active: activeTab === 'overview' }" @click="activeTab = 'overview'">Overview</button>
-      <template v-if="campaign.isGm">
-        <button class="gm-tab" :class="{ active: activeTab === 'gm' }" @click="activeTab = 'gm'">GM Dashboard</button>
-        <button class="gm-tab" :class="{ active: activeTab === 'combat' }" @click="activeTab = 'combat'">Combat</button>
-      </template>
-    <div v-if="campaign.isGm" class="gm-tabs">
-      <router-link to="/dashboard" class="gm-tab" :class="{ active: route.path === '/dashboard' }">Overview</router-link>
-      <router-link to="/gm-dashboard" class="gm-tab" :class="{ active: route.path === '/gm-dashboard' }">GM Dashboard</router-link>
-      <router-link to="/combat" class="gm-tab" :class="{ active: route.path === '/combat' }">Combat</router-link>
-    </div>
-
-    <template v-if="activeTab === 'overview'">
-    <!-- Campaign banner -->
+    <!-- Campaign banner (always visible) -->
     <div v-if="campaign.activeCampaign" class="campaign-banner">
       <div>
         <div class="campaign-name">{{ campaign.activeCampaign.name }}</div>
@@ -35,174 +22,178 @@
       </div>
     </div>
 
-    <PlaylistPlayer :url="playlistUrl" />
+    <!-- GM tab strip — only visible to GMs -->
+    <div v-if="campaign.isGm" class="dash-tabs">
+      <button class="dash-tab" :class="{ active: activeTab === 'overview' }" @click="activeTab = 'overview'">Overview</button>
+      <button class="dash-tab" :class="{ active: activeTab === 'gm' }" @click="activeTab = 'gm'">GM Dashboard</button>
+      <button class="dash-tab" :class="{ active: activeTab === 'combat' }" @click="activeTab = 'combat'">Combat</button>
+    </div>
 
-    <!-- Character shortcut (player only) -->
-    <div v-if="!campaign.isGm" class="char-shortcut-row">
-      <div v-if="myCharacters.length === 0" class="char-shortcut-new" @click="router.push('/characters')">
-        <span class="char-shortcut-plus">+</span>
-        <span>Create your character</span>
+    <!-- ── OVERVIEW tab ───────────────────────────────────────── -->
+    <template v-if="activeTab === 'overview'">
+      <PlaylistPlayer :url="playlistUrl" />
+
+      <!-- Character shortcut (player only) -->
+      <div v-if="!campaign.isGm" class="char-shortcut-row">
+        <div v-if="myCharacters.length === 0" class="char-shortcut-new" @click="router.push('/characters')">
+          <span class="char-shortcut-plus">+</span>
+          <span>Create your character</span>
+        </div>
+        <template v-else>
+          <div v-for="c in myCharacters" :key="c.id" class="char-shortcut-tile" @click="router.push(`/character-sheet?id=${c.id}`)">
+            <div class="char-shortcut-portrait">
+              <img v-if="c.portrait_url" :src="c.portrait_url" :alt="c.name" class="char-shortcut-img" />
+              <div v-else class="char-shortcut-initials">{{ initials(c.name) }}</div>
+            </div>
+            <div class="char-shortcut-details">
+              <div class="char-shortcut-name">{{ c.name }}</div>
+              <div v-if="c.sheet_data?.class" class="char-shortcut-class">{{ c.sheet_data.class }}</div>
+            </div>
+            <div class="char-shortcut-arrow">→</div>
+          </div>
+          <div class="char-shortcut-add" @click="router.push('/characters')" title="Manage characters">
+            <span class="nav-icon">🧙</span> Characters
+          </div>
+        </template>
       </div>
-      <template v-else>
-        <div v-for="c in myCharacters" :key="c.id" class="char-shortcut-tile" @click="router.push(`/character-sheet?id=${c.id}`)">
-          <div class="char-shortcut-portrait">
-            <img v-if="c.portrait_url" :src="c.portrait_url" :alt="c.name" class="char-shortcut-img" />
-            <div v-else class="char-shortcut-initials">{{ initials(c.name) }}</div>
+
+      <!-- Pinned items -->
+      <div v-if="data.pins.length" class="pins-section">
+        <div class="dash-section">Pinned</div>
+        <div class="pins-row">
+          <div
+            v-for="p in data.pins"
+            :key="p.id"
+            class="pin-chip"
+            @click="router.push(PIN_ROUTES[p.item_type] || '/' + p.item_type)"
+          >
+            <div class="type-dot" :style="`background:${TYPE_COLORS[p.item_type] || '#888'}`"></div>
+            {{ p.item_title || p.item_type + ' #' + p.item_id }}
+            <button class="pin-remove" @click.stop="data.removePin(p.id)">✕</button>
           </div>
-          <div class="char-shortcut-details">
-            <div class="char-shortcut-name">{{ c.name }}</div>
-            <div v-if="c.sheet_data?.class" class="char-shortcut-class">{{ c.sheet_data.class }}</div>
-          </div>
-          <div class="char-shortcut-arrow">→</div>
-        </div>
-        <div class="char-shortcut-add" @click="router.push('/characters')" title="Manage characters">
-          <span class="nav-icon">🧙</span> Characters
-        </div>
-      </template>
-    </div>
-
-    <!-- Pinned items -->
-    <div v-if="data.pins.length" class="pins-section">
-      <div class="dash-section">Pinned</div>
-      <div class="pins-row">
-        <div
-          v-for="p in data.pins"
-          :key="p.id"
-          class="pin-chip"
-          @click="router.push(PIN_ROUTES[p.item_type] || '/' + p.item_type)"
-        >
-          <div class="type-dot" :style="`background:${TYPE_COLORS[p.item_type] || '#888'}`"></div>
-          {{ p.item_title || p.item_type + ' #' + p.item_id }}
-          <button class="pin-remove" @click.stop="data.removePin(p.id)">✕</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Quick Links (Mirrors Sidebar Clusters) -->
-    <div class="dash-section" style="margin-top:16px;">Quick Links</div>
-    <div class="dash-grid quick-links-grid" style="margin-bottom: 24px;">
-      <!-- World -->
-      <router-link to="/npcs" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
-        <div class="ql-icon">👤</div><div class="ql-label">NPCs</div>
-      </router-link>
-      <router-link to="/locations" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
-        <div class="ql-icon">🗺</div><div class="ql-label">Locations</div>
-      </router-link>
-      <router-link to="/factions" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
-        <div class="ql-icon">⚑</div><div class="ql-label">Factions</div>
-      </router-link>
-      <router-link to="/bestiary" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
-        <div class="ql-icon">🐉</div><div class="ql-label">Bestiary</div>
-      </router-link>
-      <!-- Knowledge & Chronology -->
-      <router-link to="/timeline" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
-        <div class="ql-icon">⏳</div><div class="ql-label">Timeline</div>
-      </router-link>
-      <router-link to="/maps" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
-        <div class="ql-icon">🗾</div><div class="ql-label">Maps</div>
-      </router-link>
-      <router-link to="/theory-board" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
-        <div class="ql-icon">🔍</div><div class="ql-label">Theory</div>
-      </router-link>
-      <router-link to="/notes" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
-        <div class="ql-icon">📝</div><div class="ql-label">Notes</div>
-      </router-link>
-      <!-- Player Bag -->
-      <router-link to="/inventory" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
-        <div class="ql-icon">🎒</div><div class="ql-label">Inventory</div>
-      </router-link>
-      <router-link to="/handouts" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
-        <div class="ql-icon">📄</div><div class="ql-label">Handouts</div>
-      </router-link>
-      <router-link to="/hooks-rumours" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
-        <div class="ql-icon">🪝</div><div class="ql-label">Hooks / Rumours</div>
-      </router-link>
-      <router-link to="/quests" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
-        <div class="ql-icon">📜</div><div class="ql-label">Quests</div>
-      </router-link>
-    </div>
-
-    <!-- ── 2-column lower dashboard ─────────────────────── -->
-    <div class="dash-lower">
-
-      <!-- LEFT: Job Board & Quests -->
-      <div class="dash-lower-col">
-        <!-- Local Job Board -->
-        <div class="dash-section-row">
-          <div class="dash-section">Local Job Board</div>
-          <router-link to="/jobs" class="dash-view-all">Manage →</router-link>
-        </div>
-        
-        <div style="margin-bottom: 16px;">
-          <div v-if="campaign.isGm" style="display:flex; align-items:center; gap:8px;">
-            <label style="font-size: 12px; color: var(--text3);">Party Location:</label>
-            <select v-model="partyLocationModel" @change="updatePartyLocation" class="form-input" style="max-width:200px; padding:4px 8px; font-size:12px;">
-              <option value="">-- Nowhere --</option>
-              <option v-for="l in data.locations" :key="l.id" :value="l.id">{{ l.name }}</option>
-            </select>
-          </div>
-          <div v-else-if="campaign.currentPartyLocationId" style="font-size: 12px; color: var(--text3);">
-            Current Location: <span style="color: var(--text); font-weight: 600;">{{ partyLocationName }}</span>
-          </div>
-        </div>
-
-        <div class="card-grid" style="margin-bottom: 24px;">
-          <div v-for="job in localJobs" :key="job.id" class="card" style="padding: 12px;">
-            <div style="font-weight: 600; margin-bottom: 4px;">📌 {{ job.title }}</div>
-            <div style="font-size: 12px; color: var(--text2); margin-bottom: 8px;">{{ job.client }}</div>
-            <div style="font-size: 12px; color: var(--text3);">Reward: {{ job.reward || 'Negotiable' }}</div>
-          </div>
-          <div v-if="!localJobs.length" class="empty-state dash-empty">No jobs available here.</div>
-        </div>
-
-        <!-- Active Quests -->
-        <div class="dash-section-row">
-          <div class="dash-section">Active Quests</div>
-          <router-link to="/quests" class="dash-view-all">View all →</router-link>
-        </div>
-        <div class="card-grid">
-          <QuestCard v-for="q in activeQuests.slice(0, 6)" :key="q.id" :quest="q" :expanded="expandedId === q.id" @toggle="toggleExpand(q.id)" />
-          <div v-if="activeQuests.length === 0" class="empty-state dash-empty">No active quests.</div>
         </div>
       </div>
 
-      <!-- RIGHT: Messages, Next Session -->
-      <div class="dash-lower-col">
-        <!-- Next session -->
-        <div class="dash-section-row">
-          <div class="dash-section">Next Session</div>
-          <router-link to="/sessions" class="dash-view-all">View all →</router-link>
-        </div>
-        <div v-if="nextSession" class="card">
-          <div class="card-title">{{ nextSession.title || 'Proposed date' }}</div>
-          <div class="card-meta next-session-date">{{ fmtTime(nextSession.proposed_date) }}</div>
-        </div>
-        <div v-else class="empty-state dash-empty">No upcoming session.</div>
+      <!-- Quick Links -->
+      <div class="dash-section" style="margin-top:16px;">Quick Links</div>
+      <div class="dash-grid quick-links-grid" style="margin-bottom: 24px;">
+        <router-link to="/npcs" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
+          <div class="ql-icon">👤</div><div class="ql-label">NPCs</div>
+        </router-link>
+        <router-link to="/locations" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
+          <div class="ql-icon">🗺</div><div class="ql-label">Locations</div>
+        </router-link>
+        <router-link to="/factions" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
+          <div class="ql-icon">⚑</div><div class="ql-label">Factions</div>
+        </router-link>
+        <router-link to="/bestiary" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
+          <div class="ql-icon">🐉</div><div class="ql-label">Bestiary</div>
+        </router-link>
+        <router-link to="/timeline" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
+          <div class="ql-icon">⏳</div><div class="ql-label">Timeline</div>
+        </router-link>
+        <router-link to="/maps" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
+          <div class="ql-icon">🗾</div><div class="ql-label">Maps</div>
+        </router-link>
+        <router-link to="/theory-board" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
+          <div class="ql-icon">🔍</div><div class="ql-label">Theory</div>
+        </router-link>
+        <router-link to="/notes" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
+          <div class="ql-icon">📝</div><div class="ql-label">Notes</div>
+        </router-link>
+        <router-link to="/inventory" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
+          <div class="ql-icon">🎒</div><div class="ql-label">Inventory</div>
+        </router-link>
+        <router-link to="/handouts" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
+          <div class="ql-icon">📄</div><div class="ql-label">Handouts</div>
+        </router-link>
+        <router-link to="/hooks-rumours" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
+          <div class="ql-icon">🪝</div><div class="ql-label">Hooks / Rumours</div>
+        </router-link>
+        <router-link to="/quests" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
+          <div class="ql-icon">📜</div><div class="ql-label">Quests</div>
+        </router-link>
+      </div>
 
-        <!-- Recent handouts -->
-        <div class="dash-section-row" style="margin-top:20px">
-          <div class="dash-section">
-            Recent Handouts
-            <span v-if="ui.unreadHandoutCount" class="dash-badge">{{ ui.unreadHandoutCount }} new</span>
+      <!-- 2-column lower dashboard -->
+      <div class="dash-lower">
+        <!-- LEFT: Job Board & Quests -->
+        <div class="dash-lower-col">
+          <div class="dash-section-row">
+            <div class="dash-section">Local Job Board</div>
+            <router-link to="/jobs" class="dash-view-all">Manage →</router-link>
           </div>
-          <router-link to="/handouts" class="dash-view-all">View all →</router-link>
+
+          <div style="margin-bottom: 16px;">
+            <div v-if="campaign.isGm" style="display:flex; align-items:center; gap:8px;">
+              <label style="font-size: 12px; color: var(--text3);">Party Location:</label>
+              <select v-model="partyLocationModel" @change="updatePartyLocation" class="form-input" style="max-width:200px; padding:4px 8px; font-size:12px;">
+                <option value="">-- Nowhere --</option>
+                <option v-for="l in data.locations" :key="l.id" :value="l.id">{{ l.name }}</option>
+              </select>
+            </div>
+            <div v-else-if="campaign.currentPartyLocationId" style="font-size: 12px; color: var(--text3);">
+              Current Location: <span style="color: var(--text); font-weight: 600;">{{ partyLocationName }}</span>
+            </div>
+          </div>
+
+          <div class="card-grid" style="margin-bottom: 24px;">
+            <div v-for="job in localJobs" :key="job.id" class="card" style="padding: 12px;">
+              <div style="font-weight: 600; margin-bottom: 4px;">📌 {{ job.title }}</div>
+              <div style="font-size: 12px; color: var(--text2); margin-bottom: 8px;">{{ job.client }}</div>
+              <div style="font-size: 12px; color: var(--text3);">Reward: {{ job.reward || 'Negotiable' }}</div>
+            </div>
+            <div v-if="!localJobs.length" class="empty-state dash-empty">No jobs available here.</div>
+          </div>
+
+          <div class="dash-section-row">
+            <div class="dash-section">Active Quests</div>
+            <router-link to="/quests" class="dash-view-all">View all →</router-link>
+          </div>
+          <div class="card-grid">
+            <QuestCard v-for="q in activeQuests.slice(0, 6)" :key="q.id" :quest="q" :expanded="expandedId === q.id" @toggle="toggleExpand(q.id)" />
+            <div v-if="activeQuests.length === 0" class="empty-state dash-empty">No active quests.</div>
+          </div>
         </div>
-        <div>
-          <div v-if="!recentHandouts.length" class="empty-state dash-empty">No handouts.</div>
-          <div v-for="h in recentHandouts" :key="h.id" class="msg-item msg-item-link" @click="ui.openHandout(h)">
-            <div class="msg-header">
-              <div class="msg-subject">{{ h.title }}</div>
-              <div class="msg-meta">{{ fmt(h.created_at) }}</div>
+
+        <!-- RIGHT: Next Session, Handouts -->
+        <div class="dash-lower-col">
+          <div class="dash-section-row">
+            <div class="dash-section">Next Session</div>
+            <router-link to="/sessions" class="dash-view-all">View all →</router-link>
+          </div>
+          <div v-if="nextSession" class="card">
+            <div class="card-title">{{ nextSession.title || 'Proposed date' }}</div>
+            <div class="card-meta next-session-date">{{ fmtTime(nextSession.proposed_date) }}</div>
+          </div>
+          <div v-else class="empty-state dash-empty">No upcoming session.</div>
+
+          <div class="dash-section-row" style="margin-top:20px">
+            <div class="dash-section">
+              Recent Handouts
+              <span v-if="ui.unreadHandoutCount" class="dash-badge">{{ ui.unreadHandoutCount }} new</span>
+            </div>
+            <router-link to="/handouts" class="dash-view-all">View all →</router-link>
+          </div>
+          <div>
+            <div v-if="!recentHandouts.length" class="empty-state dash-empty">No handouts.</div>
+            <div v-for="h in recentHandouts" :key="h.id" class="msg-item msg-item-link" @click="ui.openHandout(h)">
+              <div class="msg-header">
+                <div class="msg-subject">{{ h.title }}</div>
+                <div class="msg-meta">{{ fmt(h.created_at) }}</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </div><!-- /dash-lower -->
+      </div><!-- /dash-lower -->
     </template>
 
+    <!-- ── GM DASHBOARD tab ───────────────────────────────────── -->
     <template v-else-if="activeTab === 'gm' && campaign.isGm">
       <GmDashboardView />
     </template>
+
+    <!-- ── COMBAT tab ─────────────────────────────────────────── -->
     <template v-else-if="activeTab === 'combat' && campaign.isGm">
       <CombatView />
     </template>
@@ -211,7 +202,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
 import { useDataStore } from '@/stores/data'
@@ -227,7 +218,6 @@ const ui = useUiStore()
 const data = useDataStore()
 const auth = useAuthStore()
 const router = useRouter()
-const route = useRoute()
 const { hasStress, hasSanity } = useSystemFeatures()
 const activeTab = ref('overview')
 
@@ -271,7 +261,6 @@ const PIN_ROUTES = {
 }
 
 const activeQuests = computed(() => data.quests.filter(q => q.status === 'active'))
-const openHooks = computed(() => data.hooks.filter(h => h.status === 'active').length)
 const recentHandouts = computed(() =>
   [...data.handouts].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 3)
 )
@@ -283,15 +272,12 @@ const partyLocationName = computed(() => {
 })
 
 async function updatePartyLocation(e) {
-  const val = e.target.value
-  await campaign.setPartyLocation(val)
+  await campaign.setPartyLocation(e.target.value)
 }
 
 const localJobs = computed(() => {
   if (!campaign.currentPartyLocationId) return []
-  // If GM, show all for location to manage. If player, maybe just open jobs?
-  // The plan requested: GM sees all for location, players see jobs for location.
-  return data.jobs.filter(j => 
+  return data.jobs.filter(j =>
     j.location_id == campaign.currentPartyLocationId &&
     (campaign.isGm || j.status === 'open')
   )
@@ -318,8 +304,6 @@ function fmtTime(ts) {
   if (!ts) return ''
   return new Date(ts).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
-
-function openMessage(m) { ui.openMessage(m) }
 
 onMounted(async () => {
   if (!campaign.isGm) activeTab.value = 'overview'
@@ -351,6 +335,29 @@ onMounted(async () => {
   color: var(--accent);
   background: color-mix(in oklab, var(--accent) 10%, transparent);
 }
+
+/* Tab strip */
+.dash-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0;
+}
+.dash-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  padding: 8px 14px;
+  color: var(--text3);
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+}
+.dash-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.dash-tab:hover:not(.active) { color: var(--text2); }
 
 /* Character shortcut row */
 .char-shortcut-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; align-items: center; }
@@ -388,66 +395,41 @@ onMounted(async () => {
 }
 .char-shortcut-add:hover { opacity: 0.8; }
 
-/* Stress bars */
-.stress-wrap { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
-.stress-col { min-width: 180px; }
-.sanity-critical { color: var(--red); }
-
 /* Pins */
 .pins-section { margin-bottom: 18px; }
 .pin-remove { background: none; border: none; color: var(--text3); font-size: 11px; padding: 0 0 0 4px; cursor: pointer; }
 
-/* Stat cards */
-.stat-card-link { cursor: pointer; }
-
 /* Section headers */
 .dash-section-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 4px;
-  margin-bottom: 10px;
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 4px; margin-bottom: 10px;
 }
 .dash-section { margin: 0; }
 .dash-view-all {
-  font-size: 11px;
-  color: var(--accent);
+  font-size: 11px; color: var(--accent);
   font-family: 'JetBrains Mono', monospace;
-  cursor: pointer;
-  white-space: nowrap;
-  text-decoration: none;
+  cursor: pointer; white-space: nowrap; text-decoration: none;
 }
 .dash-badge {
-  font-size: 11px;
-  color: var(--accent);
-  font-family: 'JetBrains Mono', monospace;
-  margin-left: 8px;
+  font-size: 11px; color: var(--accent);
+  font-family: 'JetBrains Mono', monospace; margin-left: 8px;
 }
 .dash-empty { padding: 12px 0; }
-
-/* Handout items are clickable */
 .msg-item-link { cursor: pointer; }
-
-/* Next session */
 .next-session-date { color: var(--text3); }
+.stat-card-link { cursor: pointer; }
 
-/* Quick Links Overrides */
+/* Quick Links */
 .quick-links-grid {
   display: grid !important;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)) !important;
   gap: 12px;
 }
 .quick-link-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 16px 10px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius, 6px);
-  text-align: center;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 10px; padding: 16px 10px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius, 6px); text-align: center;
 }
 .quick-link-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 12px var(--color-bg-overlay-light); }
 .ql-icon { font-size: 24px; line-height: 1; }
@@ -455,11 +437,8 @@ onMounted(async () => {
 
 /* 2-column lower layout */
 .dash-lower {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 28px;
-  align-items: start;
-  margin-top: 8px;
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 28px; align-items: start; margin-top: 8px;
 }
 
 @media (max-width: 860px) {
