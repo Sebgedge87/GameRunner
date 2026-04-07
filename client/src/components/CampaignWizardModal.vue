@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useCampaignStore } from '@/stores/campaign'
 import { useDataStore } from '@/stores/data'
@@ -488,6 +488,13 @@ function entityEndpointAndBody(ent) {
 async function saveAllEntities() {
   if (!parsedEntities.value.length) return
   entitySaving.value = true
+  const useModal = importTab.value === 2
+  flavourIdx = 0
+  if (useModal) {
+    importProgress.visible = true; importProgress.currentIdx = 0
+    importProgress.total = parsedEntities.value.length; importProgress.done = false
+    importProgress.saved = 0; importProgress.phrase = FLAVOUR_PHRASES[0]
+  }
   saveResults.value = parsedEntities.value.map(e => ({
     type:     e.type || entityForm.type,
     label:    e.type === 'Rumour'
@@ -497,35 +504,45 @@ async function saveAllEntities() {
     errorMsg: '',
   }))
   let saved = 0
+  let lastType = null
+  let groupCounts = {}
+  if (useModal) {
+    for (const e of parsedEntities.value) { const t = e.type || entityForm.type; groupCounts[t] = (groupCounts[t] || 0) + 1 }
+  }
+  let groupProgress = {}
   try {
     for (let i = 0; i < parsedEntities.value.length; i++) {
-      const info = entityEndpointAndBody(parsedEntities.value[i])
+      const ent = parsedEntities.value[i]
+      const currentType = ent.type || entityForm.type
+      if (useModal) {
+        importProgress.currentIdx = i
+        importProgress.currentLabel = saveResults.value[i].label
+        importProgress.currentType = currentType
+        importProgress.groupTotal = groupCounts[currentType] || 0
+        if (currentType !== lastType) { if (lastType !== null) nextFlavour(); groupProgress[currentType] = 0 }
+        groupProgress[currentType] = (groupProgress[currentType] || 0) + 1
+        importProgress.groupIdx = groupProgress[currentType]
+        if (currentType !== lastType) lastType = currentType
+      }
+      const info = entityEndpointAndBody(ent)
       if (!info || !info.valid) {
-        saveResults.value[i].status   = 'error'
-        saveResults.value[i].errorMsg = 'Missing required field (name or text)'
-        continue
+        saveResults.value[i].status = 'error'; saveResults.value[i].errorMsg = 'Missing required field (name or text)'; continue
       }
       try {
         const r = await apif(info.endpoint, { method: 'POST', body: JSON.stringify(info.body) })
         if (!r.ok) {
           let msg = `HTTP ${r.status}`
           try { const b = await r.json(); msg = b?.error || b?.message || b?.detail || msg } catch {}
-          saveResults.value[i].status   = 'error'
-          saveResults.value[i].errorMsg = msg
-        } else {
-          saveResults.value[i].status = 'ok'
-          saved++
-        }
-      } catch (err) {
-        saveResults.value[i].status   = 'error'
-        saveResults.value[i].errorMsg = err.message || 'Network error'
-      }
+          saveResults.value[i].status = 'error'; saveResults.value[i].errorMsg = msg
+        } else { saveResults.value[i].status = 'ok'; saved++; if (useModal) importProgress.saved = saved }
+      } catch (err) { saveResults.value[i].status = 'error'; saveResults.value[i].errorMsg = err.message || 'Network error' }
     }
     if (saved > 0) await data.loadAll()
   } catch (e) {
     ui.showToast(e.message || 'Failed to save', '', '✕')
   } finally {
     entitySaving.value = false
+    if (useModal) { importProgress.currentIdx = importProgress.total - 1; importProgress.done = true }
   }
 }
 
@@ -594,6 +611,85 @@ const SYSTEM_PREVIEWS = {
 const ENTITY_TYPES = ['NPC', 'Location', 'Faction', 'Quest']
 
 const preview = computed(() => SYSTEM_PREVIEWS[selectedSystem.value] || SYSTEM_PREVIEWS.default)
+
+/* ── Screen 1 (Guided) — multi-entity counter ──────────── */
+const guidedEntityCount = ref(0)
+
+async function addAnotherEntity() {
+  if (!entityForm.name.trim()) { ui.showToast('Entity name is required', '', '✕'); return }
+  entitySaving.value = true
+  try {
+    const type = entityForm.type
+    let endpoint, body
+    if (type === 'NPC')      { endpoint = '/api/npcs';      body = { name: entityForm.name, role: entityForm.role, description: entityForm.description, gm_notes: entityForm.notes } }
+    else if (type === 'Location') { endpoint = '/api/locations'; body = { name: entityForm.name, description: entityForm.description, gm_notes: entityForm.notes } }
+    else if (type === 'Faction')  { endpoint = '/api/factions';  body = { name: entityForm.name, description: entityForm.description, gm_notes: entityForm.notes } }
+    else                          { endpoint = '/api/quests';    body = { title: entityForm.name, description: entityForm.description, gm_notes: entityForm.notes, status: 'active', quest_type: 'main' } }
+    const r = await apif(endpoint, { method: 'POST', body: JSON.stringify(body) })
+    if (!r.ok) { const d = await r.json(); throw new Error(d.error || r.status) }
+    guidedEntityCount.value++
+    entityForm.name = ''; entityForm.role = ''; entityForm.location = ''; entityForm.description = ''; entityForm.notes = ''
+    parseWarnings.value = []
+  } catch (e) {
+    ui.showToast(e.message || 'Failed to create entity', '', '✕')
+  } finally {
+    entitySaving.value = false
+  }
+}
+
+/* ── Screen 2 (Paste) — auto-detect + per-type templates ── */
+const TYPE_TEMPLATES = {
+  NPC: `# Ezekiel Marsh\n**Role:** Cultist\n**Location:** Innsmouth, MA\n**Description:** Old fisherman with unsettling eyes\n\n## Notes\nKnows about the Deep Ones. Avoid contact after dark.`,
+  Location: `# The Sunken Chapel\n**Description:** An abandoned chapel half-submerged at the edge of the marshes.\n\n## Notes\nA secret door behind the altar leads to the smuggler's tunnel. Often visited by cultists at night.`,
+  Faction: `# The Merchant Council\n**Description:** A powerful trade guild that controls the city's commerce and courts.\n**Goals:** Monopolise the northern spice trade and install a puppet governor.\n\n## Notes\nFunded by House Vane. The inner circle worships the Sea God in secret.`,
+  Quest: `# The Missing Shipment\n**Description:** Merchant Aldred's cargo of fine cloth vanished on the Ashford road. He's offering a reward.\n\n## Notes\nStolen by the Council to frame a rival. The cargo hides contraband letters implicating Lord Harwick.`,
+}
+
+const pasteAutoDetect = computed(() => {
+  const headers = (pasteRaw.value.match(/^## .+/gim) || [])
+    .filter(h => detectSectionType(h.replace(/^##\s*/i, '')))
+  return headers.length > 1
+})
+
+watch(() => entityForm.type, (newType) => {
+  if (importTab.value !== 1 || pasteAutoDetect.value) return
+  const knownTemplates = Object.values(TYPE_TEMPLATES)
+  const isEmpty = !pasteRaw.value.trim()
+  const isTemplate = isEmpty || knownTemplates.includes(pasteRaw.value)
+  if (isTemplate) pasteRaw.value = TYPE_TEMPLATES[newType] || ''
+})
+
+watch(importTab, (tab) => {
+  if (tab === 1 && !pasteRaw.value.trim()) pasteRaw.value = TYPE_TEMPLATES[entityForm.type] || ''
+})
+
+/* ── Screen 3 (Upload) — grouped entity list ───────────── */
+const collapsedGroups = reactive({})
+
+const groupedEntities = computed(() => {
+  const groups = {}
+  for (const e of parsedEntities.value) {
+    const t = e.type || entityForm.type || 'Unknown'
+    if (!groups[t]) groups[t] = []
+    groups[t].push(e)
+  }
+  return Object.entries(groups).map(([type, entities]) => ({ type, entities }))
+})
+
+function toggleGroup(type) { collapsedGroups[type] = !collapsedGroups[type] }
+
+/* ── Import progress modal ─────────────────────────────── */
+const FLAVOUR_PHRASES = [
+  'Percolating lore…', 'Sharpening quills…', 'Consulting the oracle…',
+  'Summoning factions…', 'Forging bonds…', 'Inscribing the tome…',
+]
+const importProgress = reactive({
+  visible: false, currentIdx: 0, currentLabel: '',
+  currentType: '', groupIdx: 1, groupTotal: 0,
+  total: 0, phrase: FLAVOUR_PHRASES[0], done: false, saved: 0,
+})
+let flavourIdx = 0
+function nextFlavour() { flavourIdx = (flavourIdx + 1) % FLAVOUR_PHRASES.length; importProgress.phrase = FLAVOUR_PHRASES[flavourIdx] }
 
 /* ── Close / dismiss ────────────────────────────────────── */
 // Step 3: campaign already created — closing = skip to dashboard
@@ -814,6 +910,11 @@ function skipEntity() {
 
           <!-- Guided -->
           <div v-if="importTab === 0">
+            <!-- Entity counter -->
+            <div v-if="guidedEntityCount > 0" class="wiz-entity-counter">
+              ✓ {{ guidedEntityCount }} {{ guidedEntityCount === 1 ? 'entity' : 'entities' }} added
+            </div>
+
             <!-- Parse warnings banner -->
             <div v-if="parseWarnings.length" class="wiz-parse-notice">
               <svg viewBox="0 0 16 16" width="13" height="13" fill="none" style="flex-shrink:0">
@@ -888,15 +989,30 @@ function skipEntity() {
             <div class="wiz-field-row" style="margin-bottom:10px">
               <div class="wiz-field">
                 <label>Entity type</label>
-                <select v-model="entityForm.type">
-                  <option v-for="t in ENTITY_TYPES" :key="t">{{ t }}</option>
+                <select v-model="entityForm.type" :disabled="pasteAutoDetect">
+                  <option v-if="pasteAutoDetect" value="">Auto-detect</option>
+                  <option v-for="t in ENTITY_TYPES" :key="t" :value="t">{{ t }}</option>
                 </select>
+                <span v-if="pasteAutoDetect" class="wiz-auto-detect-hint">
+                  Entity types will be parsed from section headers.
+                </span>
               </div>
             </div>
             <div class="wiz-field" style="margin-bottom:10px">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-                <label style="margin-bottom:0">Paste JSON or Markdown</label>
-                <button class="wiz-tpl-btn" title="Fill with import template" @click="fillTemplate">
+                <label style="margin-bottom:0;display:flex;align-items:center;gap:5px">
+                  Paste JSON or Markdown
+                  <span class="wiz-info-wrap">
+                    <span class="wiz-info-icon">i</span>
+                    <span class="wiz-info-tooltip">
+                      Paste a single entity, a JSON array, or a full campaign document with
+                      <code>## NPCs</code> / <code>## Locations</code> / <code>## Factions</code> /
+                      <code>## Quests</code> / <code>## Rumors</code> / <code>## Timeline</code> sections —
+                      individual entries under <code>### Name</code> headings with <code>**Field:** value</code> pairs.
+                    </span>
+                  </span>
+                </label>
+                <button class="wiz-tpl-btn" title="Fill with full campaign template" @click="fillTemplate">
                   <svg viewBox="0 0 14 14" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2" y="1" width="8" height="10" rx="1"/><line x1="4" y1="4" x2="8" y2="4"/><line x1="4" y1="6.5" x2="8" y2="6.5"/><line x1="4" y1="9" x2="6.5" y2="9"/></svg>
                   Use template
                 </button>
@@ -906,12 +1022,6 @@ function skipEntity() {
                 class="wiz-paste-area"
                 placeholder="# Ezekiel Marsh&#10;**Role:** Cultist&#10;**Location:** Innsmouth, MA&#10;**Description:** Old fisherman with unsettling eyes&#10;&#10;## Notes&#10;Knows about the Deep Ones. Avoid contact after dark."
               />
-            </div>
-            <div class="wiz-paste-hint">
-              Paste a single entity, a JSON array, or a full campaign document with
-              <code>## NPCs</code> / <code>## Locations</code> / <code>## Factions</code> /
-              <code>## Quests</code> / <code>## Rumors</code> / <code>## Timeline</code> sections —
-              individual entries under <code>### Name</code> headings with <code>**Field:** value</code> pairs.
             </div>
             <div style="display:flex;justify-content:flex-end;margin-top:10px">
               <button class="wiz-parse-btn-main" :disabled="!pasteRaw.trim()" @click="runPaste">
@@ -988,11 +1098,21 @@ function skipEntity() {
               <div class="wiz-queue-header">
                 {{ parsedEntities.length }} {{ parsedEntities.length === 1 ? 'entity' : 'entities' }} ready to import
               </div>
-              <div v-for="(e, i) in parsedEntities" :key="i" class="wiz-queue-item">
-                <span class="wiz-type-badge" :data-type="e.type">{{ e.type }}</span>
-                <span class="wiz-queue-name">{{ e.type === 'Rumour' ? (e.result.text?.slice(0,50) + (e.result.text?.length > 50 ? '…' : '')) : (e.result.name || '(unnamed)') }}</span>
-                <span v-if="e.result.role" class="wiz-queue-role">{{ e.result.role }}</span>
-                <span v-else-if="e.result.description" class="wiz-queue-desc">{{ e.result.description.slice(0,50) }}{{ e.result.description.length > 50 ? '…' : '' }}</span>
+              <div v-for="group in groupedEntities" :key="group.type">
+                <div class="wiz-group-header" @click="toggleGroup(group.type)">
+                  <span class="wiz-type-badge" :data-type="group.type">{{ group.type }}</span>
+                  <span class="wiz-group-count">{{ group.entities.length }}</span>
+                  <svg class="wiz-group-chevron" :class="{ 'wiz-group-chevron-collapsed': collapsedGroups[group.type] }" viewBox="0 0 10 6" width="10" height="6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 1l4 4 4-4"/>
+                  </svg>
+                </div>
+                <template v-if="!collapsedGroups[group.type]">
+                  <div v-for="(e, i) in group.entities" :key="i" class="wiz-queue-item wiz-queue-item-indented">
+                    <span class="wiz-queue-name">{{ e.type === 'Rumour' ? (e.result.text?.slice(0,60) + (e.result.text?.length > 60 ? '…' : '')) : (e.result.name || '(unnamed)') }}</span>
+                    <span v-if="e.result.role" class="wiz-queue-role">{{ e.result.role }}</span>
+                    <span v-else-if="e.result.description" class="wiz-queue-desc">{{ e.result.description.slice(0,60) }}{{ e.result.description.length > 60 ? '…' : '' }}</span>
+                  </div>
+                </template>
               </div>
             </div>
           </div>
@@ -1036,7 +1156,7 @@ function skipEntity() {
                 :disabled="entitySaving"
                 @click="saveAllEntities"
               >
-                {{ entitySaving ? 'Saving…' : `Add all ${parsedEntities.length} entities →` }}
+                {{ entitySaving ? 'Saving…' : `Import all ${parsedEntities.length} entities →` }}
               </button>
               <!-- Single entity from upload tab -->
               <button
@@ -1047,9 +1167,26 @@ function skipEntity() {
               >
                 {{ entitySaving ? 'Saving…' : 'Add entity & enter campaign' }}
               </button>
-              <!-- Guided form (tab 0) or no parse result yet -->
+              <!-- Guided tab: split CTAs -->
+              <div v-else-if="importTab === 0" class="wiz-btn-group">
+                <button
+                  class="wiz-btn"
+                  :disabled="entitySaving || !entityForm.name.trim()"
+                  @click="addAnotherEntity"
+                >
+                  {{ entitySaving ? 'Saving…' : 'Add another entity' }}
+                </button>
+                <button
+                  class="wiz-btn primary"
+                  :disabled="entitySaving"
+                  @click="entityForm.name.trim() ? saveEntity() : skipEntity()"
+                >
+                  Enter campaign →
+                </button>
+              </div>
+              <!-- Paste tab with no multi-entity result -->
               <button
-                v-else-if="importTab === 0 || importTab === 1"
+                v-else-if="importTab === 1"
                 class="wiz-btn primary"
                 :disabled="entitySaving || !entityForm.name.trim()"
                 @click="saveEntity"
@@ -1065,6 +1202,27 @@ function skipEntity() {
             </template>
           </div>
         </template>
+
+        <!-- Import progress overlay (non-dismissible, upload tab only) -->
+        <div v-if="importProgress.visible" class="wiz-import-progress">
+          <template v-if="!importProgress.done">
+            <div class="wiz-prog-phrase">{{ importProgress.phrase }}</div>
+            <div class="wiz-prog-type">
+              Creating {{ importProgress.currentType }}s
+              <span class="wiz-prog-count">({{ importProgress.groupIdx }} / {{ importProgress.groupTotal }})</span>
+            </div>
+            <div class="wiz-prog-name">{{ importProgress.currentLabel }}</div>
+            <div class="wiz-prog-track">
+              <div class="wiz-prog-fill" :style="`width:${Math.round(((importProgress.currentIdx + 1) / importProgress.total) * 100)}%`"></div>
+            </div>
+            <div class="wiz-prog-overall">{{ importProgress.currentIdx + 1 }} / {{ importProgress.total }}</div>
+          </template>
+          <template v-else>
+            <div class="wiz-prog-done-icon">✓</div>
+            <div class="wiz-prog-done-count">{{ importProgress.saved }} {{ importProgress.saved === 1 ? 'entity' : 'entities' }} created</div>
+            <button class="wiz-btn primary" style="margin-top:20px" @click="importProgress.visible = false; skipEntity()">Enter campaign →</button>
+          </template>
+        </div>
 
       </div><!-- .wiz-card -->
     </div><!-- .wiz-overlay -->
@@ -1584,4 +1742,111 @@ function skipEntity() {
 .wiz-status-err { color: #c04040; flex-shrink: 0; }
 @keyframes wiz-spin { to { transform: rotate(360deg); } }
 .wiz-spinner { color: var(--color-text-hint); animation: wiz-spin .8s linear infinite; transform-origin: center; flex-shrink: 0; }
+
+/* ── Guided tab: counter + split buttons ──────────────── */
+.wiz-entity-counter {
+  font-size: 11px; font-weight: 500;
+  color: #3a9a5a; letter-spacing: .3px;
+  padding: 5px 10px; border-radius: 6px;
+  background: rgba(76,171,113,.10);
+  border: 0.5px solid rgba(76,171,113,.3);
+  margin-bottom: 12px;
+}
+.wiz-btn-group { display: flex; gap: 8px; }
+
+/* ── Paste tab: info tooltip ──────────────────────────── */
+.wiz-info-wrap { position: relative; display: inline-flex; align-items: center; }
+.wiz-info-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--color-bg-elevated); border: 0.5px solid var(--color-border-default);
+  color: var(--color-text-hint); font-size: 9px; font-style: italic; font-weight: 600;
+  cursor: default; flex-shrink: 0;
+}
+.wiz-info-tooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%; transform: translateX(-50%);
+  width: 320px; max-width: 90vw;
+  background: var(--color-bg-elevated);
+  border: 0.5px solid var(--color-border-hover);
+  border-radius: 8px; padding: 10px 12px;
+  font-size: 11px; line-height: 1.6;
+  color: var(--color-text-secondary);
+  box-shadow: 0 8px 24px rgba(0,0,0,.4);
+  z-index: 20; font-style: normal; font-weight: 400;
+  pointer-events: none;
+}
+.wiz-info-tooltip code {
+  font-family: 'Courier New', monospace;
+  background: var(--color-bg-card); padding: 1px 4px; border-radius: 3px; font-size: 10px;
+}
+.wiz-info-wrap:hover .wiz-info-tooltip { display: block; }
+
+.wiz-auto-detect-hint {
+  font-size: 10px; color: var(--color-accent); margin-top: 3px; letter-spacing: .2px;
+}
+.wiz-field select:disabled { opacity: .6; cursor: default; }
+
+/* ── Upload tab: grouped collapsible sections ─────────── */
+.wiz-group-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 12px; cursor: pointer;
+  border-bottom: 0.5px solid var(--color-border-default);
+  background: var(--color-bg-card);
+  transition: background .12s;
+}
+.wiz-group-header:hover { background: var(--color-bg-elevated); }
+.wiz-group-count {
+  font-size: 10px; color: var(--color-text-hint);
+  background: var(--color-bg-elevated);
+  border: 0.5px solid var(--color-border-default);
+  border-radius: 10px; padding: 0 6px;
+}
+.wiz-group-chevron { color: var(--color-text-hint); margin-left: auto; transition: transform .15s; }
+.wiz-group-chevron-collapsed { transform: rotate(-90deg); }
+.wiz-queue-item-indented { padding-left: 24px; }
+
+/* ── Import progress overlay ──────────────────────────── */
+.wiz-import-progress {
+  position: absolute; inset: 0; z-index: 10;
+  background: var(--color-bg-elevated);
+  border-radius: 12px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 40px; text-align: center;
+}
+.wiz-prog-phrase {
+  font-size: 12px; letter-spacing: 1px;
+  color: var(--color-text-hint); margin-bottom: 20px;
+  min-height: 18px;
+}
+.wiz-prog-type {
+  font-size: 15px; font-weight: 500;
+  color: var(--color-text-primary); margin-bottom: 4px;
+}
+.wiz-prog-count { font-size: 13px; color: var(--color-text-hint); margin-left: 6px; }
+.wiz-prog-name {
+  font-size: 12px; color: var(--color-text-secondary);
+  margin-bottom: 20px; min-height: 18px;
+  max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.wiz-prog-track {
+  width: 100%; max-width: 360px; height: 4px;
+  background: var(--color-border-default); border-radius: 2px; overflow: hidden;
+  margin-bottom: 8px;
+}
+.wiz-prog-fill {
+  height: 100%; background: var(--color-accent);
+  border-radius: 2px; transition: width .3s ease;
+}
+.wiz-prog-overall { font-size: 10px; color: var(--color-text-hint); }
+.wiz-prog-done-icon {
+  font-size: 28px; color: #3a9a5a; margin-bottom: 12px;
+  width: 48px; height: 48px; border-radius: 50%;
+  background: rgba(76,171,113,.12); border: 1.5px solid rgba(76,171,113,.3);
+  display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;
+}
+.wiz-prog-done-count { font-size: 18px; font-weight: 500; color: var(--color-text-primary); }
 </style>
