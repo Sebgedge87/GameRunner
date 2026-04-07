@@ -407,7 +407,7 @@ async function confirmDeleteCampaign() {
   deletingCampaign.value = true
   try {
     await campaign.deleteCampaign(campaign.activeCampaign.id)
-    router.push('/dashboard')
+    router.push('/home')
   } catch (e) {
     ui.showToast(e.message || 'Failed to delete campaign', '', '✕')
   } finally {
