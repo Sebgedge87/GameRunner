@@ -53,7 +53,9 @@ router.post('/', requireGm, (req, res) => {
   const fm = { type: 'map', title, description, image_path, map_type, gm_notes, linked_location_id, connected_to };
   
   const content = matter.stringify(description || '', fm);
-  const camp = getDb().prepare('SELECT id, name FROM campaigns WHERE active = 1 LIMIT 1').get();
+  const db = getDb();
+  const campId = getCampaignId(req);
+  const camp = campId ? db.prepare('SELECT id, name FROM campaigns WHERE id = ?').get(campId) : null;
   const campSlug = camp ? slug(camp.name) : null;
   const targetDir = getMapsDir(campSlug);
   
