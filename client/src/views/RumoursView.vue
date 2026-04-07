@@ -7,7 +7,7 @@
     <div class="search-row" style="margin-bottom:12px">
       <input v-model="search" class="form-input" placeholder="Search rumours…" style="max-width:320px" />
     </div>
-    <FilterTabs :tabs="tabs" :active="activeTab" :on-change="v => activeTab = v" />
+    <FilterTabs :tabs="tabs" :active="activeTabs" :multi="true" :on-change="v => activeTabs = v" :on-clear="() => activeTabs = ['all']" />
 
     <!-- Empty state -->
     <EmptyState
@@ -66,7 +66,7 @@ const data     = useDataStore()
 const campaign = useCampaignStore()
 const ui       = useUiStore()
 const search        = ref('')
-const activeTab     = ref('all')
+const activeTabs    = ref(['all'])
 const expandedId    = ref(null)
 const confirmDelete = ref(null)
 
@@ -79,9 +79,14 @@ const tabs = [
 
 const filteredRumours = computed(() => {
   let list = data.rumours
-  if (activeTab.value === 'true')         list = list.filter(r => r.is_true)
-  else if (activeTab.value === 'false')   list = list.filter(r => !r.is_true)
-  else if (activeTab.value === 'exposed') list = list.filter(r => r.exposed)
+  const selected = new Set(activeTabs.value || ['all'])
+  if (!selected.has('all')) {
+    list = list.filter(r =>
+      (selected.has('true') && r.is_true) ||
+      (selected.has('false') && !r.is_true) ||
+      (selected.has('exposed') && r.exposed)
+    )
+  }
   if (search.value.trim()) {
     const q = search.value.toLowerCase()
     list = list.filter(r =>

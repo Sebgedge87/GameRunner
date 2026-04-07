@@ -41,6 +41,7 @@ const FIELD_ALIASES = {
   name:        ['name', 'title', 'character', 'character_name', 'entity'],
   role:        ['role', 'type', 'class', 'occupation', 'job', 'rank', 'position', 'archetype'],
   location:    ['location', 'home', 'hometown', 'place', 'region', 'base', 'area', 'origin'],
+  faction:     ['faction', 'group', 'organization', 'organisation', 'allegiance', 'guild'],
   description: ['description', 'summary', 'overview', 'appearance', 'bio', 'profile', 'about', 'desc'],
   notes:       ['notes', 'gm_notes', 'background', 'backstory', 'history', 'secrets', 'details', 'info'],
 }
@@ -54,7 +55,7 @@ function aliasToField(key) {
 }
 
 function parseSingleJsonObj(src) {
-  const result = { name: '', role: '', location: '', description: '', notes: '' }
+  const result = { name: '', role: '', location: '', faction: '', description: '', notes: '' }
   const warnings = []
   for (const [key, val] of Object.entries(src)) {
     if (typeof val !== 'string' && typeof val !== 'number') continue
@@ -87,7 +88,7 @@ function detectSectionType(header) {
 function blankResult(type) {
   if (type === 'Rumour')   return { text: '', source_npc: '', source_location: '' }
   if (type === 'Timeline') return { name: '', description: '', notes: '', date: '', significance: 'minor' }
-  return { name: '', role: '', location: '', description: '', notes: '' }
+  return { name: '', role: '', location: '', faction: '', description: '', notes: '' }
 }
 
 function parseMarkdownDocument(raw) {
@@ -182,7 +183,7 @@ function parseAll(raw) {
   }
   const mdEntities = parseMarkdownDocument(raw)
   if (mdEntities.length > 0) return mdEntities
-  const result = { name: '', role: '', location: '', description: '', notes: '' }
+  const result = { name: '', role: '', location: '', faction: '', description: '', notes: '' }
   return [{ result, warnings: [], format: 'text', type: fallbackType.value }]
 }
 
@@ -216,6 +217,7 @@ const IMPORT_TEMPLATE = `# Campaign Name
 ### NPC Name
 **Role:** Merchant / Guard / Villain / Cultist…
 **Location:** Where they are usually found
+**Faction:** Name of faction (auto-created if missing)
 **Description:** One-line summary visible to players
 **Notes:** GM-only secrets, motivations, connections
 
@@ -290,6 +292,32 @@ function endpointAndBody(ent) {
   return null
 }
 
+function normName(value = '') {
+  return String(value || '').trim().toLowerCase()
+}
+
+async function ensureNamedEntity(name, type, indexMap) {
+  const trimmed = String(name || '').trim()
+  if (!trimmed) return null
+  const key = normName(trimmed)
+  if (indexMap.has(key)) return indexMap.get(key)
+
+  const endpoint = type === 'faction' ? '/api/factions' : '/api/locations'
+  const payload = { name: trimmed }
+  const r = await apif(endpoint, { method: 'POST', body: JSON.stringify(payload) })
+  if (!r.ok) {
+    let msg = `Failed to create ${type}`
+    try { const b = await r.json(); msg = b?.error || b?.message || msg } catch {}
+    throw new Error(msg)
+  }
+  const body = await r.json()
+  const created = type === 'faction' ? body?.faction : body?.location
+  const id = created?.id
+  if (!id) throw new Error(`Created ${type} "${trimmed}" but no id returned`)
+  indexMap.set(key, id)
+  return id
+}
+
 async function saveAll() {
   if (!parsedEntities.value.length) return
   saving.value = true
@@ -303,14 +331,24 @@ async function saveAll() {
   }))
   let saved = 0
   try {
+    const factionByName = new Map((data.factions || []).map(f => [normName(f.name || f.title), f.id]).filter(([k, id]) => k && id))
+    const locationByName = new Map((data.locations || []).map(l => [normName(l.name || l.title), l.id]).filter(([k, id]) => k && id))
+
     for (let i = 0; i < parsedEntities.value.length; i++) {
-      const info = endpointAndBody(parsedEntities.value[i])
+      const entity = parsedEntities.value[i]
+      const info = endpointAndBody(entity)
       if (!info || !info.valid) {
         saveResults.value[i].status   = 'error'
         saveResults.value[i].errorMsg = 'Missing required field (name or text)'
         continue
       }
       try {
+        if (entity.type === 'NPC') {
+          const factionId = await ensureNamedEntity(entity.result.faction, 'faction', factionByName)
+          const locationId = await ensureNamedEntity(entity.result.location, 'location', locationByName)
+          if (factionId) info.body.faction_id = factionId
+          if (locationId) info.body.home_location_id = locationId
+        }
         const r = await apif(info.endpoint, { method: 'POST', body: JSON.stringify(info.body) })
         if (!r.ok) {
           let msg = `HTTP ${r.status}`
