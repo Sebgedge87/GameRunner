@@ -85,6 +85,13 @@ const tabs = [
   { value: 'allied', label: 'Allied' },
 ]
 
+const tabs = [
+  { value: 'all', label: 'All' },
+  { value: 'hostile', label: 'Hostile' },
+  { value: 'neutral', label: 'Neutral' },
+  { value: 'allied', label: 'Allied' },
+]
+
 const filteredFactions = computed(() => {
   let list = data.factions
   const selected = new Set(activeTabs.value || ['all'])
