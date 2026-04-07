@@ -407,7 +407,8 @@ const router = useRouter()
 
 async function confirmDeleteCampaign() {
   const name = campaign.activeCampaign?.name || 'this campaign'
-  if (!window.confirm(`Delete "${name}"?\n\nThis will permanently remove all entities, vault files, and campaign data. This cannot be undone.`)) return
+  const ok = await ui.confirm(`Delete "${name}"?\n\nAll entities, vault files, and campaign data will be permanently removed. This cannot be undone.`)
+  if (!ok) return
   deletingCampaign.value = true
   try {
     await campaign.deleteCampaign(campaign.activeCampaign.id)
