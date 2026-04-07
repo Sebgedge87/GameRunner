@@ -24,29 +24,14 @@
           </RouterLink>
         </div>
           <template v-if="campaign.isGm">
-            <RouterLink to="/gm-dashboard" class="nav-item gm-only" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'GM Dashboard' : ''">
+            <div class="nav-item gm-only" @click="goTab('gm')" :title="ui.sidebarCollapsed ? 'GM Dashboard' : ''">
               <span class="nav-icon">👁</span>GM Dashboard
-            </RouterLink>
-            <RouterLink to="/combat" class="nav-item gm-only" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'Combat' : ''">
+            </div>
+            <div class="nav-item gm-only" @click="goTab('combat')" :title="ui.sidebarCollapsed ? 'Combat' : ''">
               <span class="nav-icon">⚔</span>Combat
-            </RouterLink>
+            </div>
           </template>
         </div>
-
-        <!-- GM section (kept near campaign home, GM-only visibility) -->
-        <template v-if="campaign.isGm">
-          <div class="nav-section" :class="{ collapsed: collapsed.gm }" @click="toggle('gm')">
-            GM
-          </div>
-          <div class="nav-group" :class="{ collapsed: collapsed.gm }">
-            <RouterLink to="/gm-dashboard" class="nav-item gm-only" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'GM Dashboard' : ''">
-              <span class="nav-icon">👁</span>GM Dashboard
-            </RouterLink>
-            <RouterLink to="/combat" class="nav-item gm-only" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'Combat' : ''">
-              <span class="nav-icon">⚔</span>Combat
-            </RouterLink>
-          </div>
-        </template>
 
         <!-- World -->
         <div class="nav-section" :class="{ collapsed: collapsed.world }" @click="toggle('world')">
@@ -202,6 +187,11 @@ function toggle(section) {
 function goHome() {
   campaign.leaveCampaign()
   ui.closeSidebar()
+}
+
+function goTab(tab) {
+  ui.closeSidebar()
+  router.push({ path: '/dashboard', query: { tab } })
 }
 
 const showLogoutConfirm = ref(false)
