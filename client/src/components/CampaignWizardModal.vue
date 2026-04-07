@@ -790,39 +790,6 @@ function skipEntity() {
             </div>
           </div>
 
-          <div class="wiz-preview-box">
-            <div class="wiz-preview-title">What gets configured</div>
-            <div class="wiz-preview-grid">
-              <div class="wiz-preview-item">
-                <div class="wiz-preview-label">Calendar</div>
-                <div class="wiz-preview-val">{{ preview.calendar }}</div>
-              </div>
-              <div class="wiz-preview-item">
-                <div class="wiz-preview-label">Faction types</div>
-                <div class="wiz-preview-val">
-                  <span v-for="t in preview.faction_types" :key="t" class="wiz-tag">{{ t }}</span>
-                </div>
-              </div>
-              <div class="wiz-preview-item">
-                <div class="wiz-preview-label">Location types</div>
-                <div class="wiz-preview-val">
-                  <span v-for="t in preview.location_types" :key="t" class="wiz-tag">{{ t }}</span>
-                </div>
-              </div>
-              <div class="wiz-preview-item">
-                <div class="wiz-preview-label">NPC roles</div>
-                <div class="wiz-preview-val">
-                  <span v-for="t in preview.npc_roles" :key="t" class="wiz-tag">{{ t }}</span>
-                </div>
-              </div>
-              <div class="wiz-preview-item">
-                <div class="wiz-preview-label">Quest structures</div>
-                <div class="wiz-preview-val">
-                  <span v-for="t in preview.quest_structures" :key="t" class="wiz-tag">{{ t }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
 
           <div v-if="saveError" class="wiz-error">{{ saveError }}</div>
 
