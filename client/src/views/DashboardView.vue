@@ -1,6 +1,11 @@
 <template>
   <div class="page-content">
     <div class="page-header"><div class="page-title">Campaign Home</div></div>
+    <div v-if="campaign.isGm" class="gm-tabs">
+      <router-link to="/dashboard" class="gm-tab" :class="{ active: route.path === '/dashboard' }">Overview</router-link>
+      <router-link to="/gm-dashboard" class="gm-tab" :class="{ active: route.path === '/gm-dashboard' }">GM Dashboard</router-link>
+      <router-link to="/combat" class="gm-tab" :class="{ active: route.path === '/combat' }">Combat</router-link>
+    </div>
 
     <!-- Campaign banner -->
     <div v-if="campaign.activeCampaign" class="campaign-banner">
@@ -191,7 +196,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
 import { useDataStore } from '@/stores/data'
@@ -205,6 +210,7 @@ const ui = useUiStore()
 const data = useDataStore()
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 const { hasStress, hasSanity } = useSystemFeatures()
 
 // Characters for the current player
@@ -305,6 +311,25 @@ onMounted(async () => {
 
 <style scoped>
 .campaign-subtitle { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.gm-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.gm-tab {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  text-decoration: none;
+  color: var(--text2);
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.gm-tab.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in oklab, var(--accent) 10%, transparent);
+}
 
 /* Character shortcut row */
 .char-shortcut-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; align-items: center; }
