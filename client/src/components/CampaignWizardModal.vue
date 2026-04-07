@@ -31,6 +31,13 @@ const saveError  = ref('')
 /* ── Step 3 — first entity ─────────────────────────────── */
 const importTab    = ref(0)
 const entitySaving = ref(false)
+const saveResults  = ref([])
+const saveResultsSummary = computed(() => {
+  const ok    = saveResults.value.filter(r => r.status === 'ok').length
+  const error = saveResults.value.filter(r => r.status === 'error').length
+  const total = saveResults.value.length
+  return { ok, error, total, done: total > 0 && ok + error === total }
+})
 const entityForm   = reactive({
   type: 'NPC', name: '', role: '', location: '', description: '', notes: '',
 })
@@ -481,26 +488,40 @@ function entityEndpointAndBody(ent) {
 async function saveAllEntities() {
   if (!parsedEntities.value.length) return
   entitySaving.value = true
-  let saved = 0, failed = 0
+  saveResults.value = parsedEntities.value.map(e => ({
+    type:     e.type || entityForm.type,
+    label:    e.type === 'Rumour'
+                ? (e.result.text?.slice(0, 60) + (e.result.text?.length > 60 ? '…' : ''))
+                : (e.result.name || '(unnamed)'),
+    status:   'pending',
+    errorMsg: '',
+  }))
+  let saved = 0
   try {
-    for (const ent of parsedEntities.value) {
-      const info = entityEndpointAndBody(ent)
-      if (!info || !info.valid) { failed++; continue }
+    for (let i = 0; i < parsedEntities.value.length; i++) {
+      const info = entityEndpointAndBody(parsedEntities.value[i])
+      if (!info || !info.valid) {
+        saveResults.value[i].status   = 'error'
+        saveResults.value[i].errorMsg = 'Missing required field (name or text)'
+        continue
+      }
       try {
         const r = await apif(info.endpoint, { method: 'POST', body: JSON.stringify(info.body) })
-        if (!r.ok) { failed++; continue }
-        saved++
-      } catch { failed++ }
+        if (!r.ok) {
+          let msg = `HTTP ${r.status}`
+          try { const b = await r.json(); msg = b?.error || b?.message || b?.detail || msg } catch {}
+          saveResults.value[i].status   = 'error'
+          saveResults.value[i].errorMsg = msg
+        } else {
+          saveResults.value[i].status = 'ok'
+          saved++
+        }
+      } catch (err) {
+        saveResults.value[i].status   = 'error'
+        saveResults.value[i].errorMsg = err.message || 'Network error'
+      }
     }
-    if (failed > 0 && saved > 0) ui.showToast(`${failed} item${failed > 1 ? 's' : ''} could not be saved`, '', '✕')
-    if (saved > 0) {
-      ui.showToast(`${saved} ${saved === 1 ? 'entity' : 'entities'} imported!`, '', '✓')
-      await data.loadAll()
-      emit('close')
-      router.push('/dashboard')
-    } else {
-      ui.showToast('Nothing was saved — check that entries have names/text', '', '✕')
-    }
+    if (saved > 0) await data.loadAll()
   } catch (e) {
     ui.showToast(e.message || 'Failed to save', '', '✕')
   } finally {
@@ -993,7 +1014,7 @@ function skipEntity() {
               </button>
             </div>
 
-            <div v-if="parsedEntities.length > 1" class="wiz-entity-queue" style="margin-top:10px">
+            <div v-if="parsedEntities.length > 1 && !saveResults.length" class="wiz-entity-queue" style="margin-top:10px">
               <div class="wiz-queue-header">{{ parsedEntities.length }} entities detected</div>
               <div v-for="(e, i) in parsedEntities" :key="i" class="wiz-queue-item">
                 <span v-if="e.type" class="wiz-type-badge" :data-type="e.type">{{ e.type }}</span>
@@ -1058,7 +1079,7 @@ function skipEntity() {
               </div>
             </div>
 
-            <div v-if="parsedEntities.length" class="wiz-entity-queue">
+            <div v-if="parsedEntities.length && !saveResults.length" class="wiz-entity-queue">
               <div class="wiz-queue-header">
                 {{ parsedEntities.length }} {{ parsedEntities.length === 1 ? 'entity' : 'entities' }} ready to import
               </div>
@@ -1071,37 +1092,72 @@ function skipEntity() {
             </div>
           </div>
 
+          <!-- Results panel — appears the moment saving starts -->
+          <div v-if="saveResults.length" class="wiz-results-panel">
+            <div class="wiz-results-header">
+              <span v-if="!saveResultsSummary.done">Saving {{ saveResults.length }} {{ saveResults.length === 1 ? 'entity' : 'entities' }}…</span>
+              <span v-else>{{ saveResultsSummary.ok }} saved{{ saveResultsSummary.error ? `, ${saveResultsSummary.error} failed` : '' }}</span>
+            </div>
+            <div class="wiz-results-list">
+              <div v-for="(row, i) in saveResults" :key="i" class="wiz-result-row" :data-status="row.status">
+                <span class="wiz-type-badge" :data-type="row.type">{{ row.type }}</span>
+                <span class="wiz-result-name">{{ row.label }}</span>
+                <span class="wiz-result-status">
+                  <svg v-if="row.status === 'pending'" class="wiz-spinner" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="8" cy="8" r="6" stroke-dasharray="28" stroke-dashoffset="10" stroke-opacity=".3"/>
+                    <path d="M8 2a6 6 0 0 1 6 6" stroke-linecap="round"/>
+                  </svg>
+                  <svg v-else-if="row.status === 'ok'" class="wiz-status-ok" viewBox="0 0 14 14" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M2.5 7.5L5.5 10.5L11.5 4"/>
+                  </svg>
+                  <template v-else-if="row.status === 'error'">
+                    <svg class="wiz-status-err" viewBox="0 0 14 14" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                      <line x1="2" y1="2" x2="12" y2="12"/><line x1="12" y1="2" x2="2" y2="12"/>
+                    </svg>
+                    <span class="wiz-result-errmsg">{{ row.errorMsg }}</span>
+                  </template>
+                </span>
+              </div>
+            </div>
+          </div>
+
           <div class="wiz-btn-row" style="margin-top:16px">
             <button class="wiz-btn ghost" @click="skipEntity">Skip for now</button>
-            <!-- Multiple entities queued (paste or upload) -->
-            <button
-              v-if="parsedEntities.length > 1"
-              class="wiz-btn primary"
-              :disabled="entitySaving"
-              @click="saveAllEntities"
-            >
-              {{ entitySaving ? 'Saving…' : `Add all ${parsedEntities.length} entities →` }}
-            </button>
-            <!-- Single entity from upload tab -->
-            <button
-              v-else-if="importTab === 2 && parsedEntities.length === 1"
-              class="wiz-btn primary"
-              :disabled="entitySaving || !parsedEntities[0].result.name?.trim()"
-              @click="saveAllEntities"
-            >
-              {{ entitySaving ? 'Saving…' : 'Add entity & enter campaign' }}
-            </button>
-            <!-- Guided form (tab 0) or no parse result yet -->
-            <button
-              v-else-if="importTab === 0 || importTab === 1"
-              class="wiz-btn primary"
-              :disabled="entitySaving || !entityForm.name.trim()"
-              @click="saveEntity"
-            >
-              {{ entitySaving ? 'Saving…' : 'Add entity & enter campaign' }}
-            </button>
-            <!-- Upload tab with no file yet -->
-            <button v-else class="wiz-btn primary" @click="skipEntity">Enter campaign →</button>
+            <template v-if="!saveResults.length">
+              <!-- Multiple entities queued (paste or upload) -->
+              <button
+                v-if="parsedEntities.length > 1"
+                class="wiz-btn primary"
+                :disabled="entitySaving"
+                @click="saveAllEntities"
+              >
+                {{ entitySaving ? 'Saving…' : `Add all ${parsedEntities.length} entities →` }}
+              </button>
+              <!-- Single entity from upload tab -->
+              <button
+                v-else-if="importTab === 2 && parsedEntities.length === 1"
+                class="wiz-btn primary"
+                :disabled="entitySaving || !parsedEntities[0].result.name?.trim()"
+                @click="saveAllEntities"
+              >
+                {{ entitySaving ? 'Saving…' : 'Add entity & enter campaign' }}
+              </button>
+              <!-- Guided form (tab 0) or no parse result yet -->
+              <button
+                v-else-if="importTab === 0 || importTab === 1"
+                class="wiz-btn primary"
+                :disabled="entitySaving || !entityForm.name.trim()"
+                @click="saveEntity"
+              >
+                {{ entitySaving ? 'Saving…' : 'Add entity & enter campaign' }}
+              </button>
+              <!-- Upload tab with no file yet -->
+              <button v-else class="wiz-btn primary" @click="skipEntity">Enter campaign →</button>
+            </template>
+            <!-- Post-save: navigate once user is ready -->
+            <template v-else-if="saveResultsSummary.done">
+              <button class="wiz-btn primary" @click="skipEntity">Enter campaign →</button>
+            </template>
           </div>
         </template>
 
@@ -1607,4 +1663,20 @@ function skipEntity() {
   .wiz-preview-grid { grid-template-columns: 1fr; }
   .wiz-system-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
 }
+
+/* ── Results panel ────────────────────────────────────── */
+.wiz-results-panel { border: 0.5px solid var(--color-border-default); border-radius: 8px; background: var(--color-bg-subtle); overflow: hidden; margin-top: 10px; }
+.wiz-results-header { font-size: 10px; letter-spacing: 1px; color: var(--color-accent); padding: 7px 12px; background: var(--color-accent-muted); border-bottom: 0.5px solid var(--color-border-default); }
+.wiz-results-list { max-height: 220px; overflow-y: auto; }
+.wiz-result-row { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-bottom: 0.5px solid var(--color-border-default); font-size: 12px; }
+.wiz-result-row:last-child { border-bottom: none; }
+.wiz-result-row[data-status="ok"]    { background: rgba(76,171,113,.06); }
+.wiz-result-row[data-status="error"] { background: rgba(220,80,80,.06); }
+.wiz-result-name { flex: 1; color: var(--color-text-primary); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wiz-result-status { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+.wiz-result-errmsg { font-size: 10px; color: #c04040; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wiz-status-ok  { color: #3a9a5a; flex-shrink: 0; }
+.wiz-status-err { color: #c04040; flex-shrink: 0; }
+@keyframes wiz-spin { to { transform: rotate(360deg); } }
+.wiz-spinner { color: var(--color-text-hint); animation: wiz-spin .8s linear infinite; transform-origin: center; flex-shrink: 0; }
 </style>
