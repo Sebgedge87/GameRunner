@@ -43,7 +43,7 @@ export const useCampaignStore = defineStore('campaign', () => {
   }
 
   function applyTheme(system) {
-    const theme = SYSTEM_THEME_MAP[system] || 'default'
+    const theme = 'default'
     // Keep data-theme attribute for legacy [data-theme] variable rules
     document.documentElement.setAttribute('data-theme', theme === 'none' ? 'default' : theme)
     // Apply semantic theme class — remove existing theme-*, fx-*, dynamic-* classes first
@@ -76,8 +76,7 @@ export const useCampaignStore = defineStore('campaign', () => {
       const band = Math.min(4, Math.floor(sanity / 20))
       cl.add(`dynamic-sanity-${band}`)
     }
-    localStorage.setItem('chronicle_theme', system)
-    if (theme === 'custom') applyCustomTheme()
+    localStorage.setItem('chronicle_theme', 'default')
   }
 
   function applyCustomTheme() {

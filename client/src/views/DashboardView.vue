@@ -1,7 +1,6 @@
 <template>
   <div class="page-content">
     <div class="page-header"><div class="page-title">Campaign Home</div></div>
-
     <!-- Campaign banner (always visible) -->
     <div v-if="campaign.activeCampaign" class="campaign-banner">
       <div>
@@ -220,7 +219,6 @@ const data = useDataStore()
 const auth = useAuthStore()
 const router = useRouter()
 const { hasStress, hasSanity } = useSystemFeatures()
-
 const activeTab = ref('overview')
 
 // Characters for the current player
@@ -308,6 +306,7 @@ function fmtTime(ts) {
 }
 
 onMounted(async () => {
+  if (!campaign.isGm) activeTab.value = 'overview'
   if (!data.scheduling.length) await data.loadSessions()
   await loadMyCharacters()
 })
@@ -315,6 +314,27 @@ onMounted(async () => {
 
 <style scoped>
 .campaign-subtitle { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.gm-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.gm-tab {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  text-decoration: none;
+  color: var(--text2);
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  cursor: pointer;
+}
+.gm-tab.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in oklab, var(--accent) 10%, transparent);
+}
 
 /* Tab strip */
 .dash-tabs {

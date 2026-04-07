@@ -14,10 +14,39 @@
 
       <!-- Campaign section -->
       <div v-if="campaign.activeCampaign">
-        <!-- Dashboard/Home is the primary Campaign Home -->
-        <RouterLink to="/dashboard" class="nav-item" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'Campaign Home' : ''">
-          <span class="nav-icon">⚔</span>Campaign Home
-        </RouterLink>
+        <!-- Campaign Home section -->
+        <div class="nav-section" :class="{ collapsed: collapsed.campaign_home }" @click="toggle('campaign_home')">
+          Campaign Home
+        </div>
+        <div class="nav-group" :class="{ collapsed: collapsed.campaign_home }">
+          <RouterLink to="/dashboard" class="nav-item" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'Campaign Home' : ''">
+            <span class="nav-icon">⚔</span>Campaign Home
+          </RouterLink>
+        </div>
+          <template v-if="campaign.isGm">
+            <RouterLink to="/gm-dashboard" class="nav-item gm-only" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'GM Dashboard' : ''">
+              <span class="nav-icon">👁</span>GM Dashboard
+            </RouterLink>
+            <RouterLink to="/combat" class="nav-item gm-only" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'Combat' : ''">
+              <span class="nav-icon">⚔</span>Combat
+            </RouterLink>
+          </template>
+        </div>
+
+        <!-- GM section (kept near campaign home, GM-only visibility) -->
+        <template v-if="campaign.isGm">
+          <div class="nav-section" :class="{ collapsed: collapsed.gm }" @click="toggle('gm')">
+            GM
+          </div>
+          <div class="nav-group" :class="{ collapsed: collapsed.gm }">
+            <RouterLink to="/gm-dashboard" class="nav-item gm-only" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'GM Dashboard' : ''">
+              <span class="nav-icon">👁</span>GM Dashboard
+            </RouterLink>
+            <RouterLink to="/combat" class="nav-item gm-only" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'Combat' : ''">
+              <span class="nav-icon">⚔</span>Combat
+            </RouterLink>
+          </div>
+        </template>
 
         <!-- World -->
         <div class="nav-section" :class="{ collapsed: collapsed.world }" @click="toggle('world')">
@@ -155,6 +184,7 @@ const userLabel = computed(() => {
 // Collapsible nav sections
 const saved = JSON.parse(localStorage.getItem('nav_collapsed') || '{}')
 const collapsed = reactive({
+  campaign_home: !!saved['Campaign Home'],
   world: !!saved.World,
   chronology: !!saved.Chronology,
   knowledge: !!saved.Knowledge,
@@ -163,7 +193,7 @@ const collapsed = reactive({
 
 function toggle(section) {
   collapsed[section] = !collapsed[section]
-  const labels = { world: 'World', chronology: 'Chronology', knowledge: 'Knowledge', player_bag: 'Player Bag' }
+  const labels = { campaign_home: 'Campaign Home', world: 'World', chronology: 'Chronology', knowledge: 'Knowledge', player_bag: 'Player Bag' }
   const state = JSON.parse(localStorage.getItem('nav_collapsed') || '{}')
   state[labels[section]] = collapsed[section]
   localStorage.setItem('nav_collapsed', JSON.stringify(state))

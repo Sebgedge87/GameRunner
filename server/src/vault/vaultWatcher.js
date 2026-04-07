@@ -56,20 +56,36 @@ function syncFile(fullPath) {
   }
 
   const db = getDb();
+  // Defensive bootstrap for environments where watcher starts against a DB
+  // missing legacy FK parent tables (e.g. reset volumes with partial schema).
+  try {
+    db.exec(`CREATE TABLE IF NOT EXISTS factions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      campaign_id INTEGER REFERENCES campaigns(id),
+      name TEXT NOT NULL,
+      description TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
+  } catch (_) {}
   const { type, campaignId } = detectTypeAndCampaign(relPath);
   const title = parsed.data.title || path.basename(relPath, '.md');
   const frontmatterJson = JSON.stringify(parsed.data);
 
-  db.prepare(`
-    INSERT INTO vault_files (path, type, title, frontmatter, campaign_id, synced_at)
-    VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-    ON CONFLICT(path) DO UPDATE SET
-      type = excluded.type,
-      title = excluded.title,
-      frontmatter = excluded.frontmatter,
-      campaign_id = excluded.campaign_id,
-      synced_at = CURRENT_TIMESTAMP
-  `).run(relPath, type, title, frontmatterJson, campaignId);
+  try {
+    db.prepare(`
+      INSERT INTO vault_files (path, type, title, frontmatter, campaign_id, synced_at)
+      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(path) DO UPDATE SET
+        type = excluded.type,
+        title = excluded.title,
+        frontmatter = excluded.frontmatter,
+        campaign_id = excluded.campaign_id,
+        synced_at = CURRENT_TIMESTAMP
+    `).run(relPath, type, title, frontmatterJson, campaignId);
+  } catch (err) {
+    console.error('⚠️ Vault sync failed:', relPath, err?.message || err);
+  }
 }
 
 function removeFile(fullPath) {
