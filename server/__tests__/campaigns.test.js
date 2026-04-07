@@ -27,6 +27,10 @@ describe('Campaigns — CRUD', () => {
       .send({ name: 'Player Campaign' });
     // Campaign creation is open to all authenticated users (they become GM of their own campaign)
     expect(res.status).toBe(201);
+
+    const me = await authed(player.token).get('/api/users/me');
+    expect(me.status).toBe(200);
+    expect(me.body.user.role).toBe('gm');
   });
 
   test('lists campaigns', async () => {
