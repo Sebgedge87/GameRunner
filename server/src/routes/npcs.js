@@ -46,7 +46,8 @@ router.post('/', requireGm, (req, res) => {
   const filename = `${slug(title)}-${Date.now()}.md`;
   const content = matter.stringify(description, { title, description, role, gm_notes, image_url, status: 'active', race, disposition });
   const db = getDb();
-  const camp = db.prepare('SELECT id, name FROM campaigns WHERE active = 1 LIMIT 1').get();
+  const campId = getCampaignId(req);
+  const camp = campId ? db.prepare('SELECT id, name FROM campaigns WHERE id = ?').get(campId) : null;
   const campSlug = camp ? slug(camp.name) : null;
   const targetDir = campSlug ? path.join(vaultPath, campSlug, 'NPCs') : VAULT_DIR;
   if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });

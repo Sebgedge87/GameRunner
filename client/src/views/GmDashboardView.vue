@@ -301,6 +301,20 @@
             <span v-if="campStatus" :class="['status-msg', campOk ? 'status-ok' : 'status-err']" style="margin:0">{{ campStatus }}</span>
           </div>
         </div>
+
+        <!-- Danger zone -->
+        <div class="card" style="margin-top:12px;border-color:rgba(220,60,60,.35)">
+          <div style="font-size:11px;letter-spacing:.5px;color:#c04040;margin-bottom:10px">DANGER ZONE</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+            <div>
+              <div style="font-size:13px;font-weight:500;color:var(--color-text-primary)">Delete this campaign</div>
+              <div style="font-size:11px;color:var(--color-text-hint);margin-top:2px">Permanently removes the campaign, all entities, and all vault files. This cannot be undone.</div>
+            </div>
+            <button class="btn btn-danger" :disabled="deletingCampaign" @click="confirmDeleteCampaign">
+              {{ deletingCampaign ? 'Deleting…' : 'Delete Campaign' }}
+            </button>
+          </div>
+        </div>
       </template>
 
       <!-- ══════════════════════════════════════════════════════
@@ -358,6 +372,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
@@ -387,6 +402,22 @@ const campForm = ref({ name: '', subtitle: '', system: '', description: '', play
 const campSaving = ref(false)
 const campStatus = ref('')
 const campOk = ref(false)
+const deletingCampaign = ref(false)
+const router = useRouter()
+
+async function confirmDeleteCampaign() {
+  const name = campaign.activeCampaign?.name || 'this campaign'
+  if (!window.confirm(`Delete "${name}"?\n\nThis will permanently remove all entities, vault files, and campaign data. This cannot be undone.`)) return
+  deletingCampaign.value = true
+  try {
+    await campaign.deleteCampaign(campaign.activeCampaign.id)
+    router.push('/dashboard')
+  } catch (e) {
+    ui.showToast(e.message || 'Failed to delete campaign', '', '✕')
+  } finally {
+    deletingCampaign.value = false
+  }
+}
 // Track last-persisted values so live previews can be reverted on discard
 const savedHouse = ref('')
 const savedSetting = ref('')

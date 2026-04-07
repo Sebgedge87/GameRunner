@@ -85,7 +85,8 @@ router.post('/', requireGm, (req, res) => {
   if (hq_location_id) fm.hq_location_id = hq_location_id;
   
   const content = matter.stringify(description || '', fm);
-  const camp = getDb().prepare('SELECT id, name FROM campaigns WHERE active = 1 LIMIT 1').get();
+  const campId = getCampaignId(req);
+  const camp = campId ? getDb().prepare('SELECT id, name FROM campaigns WHERE id = ?').get(campId) : null;
   const campSlug = camp ? slug(camp.name) : null;
   const targetDir = getFactionsDir(campSlug);
   

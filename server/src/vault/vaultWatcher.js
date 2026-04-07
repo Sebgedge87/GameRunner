@@ -11,6 +11,8 @@ const TYPE_MAP = {
   Locations: 'location',
   Hooks: 'hook',
   Players: 'note',
+  Factions: 'faction',
+  Timeline: 'timeline_event',
 };
 
 function slugify(name) {

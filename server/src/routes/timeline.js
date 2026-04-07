@@ -65,7 +65,8 @@ router.post('/', requireGm, (req, res) => {
   const fm = { type: 'timeline_event', title, description: description || null, in_world_date: in_world_date || null, session_number: session_number || null, linked_type: linked_type || null, linked_id: linked_id || null, significance, gm_notes: gm_notes || null, player_notes: player_notes || null };
   
   const content = matter.stringify(description || '', fm);
-  const camp = getDb().prepare('SELECT id, name FROM campaigns WHERE active = 1 LIMIT 1').get();
+  const campId = getCampaignId(req);
+  const camp = campId ? getDb().prepare('SELECT id, name FROM campaigns WHERE id = ?').get(campId) : null;
   const campSlug = camp ? slug(camp.name) : null;
   const targetDir = getTimelineDir(campSlug);
   

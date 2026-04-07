@@ -1,8 +1,11 @@
 const express = require('express');
 const crypto = require('crypto');
+const path = require('path');
+const fs = require('fs');
 const { getDb } = require('../db/database');
 const { requireAuth, requireGm } = require('../auth/authMiddleware');
 const { broadcastSSE } = require('../services/notifications');
+const { vaultPath } = require('../config');
 
 const router = express.Router();
 
@@ -141,13 +144,24 @@ router.put('/:id', requireGm, (req, res) => {
   res.json({ campaign });
 });
 
-// DELETE /api/campaigns/:id — GM deletes a campaign and all its members
+// DELETE /api/campaigns/:id — GM deletes a campaign and all associated data
 router.delete('/:id', requireGm, (req, res) => {
   const db = getDb();
-  const campaign = db.prepare('SELECT id FROM campaigns WHERE id = ?').get(req.params.id);
+  const campaign = db.prepare('SELECT id, name FROM campaigns WHERE id = ?').get(req.params.id);
   if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
+
+  // Delete physical vault files for this campaign
+  const files = db.prepare('SELECT path FROM vault_files WHERE campaign_id = ?').all(req.params.id);
+  for (const f of files) {
+    try { fs.unlinkSync(path.join(vaultPath, f.path)); } catch {}
+  }
+
+  // Remove vault_files records, rumours, members, then the campaign row
+  db.prepare('DELETE FROM vault_files WHERE campaign_id = ?').run(req.params.id);
+  db.prepare('DELETE FROM rumours WHERE campaign_id = ?').run(req.params.id);
   db.prepare('DELETE FROM campaign_members WHERE campaign_id = ?').run(req.params.id);
   db.prepare('DELETE FROM campaigns WHERE id = ?').run(req.params.id);
+
   res.json({ success: true });
 });
 
