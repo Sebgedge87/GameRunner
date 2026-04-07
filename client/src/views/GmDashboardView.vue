@@ -1,10 +1,5 @@
 <template>
   <div class="page-content">
-    <div class="page-header">
-      <div class="page-title">GM Dashboard</div>
-      <div class="page-sub">Campaign management &amp; overview</div>
-    </div>
-
     <!-- Tab bar -->
     <div class="filter-tabs" style="margin-bottom:20px">
       <button class="filter-tab" :class="{ active: activeTab === 'overview' }" @click="activeTab = 'overview'">Overview</button>
