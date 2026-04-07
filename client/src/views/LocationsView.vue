@@ -137,10 +137,18 @@ const mainTabs = [
 ]
 
 const tabs = [
-  { value: 'all',         label: 'All' },
-  { value: 'city',        label: 'City/Town' },
-  { value: 'dungeon',     label: 'Dungeon' },
-  { value: 'wilderness',  label: 'Wilderness' },
+  { value: 'all',        label: 'All' },
+  { value: 'unknown',    label: 'Unknown' },
+  { value: 'city',       label: 'City' },
+  { value: 'town',       label: 'Town' },
+  { value: 'village',    label: 'Village' },
+  { value: 'dungeon',    label: 'Dungeon' },
+  { value: 'forest',     label: 'Forest' },
+  { value: 'keep',       label: 'Keep' },
+  { value: 'tavern',     label: 'Tavern' },
+  { value: 'temple',     label: 'Temple' },
+  { value: 'region',     label: 'Region' },
+  { value: 'wilderness', label: 'Wilderness' },
 ]
 
 const partyLocationName = computed(() => {
@@ -160,6 +168,7 @@ const filteredLocations = computed(() => {
   if (!selected.has('all')) {
     list = list.filter(l => {
       const type = l.location_type?.toLowerCase() || ''
+      if (!type) return selected.has('unknown')
       return [...selected].some(s => type.includes(s.toLowerCase()))
     })
   }

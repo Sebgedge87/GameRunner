@@ -13,15 +13,15 @@
         {{ tab.label }}
         <span v-if="tab.count != null" class="filter-tab-count">{{ tab.count }}</span>
       </button>
+      <button
+        v-if="showClearControl"
+        type="button"
+        class="filter-tab filter-clear"
+        @click="clearFilters"
+      >
+        Clear
+      </button>
     </div>
-    <button
-      v-if="showClearControl"
-      type="button"
-      class="filter-clear"
-      @click="clearFilters"
-    >
-      Clear
-    </button>
   </div>
 </template>
 
@@ -79,9 +79,7 @@ function clearFilters() {
 
 <style scoped>
 .filter-tabs-wrap {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
+  width: 100%;
 }
 
 .filter-tabs {
@@ -138,13 +136,7 @@ function clearFilters() {
 }
 
 .filter-clear {
-  min-height: 34px;
-  padding: 0 12px;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--color-border-default);
-  background: var(--color-bg-subtle, transparent);
-  color: var(--color-text-secondary);
-  cursor: pointer;
+  flex-shrink: 0;
 }
 
 .filter-clear:hover {
