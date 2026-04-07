@@ -495,6 +495,7 @@ async function saveAllEntities() {
     if (failed > 0 && saved > 0) ui.showToast(`${failed} item${failed > 1 ? 's' : ''} could not be saved`, '', '✕')
     if (saved > 0) {
       ui.showToast(`${saved} ${saved === 1 ? 'entity' : 'entities'} imported!`, '', '✓')
+      await data.loadAll()
       emit('close')
       router.push('/dashboard')
     } else {
@@ -1028,19 +1029,23 @@ function skipEntity() {
                 <template v-if="parsedEntities.length">
                   {{ parsedEntities.length }} {{ parsedEntities.length === 1 ? 'entity' : 'entities' }} detected — click to replace
                 </template>
-                <template v-else>Campaign docs with ## NPCs / ## Locations / ## Factions / ## Quests / ## Rumors / ## Timeline sections are fully supported</template>
+                <template v-else>Supports JSON arrays, single objects, and Markdown with section headers</template>
               </div>
               <div class="wiz-file-badges">
                 <span class="wiz-file-badge">.json</span>
                 <span class="wiz-file-badge">.md</span>
               </div>
-            </div>
 
-            <div style="display:flex;justify-content:flex-end;margin-top:10px">
-              <button class="wiz-tpl-btn" @click="downloadTemplate">
-                <svg viewBox="0 0 14 14" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 2v7M4 6l3 3 3-3"/><path d="M2 11h10"/></svg>
-                Download template .md
-              </button>
+              <!-- Template download — lives inside the zone so it's always visible -->
+              <div class="wiz-upload-tpl-row" @click.stop>
+                <span class="wiz-upload-tpl-label">Don't have a file yet?</span>
+                <button class="wiz-upload-tpl-btn" @click="downloadTemplate">
+                  <svg viewBox="0 0 14 14" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+                    <path d="M7 2v7M4 6l3 3 3-3"/><path d="M2 11h10"/>
+                  </svg>
+                  Download template .md
+                </button>
+              </div>
             </div>
 
             <!-- Fallback type selector only shown when types weren't auto-detected -->

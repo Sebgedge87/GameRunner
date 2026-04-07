@@ -114,6 +114,15 @@ export const useUiStore = defineStore('ui', () => {
   }
   function closeGmEdit() { gmEditModal.value = null }
 
+  // Bulk import modal (GM only)
+  const bulkImportOpen = ref(false)
+  function openBulkImport() {
+    const campaign = useCampaignStore()
+    if (!campaign.isGm) return
+    bulkImportOpen.value = true
+  }
+  function closeBulkImport() { bulkImportOpen.value = false }
+
   // Share modal
   const shareModal = ref(null) // { itemType, itemId, title }
   function openShare(itemType, itemId, title) { shareModal.value = { itemType, itemId, title } }
@@ -154,6 +163,7 @@ export const useUiStore = defineStore('ui', () => {
     viewingHandout, openHandout, closeHandout,
     detailModal, openDetail, closeDetail,
     gmEditModal, openGmEdit, closeGmEdit,
+    bulkImportOpen, openBulkImport, closeBulkImport,
     shareModal, openShare, closeShare,
     confirmDialog, confirm, prompt, resolveConfirm,
   }
