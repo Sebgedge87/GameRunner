@@ -136,20 +136,13 @@ const charClass = ref('')
 const profileStatus = ref('')
 const profileOk = ref(false)
 const fontSize = ref(localStorage.getItem('chronicle_font_size') || 'medium')
-const currentTheme = ref(document.documentElement.getAttribute('data-theme') || 'default')
+const currentTheme = ref('default')
 
 const a11y = reactive(JSON.parse(localStorage.getItem('chronicle_a11y') || '{}'))
 const customColors = reactive(JSON.parse(localStorage.getItem('chronicle_custom_theme') || '{"bg":"#0d0d0f","surface":"#1a1a24","accent":"#c9a84c","text":"#e8e4d9","border":"#2a2a3a"}'))
 
 const THEME_META = {
-  default:  { name: 'Default',         color: '#6b8cff' },
-  dnd5e:    { name: 'D&D 5e',          color: '#c9a84c' },
-  coc:      { name: 'Call of Cthulhu', color: '#b8a060' },
-  alien:    { name: 'Alien',           color: '#4caf7d' },
-  coriolis: { name: 'Coriolis',        color: '#6a8ad4' },
-  dune:     { name: 'Dune',            color: '#d4a040' },
-  achtung:  { name: 'Achtung!',        color: '#8a9e40' },
-  custom:   { name: 'Custom',          color: '#c9a84c' },
+  default: { name: 'Default', color: '#6b8cff' },
 }
 
 function swatchDotStyle(key, meta) {
@@ -172,9 +165,9 @@ onMounted(() => {
 })
 
 function applyTheme(key) {
-  currentTheme.value = key
-  campaign.applyTheme(key)
-  auth.savePreferences({ theme: key })
+  currentTheme.value = 'default'
+  campaign.applyTheme('default')
+  auth.savePreferences({ theme: 'default' })
 }
 
 function applyCustomTheme() {
