@@ -1,6 +1,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useCampaignStore } from '@/stores/campaign'
 import { useDataStore } from '@/stores/data'
 import { useUiStore } from '@/stores/ui'
@@ -573,10 +573,31 @@ const ENTITY_TYPES = ['NPC', 'Location', 'Faction', 'Quest']
 
 const preview = computed(() => SYSTEM_PREVIEWS[selectedSystem.value] || SYSTEM_PREVIEWS.default)
 
-/* ── Escape to close (only pre-creation steps) ─────────── */
-function onKey(e) { if (e.key === 'Escape' && step.value < 3) emit('close') }
+/* ── Close / dismiss ────────────────────────────────────── */
+// Step 3: campaign already created — closing = skip to dashboard
+// Steps 0-2: no data committed — just dismiss
+function handleClose() {
+  if (step.value === 3) {
+    skipEntity()
+  } else {
+    emit('close')
+  }
+}
+
+function onKey(e) { if (e.key === 'Escape') handleClose() }
 onMounted(() => document.addEventListener('keydown', onKey))
 onUnmounted(() => document.removeEventListener('keydown', onKey))
+
+// Warn before navigating away mid-flow (steps 0-2, before campaign is created)
+onBeforeRouteLeave((_to, _from, next) => {
+  if (step.value < 3 && nameForm.name.trim()) {
+    const leave = window.confirm('Leave campaign setup? The campaign hasn\'t been created yet and your progress will be lost.')
+    if (leave) { emit('close'); next() } else { next(false) }
+  } else {
+    emit('close')
+    next()
+  }
+})
 
 /* ── Helpers ───────────────────────────────────────────── */
 function apif(path, opts = {}) {
@@ -661,16 +682,15 @@ function skipEntity() {
   <Teleport to="body">
     <div
       class="wiz-overlay"
-      @click.self="step < 3 && emit('close')"
+      @click.self="handleClose"
     >
       <div class="wiz-card">
 
-        <!-- Close button -->
+        <!-- Close button — always visible -->
         <button
-          v-if="step < 3"
           class="wiz-close"
-          title="Close"
-          @click="emit('close')"
+          :title="step === 3 ? 'Skip and go to dashboard' : 'Close'"
+          @click="handleClose"
         >
           <svg viewBox="0 0 14 14" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <line x1="2" y1="2" x2="12" y2="12"/><line x1="12" y1="2" x2="2" y2="12"/>
@@ -721,7 +741,7 @@ function skipEntity() {
           </div>
 
           <div class="wiz-btn-row">
-            <button class="wiz-btn ghost" @click="emit('close')">Cancel</button>
+            <button class="wiz-btn ghost" @click="handleClose">Cancel</button>
             <button class="wiz-btn primary" :disabled="!canAdvanceFrom0()" @click="nextStep">
               Choose system →
             </button>
