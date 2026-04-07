@@ -37,6 +37,16 @@ function runMigrations() {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
+    -- ── Legacy Factions table (kept for FK + search compatibility) ────────────
+    CREATE TABLE IF NOT EXISTS factions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      campaign_id INTEGER REFERENCES campaigns(id),
+      name TEXT NOT NULL,
+      description TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
     -- ── Vault file cache ────────────────────────────────────────────────────────
     CREATE TABLE IF NOT EXISTS vault_files (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -453,6 +463,7 @@ function runMigrations() {
   try { db.exec('ALTER TABLE vault_files ADD COLUMN created_by INTEGER REFERENCES users(id)'); } catch (_) {}
   try { db.exec('ALTER TABLE vault_files ADD COLUMN gm_notes TEXT'); } catch (_) {}
   try { db.exec('ALTER TABLE vault_files ADD COLUMN player_notes TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE vault_files ADD COLUMN hidden INTEGER DEFAULT 0'); } catch (_) {}
   // NPC-specific
   try { db.exec('ALTER TABLE vault_files ADD COLUMN race TEXT'); } catch (_) {}
   try { db.exec('ALTER TABLE vault_files ADD COLUMN disposition TEXT'); } catch (_) {}

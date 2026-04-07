@@ -88,6 +88,8 @@ router.post('/', requireAuth, (req, res) => {
   const campaignId = result.lastInsertRowid;
   // Only add the creator as GM — players join via invite code
   db.prepare('INSERT OR IGNORE INTO campaign_members (campaign_id, user_id, role) VALUES (?,?,?)').run(campaignId, req.user.id, 'gm');
+  // Promote campaign creators to global GM role as well.
+  db.prepare("UPDATE users SET role='gm' WHERE id=? AND role <> 'gm'").run(req.user.id);
 
   const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(campaignId);
   res.status(201).json({ campaign });
