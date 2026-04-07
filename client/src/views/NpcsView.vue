@@ -106,15 +106,23 @@ const activeTab     = ref('all')
 const confirmDelete = ref(null)
 
 const tabs = [
-  { value: 'all',      label: 'All' },
-  { value: 'friendly', label: 'Friendly' },
-  { value: 'neutral',  label: 'Neutral' },
-  { value: 'hostile',  label: 'Hostile' },
+  { value: 'all',        label: 'All' },
+  { value: 'unknown',    label: 'Unknown' },
+  { value: 'friendly',   label: 'Friendly' },
+  { value: 'neutral',    label: 'Neutral' },
+  { value: 'suspicious', label: 'Suspicious' },
+  { value: 'hostile',    label: 'Hostile' },
+  { value: 'helpful',    label: 'Helpful' },
+  { value: 'fearful',    label: 'Fearful' },
 ]
 
 const filteredNpcs = computed(() => {
   let list = data.npcs
-  if (activeTab.value !== 'all') list = list.filter(n => n.disposition?.toLowerCase() === activeTab.value)
+  if (activeTab.value === 'unknown') {
+    list = list.filter(n => !n.disposition || n.disposition.toLowerCase() === 'unknown')
+  } else if (activeTab.value !== 'all') {
+    list = list.filter(n => n.disposition?.toLowerCase() === activeTab.value)
+  }
   if (search.value.trim()) {
     const q = search.value.toLowerCase()
     list = list.filter(n =>
@@ -261,4 +269,3 @@ onMounted(() => { if (!data.npcs.length) data.loadNpcs() })
 .npc-skel-line--title { width: 70%; height: 12px; }
 @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 </style>
-
