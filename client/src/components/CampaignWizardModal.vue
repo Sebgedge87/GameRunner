@@ -1102,6 +1102,32 @@ function skipEntity() {
 
 .wiz-card {
   position: relative;
+  /* ── Pin default theme — wizard never inherits campaign theme ── */
+  --color-bg-page:           #040508;
+  --color-bg-card:           #0a0d14;
+  --color-bg-elevated:       #121622;
+  --color-bg-input:          #1a2033;
+  --color-bg-subtle:         #080a11;
+  --color-accent:            #3b82f6;
+  --color-accent-muted:      rgba(59, 130, 246, 0.16);
+  --color-border-default:    #1c2130;
+  --color-border-active:     #2a3652;
+  --color-border-hover:      #32416b;
+  --color-border-bracket:    #1c2130;
+  --color-border-danger:     rgba(224, 75, 75, 0.50);
+  --color-text-primary:      #f0f6fc;
+  --color-text-secondary:    #8b9eb3;
+  --color-text-hint:         #6b7d8f;
+  --color-text-accent:       #60a5fa;
+  --color-text-danger:       #e04b4b;
+  --color-text-disabled:     #4a4a4a;
+  --color-hostile-bg:        rgba(184, 59, 59, 0.20);
+  --color-bg-overlay-medium: rgba(0, 0, 0, 0.70);
+  --color-shadow-menu:       rgba(0, 0, 0, 0.40);
+  --gold:                    #c9a84c;
+  --gold2:                   #e8c96a;
+  --gold-dim:                rgba(201, 168, 76, 0.15);
+  /* ─────────────────────────────────────────────────────── */
   background: var(--color-bg-elevated);
   border: 0.5px solid var(--color-border-default);
   border-radius: 12px;
