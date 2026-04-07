@@ -59,7 +59,8 @@ router.post('/', requireGm, (req, res) => {
   if (connected_npcs !== undefined) fm.connected_npcs = connected_npcs;
   if (image_url !== undefined) fm.image_url = image_url;
   const content = matter.stringify(description, fm);
-  const camp = getDb().prepare('SELECT id, name FROM campaigns WHERE active = 1 LIMIT 1').get();
+  const campId = getCampaignId(req);
+  const camp = campId ? getDb().prepare('SELECT id, name FROM campaigns WHERE id = ?').get(campId) : null;
   const campSlug = camp ? slug(camp.name) : null;
   const targetDir = campSlug ? path.join(vaultPath, campSlug, 'Quests') : VAULT_DIR;
   if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
