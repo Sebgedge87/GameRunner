@@ -47,6 +47,8 @@
     <ShareModal />
     <!-- Onboarding wizard -->
     <OnboardingWizard />
+    <!-- Bulk import modal (GM only) -->
+    <BulkImportModal />
     <!-- Confirm dialog -->
     <ConfirmDialog />
     <!-- Toast container -->
@@ -78,6 +80,7 @@ import GmFab from './GmFab.vue'
 import ShareModal from './ShareModal.vue'
 import OnboardingWizard from './OnboardingWizard.vue'
 import ConfirmDialog from './ConfirmDialog.vue'
+import BulkImportModal from './BulkImportModal.vue'
 import ToastContainer from './ToastContainer.vue'
 import ImmersionOverlay from './ImmersionOverlay.vue'
 import TimerWidget from './TimerWidget.vue'

@@ -48,6 +48,7 @@ const isOpen = ref(false)
 watch(() => route.path, () => { isOpen.value = false })
 
 const actions = [
+  { type: 'bulk-import', label: 'Import Entities', icon: '📥' },
   { type: 'npc',      label: 'Add NPC',      icon: '🧑' },
   { type: 'location', label: 'Add Location',  icon: '📍' },
   { type: 'quest',    label: 'Add Quest',     icon: '⚔️' },
@@ -67,7 +68,11 @@ function toggle() {
 }
 
 function trigger(action) {
-  ui.openGmEdit(action.type, null, {})
+  if (action.type === 'bulk-import') {
+    ui.openBulkImport()
+  } else {
+    ui.openGmEdit(action.type, null, {})
+  }
   isOpen.value = false
 }
 </script>
