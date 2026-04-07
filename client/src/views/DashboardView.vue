@@ -7,6 +7,10 @@
         <button class="gm-tab" :class="{ active: activeTab === 'gm' }" @click="activeTab = 'gm'">GM Dashboard</button>
         <button class="gm-tab" :class="{ active: activeTab === 'combat' }" @click="activeTab = 'combat'">Combat</button>
       </template>
+    <div v-if="campaign.isGm" class="gm-tabs">
+      <router-link to="/dashboard" class="gm-tab" :class="{ active: route.path === '/dashboard' }">Overview</router-link>
+      <router-link to="/gm-dashboard" class="gm-tab" :class="{ active: route.path === '/gm-dashboard' }">GM Dashboard</router-link>
+      <router-link to="/combat" class="gm-tab" :class="{ active: route.path === '/combat' }">Combat</router-link>
     </div>
 
     <template v-if="activeTab === 'overview'">
@@ -207,7 +211,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
 import { useDataStore } from '@/stores/data'
@@ -223,6 +227,7 @@ const ui = useUiStore()
 const data = useDataStore()
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 const { hasStress, hasSanity } = useSystemFeatures()
 const activeTab = ref('overview')
 

@@ -23,6 +23,30 @@
             <span class="nav-icon">⚔</span>Campaign Home
           </RouterLink>
         </div>
+          <template v-if="campaign.isGm">
+            <RouterLink to="/gm-dashboard" class="nav-item gm-only" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'GM Dashboard' : ''">
+              <span class="nav-icon">👁</span>GM Dashboard
+            </RouterLink>
+            <RouterLink to="/combat" class="nav-item gm-only" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'Combat' : ''">
+              <span class="nav-icon">⚔</span>Combat
+            </RouterLink>
+          </template>
+        </div>
+
+        <!-- GM section (kept near campaign home, GM-only visibility) -->
+        <template v-if="campaign.isGm">
+          <div class="nav-section" :class="{ collapsed: collapsed.gm }" @click="toggle('gm')">
+            GM
+          </div>
+          <div class="nav-group" :class="{ collapsed: collapsed.gm }">
+            <RouterLink to="/gm-dashboard" class="nav-item gm-only" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'GM Dashboard' : ''">
+              <span class="nav-icon">👁</span>GM Dashboard
+            </RouterLink>
+            <RouterLink to="/combat" class="nav-item gm-only" active-class="active" @click="ui.closeSidebar()" :title="ui.sidebarCollapsed ? 'Combat' : ''">
+              <span class="nav-icon">⚔</span>Combat
+            </RouterLink>
+          </div>
+        </template>
 
         <!-- World -->
         <div class="nav-section" :class="{ collapsed: collapsed.world }" @click="toggle('world')">
