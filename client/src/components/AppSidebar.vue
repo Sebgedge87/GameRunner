@@ -23,15 +23,6 @@
             <span class="nav-icon">⚔</span>Campaign Home
           </RouterLink>
         </div>
-          <template v-if="campaign.isGm">
-            <div class="nav-item gm-only" @click="goTab('gm')" :title="ui.sidebarCollapsed ? 'GM Dashboard' : ''">
-              <span class="nav-icon">👁</span>GM Dashboard
-            </div>
-            <div class="nav-item gm-only" @click="goTab('combat')" :title="ui.sidebarCollapsed ? 'Combat' : ''">
-              <span class="nav-icon">⚔</span>Combat
-            </div>
-          </template>
-        </div>
 
         <!-- World -->
         <div class="nav-section" :class="{ collapsed: collapsed.world }" @click="toggle('world')">
@@ -189,10 +180,6 @@ function goHome() {
   ui.closeSidebar()
 }
 
-function goTab(tab) {
-  ui.closeSidebar()
-  router.push({ path: '/dashboard', query: { tab } })
-}
 
 const showLogoutConfirm = ref(false)
 
