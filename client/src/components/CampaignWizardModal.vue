@@ -14,7 +14,7 @@ const data     = useDataStore()
 const ui       = useUiStore()
 const auth     = useAuthStore()
 
-const STEPS = ['Name', 'Game system', 'Review defaults', 'First entity']
+const STEPS = ['Name', 'Game system', 'First entity']
 
 const step = ref(0)
 
@@ -599,7 +599,7 @@ const preview = computed(() => SYSTEM_PREVIEWS[selectedSystem.value] || SYSTEM_P
 // Step 3: campaign already created — closing = skip to dashboard
 // Steps 0-2: no data committed — just dismiss
 function handleClose() {
-  if (step.value === 3) {
+  if (step.value === 2) {
     skipEntity()
   } else {
     emit('close')
@@ -612,7 +612,7 @@ onUnmounted(() => document.removeEventListener('keydown', onKey))
 
 // Warn before navigating away mid-flow (steps 0-2, before campaign is created)
 onBeforeRouteLeave((_to, _from, next) => {
-  if (step.value < 3 && nameForm.name.trim()) {
+  if (step.value < 2 && nameForm.name.trim()) {
     const leave = window.confirm('Leave campaign setup? The campaign hasn\'t been created yet and your progress will be lost.')
     if (leave) { emit('close'); next() } else { next(false) }
   } else {
@@ -654,7 +654,7 @@ async function createAndProceed() {
     })
     await campaign.switchCampaign(c.id)
     await data.loadAll()
-    step.value = 3
+    step.value = 2
   } catch (e) {
     saveError.value = e.message || 'Failed to create campaign'
   } finally {
@@ -711,7 +711,7 @@ function skipEntity() {
         <!-- Close button — always visible -->
         <button
           class="wiz-close"
-          :title="step === 3 ? 'Skip and go to dashboard' : 'Close'"
+          :title="step === 2 ? 'Skip and go to dashboard' : 'Close'"
           @click="handleClose"
         >
           <svg viewBox="0 0 14 14" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -824,68 +824,6 @@ function skipEntity() {
             </div>
           </div>
 
-          <div class="wiz-btn-row">
-            <button class="wiz-btn ghost" @click="prevStep">← Back</button>
-            <button class="wiz-btn primary" @click="nextStep">Review defaults →</button>
-          </div>
-        </template>
-
-        <!-- ── STEP 2 — Review ─────────────────────────── -->
-        <template v-if="step === 2">
-          <h2 class="wiz-title">Review &amp; confirm defaults</h2>
-          <p class="wiz-sub">These are applied when your campaign is created. You can customise everything after.</p>
-
-          <div class="wiz-preview-box">
-            <div class="wiz-preview-title">Campaign</div>
-            <div class="wiz-preview-grid">
-              <div class="wiz-preview-item">
-                <div class="wiz-preview-label">Name</div>
-                <div class="wiz-preview-val" style="font-weight:500;color:var(--color-text-primary)">{{ nameForm.name }}</div>
-              </div>
-              <div class="wiz-preview-item">
-                <div class="wiz-preview-label">System</div>
-                <div class="wiz-preview-val">
-                  {{ campaign.SYSTEM_META[selectedSystem]?.icon }}
-                  {{ campaign.SYSTEM_META[selectedSystem]?.label }}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="wiz-preview-box">
-            <div class="wiz-preview-title">Factions, locations &amp; NPCs</div>
-            <div class="wiz-preview-grid">
-              <div class="wiz-preview-item">
-                <div class="wiz-preview-label">Calendar</div>
-                <div class="wiz-preview-val">{{ preview.calendar }}</div>
-              </div>
-              <div class="wiz-preview-item">
-                <div class="wiz-preview-label">Faction types</div>
-                <div class="wiz-preview-val">
-                  <span v-for="t in preview.faction_types" :key="t" class="wiz-tag">{{ t }}</span>
-                </div>
-              </div>
-              <div class="wiz-preview-item">
-                <div class="wiz-preview-label">Location types</div>
-                <div class="wiz-preview-val">
-                  <span v-for="t in preview.location_types" :key="t" class="wiz-tag">{{ t }}</span>
-                </div>
-              </div>
-              <div class="wiz-preview-item">
-                <div class="wiz-preview-label">NPC roles</div>
-                <div class="wiz-preview-val">
-                  <span v-for="t in preview.npc_roles" :key="t" class="wiz-tag">{{ t }}</span>
-                </div>
-              </div>
-              <div class="wiz-preview-item">
-                <div class="wiz-preview-label">Quest structures</div>
-                <div class="wiz-preview-val">
-                  <span v-for="t in preview.quest_structures" :key="t" class="wiz-tag">{{ t }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
           <div v-if="saveError" class="wiz-error">{{ saveError }}</div>
 
           <div class="wiz-btn-row">
@@ -896,8 +834,8 @@ function skipEntity() {
           </div>
         </template>
 
-        <!-- ── STEP 3 — First entity ───────────────────── -->
-        <template v-if="step === 3">
+        <!-- ── STEP 2 — First entity ───────────────────── -->
+        <template v-if="step === 2">
           <h2 class="wiz-title">Add your first entity</h2>
           <p class="wiz-sub">Kick off your world with an NPC, location, faction or quest — or skip and add them later.</p>
 
