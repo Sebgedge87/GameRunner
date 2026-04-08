@@ -47,8 +47,8 @@
           <template #badges>
             <span v-if="map.map_type" class="tag">{{ map.map_type.charAt(0).toUpperCase() + map.map_type.slice(1) }}</span>
           </template>
-          <template #body>
-            <div v-if="map.description" class="card-overview">{{ map.description }}</div>
+          <template #preview>
+            <div v-if="map.description">{{ map.description.slice(0, 80) }}</div>
           </template>
           <template #actions>
             <button v-if="map.image || map.image_path" class="btn btn-sm" @click.stop="openMapFullscreen(map)">⛶ Fullscreen</button>

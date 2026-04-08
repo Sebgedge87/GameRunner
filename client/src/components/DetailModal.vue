@@ -162,10 +162,15 @@ const renderedContent = computed(() => {
         ${dfLinks('Location', d.location, 'location')}${dfLinks('Connected To', d.connected_to, 'quest')}`
     case 'npc':
       return `${img(d)}<div class="detail-title">${esc(title)}</div>
-        <div class="detail-meta">${d.role?`<span class="tag">${esc(d.role)}</span>`:''}<span class="tag tag-${esc(d.disposition||'neutral')}">${esc(d.disposition||'neutral')}</span>${d.faction?`<span class="tag">${esc(d.faction)}</span>`:''}</div>
+        <div class="detail-meta">
+          ${d.role?`<span class="tag">${esc(d.role)}</span>`:''}
+          ${d.race?`<span class="tag">${esc(d.race)}</span>`:''}
+          ${d.disposition?`<span class="tag tag-${esc(d.disposition)}">${esc(d.disposition)}</span>`:''}
+          ${d.faction?`<span class="tag">${esc(d.faction)}</span>`:''}
+        </div>
         ${d.description?`<div class="detail-body">${md(d.description)}</div>`:''}
-        ${d.player_notes?`<div class="detail-body" style="margin-top:8px">${md(d.player_notes)}</div>`:''}
-        ${dfLinks('Location', d.location, 'location')}
+        ${d.player_notes?`<div class="detail-body" style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.06)">${md(d.player_notes)}</div>`:''}
+        ${dfLinks('Home Location', d.home_location||d.location, 'location')}
         ${isGm&&d.gm_notes?`<div class="detail-gm-box"><div class="detail-gm-label">GM notes</div><div class="detail-body" style="margin:0">${md(d.gm_notes)}</div></div>`:''}`
     case 'location':
       return `${img(d)}<div class="detail-title">${esc(title)}</div>

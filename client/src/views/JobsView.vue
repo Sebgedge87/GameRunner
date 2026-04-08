@@ -22,12 +22,9 @@
           <span v-if="job.status" class="tag" :class="statusClass(job.status)">{{ job.status }}</span>
           <span v-if="job.danger" class="tag tag-inactive">{{ job.danger }}</span>
         </template>
-        <template #body>
-          <div v-if="job.description" class="card-overview">{{ stripMd(job.description) }}</div>
-          <div v-if="job.reward" class="card-meta">🎁 {{ job.reward }}</div>
-          <div v-if="job.location" class="card-meta">📍 {{ job.location }}</div>
-          <div v-if="job.employer" class="card-meta">Employer: {{ job.employer }}</div>
-          <div v-if="job.connected_to?.length" class="card-meta">Linked: {{ job.connected_to.join(', ') }}</div>
+        <template #preview>
+          <div v-if="job.description">{{ stripMd(job.description).slice(0, 80) }}</div>
+          <div v-else-if="job.reward" style="opacity:0.7">🎁 {{ job.reward }}</div>
         </template>
         <template #actions>
           <button v-if="job.status === 'open' && !campaign.isGm" class="btn btn-sm btn-primary" @click.stop="acceptJob(job)">Accept</button>
