@@ -49,16 +49,15 @@
             :entity="loc" type="location" :title="loc.title || loc.name" icon="📍"
             :image="loc.image_url || loc.image || null"
             :reload-fn="data.loadLocations"
-            
           >
             <template #badges>
               <span v-if="loc.location_type" class="tag">{{ loc.location_type }}</span>
               <span v-if="loc.danger_level > 0" class="tag tag-inactive">⚠️ Danger {{ loc.danger_level }}</span>
               <span v-if="campaign.currentPartyLocationId === String(loc.id)" class="tag tag-active">📍 Party here</span>
             </template>
-            <template #body>
-              <div v-if="loc.description" class="card-overview">{{ stripMd(loc.description) }}</div>
-              <div v-if="loc.parent_location_id" class="card-meta">↳ Sub-location</div>
+            <template #preview>
+              <div v-if="loc.description">{{ stripMd(loc.description).slice(0, 100) }}</div>
+              <div v-else-if="loc.parent_location_id" style="opacity:0.6">↳ Sub-location</div>
             </template>
             <template #actions>
               <button v-if="campaign.isGm" class="btn btn-xs"
@@ -127,7 +126,6 @@ const campaign = useCampaignStore()
 const ui       = useUiStore()
 const search         = ref('')
 const activeTabs     = ref(['all'])
-const expandedId     = ref(null)
 const mainTab        = ref('locations')
 const boardLocationId = ref('')
 
@@ -182,8 +180,6 @@ const filteredLocations = computed(() => {
   }
   return list
 })
-
-function toggleExpand(id) { expandedId.value = expandedId.value === id ? null : id }
 
 function openNoticeBoard(loc) {
   boardLocationId.value = String(loc.id)
