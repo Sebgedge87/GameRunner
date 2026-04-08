@@ -3,7 +3,7 @@
     <div class="page-header">
       <div class="page-title">Factions</div>
     </div>
-    <div class="search-row" style="margin-bottom:16px">
+    <div class="search-row" style="margin-bottom:12px">
       <input v-model="search" class="form-input" placeholder="Search factions…" style="max-width:320px" />
     </div>
     <FilterTabs
@@ -30,13 +30,16 @@
       description="Define the guilds, cults and powers that shape your world."
     />
 
-    <!-- Card grid -->
+    <!-- Faction grid -->
     <template v-else-if="data.factions.length || campaign.isGm">
       <div class="card-grid">
+
+        <!-- Create tile (GM only) -->
         <div v-if="campaign.isGm" class="create-card" @click="ui.openGmEdit('faction', null, {})">
           <span class="create-card-icon">+</span>
           <span>Add Faction</span>
         </div>
+
         <EntityCard
           v-for="faction in filteredFactions"
           :key="faction.id"
@@ -56,6 +59,7 @@
             <div v-else-if="faction.goals">{{ stripMd(faction.goals).slice(0, 110) }}</div>
           </template>
         </EntityCard>
+
       </div>
       <p v-if="!filteredFactions.length" class="no-matches-msg">No matches — try a different search or filter.</p>
     </template>
@@ -75,21 +79,14 @@ import FilterTabs from '@/components/FilterTabs.vue'
 const data     = useDataStore()
 const campaign = useCampaignStore()
 const ui       = useUiStore()
-const search        = ref('')
-const activeTabs    = ref(['all'])
+const search      = ref('')
+const activeTabs  = ref(['all'])
 
 const tabs = [
-  { value: 'all', label: 'All' },
-  { value: 'hostile', label: 'Hostile' },
+  { value: 'all',     label: 'All' },
+  { value: 'allied',  label: 'Allied' },
   { value: 'neutral', label: 'Neutral' },
-  { value: 'allied', label: 'Allied' },
-]
-
-const tabs = [
-  { value: 'all', label: 'All' },
   { value: 'hostile', label: 'Hostile' },
-  { value: 'neutral', label: 'Neutral' },
-  { value: 'allied', label: 'Allied' },
 ]
 
 const filteredFactions = computed(() => {
@@ -108,25 +105,25 @@ const filteredFactions = computed(() => {
 })
 
 function reputationStatus(rep) {
-  if (rep == null) return null
-  if (rep <= -3) return 'hostile'
-  if (rep >= 3)  return 'allied'
+  if (rep == null) return 'neutral'
+  if (rep <= -1) return 'hostile'
+  if (rep >= 1)  return 'allied'
   return 'neutral'
 }
 
 function reputationLabel(rep) {
+  if (rep == null || rep === 0) return 'Neutral'
   if (rep <= -3) return 'Hostile'
   if (rep <= -1) return 'Unfriendly'
-  if (rep === 0) return 'Neutral'
   if (rep <= 2)  return 'Friendly'
   return 'Allied'
 }
 
 function standingTagClass(rep) {
   const status = reputationStatus(rep)
-  if (status === 'allied') return 'tag-active'
+  if (status === 'allied')  return 'tag-active'
   if (status === 'hostile') return 'tag-inactive'
-  return 'tag-info'
+  return ''
 }
 
 onMounted(() => { if (!data.factions.length) data.loadFactions() })
