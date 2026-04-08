@@ -48,6 +48,15 @@
       <div v-if="$slots.badges" class="ec-badge-row">
         <slot name="badges" />
       </div>
+      <!-- Preview text: shown below badges when there is no image -->
+      <div v-if="$slots.preview && !image" class="ec-info-preview">
+        <slot name="preview" />
+      </div>
+    </div>
+
+    <!-- Actions slot: rendered below the info bar -->
+    <div v-if="$slots.actions" class="ec-actions" @click.stop>
+      <slot name="actions" />
     </div>
   </div>
 </template>
@@ -90,7 +99,6 @@ async function toggleHidden() {
   actionBusy.value = true
   try {
     await data.toggleHidden(props.type, props.entity.id)
-    props.entity.hidden = props.entity.hidden ? 0 : 1
     await props.reloadFn()
   } catch (e) {
     ui.showToast('Failed to update visibility', '', '✕')
@@ -269,4 +277,23 @@ async function toggleHidden() {
   flex-shrink: 0;
 }
 .ec-badge-row { display: flex; flex-wrap: wrap; gap: 4px; }
+.ec-info-preview {
+  font-size: 10px;
+  color: var(--text3);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-top: 2px;
+}
+.ec-actions {
+  padding: 0 12px 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
 </style>

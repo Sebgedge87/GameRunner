@@ -23,7 +23,7 @@
             <div class="form-group">
               <label>Type</label>
               <select v-model="f.quest_type" class="form-input">
-                <option>main</option><option>side</option><option>personal</option>
+                <option>main</option><option>side</option><option>personal</option><option>background</option>
               </select>
             </div>
             <div class="form-group">
@@ -114,6 +114,7 @@
           <template v-if="isEdit" #gm-actions>
             <button class="gm-action-btn" @click="gmTogglePin">📌 {{ isPinned ? 'Unpin' : 'Pin' }}</button>
             <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '👁 Show' : '🙈 Hide' }}</button>
+            <button class="gm-action-btn" @click="gmShare">🔗 Share</button>
             <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">🗑 Delete</button>
           </template>
         </EntityForm>
@@ -184,6 +185,7 @@
           <template v-if="isEdit" #gm-actions>
             <button class="gm-action-btn" @click="gmTogglePin">📌 {{ isPinned ? 'Unpin' : 'Pin' }}</button>
             <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '👁 Show' : '🙈 Hide' }}</button>
+            <button class="gm-action-btn" @click="gmShare">🔗 Share</button>
             <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">🗑 Delete</button>
           </template>
         </EntityForm>
@@ -252,6 +254,7 @@
           <template v-if="isEdit" #gm-actions>
             <button class="gm-action-btn" @click="gmTogglePin">📌 {{ isPinned ? 'Unpin' : 'Pin' }}</button>
             <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '👁 Show' : '🙈 Hide' }}</button>
+            <button class="gm-action-btn" @click="gmShare">🔗 Share</button>
             <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">🗑 Delete</button>
           </template>
         </EntityForm>
@@ -285,6 +288,7 @@
           <template v-if="isEdit" #gm-actions>
             <button class="gm-action-btn" @click="gmTogglePin">📌 {{ isPinned ? 'Unpin' : 'Pin' }}</button>
             <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '👁 Show' : '🙈 Hide' }}</button>
+            <button class="gm-action-btn" @click="gmShare">🔗 Share</button>
             <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">🗑 Delete</button>
           </template>
         </EntityForm>
@@ -327,6 +331,7 @@
           <template v-if="isEdit" #gm-actions>
             <button class="gm-action-btn" @click="gmTogglePin">📌 {{ isPinned ? 'Unpin' : 'Pin' }}</button>
             <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '👁 Show' : '🙈 Hide' }}</button>
+            <button class="gm-action-btn" @click="gmShare">🔗 Share</button>
             <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">🗑 Delete</button>
           </template>
         </EntityForm>
@@ -411,6 +416,7 @@
           <template v-if="isEdit" #gm-actions>
             <button class="gm-action-btn" @click="gmTogglePin">📌 {{ isPinned ? 'Unpin' : 'Pin' }}</button>
             <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '👁 Show' : '🙈 Hide' }}</button>
+            <button class="gm-action-btn" @click="gmShare">🔗 Share</button>
             <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">🗑 Delete</button>
           </template>
         </EntityForm>
@@ -477,6 +483,7 @@
           <template v-if="isEdit" #gm-actions>
             <button class="gm-action-btn" @click="gmTogglePin">📌 {{ isPinned ? 'Unpin' : 'Pin' }}</button>
             <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '👁 Show' : '🙈 Hide' }}</button>
+            <button class="gm-action-btn" @click="gmShare">🔗 Share</button>
             <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">🗑 Delete</button>
           </template>
         </EntityForm>
@@ -559,6 +566,7 @@
           <template v-if="isEdit" #gm-actions>
             <button class="gm-action-btn" @click="gmTogglePin">📌 {{ isPinned ? 'Unpin' : 'Pin' }}</button>
             <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '👁 Show' : '🙈 Hide' }}</button>
+            <button class="gm-action-btn" @click="gmShare">🔗 Share</button>
             <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">🗑 Delete</button>
           </template>
         </EntityForm>
@@ -612,6 +620,7 @@
           <template v-if="isEdit" #gm-actions>
             <button class="gm-action-btn" @click="gmTogglePin">📌 {{ isPinned ? 'Unpin' : 'Pin' }}</button>
             <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '👁 Show' : '🙈 Hide' }}</button>
+            <button class="gm-action-btn" @click="gmShare">🔗 Share</button>
             <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">🗑 Delete</button>
           </template>
         </EntityForm>
@@ -725,6 +734,7 @@
           <template v-if="isEdit" #gm-actions>
             <button class="gm-action-btn" @click="gmTogglePin">📌 {{ isPinned ? 'Unpin' : 'Pin' }}</button>
             <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '👁 Show' : '🙈 Hide' }}</button>
+            <button class="gm-action-btn" @click="gmShare">🔗 Share</button>
             <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">🗑 Delete</button>
           </template>
         </EntityForm>
@@ -759,6 +769,7 @@
           <template v-if="isEdit" #gm-actions>
             <button class="gm-action-btn" @click="gmTogglePin">📌 {{ isPinned ? 'Unpin' : 'Pin' }}</button>
             <button class="gm-action-btn" @click="gmToggleHidden">{{ ui.gmEditModal?.data?.hidden ? '👁 Show' : '🙈 Hide' }}</button>
+            <button class="gm-action-btn" @click="gmShare">🔗 Share</button>
             <button class="gm-action-btn gm-action-btn--danger" @click="gmDelete">🗑 Delete</button>
           </template>
         </EntityForm>
@@ -890,6 +901,12 @@ async function gmToggleHidden() {
   if (modal.data) modal.data.hidden = !modal.data.hidden
   
   ui.showToast(modal.data?.hidden ? 'Hidden' : 'Revealed', '', '👁')
+}
+
+function gmShare() {
+  const modal = ui.gmEditModal
+  const label = f.title || f.name || type.value
+  ui.openShare(type.value, modal.id, label)
 }
 
 async function gmDelete() {
