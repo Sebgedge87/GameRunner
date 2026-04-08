@@ -8,6 +8,7 @@ export const useCampaignStore = defineStore('campaign', () => {
   const activeCampaign = ref(null)
   const allCampaigns = ref([])
   const isGm = ref(false)
+  const campaignsLoaded = ref(false)
   const timer = ref({ label: '', end: null, remaining: 0, running: false })
   const calendarVersion = ref(0)
 
@@ -138,6 +139,8 @@ export const useCampaignStore = defineStore('campaign', () => {
       }
     } catch (e) {
       console.error('[loadCampaigns]', e)
+    } finally {
+      campaignsLoaded.value = true
     }
   }
 
@@ -221,7 +224,7 @@ export const useCampaignStore = defineStore('campaign', () => {
   }
 
   return {
-    activeCampaign, allCampaigns, isGm, currentPartyLocationId, timer, calendarVersion,
+    activeCampaign, allCampaigns, isGm, campaignsLoaded, currentPartyLocationId, timer, calendarVersion,
     SYSTEM_META, SYSTEM_THEME_MAP,
     applyTheme, applyCustomTheme, applyBgImage,
     loadCampaigns, switchCampaign, createCampaign, joinCampaign, updateCampaign, deleteCampaign, setPartyLocation, leaveCampaign, setTimer,

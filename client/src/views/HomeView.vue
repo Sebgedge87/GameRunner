@@ -123,7 +123,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCampaignStore } from '@/stores/campaign'
 import { useUiStore } from '@/stores/ui'
@@ -140,9 +140,10 @@ const router = useRouter()
 const joinCode = ref('')
 const showWizard = ref(false)
 
-onMounted(() => {
-  if (campaign.allCampaigns.length === 0) showWizard.value = true
-})
+// Auto-open wizard only after campaigns have actually been fetched and there are none
+watch(() => campaign.campaignsLoaded, (loaded) => {
+  if (loaded && campaign.allCampaigns.length === 0) showWizard.value = true
+}, { immediate: true })
 
 const showCreateModal = ref(false)
 const creating = ref(false)
