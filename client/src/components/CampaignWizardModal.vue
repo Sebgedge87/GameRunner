@@ -54,6 +54,8 @@ const FIELD_ALIASES = {
   name:        ['name', 'title', 'character', 'character_name', 'entity'],
   role:        ['role', 'type', 'class', 'occupation', 'job', 'rank', 'position', 'archetype'],
   location:    ['location', 'home', 'hometown', 'place', 'region', 'base', 'area', 'origin'],
+  faction:     ['faction', 'guild', 'allegiance', 'affiliation', 'org', 'organization', 'group'],
+  goals:       ['goals', 'goal', 'objective', 'objectives', 'aim', 'aims', 'mission'],
   description: ['description', 'summary', 'overview', 'appearance', 'bio', 'profile', 'about', 'desc'],
   notes:       ['notes', 'gm_notes', 'background', 'backstory', 'history', 'secrets', 'details', 'info'],
 }
@@ -193,7 +195,8 @@ function detectSectionType(header) {
 function blankResult(type) {
   if (type === 'Rumour')   return { text: '', source_npc: '', source_location: '' }
   if (type === 'Timeline') return { name: '', description: '', notes: '', date: '', significance: 'minor' }
-  return { name: '', role: '', location: '', description: '', notes: '' }
+  if (type === 'Faction')  return { name: '', description: '', goals: '', notes: '' }
+  return { name: '', role: '', location: '', faction: '', description: '', notes: '' }
 }
 
 function parseMarkdownDocument(raw) {
@@ -352,13 +355,15 @@ const IMPORT_TEMPLATE = `# Campaign Name
 
 ### NPC Name
 **Role:** Merchant / Guard / Villain / Cultist…
-**Location:** Where they are usually found
+**Faction:** Guild or group they belong to (created automatically if new)
+**Location:** Where they are usually found (created automatically if new)
 **Description:** One-line summary visible to players
 **Notes:** GM-only secrets, motivations, connections
 
 ### Example — Sister Agatha
 **Role:** Rogue Priest
-**Location:** The Sunken Chapel, Ashford
+**Faction:** The Merchant Council
+**Location:** The Sunken Chapel
 **Description:** A severe woman in grey robes who speaks in riddles.
 **Notes:** Secretly the cult's liaison to the Merchant Council. Carries a brass key.
 
@@ -467,15 +472,15 @@ function processUploadedFile(file) {
 }
 
 /* ── Batch save ─────────────────────────────────────────── */
-function entityEndpointAndBody(ent) {
+function entityEndpointAndBody(ent, overrides = {}) {
   const type = ent.type || entityForm.type
   const r    = ent.result
   if (type === 'NPC')
-    return { endpoint: '/api/npcs', body: { name: r.name, role: r.role, description: r.description, gm_notes: r.notes }, valid: !!r.name?.trim() }
+    return { endpoint: '/api/npcs', body: { name: r.name, role: r.role, description: r.description, gm_notes: r.notes, faction_id: overrides.faction_id || null, home_location_id: overrides.home_location_id || null }, valid: !!r.name?.trim() }
   if (type === 'Location')
     return { endpoint: '/api/locations', body: { name: r.name, description: r.description, gm_notes: r.notes }, valid: !!r.name?.trim() }
   if (type === 'Faction')
-    return { endpoint: '/api/factions', body: { name: r.name, description: r.description, gm_notes: r.notes }, valid: !!r.name?.trim() }
+    return { endpoint: '/api/factions', body: { name: r.name, description: r.description, goals: r.goals || null, gm_notes: r.notes }, valid: !!r.name?.trim() }
   if (type === 'Quest')
     return { endpoint: '/api/quests', body: { title: r.name, description: r.description, gm_notes: r.notes, status: 'active', quest_type: 'main' }, valid: !!r.name?.trim() }
   if (type === 'Rumour')
@@ -483,6 +488,19 @@ function entityEndpointAndBody(ent) {
   if (type === 'Timeline')
     return { endpoint: '/api/timeline', body: { title: r.name, description: r.description, gm_notes: r.notes, in_world_date: r.date, significance: r.significance || 'minor' }, valid: !!r.name?.trim() }
   return null
+}
+
+async function resolveOrCreate(endpoint, storeList, name) {
+  if (!name?.trim()) return null
+  const norm = name.trim().toLowerCase()
+  const existing = storeList.find(x => (x.name || x.title)?.toLowerCase() === norm)
+  if (existing) return existing.id
+  try {
+    const r = await apif(endpoint, { method: 'POST', body: JSON.stringify({ name: name.trim() }) })
+    if (!r.ok) return null
+    const j = await r.json()
+    return j.faction?.id ?? j.location?.id ?? null
+  } catch { return null }
 }
 
 async function saveAllEntities() {
@@ -503,6 +521,23 @@ async function saveAllEntities() {
     status:   'pending',
     errorMsg: '',
   }))
+
+  // Pre-create any factions/locations referenced by NPCs that don't exist yet
+  const factionCache = {}
+  const locationCache = {}
+  for (const ent of parsedEntities.value) {
+    const type = ent.type || entityForm.type
+    if (type === 'NPC') {
+      const fName = ent.result.faction?.trim()
+      const lName = ent.result.location?.trim()
+      if (fName && factionCache[fName] === undefined)
+        factionCache[fName] = await resolveOrCreate('/api/factions', data.factions, fName)
+      if (lName && locationCache[lName] === undefined)
+        locationCache[lName] = await resolveOrCreate('/api/locations', data.locations, lName)
+    }
+  }
+  if (Object.keys(factionCache).length || Object.keys(locationCache).length) await data.loadAll()
+
   let saved = 0
   let lastType = null
   let groupCounts = {}
@@ -524,7 +559,14 @@ async function saveAllEntities() {
         importProgress.groupIdx = groupProgress[currentType]
         if (currentType !== lastType) lastType = currentType
       }
-      const info = entityEndpointAndBody(ent)
+      const overrides = {}
+      if (currentType === 'NPC') {
+        const fName = ent.result.faction?.trim()
+        const lName = ent.result.location?.trim()
+        if (fName) overrides.faction_id = factionCache[fName] ?? null
+        if (lName) overrides.home_location_id = locationCache[lName] ?? null
+      }
+      const info = entityEndpointAndBody(ent, overrides)
       if (!info || !info.valid) {
         saveResults.value[i].status = 'error'; saveResults.value[i].errorMsg = 'Missing required field (name or text)'; continue
       }
