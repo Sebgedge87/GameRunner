@@ -14,7 +14,7 @@
     </div>
     
     <!-- Sub Filters -->
-    <FilterTabs :tabs="currentTabs" :active="activeTab" :on-change="v => activeTab = v" style="margin-bottom: 12px;"/>
+    <FilterTabs :tabs="currentTabs" :active="activeTabs" :multi="true" :on-change="v => activeTabs = v" :on-clear="() => activeTabs = ['all']" style="margin-bottom: 12px;"/>
 
     <!-- =========== HOOKS =========== -->
     <template v-if="viewType === 'hooks'">
@@ -124,7 +124,7 @@ const ui       = useUiStore()
 
 const viewType      = ref('hooks')
 const search        = ref('')
-const activeTab     = ref('all')
+const activeTabs    = ref(['all'])
 const expandedId    = ref(null)
 const confirmDelete = ref(null)
 
@@ -146,13 +146,14 @@ const rumourTabs = [
 const currentTabs = computed(() => viewType.value === 'hooks' ? hookTabs : rumourTabs)
 
 watch(viewType, () => {
-  activeTab.value = 'all'
+  activeTabs.value = ['all']
   search.value = ''
 })
 
 const filteredHooks = computed(() => {
   let list = data.hooks
-  if (activeTab.value !== 'all') list = list.filter(h => h.status?.toLowerCase() === activeTab.value)
+  const selected = new Set(activeTabs.value || ['all'])
+  if (!selected.has('all')) list = list.filter(h => selected.has(h.status?.toLowerCase()))
   if (search.value.trim()) {
     const q = search.value.toLowerCase()
     list = list.filter(h =>
@@ -166,9 +167,14 @@ const filteredHooks = computed(() => {
 
 const filteredRumours = computed(() => {
   let list = data.rumours
-  if (activeTab.value === 'true')         list = list.filter(r => r.is_true)
-  else if (activeTab.value === 'false')   list = list.filter(r => !r.is_true)
-  else if (activeTab.value === 'exposed') list = list.filter(r => r.exposed)
+  const selected = new Set(activeTabs.value || ['all'])
+  if (!selected.has('all')) {
+    list = list.filter(r =>
+      (selected.has('true') && r.is_true) ||
+      (selected.has('false') && !r.is_true) ||
+      (selected.has('exposed') && r.exposed)
+    )
+  }
   if (search.value.trim()) {
     const q = search.value.toLowerCase()
     list = list.filter(r =>

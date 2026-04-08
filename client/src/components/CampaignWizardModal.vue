@@ -39,7 +39,7 @@ const saveResultsSummary = computed(() => {
   return { ok, error, total, done: total > 0 && ok + error === total }
 })
 const entityForm   = reactive({
-  type: 'NPC', name: '', role: '', location: '', description: '', notes: '',
+  type: 'NPC', name: '', role: '', location: '', faction: '', description: '', notes: '',
 })
 
 /* ── Paste parser ──────────────────────────────────────── */
@@ -54,7 +54,7 @@ const FIELD_ALIASES = {
   name:        ['name', 'title', 'character', 'character_name', 'entity'],
   role:        ['role', 'type', 'class', 'occupation', 'job', 'rank', 'position', 'archetype'],
   location:    ['location', 'home', 'hometown', 'place', 'region', 'base', 'area', 'origin'],
-  faction:     ['faction', 'guild', 'allegiance', 'affiliation', 'org', 'organization', 'group'],
+  faction:     ['faction', 'guild', 'allegiance', 'affiliation', 'org', 'organization', 'organisation', 'group'],
   goals:       ['goals', 'goal', 'objective', 'objectives', 'aim', 'aims', 'mission'],
   description: ['description', 'summary', 'overview', 'appearance', 'bio', 'profile', 'about', 'desc'],
   notes:       ['notes', 'gm_notes', 'background', 'backstory', 'history', 'secrets', 'details', 'info'],
@@ -69,7 +69,7 @@ function aliasToField(key) {
 }
 
 function parseEntityText(raw) {
-  const result   = { name: '', role: '', location: '', description: '', notes: '' }
+  const result   = { name: '', role: '', location: '', faction: '', description: '', notes: '' }
   const warnings = []
 
   // ── Try JSON ────────────────────────────────────────────
@@ -161,7 +161,7 @@ function parseEntityText(raw) {
 
 /* ── Multi-entity parse (JSON arrays) ──────────────────── */
 function parseSingleJsonObj(src) {
-  const result   = { name: '', role: '', location: '', description: '', notes: '' }
+  const result   = { name: '', role: '', location: '', faction: '', description: '', notes: '' }
   const warnings = []
   for (const [key, val] of Object.entries(src)) {
     if (typeof val !== 'string' && typeof val !== 'number') continue
@@ -355,8 +355,8 @@ const IMPORT_TEMPLATE = `# Campaign Name
 
 ### NPC Name
 **Role:** Merchant / Guard / Villain / Cultist…
-**Faction:** Guild or group they belong to (created automatically if new)
-**Location:** Where they are usually found (created automatically if new)
+**Location:** Where they are usually found (auto-created if missing)
+**Faction:** Name of faction (auto-created if missing)
 **Description:** One-line summary visible to players
 **Notes:** GM-only secrets, motivations, connections
 
@@ -490,17 +490,28 @@ function entityEndpointAndBody(ent, overrides = {}) {
   return null
 }
 
-async function resolveOrCreate(endpoint, storeList, name) {
-  if (!name?.trim()) return null
-  const norm = name.trim().toLowerCase()
-  const existing = storeList.find(x => (x.name || x.title)?.toLowerCase() === norm)
-  if (existing) return existing.id
-  try {
-    const r = await apif(endpoint, { method: 'POST', body: JSON.stringify({ name: name.trim() }) })
-    if (!r.ok) return null
-    const j = await r.json()
-    return j.faction?.id ?? j.location?.id ?? null
-  } catch { return null }
+function normName(value = '') {
+  return String(value || '').trim().toLowerCase()
+}
+
+async function ensureNamedEntity(name, type, indexMap) {
+  const trimmed = String(name || '').trim()
+  if (!trimmed) return null
+  const key = normName(trimmed)
+  if (indexMap.has(key)) return indexMap.get(key)
+  const endpoint = type === 'faction' ? '/api/factions' : '/api/locations'
+  const r = await apif(endpoint, { method: 'POST', body: JSON.stringify({ name: trimmed }) })
+  if (!r.ok) {
+    let msg = `Failed to create ${type}`
+    try { const b = await r.json(); msg = b?.error || b?.message || msg } catch {}
+    throw new Error(msg)
+  }
+  const body = await r.json()
+  const created = type === 'faction' ? body?.faction : body?.location
+  const id = created?.id
+  if (!id) throw new Error(`Created ${type} "${trimmed}" but no id returned`)
+  indexMap.set(key, id)
+  return id
 }
 
 async function saveAllEntities() {
@@ -522,22 +533,6 @@ async function saveAllEntities() {
     errorMsg: '',
   }))
 
-  // Pre-create any factions/locations referenced by NPCs that don't exist yet
-  const factionCache = {}
-  const locationCache = {}
-  for (const ent of parsedEntities.value) {
-    const type = ent.type || entityForm.type
-    if (type === 'NPC') {
-      const fName = ent.result.faction?.trim()
-      const lName = ent.result.location?.trim()
-      if (fName && factionCache[fName] === undefined)
-        factionCache[fName] = await resolveOrCreate('/api/factions', data.factions, fName)
-      if (lName && locationCache[lName] === undefined)
-        locationCache[lName] = await resolveOrCreate('/api/locations', data.locations, lName)
-    }
-  }
-  if (Object.keys(factionCache).length || Object.keys(locationCache).length) await data.loadAll()
-
   let saved = 0
   let lastType = null
   let groupCounts = {}
@@ -546,6 +541,8 @@ async function saveAllEntities() {
   }
   let groupProgress = {}
   try {
+    const factionByName = new Map((data.factions || []).map(f => [normName(f.name || f.title), f.id]).filter(([k, id]) => k && id))
+    const locationByName = new Map((data.locations || []).map(l => [normName(l.name || l.title), l.id]).filter(([k, id]) => k && id))
     for (let i = 0; i < parsedEntities.value.length; i++) {
       const ent = parsedEntities.value[i]
       const currentType = ent.type || entityForm.type
@@ -559,18 +556,17 @@ async function saveAllEntities() {
         importProgress.groupIdx = groupProgress[currentType]
         if (currentType !== lastType) lastType = currentType
       }
-      const overrides = {}
-      if (currentType === 'NPC') {
-        const fName = ent.result.faction?.trim()
-        const lName = ent.result.location?.trim()
-        if (fName) overrides.faction_id = factionCache[fName] ?? null
-        if (lName) overrides.home_location_id = locationCache[lName] ?? null
-      }
-      const info = entityEndpointAndBody(ent, overrides)
+      const info = entityEndpointAndBody(ent)
       if (!info || !info.valid) {
         saveResults.value[i].status = 'error'; saveResults.value[i].errorMsg = 'Missing required field (name or text)'; continue
       }
       try {
+        if ((ent.type || entityForm.type) === 'NPC') {
+          const factionId = await ensureNamedEntity(ent.result.faction, 'faction', factionByName)
+          const locationId = await ensureNamedEntity(ent.result.location, 'location', locationByName)
+          if (factionId) info.body.faction_id = factionId
+          if (locationId) info.body.home_location_id = locationId
+        }
         const r = await apif(info.endpoint, { method: 'POST', body: JSON.stringify(info.body) })
         if (!r.ok) {
           let msg = `HTTP ${r.status}`
@@ -670,7 +666,7 @@ async function addAnotherEntity() {
     const r = await apif(endpoint, { method: 'POST', body: JSON.stringify(body) })
     if (!r.ok) { const d = await r.json(); throw new Error(d.error || r.status) }
     guidedEntityCount.value++
-    entityForm.name = ''; entityForm.role = ''; entityForm.location = ''; entityForm.description = ''; entityForm.notes = ''
+    entityForm.name = ''; entityForm.role = ''; entityForm.location = ''; entityForm.faction = ''; entityForm.description = ''; entityForm.notes = ''
     parseWarnings.value = []
   } catch (e) {
     ui.showToast(e.message || 'Failed to create entity', '', '✕')
@@ -681,7 +677,7 @@ async function addAnotherEntity() {
 
 /* ── Screen 2 (Paste) — auto-detect + per-type templates ── */
 const TYPE_TEMPLATES = {
-  NPC: `# Ezekiel Marsh\n**Role:** Cultist\n**Location:** Innsmouth, MA\n**Description:** Old fisherman with unsettling eyes\n\n## Notes\nKnows about the Deep Ones. Avoid contact after dark.`,
+  NPC: `# Ezekiel Marsh\n**Role:** Cultist\n**Location:** Innsmouth, MA\n**Faction:** Esoteric Order of Dagon\n**Description:** Old fisherman with unsettling eyes\n\n## Notes\nKnows about the Deep Ones. Avoid contact after dark.`,
   Location: `# The Sunken Chapel\n**Description:** An abandoned chapel half-submerged at the edge of the marshes.\n\n## Notes\nA secret door behind the altar leads to the smuggler's tunnel. Often visited by cultists at night.`,
   Faction: `# The Merchant Council\n**Description:** A powerful trade guild that controls the city's commerce and courts.\n**Goals:** Monopolise the northern spice trade and install a puppet governor.\n\n## Notes\nFunded by House Vane. The inner circle worships the Sea God in secret.`,
   Quest: `# The Missing Shipment\n**Description:** Merchant Aldred's cargo of fine cloth vanished on the Ashford road. He's offering a reward.\n\n## Notes\nStolen by the Council to frame a rival. The cargo hides contraband letters implicating Lord Harwick.`,
