@@ -51,13 +51,21 @@ const fileInputRef   = ref(null)
 
 // Field name aliases → canonical field
 const FIELD_ALIASES = {
-  name:        ['name', 'title', 'character', 'character_name', 'entity'],
-  role:        ['role', 'type', 'class', 'occupation', 'job', 'rank', 'position', 'archetype'],
-  location:    ['location', 'home', 'hometown', 'place', 'region', 'base', 'area', 'origin'],
-  faction:     ['faction', 'guild', 'allegiance', 'affiliation', 'org', 'organization', 'organisation', 'group'],
-  goals:       ['goals', 'goal', 'objective', 'objectives', 'aim', 'aims', 'mission'],
-  description: ['description', 'summary', 'overview', 'appearance', 'bio', 'profile', 'about', 'desc'],
-  notes:       ['notes', 'gm_notes', 'background', 'backstory', 'history', 'secrets', 'details', 'info'],
+  name:          ['name', 'title', 'character', 'character_name', 'entity'],
+  role:          ['role', 'type', 'class', 'occupation', 'job', 'rank', 'position', 'archetype'],
+  race:          ['race', 'species', 'ancestry', 'heritage'],
+  disposition:   ['disposition', 'attitude', 'alignment'],
+  status:        ['status', 'condition', 'state'],
+  location:      ['location', 'home', 'hometown', 'place', 'region', 'base', 'area', 'origin'],
+  location_type: ['location_type', 'location_kind'],
+  danger_level:  ['danger', 'danger_level', 'threat', 'threat_level'],
+  faction:       ['faction', 'guild', 'allegiance', 'affiliation', 'org', 'organization', 'organisation', 'group'],
+  standing:      ['standing', 'rep'],
+  influence:     ['influence'],
+  goals:         ['goals', 'goal', 'objective', 'objectives', 'aim', 'aims', 'mission'],
+  quest_type:    ['quest_type'],
+  description:   ['description', 'summary', 'overview', 'appearance', 'bio', 'profile', 'about', 'desc'],
+  notes:         ['notes', 'gm_notes', 'background', 'backstory', 'history', 'secrets', 'details', 'info'],
 }
 
 function aliasToField(key) {
@@ -195,7 +203,10 @@ function detectSectionType(header) {
 function blankResult(type) {
   if (type === 'Rumour')   return { text: '', source_npc: '', source_location: '' }
   if (type === 'Timeline') return { name: '', description: '', notes: '', date: '', significance: 'minor' }
-  if (type === 'Faction')  return { name: '', description: '', goals: '', notes: '' }
+  if (type === 'NPC')      return { name: '', role: '', race: '', disposition: '', status: '', location: '', faction: '', description: '', notes: '' }
+  if (type === 'Location') return { name: '', location_type: '', danger_level: '', description: '', notes: '' }
+  if (type === 'Faction')  return { name: '', standing: '', influence: '', description: '', goals: '', notes: '' }
+  if (type === 'Quest')    return { name: '', quest_type: '', status: '', description: '', notes: '' }
   return { name: '', role: '', location: '', faction: '', description: '', notes: '' }
 }
 
@@ -355,13 +366,18 @@ const IMPORT_TEMPLATE = `# Campaign Name
 
 ### NPC Name
 **Role:** Merchant / Guard / Villain / Cultist…
-**Location:** Where they are usually found (auto-created if missing)
+**Race:** Human / Elf / Dwarf / Tiefling… (optional)
+**Disposition:** friendly / neutral / hostile (optional)
+**Status:** active / deceased / missing (optional, default: active)
 **Faction:** Name of faction (auto-created if missing)
+**Location:** Where they are usually found (auto-created if missing)
 **Description:** One-line summary visible to players
 **Notes:** GM-only secrets, motivations, connections
 
 ### Example — Sister Agatha
 **Role:** Rogue Priest
+**Race:** Human
+**Disposition:** neutral
 **Faction:** The Merchant Council
 **Location:** The Sunken Chapel
 **Description:** A severe woman in grey robes who speaks in riddles.
@@ -372,10 +388,14 @@ const IMPORT_TEMPLATE = `# Campaign Name
 ## Locations
 
 ### Location Name
+**Location Type:** Town / Dungeon / Wilderness / Tavern / Ruin… (optional)
+**Danger:** 0–5 (0 = safe, 5 = deadly, optional)
 **Description:** What players see and know
 **Notes:** Hidden details, traps, secrets, exits
 
 ### Example — The Old Mill
+**Location Type:** Ruin
+**Danger:** 2
 **Description:** A crumbling watermill on the edge of town, long abandoned.
 **Notes:** Basement trapdoor leads to the tunnel network. Cult robes stashed in a barrel.
 
@@ -384,11 +404,15 @@ const IMPORT_TEMPLATE = `# Campaign Name
 ## Factions
 
 ### Faction Name
+**Standing:** -3 to +3 (−3 = hostile, 0 = neutral, +3 = allied, optional)
+**Influence:** 1–5 (optional)
 **Description:** Public reputation and known activities
 **Goals:** What this faction is trying to achieve
 **Notes:** Leadership structure, internal tensions, secret agenda
 
 ### Example — The Merchant Council
+**Standing:** -1
+**Influence:** 4
 **Description:** A powerful trade guild that controls the city's commerce and courts.
 **Goals:** Monopolise the northern spice trade and install a puppet governor.
 **Notes:** Funded by House Vane. The inner circle worships the Sea God in secret.
@@ -398,10 +422,14 @@ const IMPORT_TEMPLATE = `# Campaign Name
 ## Quests
 
 ### Quest Title
+**Quest Type:** main / side / background (optional, default: main)
+**Status:** active / completed / failed (optional, default: active)
 **Description:** What the players know and are being asked to do
 **Notes:** GM context — red herrings, true culprit, possible outcomes, rewards
 
 ### Example — The Missing Shipment
+**Quest Type:** side
+**Status:** active
 **Description:** Merchant Aldred's cargo of fine cloth vanished on the Ashford road. He's offering a reward.
 **Notes:** Stolen by the Council to frame a rival. The cargo hides contraband letters implicating Lord Harwick.
 
@@ -420,7 +448,7 @@ const IMPORT_TEMPLATE = `# Campaign Name
 
 ### Event Title
 **Date:** In-world date (e.g. 3rd Frost Moon, Year 412)
-**Significance:** minor / major / legendary
+**Significance:** minor / major / legendary (optional, default: minor)
 **Description:** What happened — player-visible account
 **Notes:** GM context: true causes, hidden consequences, follow-on hooks
 
@@ -472,17 +500,17 @@ function processUploadedFile(file) {
 }
 
 /* ── Batch save ─────────────────────────────────────────── */
-function entityEndpointAndBody(ent, overrides = {}) {
+function entityEndpointAndBody(ent) {
   const type = ent.type || entityForm.type
   const r    = ent.result
   if (type === 'NPC')
-    return { endpoint: '/api/npcs', body: { name: r.name, role: r.role, description: r.description, gm_notes: r.notes, faction_id: overrides.faction_id || null, home_location_id: overrides.home_location_id || null }, valid: !!r.name?.trim() }
+    return { endpoint: '/api/npcs', body: { name: r.name, role: r.role || null, race: r.race || null, disposition: r.disposition || null, status: r.status || 'active', description: r.description, gm_notes: r.notes }, valid: !!r.name?.trim() }
   if (type === 'Location')
-    return { endpoint: '/api/locations', body: { name: r.name, description: r.description, gm_notes: r.notes }, valid: !!r.name?.trim() }
+    return { endpoint: '/api/locations', body: { name: r.name, description: r.description, gm_notes: r.notes, location_type: r.location_type || null, danger_level: r.danger_level ? Number(r.danger_level) : 0 }, valid: !!r.name?.trim() }
   if (type === 'Faction')
-    return { endpoint: '/api/factions', body: { name: r.name, description: r.description, goals: r.goals || null, gm_notes: r.notes }, valid: !!r.name?.trim() }
+    return { endpoint: '/api/factions', body: { name: r.name, description: r.description, goals: r.goals || null, gm_notes: r.notes, standing: r.standing !== '' ? Number(r.standing) : 0, influence: r.influence ? Number(r.influence) : 3 }, valid: !!r.name?.trim() }
   if (type === 'Quest')
-    return { endpoint: '/api/quests', body: { title: r.name, description: r.description, gm_notes: r.notes, status: 'active', quest_type: 'main' }, valid: !!r.name?.trim() }
+    return { endpoint: '/api/quests', body: { title: r.name, description: r.description, gm_notes: r.notes, status: r.status || 'active', quest_type: r.quest_type || 'main' }, valid: !!r.name?.trim() }
   if (type === 'Rumour')
     return { endpoint: '/api/rumours', body: { text: r.text, is_true: false, source_npc: r.source_npc || null, source_location: r.source_location || null }, valid: !!r.text?.trim() }
   if (type === 'Timeline')
