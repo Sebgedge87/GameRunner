@@ -20,6 +20,22 @@
           <slot name="preview" />
         </div>
       </div>
+
+      <!-- GM quick-actions: top-right corner, visible on hover -->
+      <div v-if="campaign.isGm && entity.id" class="ec-gm-actions" @click.stop>
+        <button
+          class="ec-gm-btn"
+          :title="entity.hidden ? 'Reveal to all players' : 'Hide from players'"
+          @click.stop="toggleHidden"
+          :disabled="actionBusy"
+        >{{ entity.hidden ? '👁' : '🙈' }}</button>
+        <button
+          v-if="showShare"
+          class="ec-gm-btn"
+          title="Share with specific players"
+          @click.stop="ui.openShare(type, entity.id, title)"
+        >🔗</button>
+      </div>
     </div>
 
     <!-- Info bar: always-visible name + badges below portrait -->
@@ -27,6 +43,7 @@
       <div class="ec-title-row">
         <span v-if="icon && !image" class="ec-icon">{{ icon }}</span>
         <span class="ec-title">{{ title }}</span>
+        <span v-if="entity.hidden" class="ec-hidden-badge" title="Hidden from players">hidden</span>
       </div>
       <div v-if="$slots.badges" class="ec-badge-row">
         <slot name="badges" />
@@ -36,7 +53,9 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import { useUiStore } from '@/stores/ui'
+import { useDataStore } from '@/stores/data'
 import { useCampaignStore } from '@/stores/campaign'
 
 const props = defineProps({
@@ -53,13 +72,30 @@ const props = defineProps({
 defineEmits(['toggle'])
 
 const ui       = useUiStore()
+const data     = useDataStore()
 const campaign = useCampaignStore()
+
+const actionBusy = ref(false)
 
 function handleClick() {
   if (campaign.isGm) {
     ui.openGmEdit(props.type, props.entity.id, props.entity)
   } else {
     ui.openDetail(props.type, props.entity)
+  }
+}
+
+async function toggleHidden() {
+  if (actionBusy.value) return
+  actionBusy.value = true
+  try {
+    await data.toggleHidden(props.type, props.entity.id)
+    props.entity.hidden = props.entity.hidden ? 0 : 1
+    await props.reloadFn()
+  } catch (e) {
+    ui.showToast('Failed to update visibility', '', '✕')
+  } finally {
+    actionBusy.value = false
   }
 }
 </script>
@@ -158,6 +194,45 @@ function handleClick() {
   overflow: hidden;
 }
 
+/* ── GM quick-action buttons (top-right of portrait) ────────────────────── */
+.ec-gm-actions {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 10;
+}
+.entity-card:hover .ec-gm-actions {
+  opacity: 1;
+  transform: translateY(0);
+}
+.ec-gm-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(6,8,18,0.75);
+  backdrop-filter: blur(4px);
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  padding: 0;
+  line-height: 1;
+}
+.ec-gm-btn:hover {
+  background: rgba(30,35,60,0.92);
+  border-color: var(--accent, #1a78ff);
+  transform: scale(1.1);
+}
+.ec-gm-btn:disabled { opacity: 0.4; cursor: default; transform: none; }
+
 /* ── Info bar (below portrait, always visible) ───────────────────────────── */
 .ec-info {
   padding: 9px 12px 11px;
@@ -182,6 +257,16 @@ function handleClick() {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.ec-hidden-badge {
+  font-size: 9px;
+  font-family: var(--font-sans);
+  letter-spacing: 0.04em;
+  color: var(--text3);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 4px;
+  flex-shrink: 0;
 }
 .ec-badge-row { display: flex; flex-wrap: wrap; gap: 4px; }
 </style>
