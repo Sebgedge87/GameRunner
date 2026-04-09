@@ -371,21 +371,6 @@ function runMigrations() {
     UNIQUE(campaign_id, user_id)
   )`);
 
-  // Backfill: give global GM role='gm' in all existing campaigns; add all players as members
-  try {
-    const gmUser = db.prepare("SELECT id FROM users WHERE role='gm' LIMIT 1").get();
-    if (gmUser) {
-      const allCampaigns = db.prepare('SELECT id FROM campaigns').all();
-      const allUsers = db.prepare('SELECT id FROM users').all();
-      const ins = db.prepare('INSERT OR IGNORE INTO campaign_members (campaign_id, user_id, role) VALUES (?,?,?)');
-      for (const c of allCampaigns) {
-        for (const u of allUsers) {
-          ins.run(c.id, u.id, u.id === gmUser.id ? 'gm' : 'player');
-        }
-      }
-    }
-  } catch (_) {}
-
   // Add cover_image to campaigns
   try { db.exec('ALTER TABLE campaigns ADD COLUMN cover_image TEXT'); } catch (_) {}
   // Add bg_image and playlist_url to campaigns
