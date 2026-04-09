@@ -228,6 +228,7 @@ export const useCampaignStore = defineStore('campaign', () => {
     isGm.value = false
     applyTheme('none')
     applyBgImage(null)
+    apif('/api/campaigns/active', { method: 'DELETE' }).catch(() => {})
   }
 
   return {

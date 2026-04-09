@@ -176,6 +176,13 @@ router.put('/:id/activate', requireGm, (req, res) => {
   res.json({ campaign });
 });
 
+// DELETE /api/campaigns/active — deactivate all (leave campaign, return to lobby)
+router.delete('/active', requireAuth, (req, res) => {
+  const db = getDb();
+  db.prepare('UPDATE campaigns SET active = 0').run();
+  res.json({ ok: true });
+});
+
 // GET /api/campaigns/:id/stats — GM overview stats
 router.get('/:id/stats', requireGm, (req, res) => {
   const db = getDb();
