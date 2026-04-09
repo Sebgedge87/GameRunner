@@ -908,6 +908,35 @@ html{transition:background-color var(--anim-speed) ease,color var(--anim-speed) 
   .theme-swatches{gap:6px;}
   .theme-swatch{min-width:70px;padding:8px 10px;}
 }
+
+/* ── Tablet landscape / small laptop: 769–1024px ────────────────────────── */
+@media (max-width:1024px) {
+  /* Card grid: allow narrower minimum so 2-3 cols still fit on iPad */
+  .card-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr));gap:12px;}
+  /* Campaign create dialog */
+  .camp-create-body{grid-template-columns:1fr;}
+  .camp-create-left{border-right:none;border-bottom:1px solid var(--border);}
+  /* GM summary grid */
+  .gm-grid{grid-template-columns:1fr;}
+  /* Flyout narrower */
+  .flyout{width:min(420px,90vw);}
+  /* Topbar: hide theme label text if present */
+  .theme-select{display:none;}
+}
+
+/* ── Small tablet / large phone: 481–640px ──────────────────────────────── */
+@media (max-width:640px) {
+  .card-grid{grid-template-columns:1fr;gap:10px;}
+  .filter-tabs{flex-wrap:wrap;gap:4px;}
+  .filter-tab{padding:4px 10px;font-size:10px;}
+  .sys-grid{grid-template-columns:1fr;}
+  .detail-body{flex-direction:column;}
+  .wizard-box{padding:24px 16px;}
+  .modal{padding:16px;}
+  /* Tables scroll horizontally */
+  .weapons-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+}
+
 /* ── Print Styles ────────────────────────────────────────────────────────────── */
 @media print {
   #sidebar,#topbar,#toast-container,.gm-fab,.flyout-overlay,.flyout,#onboarding,.modal-overlay,.map-overlay{display:none!important;}

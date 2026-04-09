@@ -462,6 +462,7 @@ function removeObjective(i) {
   font-family: var(--font-body, 'Share Tech Mono', monospace);
   font-size: var(--font-size-base, 13px);
   line-height: 1.4;
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='20' viewBox='0 0 13 20'%3E%3Cpath d='M1 1 L1 15 L4.5 11.5 L7 19 L9 18 L6.5 10.5 L11 10.5 Z' fill='%234af04a' stroke='%23001800' stroke-width='.75' stroke-linejoin='round'/%3E%3C/svg%3E") 1 1, default;
 }
 
 /* ── Header ─────────────────────────────────────────────────────────────── */
@@ -595,11 +596,12 @@ function removeObjective(i) {
   border-bottom: 1px solid var(--color-border-default, rgba(74,240,74,0.18));
   color: var(--alien-phosphor-bright, #8fff8f);
   font-family: var(--font-body, 'Share Tech Mono', monospace);
-  font-size: 13px;
+  font-size: 18px;
   width: 100%;
   outline: none;
   letter-spacing: 1px;
-  padding: 2px 0;
+  padding: 4px 0;
+  cursor: text;
 }
 
 .as-editable:focus {
@@ -609,7 +611,7 @@ function removeObjective(i) {
 
 .as-fv {
   font-family: var(--font-display, 'VT323', monospace);
-  font-size: 15px;
+  font-size: 21px;
 }
 
 /* ── Badges ─────────────────────────────────────────────────────────────── */
@@ -625,7 +627,7 @@ function removeObjective(i) {
   border: 1px solid var(--color-border-default, rgba(74,240,74,0.18));
   font-size: 10px;
   letter-spacing: var(--letter-spacing-label, 2px);
-  cursor: crosshair;
+  cursor: inherit;
   color: var(--color-text-secondary, #2a9a2a);
   user-select: none;
 }
@@ -662,7 +664,7 @@ function removeObjective(i) {
   background: rgba(0, 26, 0, 0.8);
   border: 1px solid var(--color-border-default, rgba(74,240,74,0.18));
   margin-top: 6px;
-  cursor: crosshair;
+  cursor: inherit;
   position: relative;
 }
 
@@ -729,7 +731,7 @@ function removeObjective(i) {
   font-family: var(--font-body, 'Share Tech Mono', monospace);
   font-size: 11px;
   padding: 2px 10px;
-  cursor: crosshair;
+  cursor: pointer;
   letter-spacing: 1px;
 }
 
@@ -781,7 +783,7 @@ function removeObjective(i) {
   width: 16px;
   height: 16px;
   border: 1px solid var(--color-border-default, rgba(74,240,74,0.18));
-  cursor: crosshair;
+  cursor: inherit;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -818,7 +820,7 @@ function removeObjective(i) {
   background: rgba(0, 26, 0, 0.8);
   border: 1px solid var(--color-border-default, rgba(74,240,74,0.18));
   position: relative;
-  cursor: crosshair;
+  cursor: inherit;
 }
 
 .as-stat-fill {
@@ -870,7 +872,7 @@ function removeObjective(i) {
   width: 8px;
   height: 8px;
   border: 1px solid var(--color-border-default, rgba(74,240,74,0.18));
-  cursor: crosshair;
+  cursor: inherit;
 }
 
 .as-dot--filled {
@@ -900,7 +902,7 @@ function removeObjective(i) {
   background: rgba(0, 26, 0, 0.8);
   border: 1px solid var(--color-border-default, rgba(74,240,74,0.18));
   margin-top: 4px;
-  cursor: crosshair;
+  cursor: inherit;
   position: relative;
 }
 
@@ -921,8 +923,8 @@ function removeObjective(i) {
 
 .as-inv-slot {
   border: 1px solid rgba(26, 58, 26, 0.6);
-  padding: 4px 6px;
-  min-height: 24px;
+  padding: 6px 8px;
+  min-height: 34px;
   display: flex;
   align-items: center;
 }
@@ -932,7 +934,7 @@ function removeObjective(i) {
   border: none;
   color: var(--alien-phosphor-bright, #8fff8f);
   font-family: var(--font-body, 'Share Tech Mono', monospace);
-  font-size: 11px;
+  font-size: 15px;
   width: 100%;
   outline: none;
   cursor: text;
@@ -949,14 +951,15 @@ function removeObjective(i) {
   border: 1px solid var(--color-border-default, rgba(74,240,74,0.18));
   color: var(--alien-phosphor, #4af04a);
   font-family: var(--font-body, 'Share Tech Mono', monospace);
-  font-size: 11px;
-  padding: 6px;
+  font-size: 15px;
+  padding: 8px;
   resize: vertical;
   outline: none;
-  min-height: 72px;
+  min-height: 100px;
   line-height: 1.5;
   letter-spacing: 0.5px;
   box-sizing: border-box;
+  cursor: text;
 }
 
 .as-notes-area:focus {
@@ -969,15 +972,15 @@ function removeObjective(i) {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
-  padding: 3px 0;
+  font-size: 15px;
+  padding: 5px 0;
   border-bottom: 1px solid rgba(10, 42, 10, 0.8);
   letter-spacing: 1px;
 }
 
 .as-obj-check {
   flex-shrink: 0;
-  cursor: crosshair;
+  cursor: pointer;
   font-family: var(--font-body, 'Share Tech Mono', monospace);
   color: var(--alien-phosphor, #4af04a);
   user-select: none;
@@ -989,7 +992,7 @@ function removeObjective(i) {
   border: none;
   color: var(--alien-phosphor, #4af04a);
   font-family: var(--font-body, 'Share Tech Mono', monospace);
-  font-size: 11px;
+  font-size: 15px;
   outline: none;
   cursor: text;
   letter-spacing: 1px;
@@ -1001,7 +1004,7 @@ function removeObjective(i) {
   background: transparent;
   border: none;
   color: var(--alien-phosphor-dim, #1a5a1a);
-  cursor: crosshair;
+  cursor: inherit;
   font-size: 12px;
   padding: 0 2px;
   line-height: 1;
@@ -1049,5 +1052,53 @@ function removeObjective(i) {
 .as-sheet ::-webkit-scrollbar-thumb {
   background: var(--alien-phosphor-dim, #1a5a1a);
   border-radius: 0;
+}
+
+/* ── Mobile responsive ──────────────────────────────────────────────────── */
+@media (max-width: 700px) {
+  .as-sheet { padding: 8px; }
+
+  /* Stack the two-column sections vertically */
+  .as-grid-2 { grid-template-columns: 1fr; gap: 8px; }
+
+  /* Header: stack logo above clock/vessel */
+  .as-header { flex-direction: column; gap: 8px; }
+  .as-header-right { text-align: left; }
+  .as-vessel-row { justify-content: flex-start; }
+
+  /* Keep vitals 2-up but smaller */
+  .as-vitals-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .as-vital-num { font-size: 30px; }
+
+  /* Wounds 3-up (head/torso/larm/rarm/lleg/rleg all fit in 2) */
+  .as-wounds-grid { grid-template-columns: 1fr 1fr 1fr; }
+
+  /* Skills single column */
+  .as-skills-list { grid-template-columns: 1fr; }
+
+  /* Inventory single column */
+  .as-inv-grid { grid-template-columns: 1fr; }
+
+  /* Badges wrap tightly */
+  .as-badges { gap: 4px; }
+  .as-badge { font-size: 9px; padding: 2px 6px; }
+
+  /* Input sizes stay large for touch — just ensure full width */
+  .as-editable { font-size: 16px; }
+  .as-inv-input { font-size: 14px; }
+  .as-notes-area { font-size: 14px; }
+
+  /* Section titles slightly smaller */
+  .as-section-title { font-size: 15px; }
+
+  /* Logo smaller on mobile */
+  .as-logo { font-size: 20px; }
+}
+
+@media (max-width: 480px) {
+  .as-vitals-grid { grid-template-columns: 1fr 1fr; }
+  .as-wounds-grid { grid-template-columns: 1fr 1fr; }
+  .as-vital-num { font-size: 26px; }
+  .as-panel-grid { grid-template-columns: 1fr; }
 }
 </style>
