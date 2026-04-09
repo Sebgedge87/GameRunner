@@ -130,17 +130,18 @@
             </div>
             <div class="field-group">
               <label>{{ activeSys === 'achtung' ? 'Nationality' : 'Race / Species' }}</label>
-              <input v-model="ef.race" class="form-input" placeholder="e.g. Human, Android…" />
+              <input v-if="activeSys !== 'alien'" v-model="ef.race" class="form-input" placeholder="e.g. Human, Android…" />
+              <input v-else v-model="ef.race" class="form-input" placeholder="e.g. Human, Android, Synthetic…" />
             </div>
-            <div class="field-group">
+            <div v-if="activeSys !== 'alien'" class="field-group">
               <label>{{ activeSys === 'achtung' ? 'Rank' : 'Level / Rank' }}</label>
               <input v-model.number="ef.level" type="number" class="form-input" min="1" />
             </div>
-            <div class="field-group">
+            <div v-if="activeSys !== 'alien'" class="field-group">
               <label>{{ activeSys === 'achtung' ? 'Background' : 'Background / Occupation' }}</label>
               <input v-model="ef.background" class="form-input" />
             </div>
-            <div class="field-group">
+            <div v-if="activeSys !== 'alien'" class="field-group">
               <label>Concept</label>
               <input v-model="ef.concept" class="form-input" placeholder="One-line character concept…" />
             </div>
@@ -2418,13 +2419,15 @@ textarea.form-input { resize: vertical; }
   );
 }
 
-/* VT323 display font for the character name header */
+/* Share Tech Mono for the character name — VT323 renders lowercase v/w
+   as near-invisible at body sizes; STM is readable at all sizes */
 .alien-mode .page-title {
-  font-family: 'VT323', 'Share Tech Mono', monospace !important;
+  font-family: 'Share Tech Mono', 'Courier New', monospace !important;
   color: #8fff8f !important;
-  font-size: 1.5em !important;
+  font-size: 1.1em !important;
   font-weight: 400 !important;
-  letter-spacing: 0.22em !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase;
 }
 
 .alien-mode .back-link {
@@ -2506,4 +2509,36 @@ textarea.form-input { resize: vertical; }
   color: #4af04a !important;
   border-color: rgba(74, 240, 74, 0.30) !important;
 }
+
+/* ── Field labels: sepia colour is invisible on black — remap to phosphor ── */
+.alien-mode .field-group > label {
+  color: rgba(74, 240, 74, 0.55) !important;
+  font-family: 'Share Tech Mono', monospace !important;
+  font-variant: normal !important;
+  letter-spacing: 0.12em !important;
+  font-size: 0.72em !important;
+}
+
+/* ── Form inputs: replace warm underline + placeholder with phosphor ones ── */
+.alien-mode .form-input {
+  border-bottom-color: rgba(74, 240, 74, 0.25) !important;
+  font-family: 'Share Tech Mono', 'Courier New', monospace !important;
+}
+.alien-mode .form-input:focus {
+  border-bottom-color: rgba(74, 240, 74, 0.70) !important;
+}
+.alien-mode .form-input::placeholder {
+  color: rgba(74, 240, 74, 0.22) !important;
+}
+
+/* ── Section sub-headings (inline opacity:0.55 style divs) ── */
+.alien-mode .document-box [style*="opacity:0.55"],
+.alien-mode .document-box [style*="opacity: 0.55"] {
+  color: rgba(74, 240, 74, 0.65) !important;
+  font-family: 'Share Tech Mono', monospace !important;
+}
+
+/* ── Condition checkboxes ── */
+.alien-mode .condition-check { color: #4af04a; }
+.alien-mode .condition-check input { accent-color: #4af04a; }
 </style>
