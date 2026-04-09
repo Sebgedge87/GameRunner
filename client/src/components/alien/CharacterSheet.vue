@@ -405,7 +405,7 @@ function removeObjective(i) {
           <textarea
             v-model="ef.tiny_items"
             class="as-notes-area"
-            style="min-height:38px"
+            style="min-height:80px"
             placeholder="Ammo, med-kits, data discs&#x2026;"
           ></textarea>
         </div>
@@ -852,25 +852,25 @@ function removeObjective(i) {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 2px 0;
-  font-size: 11px;
+  padding: 3px 0;
+  font-size: 13px;
 }
 
 .as-skill-name {
   flex: 1;
   color: var(--color-text-secondary, #2a9a2a);
   letter-spacing: 1px;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .as-skill-dots {
   display: flex;
-  gap: 2px;
+  gap: 3px;
 }
 
 .as-dot {
-  width: 8px;
-  height: 8px;
+  width: 11px;
+  height: 11px;
   border: 1px solid var(--color-border-default, rgba(74,240,74,0.18));
   cursor: inherit;
 }
@@ -881,9 +881,9 @@ function removeObjective(i) {
 
 .as-skill-rank {
   font-family: var(--font-display, 'VT323', monospace);
-  font-size: 16px;
+  font-size: 18px;
   color: var(--alien-phosphor, #4af04a);
-  width: 18px;
+  width: 20px;
   text-align: center;
 }
 
@@ -952,11 +952,11 @@ function removeObjective(i) {
   color: var(--alien-phosphor, #4af04a);
   font-family: var(--font-body, 'Share Tech Mono', monospace);
   font-size: 15px;
-  padding: 8px;
+  padding: 10px;
   resize: vertical;
   outline: none;
-  min-height: 100px;
-  line-height: 1.5;
+  min-height: 180px;
+  line-height: 1.6;
   letter-spacing: 0.5px;
   box-sizing: border-box;
   cursor: text;
