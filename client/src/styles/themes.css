@@ -212,6 +212,26 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ── Layer 0: No campaign (home / login) ─────────────────────────────────── */
+.theme-none {
+  --color-bg-page:          #0d1014;
+  --color-bg-card:          #111620;
+  --color-bg-elevated:      #151c28;
+  --color-bg-input:         #191e2c;
+  --color-bg-subtle:        #0a0e18;
+  --color-bg-gm:            #0a0e18;
+
+  --color-accent:           #4a78c8;
+  --color-accent-muted:     rgba(74, 120, 200, 0.14);
+
+  --color-text-primary:     #c8d4e8;
+  --color-text-secondary:   #3a4c70;
+  --color-text-hint:        #202c44;
+
+  --color-border-default:   rgba(60, 100, 170, 0.16);
+  --color-border-active:    rgba(60, 100, 170, 0.55);
+  --color-border-gm:        rgba(60, 100, 170, 0.25);
+  --color-border-bracket:   rgba(60, 100, 170, 0.36);
+}
 
 /* ── Default — Modern Clean ──────────────────────────────────────────────── */
 
