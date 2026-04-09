@@ -1,5 +1,5 @@
 <template>
-  <div class="page-content" :class="{ 'dossier-mode': dossierMode, 'coc-mode': cocMode }">
+  <div class="page-content" :class="{ 'dossier-mode': dossierMode, 'coc-mode': cocMode, 'alien-mode': alienMode }">
 
     <!-- GM: player selector (only when not viewing a specific character by id) -->
     <div v-if="campaign.isGm && !characterId" class="gm-only" style="margin-bottom:16px;max-width:280px">
@@ -80,7 +80,7 @@
               <a v-if="characterId" class="back-link" @click="router.push('/characters')">← Characters</a>
               <div class="page-title">{{ sheet?.name || 'Character' }}</div>
             </div>
-            <div class="classified-stamp" aria-hidden="true">Classified</div>
+            <div class="classified-stamp" aria-hidden="true">{{ alienMode ? 'RESTRICTED' : 'Classified' }}</div>
           </div>
 
         <!-- Page flip container -->
@@ -254,7 +254,7 @@
 
           <!-- ALIEN Wound Locations -->
           <template v-if="activeSys === 'alien' && woundLocations.length">
-            <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em">Critical Injuries</div>
+            <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em">Broken — Hit Location</div>
             <div style="display:flex;flex-wrap:wrap;gap:12px">
               <label v-for="loc in woundLocations" :key="loc" class="condition-check">
                 <input type="checkbox" v-model="ef['wnd_' + loc]" />
@@ -501,8 +501,8 @@
         </div><!-- /sheet-page-wrap -->
 
           <div class="doc-footer" aria-hidden="true">
-            <span class="footer-caption">For authorised eyes only</span>
-            <span class="footer-stamp">Classified</span>
+            <span class="footer-caption">{{ alienMode ? 'WEYLAND-YUTANI CORP — PERSONNEL FILE' : 'For authorised eyes only' }}</span>
+            <span class="footer-stamp">{{ alienMode ? 'RESTRICTED' : 'Classified' }}</span>
           </div>
 
         </div><!-- /document-box -->
@@ -680,6 +680,7 @@ function nextPage() { goToPage(pageIndex.value + 1) }
 const characterId = computed(() => route.query.id ? Number(route.query.id) : null)
 const dossierMode = computed(() => activeSys.value === 'achtung')
 const cocMode     = computed(() => activeSys.value === 'coc')
+const alienMode   = computed(() => activeSys.value === 'alien')
 
 // Edit form
 const ef = ref({})
@@ -2372,5 +2373,137 @@ textarea.form-input { resize: vertical; }
     text-shadow: 0 0 6px rgba(80,180,80,0.35), 0 0 14px rgba(60,160,60,0.18);
     opacity: 0.82;
   }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ALIEN MODE — Weyland-Yutani corporate terminal / MU/TH/UR 6000 uplink
+   Overrides the paper/dossier aesthetic with phosphor-on-black CRT terminal
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.alien-mode {
+  /* Remap all the warm paper tokens to phosphor-green terminal equivalents */
+  --paper:      #030f03;
+  --header-bar: #020802;
+  --border-ink: rgba(74, 240, 74, 0.25);
+  --ink:        #4af04a;
+  --muted:      rgba(74, 240, 74, 0.50);
+  --rule:       rgba(74, 240, 74, 0.06);
+  --stamp-red:  #cc3333;
+  --paper-fill: rgba(74, 240, 74, 0.04);
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  color: #4af04a;
+}
+
+/* No tilt — terminals don't rotate */
+.alien-mode .a4-wrap {
+  transform: none;
+  box-shadow:
+    0 0 0 1px rgba(74, 240, 74, 0.20),
+    0 4px 40px rgba(0, 0, 0, 0.85);
+}
+
+/* No paper curl */
+.alien-mode .a4-wrap::after {
+  display: none;
+}
+
+/* Phosphor scanlines instead of warm sepia lines */
+.alien-mode .document-box::before {
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent 0,
+    transparent 31px,
+    rgba(74, 240, 74, 0.04) 31px,
+    rgba(74, 240, 74, 0.04) 32px
+  );
+}
+
+/* VT323 display font for the character name header */
+.alien-mode .page-title {
+  font-family: 'VT323', 'Share Tech Mono', monospace !important;
+  color: #8fff8f !important;
+  font-size: 1.5em !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.22em !important;
+}
+
+.alien-mode .back-link {
+  font-family: 'Share Tech Mono', monospace !important;
+  color: #2a9a2a !important;
+}
+
+/* RESTRICTED stamp — no rotation, monospace, danger red */
+.alien-mode .classified-stamp {
+  font-family: 'Share Tech Mono', monospace !important;
+  font-size: 0.72em !important;
+  color: #cc3333;
+  border: 1px solid #cc3333;
+  border-style: solid !important;
+  transform: none;
+  mix-blend-mode: normal;
+  letter-spacing: 0.3em;
+  opacity: 1;
+}
+
+/* Folder tabs → terminal nav buttons */
+.alien-mode .doc-tab {
+  background: #020802;
+  border-color: rgba(74, 240, 74, 0.20);
+  color: #2a7a2a;
+  font-family: 'Share Tech Mono', monospace !important;
+  font-size: 0.68em;
+  letter-spacing: 0.18em;
+}
+.alien-mode .doc-tab:hover {
+  background: rgba(74, 240, 74, 0.06);
+  color: #4af04a;
+}
+.alien-mode .doc-tab.active {
+  background: #030f03;
+  color: #8fff8f;
+  border-color: rgba(74, 240, 74, 0.45);
+}
+.alien-mode .doc-tab::after,
+.alien-mode .doc-tab.active::after {
+  background: #030f03 !important;
+}
+
+.alien-mode .doc-nav-btn {
+  font-family: 'Share Tech Mono', monospace !important;
+  color: #2a7a2a;
+  border-color: rgba(74, 240, 74, 0.20);
+}
+.alien-mode .doc-nav-btn:hover:not(:disabled) {
+  color: #4af04a;
+  border-color: rgba(74, 240, 74, 0.55);
+}
+
+/* Footer — narrow terminal status bar */
+.alien-mode .doc-footer {
+  background: #020802;
+  border-top-color: rgba(74, 240, 74, 0.15);
+  color: #1a5a1a;
+  font-family: 'Share Tech Mono', monospace !important;
+  letter-spacing: 0.15em;
+}
+.alien-mode .footer-stamp {
+  font-family: 'Share Tech Mono', monospace !important;
+  font-size: 0.85em;
+  color: #cc3333;
+  opacity: 1;
+  letter-spacing: 0.3em;
+}
+
+/* Save indicator */
+.alien-mode .sheet-save-indicator { font-family: 'Share Tech Mono', monospace !important; }
+.alien-mode .sheet-save-indicator.saving { color: #2a7a2a !important; }
+.alien-mode .sheet-save-indicator.saved  { color: #4af04a !important; }
+.alien-mode .sheet-save-indicator.error  { color: #cc3333 !important; }
+
+/* Tooltips */
+.alien-mode .field-help::after {
+  background: #030f03 !important;
+  color: #4af04a !important;
+  border-color: rgba(74, 240, 74, 0.30) !important;
 }
 </style>
