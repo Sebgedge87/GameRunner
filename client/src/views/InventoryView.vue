@@ -68,10 +68,9 @@
             <span v-if="item.rarity" class="tag" :class="rarityClass(item.rarity)">{{ item.rarity }}</span>
             <span v-if="item.holder && item.holder !== 'party'" class="tag tag-info">{{ item.holder }}</span>
           </template>
-          <template #body>
-            <div v-if="item.quantity != null" class="card-meta">Qty: {{ item.quantity }}</div>
-            <div v-if="item.description" class="card-overview">{{ stripMd(item.description) }}</div>
-            <div v-if="item.weight != null" class="card-meta">Weight: {{ item.weight }}</div>
+          <template #preview>
+            <div v-if="item.description">{{ stripMd(item.description).slice(0, 80) }}</div>
+            <div v-else-if="item.quantity != null" style="opacity:0.7">Qty: {{ item.quantity }}</div>
           </template>
           <template #actions>
             <button v-if="canGive(item)" class="btn btn-xs" @click.stop="openTransfer(item)">Give ↗</button>
@@ -115,9 +114,8 @@
           <template #badges>
             <span v-if="item.type" class="tag">{{ item.type }}</span>
           </template>
-          <template #body>
-            <div v-if="item.description" class="card-overview">{{ stripMd(item.description) }}</div>
-            <div v-if="item.connected_to?.length" class="card-meta">Linked: {{ item.connected_to.join(', ') }}</div>
+          <template #preview>
+            <div v-if="item.description">{{ stripMd(item.description).slice(0, 80) }}</div>
           </template>
         </EntityCard>
       </div>

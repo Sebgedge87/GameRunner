@@ -68,13 +68,6 @@ const tabs = [
   { value: 'failed', label: 'Failed' },
 ]
 
-// Edit form state
-const ef = reactive({
-  title: '', description: '', status: 'active', quest_type: 'main',
-  location: '', connected_npcs: '', connected_quests: '',
-  reward_gold: '', reward_xp: '', reward_items: '',
-  urgency: '', expires_in: '',
-})
 
 const filteredQuests = computed(() => {
   let list = data.quests

@@ -6,28 +6,48 @@
       <div v-if="loading" class="loading" style="padding:20px">Loading players…</div>
 
       <template v-else>
-        <div style="font-size:0.82em;opacity:0.6;margin-bottom:12px">
-          Select players to share this item with. Hold Ctrl/Cmd to select multiple.
+        <!-- Currently shared with -->
+        <div style="margin-bottom:16px">
+          <div style="font-size:0.75em;letter-spacing:1px;color:var(--text3);font-family:var(--font-sans);margin-bottom:6px;text-transform:uppercase">
+            Currently shared with
+          </div>
+          <div v-if="sharedWithNames.length" style="display:flex;flex-wrap:wrap;gap:6px">
+            <span
+              v-for="name in sharedWithNames" :key="name"
+              class="tag tag-active"
+              style="font-size:0.82em"
+            >{{ name }}</span>
+          </div>
+          <div v-else style="font-size:0.82em;color:var(--text3);font-style:italic">
+            Not shared with anyone yet
+          </div>
         </div>
 
         <div style="margin-bottom:16px">
-          <label style="font-size:0.75em;letter-spacing:1px;color:var(--text3);font-family:var(--font-sans);display:block;margin-bottom:6px">Players</label>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <label style="font-size:0.75em;letter-spacing:1px;color:var(--text3);font-family:var(--font-sans);text-transform:uppercase">Players</label>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-sm" @click="selectedIds = players.map(u => u.id)">All</button>
+              <button class="btn btn-sm" @click="selectedIds = []">None</button>
+            </div>
+          </div>
           <select
             v-model="selectedIds"
             multiple
             class="form-input"
-            style="min-height:140px"
+            style="min-height:120px"
           >
             <option v-for="u in players" :key="u.id" :value="u.id">
-              {{ u.username }}{{ u.character_name ? ` (${u.character_name})` : '' }}
+              {{ u.character_name || u.username }}{{ u.username !== (u.character_name || u.username) ? ` (${u.username})` : '' }}
             </option>
           </select>
+          <div style="font-size:0.78em;color:var(--text3);margin-top:4px">Hold Ctrl/Cmd to select multiple</div>
         </div>
 
         <div style="display:flex;gap:8px;justify-content:flex-end">
           <button class="btn" @click="ui.closeShare()">Cancel</button>
           <button class="btn btn-primary" @click="save" :disabled="saving">
-            {{ saving ? 'Saving…' : 'Save Sharing' }}
+            {{ saving ? 'Saving…' : 'Save' }}
           </button>
         </div>
 
@@ -38,7 +58,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useUiStore } from '@/stores/ui'
 import { useDataStore } from '@/stores/data'
 
@@ -51,6 +71,12 @@ const status = ref('')
 const statusOk = ref(false)
 const players = ref([])
 const selectedIds = ref([])
+
+const sharedWithNames = computed(() =>
+  players.value
+    .filter(u => selectedIds.value.includes(u.id))
+    .map(u => u.character_name || u.username)
+)
 
 watch(() => ui.shareModal, async (val) => {
   if (!val) return
@@ -86,7 +112,7 @@ async function save() {
       }),
     })
     if (r.ok) {
-      ui.showToast('Sharing updated', '', '✓')
+      ui.showToast('Sharing updated', sharedWithNames.value.join(', ') || 'Cleared', '✓')
       ui.closeShare()
     } else {
       status.value = 'Save failed'
