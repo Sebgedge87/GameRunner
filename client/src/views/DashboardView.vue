@@ -22,12 +22,25 @@
       </div>
     </div>
 
-    <!-- Tab strip — Overview + Character for all; GM Dashboard + Combat for GMs -->
+    <!-- Tab strip — Overview + Character for all; GM Dashboard + Combat for GMs; nav quick links -->
     <div class="dash-tabs">
       <button class="dash-tab" :class="{ active: activeTab === 'overview' }" @click="setTab('overview')">Overview</button>
       <button class="dash-tab" @click="goToCharacter">Character</button>
       <button v-if="campaign.isGm" class="dash-tab" :class="{ active: activeTab === 'gm' }" @click="setTab('gm')">GM Dashboard</button>
       <button v-if="campaign.isGm" class="dash-tab" :class="{ active: activeTab === 'combat' }" @click="setTab('combat')">Combat</button>
+      <span class="dash-tab-divider"></span>
+      <router-link to="/npcs"          class="dash-tab dash-tab-nav">👤 NPCs</router-link>
+      <router-link to="/locations"     class="dash-tab dash-tab-nav">🗺 Locations</router-link>
+      <router-link to="/factions"      class="dash-tab dash-tab-nav">⚑ Factions</router-link>
+      <router-link to="/bestiary"      class="dash-tab dash-tab-nav">🐉 Bestiary</router-link>
+      <router-link to="/timeline"      class="dash-tab dash-tab-nav">⏳ Timeline</router-link>
+      <router-link to="/maps"          class="dash-tab dash-tab-nav">🗾 Maps</router-link>
+      <router-link to="/theory-board"  class="dash-tab dash-tab-nav">🔍 Theory</router-link>
+      <router-link to="/notes"         class="dash-tab dash-tab-nav">📝 Notes</router-link>
+      <router-link to="/inventory"     class="dash-tab dash-tab-nav">🎒 Inventory</router-link>
+      <router-link to="/handouts"      class="dash-tab dash-tab-nav">📄 Handouts</router-link>
+      <router-link to="/hooks-rumours" class="dash-tab dash-tab-nav">🪝 Hooks / Rumours</router-link>
+      <router-link to="/quests"        class="dash-tab dash-tab-nav">📜 Quests</router-link>
     </div>
 
     <!-- ── OVERVIEW tab ───────────────────────────────────────── -->
@@ -73,47 +86,6 @@
             <button class="pin-remove" @click.stop="data.removePin(p.id)">✕</button>
           </div>
         </div>
-      </div>
-
-      <!-- Quick Links -->
-      <div class="dash-section" style="margin-top:16px;">Quick Links</div>
-      <div class="dash-grid quick-links-grid" style="margin-bottom: 24px;">
-        <router-link to="/npcs" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
-          <div class="ql-icon">👤</div><div class="ql-label">NPCs</div>
-        </router-link>
-        <router-link to="/locations" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
-          <div class="ql-icon">🗺</div><div class="ql-label">Locations</div>
-        </router-link>
-        <router-link to="/factions" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
-          <div class="ql-icon">⚑</div><div class="ql-label">Factions</div>
-        </router-link>
-        <router-link to="/bestiary" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
-          <div class="ql-icon">🐉</div><div class="ql-label">Bestiary</div>
-        </router-link>
-        <router-link to="/timeline" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
-          <div class="ql-icon">⏳</div><div class="ql-label">Timeline</div>
-        </router-link>
-        <router-link to="/maps" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
-          <div class="ql-icon">🗾</div><div class="ql-label">Maps</div>
-        </router-link>
-        <router-link to="/theory-board" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
-          <div class="ql-icon">🔍</div><div class="ql-label">Theory</div>
-        </router-link>
-        <router-link to="/notes" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
-          <div class="ql-icon">📝</div><div class="ql-label">Notes</div>
-        </router-link>
-        <router-link to="/inventory" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
-          <div class="ql-icon">🎒</div><div class="ql-label">Inventory</div>
-        </router-link>
-        <router-link to="/handouts" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
-          <div class="ql-icon">📄</div><div class="ql-label">Handouts</div>
-        </router-link>
-        <router-link to="/hooks-rumours" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
-          <div class="ql-icon">🪝</div><div class="ql-label">Hooks / Rumours</div>
-        </router-link>
-        <router-link to="/quests" class="stat-card stat-card-link quick-link-card" style="text-decoration:none">
-          <div class="ql-icon">📜</div><div class="ql-label">Quests</div>
-        </router-link>
       </div>
 
       <!-- 2-column lower dashboard -->
@@ -360,11 +332,15 @@ onMounted(async () => {
 /* Tab strip */
 .dash-tabs {
   display: flex;
-  gap: 4px;
+  gap: 0;
   margin-bottom: 16px;
   border-bottom: 1px solid var(--border);
   padding-bottom: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
+.dash-tabs::-webkit-scrollbar { display: none; }
 .dash-tab {
   background: transparent;
   border: none;
@@ -376,9 +352,22 @@ onMounted(async () => {
   font-family: 'JetBrains Mono', monospace;
   cursor: pointer;
   transition: color .15s, border-color .15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
 }
 .dash-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 .dash-tab:hover:not(.active) { color: var(--text2); }
+.dash-tab-divider {
+  width: 1px;
+  background: var(--border);
+  margin: 4px 8px;
+  align-self: stretch;
+  flex-shrink: 0;
+}
+.dash-tab-nav { gap: 5px; }
 
 /* Character shortcut row */
 .char-shortcut-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; align-items: center; }
@@ -439,22 +428,6 @@ onMounted(async () => {
 .msg-item-link { cursor: pointer; }
 .next-session-date { color: var(--text3); }
 .stat-card-link { cursor: pointer; }
-
-/* Quick Links */
-.quick-links-grid {
-  display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)) !important;
-  gap: 12px;
-}
-.quick-link-card {
-  display: flex; flex-direction: column; align-items: center;
-  justify-content: center; gap: 10px; padding: 16px 10px;
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius, 6px); text-align: center;
-}
-.quick-link-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 12px var(--color-bg-overlay-light); }
-.ql-icon { font-size: 24px; line-height: 1; }
-.ql-label { font-family: var(--font-sans); font-size: 11px; color: var(--text2); font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; line-height: 1.3; word-break: break-word; }
 
 /* 2-column lower layout */
 .dash-lower {
