@@ -57,6 +57,8 @@
     <ImmersionOverlay />
     <!-- Timer widget (always on top, all users) -->
     <TimerWidget />
+    <!-- Alien RPG: motion tracker widget (fixed bottom-right, Alien campaigns only) -->
+    <MotionTracker v-if="campaign.activeCampaign?.system === 'alien'" :threat-level="campaign.activeCampaign?.threat_level ?? 0" />
   </div>
 </template>
 
@@ -84,6 +86,7 @@ import BulkImportModal from './BulkImportModal.vue'
 import ToastContainer from './ToastContainer.vue'
 import ImmersionOverlay from './ImmersionOverlay.vue'
 import TimerWidget from './TimerWidget.vue'
+import MotionTracker from './alien/MotionTracker.vue'
 
 const auth = useAuthStore()
 const campaign = useCampaignStore()

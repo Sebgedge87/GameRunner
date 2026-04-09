@@ -130,17 +130,18 @@
             </div>
             <div class="field-group">
               <label>{{ activeSys === 'achtung' ? 'Nationality' : 'Race / Species' }}</label>
-              <input v-model="ef.race" class="form-input" placeholder="e.g. Human, Android…" />
+              <input v-if="activeSys !== 'alien'" v-model="ef.race" class="form-input" placeholder="e.g. Human, Android…" />
+              <input v-else v-model="ef.race" class="form-input" placeholder="e.g. Human, Android, Synthetic…" />
             </div>
-            <div class="field-group">
+            <div v-if="activeSys !== 'alien'" class="field-group">
               <label>{{ activeSys === 'achtung' ? 'Rank' : 'Level / Rank' }}</label>
               <input v-model.number="ef.level" type="number" class="form-input" min="1" />
             </div>
-            <div class="field-group">
+            <div v-if="activeSys !== 'alien'" class="field-group">
               <label>{{ activeSys === 'achtung' ? 'Background' : 'Background / Occupation' }}</label>
               <input v-model="ef.background" class="form-input" />
             </div>
-            <div class="field-group">
+            <div v-if="activeSys !== 'alien'" class="field-group">
               <label>Concept</label>
               <input v-model="ef.concept" class="form-input" placeholder="One-line character concept…" />
             </div>
@@ -2418,13 +2419,15 @@ textarea.form-input { resize: vertical; }
   );
 }
 
-/* VT323 display font for the character name header */
+/* Share Tech Mono for the character name — VT323 renders lowercase v/w
+   as near-invisible at body sizes; STM is readable at all sizes */
 .alien-mode .page-title {
-  font-family: 'VT323', 'Share Tech Mono', monospace !important;
+  font-family: 'Share Tech Mono', 'Courier New', monospace !important;
   color: #8fff8f !important;
-  font-size: 1.5em !important;
+  font-size: 1.1em !important;
   font-weight: 400 !important;
-  letter-spacing: 0.22em !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase;
 }
 
 .alien-mode .back-link {
