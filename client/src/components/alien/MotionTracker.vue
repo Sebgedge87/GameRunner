@@ -367,8 +367,9 @@ function toggleMute() {
   align-items: center;
   padding: var(--space-6) var(--space-4);
   font-family: var(--font-body, 'Share Tech Mono', monospace);
-  background: var(--color-bg-page);
+  background: var(--color-bg-card, #030f03);
   border: 1px solid var(--color-border-default);
+  box-shadow: 0 0 24px rgba(74, 240, 74, 0.08), inset 0 0 40px rgba(0,0,0,0.6);
 }
 
 .mt-screen {
