@@ -22,11 +22,12 @@
       </div>
     </div>
 
-    <!-- GM tab strip — only visible to GMs -->
-    <div v-if="campaign.isGm" class="dash-tabs">
+    <!-- Tab strip — Overview + Character for all; GM Dashboard + Combat for GMs -->
+    <div class="dash-tabs">
       <button class="dash-tab" :class="{ active: activeTab === 'overview' }" @click="setTab('overview')">Overview</button>
-      <button class="dash-tab" :class="{ active: activeTab === 'gm' }" @click="setTab('gm')">GM Dashboard</button>
-      <button class="dash-tab" :class="{ active: activeTab === 'combat' }" @click="setTab('combat')">Combat</button>
+      <button class="dash-tab" @click="goToCharacter">Character</button>
+      <button v-if="campaign.isGm" class="dash-tab" :class="{ active: activeTab === 'gm' }" @click="setTab('gm')">GM Dashboard</button>
+      <button v-if="campaign.isGm" class="dash-tab" :class="{ active: activeTab === 'combat' }" @click="setTab('combat')">Combat</button>
     </div>
 
     <!-- ── OVERVIEW tab ───────────────────────────────────────── -->
@@ -253,6 +254,15 @@ function initials(name) {
 function setTab(tab) {
   activeTab.value = tab
   if (route.query.tab) router.replace({ query: {} })
+}
+
+function goToCharacter() {
+  if (campaign.isGm) {
+    router.push('/characters')
+  } else {
+    const first = myCharacters.value[0]
+    router.push(first ? `/character-sheet?id=${first.id}` : '/characters')
+  }
 }
 
 const expandedId = ref(null)
