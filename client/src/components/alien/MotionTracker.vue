@@ -47,6 +47,7 @@ let tickCount = 0
 let animFrame = null
 let prevProximate = false
 let clearedEmitted = true
+let nextContactChangeAt = 0
 
 // ── Audio ──────────────────────────────────────────────────────────────────
 
@@ -101,14 +102,17 @@ function playSweepTick() {
 function spawnContact() {
   const a = Math.random() * Math.PI * 2
   const d = 0.2 + Math.random() * 0.75
+  const now = Date.now()
   contacts.push({
     id: 'T-' + String(Math.floor(Math.random() * 900) + 100),
     a, d,
     x: CX + Math.cos(a) * d * R,
     y: CY + Math.sin(a) * d * R,
-    lit: 0,
+    lit: 1.0,
     vx: (Math.random() - 0.5) * 0.002,
     vy: (Math.random() - 0.5) * 0.002,
+    lastPinged: 0,
+    dirChangeAt: now + 4000 + Math.random() * 4000,
   })
 }
 
@@ -177,7 +181,11 @@ function drawOverlay() {
     const diff = ((c.a - angle) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2)
     if (diff < 0.15) {
       c.lit = 1.0
-      playPing(600 + (1 - c.d) * 400)
+      const nowMs = Date.now()
+      if (nowMs - c.lastPinged > 500) {
+        playPing(600 + (1 - c.d) * 400)
+        c.lastPinged = nowMs
+      }
     }
     if (c.lit > 0) {
       const pulse = c.lit
@@ -278,6 +286,27 @@ function tick() {
   if (sweepTrail.length > 60) sweepTrail.shift()
   tickCount++
   if (tickCount % 3 === 0) playSweepTick()
+
+  // Per-contact direction change (every 4–8 s, randomised)
+  const now = Date.now()
+  contacts.forEach(c => {
+    if (now > c.dirChangeAt) {
+      c.vx = (Math.random() - 0.5) * 0.003
+      c.vy = (Math.random() - 0.5) * 0.003
+      c.dirChangeAt = now + 4000 + Math.random() * 4000
+    }
+  })
+
+  // Random add / remove every 10–20 s, keeping total 1–5
+  if (now > nextContactChangeAt) {
+    if (contacts.length < 5 && (contacts.length <= 1 || Math.random() > 0.4)) {
+      spawnContact()
+    } else if (contacts.length > 1) {
+      contacts.splice(Math.floor(Math.random() * contacts.length), 1)
+    }
+    nextContactChangeAt = now + 10000 + Math.random() * 10000
+  }
+
   if (tickCount % 120 === 0) moveContacts()
   drawRadar()
   drawOverlay()
@@ -293,6 +322,7 @@ onMounted(() => {
   rc = radarRef.value.getContext('2d')
   oc = overlayRef.value.getContext('2d')
   for (let i = 0; i < props.initialContacts; i++) spawnContact()
+  nextContactChangeAt = Date.now() + 10000 + Math.random() * 10000
   animFrame = requestAnimationFrame(tick)
   document.addEventListener('click', onFirstInteraction, { once: true })
   document.addEventListener('keydown', onFirstInteraction, { once: true })
