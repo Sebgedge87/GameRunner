@@ -1,6 +1,13 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import blipUrl from '@/assets/audio/alien/478187__balcoran__motion-tracker-blip.wav'
+import blipFallbackUrl from '@/assets/audio/alien/478187__balcoran__motion-tracker-blip.wav'
+
+// Try the proper mp4 first (dropped into client/public/audio/alien/),
+// fall back to the bundled WAV if it 404s.
+const BLIP_URLS = [
+  '/audio/alien/motion-tracker-blip.mp4',
+  blipFallbackUrl,
+]
 
 const props = defineProps({
   threatLevel: { type: Number, default: 0 },
@@ -46,11 +53,17 @@ let clearedEmitted = true
 function initAudio() {
   if (audioCtx) return
   audioCtx = new (window.AudioContext || window.webkitAudioContext)()
-  fetch(blipUrl)
-    .then(r => r.arrayBuffer())
+  loadBlip(BLIP_URLS.slice())
+}
+
+function loadBlip(candidates) {
+  const url = candidates.shift()
+  if (!url) return
+  fetch(url)
+    .then(r => { if (!r.ok) throw new Error('not found'); return r.arrayBuffer() })
     .then(buf => audioCtx.decodeAudioData(buf))
     .then(decoded => { blipBuffer = decoded })
-    .catch(() => {})
+    .catch(() => loadBlip(candidates))
 }
 
 function playPing(freq) {

@@ -1,6 +1,8 @@
 <template>
   <Teleport to="body">
-    <div v-if="visible" class="timer-root" :class="{ 'timer-urgent': urgent, 'timer-expired': expired }">
+    <div v-if="visible" class="timer-root"
+         :class="{ 'timer-urgent': urgent, 'timer-expired': expired }"
+         :style="motionTrackerActive ? { right: '412px' } : {}">
       <div class="timer-label" v-if="timer.label">{{ timer.label }}</div>
       <div class="timer-display">{{ displayTime }}</div>
 
@@ -40,6 +42,9 @@ import { useDataStore } from '@/stores/data'
 
 const campaign = useCampaignStore()
 const data = useDataStore()
+
+// MotionTracker is shown for alien campaigns — shift timer left to avoid overlap
+const motionTrackerActive = computed(() => campaign.activeCampaign?.system === 'alien')
 
 // Timer state comes from campaign store (synced via SSE)
 const timer = computed(() => campaign.timer || { label: '', end: null, remaining: 0, running: false })
