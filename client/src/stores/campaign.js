@@ -24,7 +24,7 @@ export const useCampaignStore = defineStore('campaign', () => {
     default: { label: 'Default', icon: '◈', color: '#6b8cff' },
     dnd5e: { label: 'D&D 5e', icon: '⚔', color: '#c9a84c' },
     coc: { label: 'Call of Cthulhu', icon: '🐙', color: '#b8a060' },
-    alien: { label: 'Alien RPG', icon: '👾', color: '#4caf50' },
+    alien: { label: 'Alien RPG', icon: '👾', color: '#4af04a' },
     coriolis: { label: 'Coriolis', icon: '🌌', color: '#4a9fd4' },
     dune: { label: 'Dune', icon: '🏜', color: '#d4821a' },
     achtung: { label: 'Achtung!', icon: '☠', color: '#9e9e9e' },
@@ -55,7 +55,7 @@ export const useCampaignStore = defineStore('campaign', () => {
     cl.add(`theme-${theme}`)
     // Layer 2: ambient FX alongside theme
     const FX_MAP = {
-      alien:    'fx-crt',
+      alien:    'fx-scanlines',
       dune:     'fx-grain',
       cthulhu:  'fx-desaturate',
       achtung:  'fx-parchment',
@@ -63,6 +63,13 @@ export const useCampaignStore = defineStore('campaign', () => {
       dnd5e:    'fx-vignette',
     }
     if (FX_MAP[theme]) cl.add(FX_MAP[theme])
+    // Layer 3: Alien threat / panic dynamic modifiers
+    if (theme === 'alien') {
+      const threat = Math.min(5, Math.max(0, activeCampaign.value?.threat_level ?? 0))
+      cl.add(`dynamic-threat-${threat}`)
+      const panic = Math.min(10, Math.max(0, activeCampaign.value?.panic_level ?? 0))
+      cl.add(`dynamic-panic-${panic}`)
+    }
     // Layer 3: Dune house accent
     if (theme === 'dune' && activeCampaign.value?.dune_house) {
       cl.add(`dynamic-house-${activeCampaign.value.dune_house}`)
