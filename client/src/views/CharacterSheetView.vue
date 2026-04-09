@@ -2509,4 +2509,36 @@ textarea.form-input { resize: vertical; }
   color: #4af04a !important;
   border-color: rgba(74, 240, 74, 0.30) !important;
 }
+
+/* ── Field labels: sepia colour is invisible on black — remap to phosphor ── */
+.alien-mode .field-group > label {
+  color: rgba(74, 240, 74, 0.55) !important;
+  font-family: 'Share Tech Mono', monospace !important;
+  font-variant: normal !important;
+  letter-spacing: 0.12em !important;
+  font-size: 0.72em !important;
+}
+
+/* ── Form inputs: replace warm underline + placeholder with phosphor ones ── */
+.alien-mode .form-input {
+  border-bottom-color: rgba(74, 240, 74, 0.25) !important;
+  font-family: 'Share Tech Mono', 'Courier New', monospace !important;
+}
+.alien-mode .form-input:focus {
+  border-bottom-color: rgba(74, 240, 74, 0.70) !important;
+}
+.alien-mode .form-input::placeholder {
+  color: rgba(74, 240, 74, 0.22) !important;
+}
+
+/* ── Section sub-headings (inline opacity:0.55 style divs) ── */
+.alien-mode .document-box [style*="opacity:0.55"],
+.alien-mode .document-box [style*="opacity: 0.55"] {
+  color: rgba(74, 240, 74, 0.65) !important;
+  font-family: 'Share Tech Mono', monospace !important;
+}
+
+/* ── Condition checkboxes ── */
+.alien-mode .condition-check { color: #4af04a; }
+.alien-mode .condition-check input { accent-color: #4af04a; }
 </style>
