@@ -1,0 +1,737 @@
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap');
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+.terminal{
+  background:#000;
+  color:#4af04a;
+  font-family:'Share Tech Mono',monospace;
+  font-size:13px;
+  line-height:1.4;
+  padding:0;
+  min-height:100vh;
+  position:relative;
+  overflow:hidden;
+}
+
+.scanlines{
+  position:fixed;
+  top:0;left:0;right:0;bottom:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.15) 2px,rgba(0,0,0,0.15) 4px);
+  pointer-events:none;
+  z-index:100;
+}
+
+.crt-curve{
+  position:fixed;
+  top:0;left:0;right:0;bottom:0;
+  background:radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.7) 100%);
+  pointer-events:none;
+  z-index:99;
+}
+
+.inner{padding:16px;max-width:900px;margin:0 auto}
+
+.header{
+  border-bottom:1px solid #4af04a;
+  padding-bottom:8px;
+  margin-bottom:12px;
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+}
+
+.logo{font-family:'VT323',monospace;font-size:28px;color:#8fff8f;letter-spacing:4px}
+.logo span{color:#4af04a;font-size:14px;letter-spacing:2px}
+.header-right{text-align:right;font-size:11px;color:#2a9a2a;line-height:1.8}
+
+.blink{animation:blink 1s step-end infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+.clock{color:#8fff8f;font-size:12px}
+
+.section-title{
+  font-family:'VT323',monospace;
+  font-size:18px;
+  color:#8fff8f;
+  letter-spacing:3px;
+  margin-bottom:6px;
+  padding:2px 8px;
+  border-left:3px solid #4af04a;
+}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+.grid-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+
+.panel{
+  border:1px solid #2a6e2a;
+  padding:8px 10px;
+  background:rgba(0,60,0,0.2);
+  position:relative;
+}
+
+.panel::before{
+  content:'';
+  position:absolute;
+  top:-1px;left:8px;
+  width:40px;height:1px;
+  background:#000;
+}
+
+.panel-label{
+  position:absolute;
+  top:-8px;left:6px;
+  font-size:10px;
+  color:#2a9a2a;
+  background:#000;
+  padding:0 4px;
+  letter-spacing:1px;
+}
+
+.field-value{
+  font-size:15px;
+  color:#8fff8f;
+  margin-top:4px;
+  font-family:'VT323',monospace;
+  letter-spacing:1px;
+}
+
+.editable{
+  background:transparent;
+  border:none;
+  border-bottom:1px solid #2a6e2a;
+  color:#8fff8f;
+  font-family:'VT323',monospace;
+  font-size:15px;
+  width:100%;
+  outline:none;
+  letter-spacing:1px;
+  padding:2px 0;
+}
+
+.editable:focus{
+  border-bottom-color:#4af04a;
+  color:#fff;
+  background:rgba(74,240,74,0.05);
+}
+
+.stat-row{
+  display:flex;
+  align-items:center;
+  margin-bottom:6px;
+  gap:8px;
+}
+
+.stat-label{
+  width:120px;
+  font-size:11px;
+  color:#2a9a2a;
+  letter-spacing:1px;
+  flex-shrink:0;
+}
+
+.stat-bar{
+  flex:1;
+  height:8px;
+  background:#001a00;
+  border:1px solid #1a4a1a;
+  position:relative;
+  cursor:pointer;
+}
+
+.stat-fill{
+  height:100%;
+  background:#4af04a;
+  transition:width 0.1s;
+}
+
+.stat-fill.high{background:#8fff8f}
+.stat-fill.med{background:#4af04a}
+.stat-fill.low{background:#1a7a1a}
+.stat-fill.critical{background:#7a1a1a;animation:danger-pulse 0.8s ease-in-out infinite}
+
+@keyframes danger-pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+.stat-val{
+  width:28px;
+  text-align:right;
+  font-family:'VT323',monospace;
+  font-size:16px;
+  color:#8fff8f;
+}
+
+.vitals-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+
+.vital-box{
+  border:1px solid #2a6e2a;
+  padding:6px 10px;
+  text-align:center;
+  background:rgba(0,60,0,0.2);
+}
+
+.vital-num{
+  font-family:'VT323',monospace;
+  font-size:40px;
+  color:#8fff8f;
+  line-height:1;
+}
+
+.vital-num.danger{color:#d44;animation:danger-pulse 0.8s ease-in-out infinite}
+.vital-num.warn{color:#aa8800}
+
+.vital-unit{font-size:10px;color:#2a9a2a;letter-spacing:2px}
+
+.hp-controls{display:flex;gap:4px;margin-top:4px;justify-content:center}
+
+.btn{
+  background:transparent;
+  border:1px solid #2a6e2a;
+  color:#4af04a;
+  font-family:'Share Tech Mono',monospace;
+  font-size:12px;
+  padding:2px 10px;
+  cursor:pointer;
+  letter-spacing:1px;
+}
+
+.btn:hover{background:#001a00;border-color:#4af04a;color:#8fff8f}
+.btn:active{background:#003300}
+
+.btn-danger{border-color:#4a1a1a;color:#aa4444}
+.btn-danger:hover{background:#1a0000;border-color:#aa4444;color:#ff6666}
+
+.skills-list{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+
+.skill-item{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:2px 0;
+  font-size:11px;
+}
+
+.skill-name{flex:1;color:#2a9a2a;letter-spacing:1px}
+.skill-rank{
+  font-family:'VT323',monospace;
+  font-size:16px;
+  color:#4af04a;
+  width:20px;
+  text-align:center;
+}
+
+.skill-dots{display:flex;gap:2px}
+
+.dot{
+  width:8px;height:8px;
+  border:1px solid #1a4a1a;
+  cursor:pointer;
+}
+
+.dot.filled{background:#4af04a}
+.dot.filled:nth-child(5){background:#8fff8f}
+
+.inventory-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:4px;
+  font-size:11px;
+  margin-bottom:8px;
+}
+
+.inv-slot{
+  border:1px solid #1a3a1a;
+  padding:4px 6px;
+  min-height:24px;
+  color:#4af04a;
+  display:flex;
+  align-items:center;
+  cursor:text;
+}
+
+.inv-slot input{
+  background:transparent;
+  border:none;
+  color:#8fff8f;
+  font-family:'Share Tech Mono',monospace;
+  font-size:11px;
+  width:100%;
+  outline:none;
+}
+
+.status-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+
+.status-badge{
+  padding:2px 8px;
+  border:1px solid #2a6e2a;
+  font-size:10px;
+  letter-spacing:2px;
+  cursor:pointer;
+  color:#2a9a2a;
+  user-select:none;
+}
+
+.status-badge.active{
+  background:#003300;
+  border-color:#4af04a;
+  color:#8fff8f;
+}
+
+.status-badge.danger-status{border-color:#4a1a1a;color:#6a2a2a}
+.status-badge.danger-status.active{background:#1a0000;border-color:#aa2222;color:#ff4444}
+
+.notes-area{
+  width:100%;
+  background:rgba(0,20,0,0.4);
+  border:1px solid #1a3a1a;
+  color:#4af04a;
+  font-family:'Share Tech Mono',monospace;
+  font-size:11px;
+  padding:6px;
+  resize:vertical;
+  outline:none;
+  min-height:60px;
+  line-height:1.5;
+  letter-spacing:0.5px;
+}
+
+.notes-area:focus{border-color:#4af04a;background:rgba(0,30,0,0.5)}
+
+.divider{border:none;border-top:1px solid #1a3a1a;margin:10px 0}
+
+.tag{
+  display:inline-block;
+  border:1px solid #2a6e2a;
+  font-size:9px;
+  padding:1px 5px;
+  color:#2a9a2a;
+  letter-spacing:1px;
+  margin-right:4px;
+}
+
+.tag.highlight{border-color:#4af04a;color:#4af04a;background:rgba(74,240,74,0.1)}
+
+.xp-bar{
+  height:4px;
+  background:#001a00;
+  border:1px solid #1a3a1a;
+  margin-top:4px;
+  cursor:pointer;
+  position:relative;
+}
+
+.xp-fill{height:100%;background:#2a6e2a;transition:width 0.15s}
+
+.footer{
+  border-top:1px solid #1a3a1a;
+  margin-top:12px;
+  padding-top:6px;
+  display:flex;
+  justify-content:space-between;
+  font-size:10px;
+  color:#1a5a1a;
+  letter-spacing:1px;
+}
+
+.prompt-line{
+  display:flex;
+  align-items:center;
+  gap:4px;
+  margin-top:4px;
+  font-size:11px;
+}
+
+.prompt-sym{color:#4af04a}
+
+.selector{
+  background:transparent;
+  border:1px solid #2a6e2a;
+  color:#4af04a;
+  font-family:'Share Tech Mono',monospace;
+  font-size:12px;
+  padding:2px 4px;
+  outline:none;
+  cursor:pointer;
+  width:100%;
+}
+
+.selector option{background:#001a00;color:#4af04a}
+
+.wound-tracker{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+
+.wound-box{
+  width:16px;height:16px;
+  border:1px solid #2a6e2a;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;
+}
+
+.wound-box.marked{background:#3a0000;border-color:#aa2222;color:#aa2222}
+.wound-box.marked::after{content:'X'}
+
+.mood-display{
+  font-family:'VT323',monospace;
+  font-size:13px;
+  color:#1a6a1a;
+  margin-top:4px;
+  min-height:18px;
+  letter-spacing:1px;
+}
+</style>
+
+<div class="terminal">
+  <div class="scanlines"></div>
+  <div class="crt-curve"></div>
+  <div class="inner">
+
+    <div class="header">
+      <div>
+        <div class="logo">WEYLAND-YUTANI CORP<br><span>MU/TH/UR 6000 · PERSONNEL UPLINK · BUILD 4.2.1</span></div>
+        <div style="font-size:10px;color:#1a6a1a;margin-top:4px;letter-spacing:2px">USCM COLONIAL MARINES · CLASSIFIED LEVEL 4 <span class="blink">_</span></div>
+      </div>
+      <div class="header-right">
+        <div class="clock" id="clock">--:--:--</div>
+        <div>STARDATE: <span style="color:#4af04a">2179.057</span></div>
+        <div>VESSEL: <input class="editable" id="vessel" value="USS SULACO" style="width:120px;font-size:12px;text-align:right"></div>
+        <div style="margin-top:4px"><span class="tag highlight">ACTIVE FILE</span><span class="tag">ENCRYPTED</span></div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <div class="section-title">[ PERSONNEL RECORD ]</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="panel">
+            <div class="panel-label">DESIGNATION</div>
+            <input class="editable field-value" value="RIPLEY, E." placeholder="LAST, FIRST">
+          </div>
+          <div class="panel">
+            <div class="panel-label">RANK / ROLE</div>
+            <select class="selector" style="margin-top:4px">
+              <option>WARRANT OFFICER</option>
+              <option>GUNNERY SGT</option>
+              <option>CORPORAL</option>
+              <option>PRIVATE</option>
+              <option>SYNTHETIC</option>
+              <option>COLONIAL ADMIN</option>
+              <option>CIVILIAN</option>
+              <option>XENO-RESEARCHER</option>
+            </select>
+          </div>
+          <div class="panel">
+            <div class="panel-label">SPECIES / ORIGIN</div>
+            <input class="editable field-value" value="HUMAN · EARTH" placeholder="SPECIES · COLONY">
+          </div>
+          <div class="panel">
+            <div class="panel-label">MOS / SPECIALTY</div>
+            <input class="editable field-value" value="FLIGHT OFFICER" placeholder="SPECIALISATION">
+          </div>
+        </div>
+
+        <div style="margin-top:8px">
+          <div class="section-title">[ MORALE & STATUS ]</div>
+          <div class="status-row">
+            <div class="status-badge active" onclick="toggleBadge(this)">COMBAT READY</div>
+            <div class="status-badge" onclick="toggleBadge(this)">SUPPRESSED</div>
+            <div class="status-badge danger-status" onclick="toggleBadge(this)">PANICKED</div>
+            <div class="status-badge" onclick="toggleBadge(this)">STEALTH</div>
+            <div class="status-badge danger-status" onclick="toggleBadge(this)">INFECTED</div>
+            <div class="status-badge" onclick="toggleBadge(this)">OVERWATCH</div>
+            <div class="status-badge" onclick="toggleBadge(this)">BUNKERED</div>
+          </div>
+
+          <div class="panel" style="margin-top:6px">
+            <div class="panel-label">STRESS LOG</div>
+            <div class="mood-display" id="stress-display">NOMINAL · NO ANOMALIES DETECTED</div>
+            <div class="stat-bar" style="margin-top:6px;cursor:pointer;height:12px" id="stress-bar" onclick="adjustStress(event)">
+              <div class="stat-fill" id="stress-fill" style="width:20%;background:#2a6e2a;height:100%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">[ BIOMETRICS ]</div>
+        <div class="vitals-grid">
+          <div class="vital-box">
+            <div class="vital-unit">HEALTH POINTS</div>
+            <div class="vital-num" id="hp-display">14</div>
+            <div style="font-size:10px;color:#2a9a2a">/ <span id="hp-max">18</span></div>
+            <div class="hp-controls">
+              <button class="btn btn-danger" onclick="adjustHP(-1)">- DMG</button>
+              <button class="btn" onclick="adjustHP(1)">+ HEAL</button>
+            </div>
+          </div>
+          <div class="vital-box">
+            <div class="vital-unit">STRESS / PANIC</div>
+            <div class="vital-num" id="stress-num">3</div>
+            <div style="font-size:10px;color:#2a9a2a">/ 10</div>
+            <div class="hp-controls">
+              <button class="btn btn-danger" onclick="adjustStressNum(1)">+ STRESS</button>
+              <button class="btn" onclick="adjustStressNum(-1)">REDUCE</button>
+            </div>
+          </div>
+          <div class="vital-box">
+            <div class="vital-unit">ARMOR RATING</div>
+            <div class="vital-num" id="armor-display">4</div>
+            <div class="hp-controls" style="margin-top:6px">
+              <button class="btn" onclick="adjustArmor(-1)">▼</button>
+              <button class="btn" onclick="adjustArmor(1)">▲</button>
+            </div>
+          </div>
+          <div class="vital-box">
+            <div class="vital-unit">SPEED RATING</div>
+            <div class="vital-num" style="color:#8fff8f">3</div>
+            <div style="font-size:10px;color:#2a9a2a">GRID UNITS</div>
+          </div>
+        </div>
+
+        <div class="section-title">[ WOUND TRACK ]</div>
+        <div class="panel">
+          <div class="panel-label">TRAUMA LOCI</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
+            <div>
+              <div style="font-size:9px;color:#2a9a2a;letter-spacing:1px;margin-bottom:3px">HEAD</div>
+              <div class="wound-tracker" id="wound-head"></div>
+            </div>
+            <div>
+              <div style="font-size:9px;color:#2a9a2a;letter-spacing:1px;margin-bottom:3px">TORSO</div>
+              <div class="wound-tracker" id="wound-torso"></div>
+            </div>
+            <div>
+              <div style="font-size:9px;color:#2a9a2a;letter-spacing:1px;margin-bottom:3px">LEFT ARM</div>
+              <div class="wound-tracker" id="wound-larm"></div>
+            </div>
+            <div>
+              <div style="font-size:9px;color:#2a9a2a;letter-spacing:1px;margin-bottom:3px">RIGHT ARM</div>
+              <div class="wound-tracker" id="wound-rarm"></div>
+            </div>
+            <div>
+              <div style="font-size:9px;color:#2a9a2a;letter-spacing:1px;margin-bottom:3px">LEFT LEG</div>
+              <div class="wound-tracker" id="wound-lleg"></div>
+            </div>
+            <div>
+              <div style="font-size:9px;color:#2a9a2a;letter-spacing:1px;margin-bottom:3px">RIGHT LEG</div>
+              <div class="wound-tracker" id="wound-rleg"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <div class="section-title">[ CORE ATTRIBUTES ]</div>
+        <div id="stats-container"></div>
+      </div>
+
+      <div>
+        <div class="section-title">[ SKILLS & TRAINING ]</div>
+        <div class="skills-list" id="skills-container"></div>
+        <div style="margin-top:6px">
+          <div class="section-title" style="font-size:14px">[ EXPERIENCE ]</div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:#2a9a2a;letter-spacing:1px;margin-top:2px">
+            <span>MISSION XP</span>
+            <span id="xp-label">320 / 500</span>
+          </div>
+          <div class="xp-bar" id="xp-bar" onclick="adjustXP(event)">
+            <div class="xp-fill" id="xp-fill" style="width:64%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <div class="section-title">[ LOADOUT & GEAR ]</div>
+        <div class="inventory-grid" id="inventory-grid"></div>
+        <div class="panel">
+          <div class="panel-label">SPECIAL EQUIPMENT</div>
+          <input class="editable" placeholder="DESIGNATION · SERIAL" style="font-size:12px;margin-top:4px">
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">[ MISSION NOTES ]</div>
+        <textarea class="notes-area" placeholder="// FIELD REPORT ENTRY&#10;// TIMESTAMP: AUTO&#10;// OPERATOR: ----&#10;&#10;..."></textarea>
+        <div style="margin-top:8px">
+          <div class="section-title" style="font-size:14px">[ OBJECTIVE TRACKER ]</div>
+          <div id="objectives"></div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="footer">
+      <div>WEYLAND-YUTANI CORP · DIVISION 19 · PROPERTY OF W-Y #<span id="file-id">4471-LV426</span></div>
+      <div><span class="blink">▌</span> TERMINAL ACTIVE · ENCRYPTION LAYER 4 · SECURE CHANNEL</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const stats=[
+  {k:'STRENGTH',v:7},
+  {k:'AGILITY',v:9},
+  {k:'WITS',v:8},
+  {k:'EMPATHY',v:6},
+];
+
+const skills=[
+  {k:'CLOSE COMBAT',v:3},{k:'HEAVY WEAPONS',v:2},
+  {k:'RANGED COMBAT',v:4},{k:'PILOTING',v:3},
+  {k:'MOBILITY',v:3},{k:'SURVIVAL',v:2},
+  {k:'OBSERVATION',v:4},{k:'COMTECH',v:3},
+  {k:'COMMAND',v:2},{k:'MEDICAL AID',v:3},
+];
+
+const inventory=[
+  'M41A PULSE RIFLE','SMARTGUN','MOTION TRACKER',
+  'M56 SMARTGUN','FLAMETHROWER','COMBAT KNIFE',
+  'BODY ARMOR','MEDIKIT','FLARES x4',
+  'COMM UNIT','RATION PACK','COMBAT BOOTS',
+];
+
+const objectives=[
+  {t:'LOCATE MISSING COLONISTS',d:true},
+  {t:'RETRIEVE SPECIMEN INTACT',d:false},
+  {t:'DESTROY ALL EGGS',d:false},
+];
+
+let hp=14,hpMax=18,armor=4,stress=3,stressVal=20;
+
+function renderStats(){
+  const c=document.getElementById('stats-container');
+  c.innerHTML='';
+  stats.forEach(s=>{
+    const pct=s.v/12*100;
+    const cls=pct>75?'high':pct>40?'med':pct>25?'low':'critical';
+    c.innerHTML+=`<div class="stat-row">
+      <div class="stat-label">${s.k}</div>
+      <div class="stat-bar" onclick="clickStat(this,'${s.k}')">
+        <div class="stat-fill ${cls}" style="width:${pct}%"></div>
+      </div>
+      <div class="stat-val">${s.v}</div>
+    </div>`;
+  });
+}
+
+function renderSkills(){
+  const c=document.getElementById('skills-container');
+  c.innerHTML='';
+  skills.forEach(s=>{
+    let dots='';
+    for(let i=1;i<=5;i++) dots+=`<div class="dot ${i<=s.v?'filled':''}" onclick="toggleSkillDot('${s.k}',${i})"></div>`;
+    c.innerHTML+=`<div class="skill-item">
+      <div class="skill-name">${s.k}</div>
+      <div class="skill-dots">${dots}</div>
+      <div class="skill-rank">${s.v}</div>
+    </div>`;
+  });
+}
+
+function toggleSkillDot(name,val){
+  const s=skills.find(x=>x.k===name);
+  if(s){s.v=s.v===val?val-1:val;renderSkills();}
+}
+
+function renderInventory(){
+  const c=document.getElementById('inventory-grid');
+  c.innerHTML='';
+  inventory.forEach(item=>{
+    c.innerHTML+=`<div class="inv-slot"><input value="${item}" placeholder="-- EMPTY SLOT --"></div>`;
+  });
+}
+
+function renderObjectives(){
+  const c=document.getElementById('objectives');
+  c.innerHTML='';
+  objectives.forEach((o,i)=>{
+    const col=o.d?'#2a6e2a':'#4af04a';
+    const pre=o.d?'[✓] ':'[ ] ';
+    c.innerHTML+=`<div style="font-size:11px;padding:3px 0;border-bottom:1px solid #0a2a0a;cursor:pointer;color:${col};letter-spacing:1px" onclick="toggleObjective(${i})">${pre}${o.t}</div>`;
+  });
+}
+
+function toggleObjective(i){objectives[i].d=!objectives[i].d;renderObjectives();}
+
+function renderWounds(id,count){
+  const c=document.getElementById(id);
+  c.innerHTML='';
+  for(let i=0;i<count;i++) c.innerHTML+=`<div class="wound-box" onclick="this.classList.toggle('marked')"></div>`;
+}
+
+function adjustHP(d){
+  hp=Math.max(0,Math.min(hpMax,hp+d));
+  const el=document.getElementById('hp-display');
+  el.textContent=hp;
+  const pct=hp/hpMax;
+  el.className='vital-num'+(pct<0.3?' danger':pct<0.5?' warn':'');
+}
+
+function adjustArmor(d){
+  armor=Math.max(0,Math.min(10,armor+d));
+  document.getElementById('armor-display').textContent=armor;
+}
+
+function adjustStressNum(d){
+  stress=Math.max(0,Math.min(10,stress+d));
+  document.getElementById('stress-num').textContent=stress;
+  const el=document.getElementById('stress-num');
+  el.className='vital-num'+(stress>=8?' danger':stress>=5?' warn':'');
+}
+
+function adjustStress(e){
+  const bar=document.getElementById('stress-bar');
+  const rect=bar.getBoundingClientRect();
+  stressVal=Math.round((e.clientX-rect.left)/rect.width*100);
+  stressVal=Math.max(0,Math.min(100,stressVal));
+  document.getElementById('stress-fill').style.width=stressVal+'%';
+  const msgs=['NOMINAL · NO ANOMALIES DETECTED','MILD TENSION · MONITORING','ELEVATED STRESS · CAUTION','HIGH ANXIETY · RISK OF PANIC','CRITICAL STRESS · PANIC IMMINENT'];
+  const idx=Math.floor(stressVal/20);
+  document.getElementById('stress-display').textContent=msgs[Math.min(idx,4)];
+  if(stressVal>60) document.getElementById('stress-fill').style.background='#7a1a1a';
+  else if(stressVal>40) document.getElementById('stress-fill').style.background='#6e6e1a';
+  else document.getElementById('stress-fill').style.background='#2a6e2a';
+}
+
+function adjustXP(e){
+  const bar=document.getElementById('xp-bar');
+  const rect=bar.getBoundingClientRect();
+  const pct=Math.round((e.clientX-rect.left)/rect.width*100);
+  const xp=Math.round(pct*5);
+  document.getElementById('xp-fill').style.width=pct+'%';
+  document.getElementById('xp-label').textContent=xp+' / 500';
+}
+
+function clickStat(el,name){
+  const s=stats.find(x=>x.k===name);
+  if(s){s.v=s.v>=12?1:s.v+1;renderStats();}
+}
+
+function toggleBadge(el){el.classList.toggle('active')}
+
+function updateClock(){
+  const now=new Date();
+  const h=String(now.getHours()).padStart(2,'0');
+  const m=String(now.getMinutes()).padStart(2,'0');
+  const s=String(now.getSeconds()).padStart(2,'0');
+  document.getElementById('clock').textContent=h+':'+m+':'+s+' UTC';
+}
+
+renderStats();
+renderSkills();
+renderInventory();
+renderObjectives();
+['wound-head','wound-torso','wound-larm','wound-rarm','wound-lleg','wound-rleg'].forEach((id,i)=>{
+  renderWounds(id,[2,4,2,2,3,3][i]);
+});
+updateClock();
+setInterval(updateClock,1000);
+document.getElementById('file-id').textContent=Math.floor(Math.random()*9000+1000)+'-LV426';
+</script>
