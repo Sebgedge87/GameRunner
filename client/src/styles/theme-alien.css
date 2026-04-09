@@ -1,0 +1,303 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   theme-alien.css — Weyland-Yutani Terminal / MU/TH/UR 6000 Uplink
+   System: Alien RPG (Free League / Year Zero Engine)
+   Spec:   design-artefacts/UI UX Artefacts/Alien System/THEME-ALIEN.md
+
+   Phase 1  — CSS token overrides    (.theme-alien)
+   Phase 2  — Ambient FX classes     (.fx-scanlines .fx-crt .fx-flicker .fx-noise)
+   Phase 3  — Dynamic modifiers      (.dynamic-threat-{0-5} .dynamic-panic-{0-10})
+   Overrides — Components            (cards, headings, inputs, buttons, scrollbars, cursor)
+   Overrides — Character sheet       (.page-content paper → terminal)
+   A11y     — prefers-reduced-motion
+   ══════════════════════════════════════════════════════════════════════════ */
+
+
+/* ── Phase 1 — CSS Token Overrides ──────────────────────────────────────── */
+
+.theme-alien {
+
+  /* --- Surfaces --- */
+  --color-bg-page:          #000000;
+  --color-bg-card:          #030f03;
+  --color-bg-elevated:      #061206;
+  --color-bg-input:         #000d00;
+  --color-bg-subtle:        #020802;
+  --color-bg-gm:            #0d0000;
+
+  /* --- Borders --- */
+  --color-border-default:   rgba(74, 240, 74, 0.18);
+  --color-border-active:    rgba(74, 240, 74, 0.70);
+  --color-border-hover:     rgba(74, 240, 74, 0.35);
+  --color-border-gm:        rgba(200, 40, 40, 0.40);
+  --color-border-bracket:   rgba(143, 255, 143, 0.50);
+  --color-border-danger:    rgba(220, 40, 40, 0.60);
+
+  /* --- Text --- */
+  --color-text-primary:     #4af04a;
+  --color-text-secondary:   #2a9a2a;
+  --color-text-hint:        #1a5a1a;
+  --color-text-accent:      #8fff8f;
+  --color-text-danger:      #cc3333;
+  --color-text-success:     #8fff8f;
+  --color-text-gm:          #cc2222;
+  --color-text-disabled:    #0d2a0d;
+
+  /* --- Semantic / Status --- */
+  --color-status-active:    #2a6e2a;
+  --color-status-active-bg: rgba(42, 110, 42, 0.20);
+  --color-status-done:      #1a4a1a;
+  --color-status-done-bg:   rgba(26, 74, 26, 0.20);
+  --color-status-missed:    #6e1a1a;
+  --color-status-missed-bg: rgba(110, 26, 26, 0.20);
+  --color-hostile:          #aa2222;
+  --color-hostile-bg:       rgba(170, 34, 34, 0.20);
+  --color-neutral:          #2a6e2a;
+  --color-neutral-bg:       rgba(42, 110, 42, 0.15);
+  --color-allied:           #3a8a3a;
+  --color-allied-bg:        rgba(58, 138, 58, 0.20);
+
+  /* --- Typography --- */
+  --font-display:           'VT323', 'Courier New', monospace;
+  --font-body:              'Share Tech Mono', 'Courier New', monospace;
+  --font-mono:              'Share Tech Mono', 'Courier New', monospace;
+  --font-size-base:         13px;
+  --letter-spacing-body:    0.5px;
+  --letter-spacing-label:   2px;
+  --letter-spacing-heading: 3px;
+
+  /* --- Spacing & Shape --- */
+  --border-radius-card:     0px;
+  --border-radius-input:    0px;
+  --border-radius-badge:    0px;
+  --border-width-default:   1px;
+
+  /* --- Alien-specific tokens --- */
+  --alien-phosphor:         #4af04a;
+  --alien-phosphor-bright:  #8fff8f;
+  --alien-phosphor-dim:     #1a5a1a;
+  --alien-danger:           #cc3333;
+  --alien-warn:             #aaaa00;
+}
+
+
+/* ── Phase 2 — Ambient FX Classes ───────────────────────────────────────── */
+
+/* Horizontal scanline overlay simulating CRT raster lines */
+.theme-alien.fx-scanlines::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.12) 2px,
+    rgba(0, 0, 0, 0.12) 4px
+  );
+  pointer-events: none;
+  z-index: 9998;
+}
+
+/* Barrel-distortion vignette simulating CRT tube curvature */
+.theme-alien.fx-crt::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 55%,
+    rgba(0, 0, 0, 0.75) 100%
+  );
+  pointer-events: none;
+  z-index: 9997;
+}
+
+/* Subtle phosphor flicker */
+@keyframes alien-flicker {
+  0%, 95%, 100% { opacity: 1; }
+  96%           { opacity: 0.92; }
+  97%           { opacity: 1; }
+  98%           { opacity: 0.88; }
+  99%           { opacity: 0.96; }
+}
+
+.theme-alien.fx-flicker {
+  animation: alien-flicker 8s step-end infinite;
+}
+
+/* Grain texture overlay */
+.theme-alien.fx-noise::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9996;
+  opacity: 0.3;
+}
+
+
+/* ── Phase 3 — Dynamic Modifier Classes ─────────────────────────────────── */
+
+/* Threat level — driven by GM-set threat (0 = clear, 5 = xenomorph contact) */
+
+.theme-alien.dynamic-threat-0 { --alien-phosphor: #4af04a; }
+
+.theme-alien.dynamic-threat-1 { --alien-phosphor: #6adf4a; }
+
+.theme-alien.dynamic-threat-2 {
+  --alien-phosphor: #aacc22;
+  --alien-warn: #dddd00;
+}
+
+.theme-alien.dynamic-threat-3 { --alien-phosphor: #ccaa00; }
+
+.theme-alien.dynamic-threat-4 {
+  --alien-phosphor:         #cc6600;
+  --color-text-primary:     #cc6600;
+  --color-border-default:   rgba(200, 100, 0, 0.25);
+}
+
+.theme-alien.dynamic-threat-5 {
+  --alien-phosphor:         #cc2200;
+  --color-text-primary:     #cc2200;
+  --color-border-default:   rgba(200, 34, 0, 0.25);
+  --color-bg-page:          #0d0000;
+}
+
+/* Panic level — driven by highest party panic rating (0-10) */
+
+.theme-alien.dynamic-panic-0,
+.theme-alien.dynamic-panic-1,
+.theme-alien.dynamic-panic-2,
+.theme-alien.dynamic-panic-3 {
+  /* nominal — base tokens apply */
+}
+
+.theme-alien.dynamic-panic-4,
+.theme-alien.dynamic-panic-5,
+.theme-alien.dynamic-panic-6 {
+  --color-bg-page:          #020000;
+  --alien-phosphor-dim:     #3a1a00;
+}
+
+.theme-alien.dynamic-panic-7,
+.theme-alien.dynamic-panic-8,
+.theme-alien.dynamic-panic-9 {
+  --color-bg-page:          #0a0000;
+  --alien-phosphor:         #ff4422;
+  --color-text-primary:     #ff4422;
+  --color-border-default:   rgba(255, 68, 34, 0.20);
+}
+
+.theme-alien.dynamic-panic-10 {
+  --color-bg-page:          #110000;
+  --alien-phosphor:         #ff0000;
+  --color-text-primary:     #ff0000;
+  --color-border-default:   rgba(255, 0, 0, 0.25);
+  animation: alien-flicker 2s step-end infinite;
+}
+
+
+/* ── Component Overrides ────────────────────────────────────────────────── */
+
+/* Cards & Panels */
+.theme-alien .card,
+.theme-alien .panel {
+  border-radius: 0;
+  border: 1px solid var(--color-border-default);
+  font-family: var(--font-body);
+  position: relative;
+}
+
+/* Corner bracket decoration */
+.theme-alien .card::before,
+.theme-alien .panel::before {
+  content: '';
+  position: absolute;
+  top: -1px; left: -1px;
+  width: 12px; height: 12px;
+  border-top: 2px solid var(--alien-phosphor-bright);
+  border-left: 2px solid var(--alien-phosphor-bright);
+  pointer-events: none;
+}
+
+/* Headings */
+.theme-alien h1,
+.theme-alien h2,
+.theme-alien h3 {
+  font-family: var(--font-display);
+  letter-spacing: var(--letter-spacing-heading);
+  color: var(--alien-phosphor-bright);
+  text-transform: uppercase;
+}
+
+.theme-alien h2::before { content: '[ '; }
+.theme-alien h2::after  { content: ' ]'; }
+
+/* Inputs */
+.theme-alien input,
+.theme-alien textarea,
+.theme-alien select {
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-border-default);
+  border-radius: 0;
+  color: var(--alien-phosphor-bright);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-base);
+  letter-spacing: var(--letter-spacing-body);
+}
+
+.theme-alien input:focus,
+.theme-alien textarea:focus {
+  border-color: var(--alien-phosphor);
+  outline: none;
+  box-shadow: 0 0 0 1px var(--alien-phosphor-dim);
+}
+
+/* Buttons */
+.theme-alien .btn {
+  background: transparent;
+  border: 1px solid var(--color-border-default);
+  border-radius: 0;
+  color: var(--alien-phosphor);
+  font-family: var(--font-mono);
+  letter-spacing: var(--letter-spacing-label);
+  text-transform: uppercase;
+}
+
+.theme-alien .btn:hover {
+  background: rgba(74, 240, 74, 0.08);
+  border-color: var(--alien-phosphor);
+  color: var(--alien-phosphor-bright);
+}
+
+.theme-alien .btn-danger {
+  border-color: var(--alien-danger);
+  color: var(--alien-danger);
+}
+
+/* Scrollbars */
+.theme-alien ::-webkit-scrollbar { width: 6px; }
+.theme-alien ::-webkit-scrollbar-track { background: #000; }
+.theme-alien ::-webkit-scrollbar-thumb {
+  background: var(--alien-phosphor-dim);
+  border-radius: 0;
+}
+
+/* Cursor */
+.theme-alien { cursor: crosshair; }
+.theme-alien input,
+.theme-alien textarea { cursor: text; }
+.theme-alien button,
+.theme-alien [role="button"] { cursor: crosshair; }
+
+
+/* ── Accessibility ───────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-alien.fx-flicker,
+  .theme-alien.dynamic-panic-10 {
+    animation: none;
+  }
+}
