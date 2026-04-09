@@ -141,6 +141,8 @@ function trigger(action) {
   gap: 8px;
   padding-bottom: 12px;
   align-items: flex-end;
+  position: relative;
+  z-index: 252;
 }
 
 .fab-menu-item {
