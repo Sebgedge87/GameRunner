@@ -52,10 +52,10 @@ function initAudio() {
     .then(r => { if (!r.ok) throw new Error('not found'); return r.arrayBuffer() })
     .then(buf => audioCtx.decodeAudioData(buf))
     .then(decoded => { blipBuffer = decoded })
-    .catch(e => console.warn('[MotionTracker] blip load failed:', e))
+    .catch(() => {})
 }
 
-function playPing() {
+function playBlip() {
   if (muted.value || !audioCtx || !blipBuffer) return
   const now = audioCtx.currentTime
   if (now - lastPingTime < 0.08) return
@@ -65,6 +65,7 @@ function playPing() {
   src.buffer = blipBuffer
   src.connect(gain)
   gain.connect(audioCtx.destination)
+  src.playbackRate.value = 1.0
   gain.gain.setValueAtTime(0.6, now)
   src.start(now)
 }
@@ -155,7 +156,7 @@ function drawOverlay() {
       c.lit = 1.0
       const nowMs = Date.now()
       if (nowMs - c.lastPinged > 500) {
-        playPing()
+        playBlip()
         c.lastPinged = nowMs
       }
     }

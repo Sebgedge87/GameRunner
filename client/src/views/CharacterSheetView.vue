@@ -48,7 +48,10 @@
       <!-- Built-in sheet for other systems -->
       <template v-if="hasBuiltinSheet">
 
-        <div class="a4-wrap">
+        <!-- Alien: full terminal character sheet -->
+        <AlienCharacterSheet v-if="alienMode" :ef="ef" />
+
+        <div v-else class="a4-wrap">
 
         <!-- Tabs above document box -->
         <div class="doc-tabs-bar">
@@ -508,7 +511,7 @@
 
         </div><!-- /document-box -->
 
-        </div><!-- /a4-wrap -->
+        </div><!-- /a4-wrap (v-else) -->
 
         <!-- Ships / Vehicles (shown on all pages) -->
         <template v-if="ships.length">
@@ -542,6 +545,7 @@
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { renderMd } from '@/utils/markdown'
+import AlienCharacterSheet from '@/components/alien/CharacterSheet.vue'
 import { useDataStore } from '@/stores/data'
 import { useAuthStore } from '@/stores/auth'
 import { useCampaignStore } from '@/stores/campaign'
@@ -735,6 +739,25 @@ function startEdit() {
     ach_agi: s.ach_agi ?? null, ach_brawn: s.ach_brawn ?? null,
     ach_coord: s.ach_coord ?? null, ach_insight: s.ach_insight ?? null,
     ach_reason: s.ach_reason ?? null, ach_will: s.ach_will ?? null,
+    // Alien-specific fields
+    stress_panic:    s.stress_panic    ?? null,
+    wound_head:      s.wound_head      ?? 0,
+    wound_torso:     s.wound_torso     ?? 0,
+    wound_left_arm:  s.wound_left_arm  ?? 0,
+    wound_right_arm: s.wound_right_arm ?? 0,
+    wound_left_leg:  s.wound_left_leg  ?? 0,
+    wound_right_leg: s.wound_right_leg ?? 0,
+    cond_combat_ready: s.cond_combat_ready ?? false,
+    cond_suppressed:   s.cond_suppressed   ?? false,
+    cond_panicked:     s.cond_panicked     ?? false,
+    cond_stealth:      s.cond_stealth      ?? false,
+    cond_infected:     s.cond_infected     ?? false,
+    cond_overwatch:    s.cond_overwatch    ?? false,
+    cond_bunkered:     s.cond_bunkered     ?? false,
+    xp:              s.xp              ?? 0,
+    alien_inventory: Array.isArray(s.alien_inventory) ? [...s.alien_inventory] : Array(12).fill(''),
+    alien_objectives: Array.isArray(s.alien_objectives) ? s.alien_objectives.map(o => ({ ...o })) : [],
+    alien_vessel:    s.alien_vessel    ?? '',
   }
   // Extra system-specific identity fields
   extraFields.value.forEach(f => {
@@ -919,6 +942,26 @@ async function saveSheet() {
       if (sys === 'achtung') {
         sheetData.acht_talents = (ef.value.acht_talents || []).filter(t => t.name)
         sheetData.acht_spells  = (ef.value.acht_spells  || []).filter(t => t.name)
+      }
+      if (sys === 'alien') {
+        sheetData.stress_panic      = ef.value.stress_panic
+        sheetData.wound_head        = ef.value.wound_head
+        sheetData.wound_torso       = ef.value.wound_torso
+        sheetData.wound_left_arm    = ef.value.wound_left_arm
+        sheetData.wound_right_arm   = ef.value.wound_right_arm
+        sheetData.wound_left_leg    = ef.value.wound_left_leg
+        sheetData.wound_right_leg   = ef.value.wound_right_leg
+        sheetData.cond_combat_ready = ef.value.cond_combat_ready
+        sheetData.cond_suppressed   = ef.value.cond_suppressed
+        sheetData.cond_panicked     = ef.value.cond_panicked
+        sheetData.cond_stealth      = ef.value.cond_stealth
+        sheetData.cond_infected     = ef.value.cond_infected
+        sheetData.cond_overwatch    = ef.value.cond_overwatch
+        sheetData.cond_bunkered     = ef.value.cond_bunkered
+        sheetData.xp                = ef.value.xp
+        sheetData.alien_inventory   = ef.value.alien_inventory
+        sheetData.alien_objectives  = ef.value.alien_objectives
+        sheetData.alien_vessel      = ef.value.alien_vessel
       }
     }
     if (ef.value.portrait_url) sheetData.portrait_url = ef.value.portrait_url
