@@ -20,7 +20,7 @@ router.get('/', requireAuth, (req, res) => {
     SELECT c.*, COALESCE(cm.role, 'player') AS my_role
     FROM campaigns c
     LEFT JOIN campaign_members cm ON cm.campaign_id = c.id AND cm.user_id = ?
-    WHERE cm.user_id = ? OR NOT EXISTS (SELECT 1 FROM campaign_members WHERE campaign_id = c.id)
+    WHERE cm.user_id = ?
     ORDER BY c.active DESC, c.created_at DESC
   `).all(req.user.id, req.user.id);
 

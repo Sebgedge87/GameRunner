@@ -151,6 +151,7 @@ const SYSTEM_FEATURES = {
       { key: 'cons_power', label: 'Power',        type: 'number' },
     ],
     conditions: ['starving', 'dehydrated', 'exhausted', 'freezing'],
+    woundLocations: ['head', 'chest', 'belly', 'back', 'arm', 'leg'],
     systemSkills: [
       { key: 'sk_close_combat',  label: 'Close Combat',   attr: 'Strength' },
       { key: 'sk_heavy_mach',    label: 'Heavy Machinery',attr: 'Strength' },
@@ -352,6 +353,7 @@ export function useSystemFeatures() {
     extraFields:     computed(() => features.value.extraFields     ?? []),
     systemSkills:    computed(() => features.value.systemSkills    ?? []),
     conditions:      computed(() => features.value.conditions      ?? []),
+    woundLocations:  computed(() => features.value.woundLocations  ?? []),
     drives:          computed(() => features.value.drives          ?? []),
     cocEra,
     cocEraLabel,

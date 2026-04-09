@@ -125,8 +125,8 @@
               <input v-model="ef.name" class="form-input" />
             </div>
             <div class="field-group">
-              <label>{{ activeSys === 'achtung' ? 'Archetype' : 'Class / Role' }}</label>
-              <input v-model="ef.class" class="form-input" placeholder="e.g. Investigator, Marine…" />
+              <label>{{ activeSys === 'achtung' ? 'Archetype' : activeSys === 'alien' ? 'Career' : 'Class / Role' }}</label>
+              <input v-model="ef.class" class="form-input" :placeholder="activeSys === 'alien' ? 'e.g. Warrant Officer, Colonial Marine…' : 'e.g. Investigator, Marine…'" />
             </div>
             <div class="field-group">
               <label>{{ activeSys === 'achtung' ? 'Nationality' : 'Race / Species' }}</label>
@@ -190,12 +190,15 @@
               <input v-model.number="ef.hp_max" type="number" class="form-input" />
             </div>
             <div v-if="hasStress" class="field-group">
-              <label>Stress (Current)<span class="field-help" :data-tooltip="conditionHelp.stress">?</span></label>
-              <input v-model.number="ef.stress_current" type="number" class="form-input" />
+              <label>{{ activeSys === 'alien' ? 'Stress' : 'Stress (Current)' }}<span class="field-help" :data-tooltip="conditionHelp.stress">?</span></label>
+              <input v-model.number="ef.stress_current" type="number" class="form-input" :max="activeSys === 'alien' ? 10 : undefined" />
             </div>
             <div v-if="hasStress" class="field-group">
-              <label>Stress (Max)<span class="field-help" :data-tooltip="conditionHelp.stress">?</span></label>
-              <input v-model.number="ef.stress_max" type="number" class="form-input" />
+              <label>
+                {{ activeSys === 'alien' ? 'Panic Threshold' : 'Stress (Max)' }}<span class="field-help" :data-tooltip="conditionHelp.stress">?</span><span v-if="activeSys === 'alien' && ef.empathy" class="derive-hint" @click="ef.stress_panic = ef.empathy">← EMP ({{ ef.empathy }})</span>
+              </label>
+              <input v-if="activeSys === 'alien'" v-model.number="ef.stress_panic" type="number" class="form-input" min="1" max="12" />
+              <input v-else v-model.number="ef.stress_max" type="number" class="form-input" />
             </div>
             <div v-if="hasMagicPoints" class="field-group">
               <label>Magic Points (Current)<span class="field-help" :data-tooltip="conditionHelp.mp">?</span></label>
@@ -245,6 +248,17 @@
               <label v-for="f in extraFields.filter(f => f.type === 'boolean')" :key="f.key" class="condition-check">
                 <input type="checkbox" v-model="ef[f.key]" />
                 <span>{{ f.label }}<span v-if="f.help" class="field-help" :data-tooltip="f.help">?</span></span>
+              </label>
+            </div>
+          </template>
+
+          <!-- ALIEN Wound Locations -->
+          <template v-if="activeSys === 'alien' && woundLocations.length">
+            <div style="font-size:0.75em;opacity:0.55;margin:16px 0 8px;letter-spacing:.05em">Critical Injuries</div>
+            <div style="display:flex;flex-wrap:wrap;gap:12px">
+              <label v-for="loc in woundLocations" :key="loc" class="condition-check">
+                <input type="checkbox" v-model="ef['wnd_' + loc]" />
+                <span>{{ loc.charAt(0).toUpperCase() + loc.slice(1) }}</span>
               </label>
             </div>
           </template>
@@ -542,7 +556,7 @@ const ui = useUiStore()
 const {
   hasStress, hasSanity, hasDndBeyond, hasBuiltinSheet, coreStats, cocEraLabel,
   hasMagicPoints, hasMindPoints, hasConditions, hasRadiation, hasDrives,
-  extraFields, systemSkills, conditions, drives,
+  extraFields, systemSkills, conditions, woundLocations, drives,
 } = useSystemFeatures()
 
 const activeSys = computed(() => campaign.activeCampaign?.system || 'custom')
