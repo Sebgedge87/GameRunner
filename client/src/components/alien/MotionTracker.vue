@@ -24,8 +24,7 @@ const uiStatusAlert = ref(false)
 const uiContacts = ref([])
 
 // Audio
-let audioCtx = null
-let blipBuffer = null
+let blipAudio = null
 let lastPingTime = 0
 
 // Canvas
@@ -46,28 +45,20 @@ let nextContactChangeAt = 0
 // ── Audio ──────────────────────────────────────────────────────────────────
 
 function initAudio() {
-  if (audioCtx) return
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)()
-  fetch(BLIP_URL)
-    .then(r => { if (!r.ok) throw new Error('not found'); return r.arrayBuffer() })
-    .then(buf => audioCtx.decodeAudioData(buf))
-    .then(decoded => { blipBuffer = decoded })
-    .catch(() => {})
+  if (blipAudio) return
+  blipAudio = new Audio(BLIP_URL)
+  blipAudio.preload = 'auto'
+  blipAudio.volume = 0.6
 }
 
 function playBlip() {
-  if (muted.value || !audioCtx || !blipBuffer) return
-  const now = audioCtx.currentTime
-  if (now - lastPingTime < 0.08) return
+  if (muted.value || !blipAudio) return
+  const now = Date.now()
+  if (now - lastPingTime < 80) return
   lastPingTime = now
-  const src = audioCtx.createBufferSource()
-  const gain = audioCtx.createGain()
-  src.buffer = blipBuffer
-  src.connect(gain)
-  gain.connect(audioCtx.destination)
-  src.playbackRate.value = 1.0
-  gain.gain.setValueAtTime(0.6, now)
-  src.start(now)
+  const instance = blipAudio.cloneNode()
+  instance.volume = 0.6
+  instance.play().catch(() => {})
 }
 
 // ── Contacts ───────────────────────────────────────────────────────────────
