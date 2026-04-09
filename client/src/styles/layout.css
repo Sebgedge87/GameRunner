@@ -365,7 +365,8 @@
 /* ── Page content wrapper (used by all views) ────────────────────────────── */
 .page-content {
   flex: 1;
-  padding: 32px 36px;
+  /* Fluid padding: scales smoothly with viewport width (min 10px → max 36px) */
+  padding: clamp(16px, 3vw, 32px) clamp(12px, 4vw, 36px);
   display: flex;
   flex-direction: column;
   animation: fade-in 0.2s ease;
@@ -430,4 +431,38 @@
   letter-spacing: 0.08em;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Tablet landscape / small laptop: 769–1024px ─────────────────────────── */
+@media (max-width: 1024px) {
+  .topbar-search-wrap, #topbar-search-wrap { max-width: 260px; }
+  .page-title { font-size: 18px; }
+}
+
+/* ── Tablet portrait / large phone: 641–768px  (existing 768 block in
+   components.css handles the main layout; these fill gaps) ──────────────── */
+@media (max-width: 768px) {
+  /* Sidebar handled by components.css; here we refine page shell */
+  .page-content { padding: clamp(12px, 3vw, 16px) clamp(10px, 4vw, 14px); }
+  .page-header { margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+  .page-title { font-size: 17px; }
+}
+
+/* ── Small phone: ≤ 480px ───────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .page-content { padding: 10px 10px; }
+  #topbar { gap: 6px; padding: 0 10px; }
+  .topbar-icon-btn { padding: 5px 8px; font-size: 12px; }
+  .page-header { margin-bottom: 12px; }
+  .page-title { font-size: 15px; }
+}
+
+/* ── Very small: ≤ 360px ────────────────────────────────────────────────── */
+@media (max-width: 360px) {
+  .page-content { padding: 8px 8px; }
+  #topbar { padding: 0 8px; gap: 4px; }
+  .topbar-icon-btn { padding: 4px 6px; }
+}
 

@@ -1393,16 +1393,42 @@ textarea.form-input { resize: vertical; }
 
 /* ── Small screen scaling ────────────────────────────────────────────── */
 @media (max-width: 800px) {
-  .page-content { padding: 20px 12px 36px; }
+  /* page-content fluid via layout.css clamp; just override rotation */
   .a4-wrap { transform: rotate(-0.4deg); }
 }
-@media (max-width: 500px) {
-  .page-content { padding: 12px 8px 24px; }
-  .a4-wrap { transform: rotate(-0.2deg); }
-}
-@media (max-width: 600px) {
+
+@media (max-width: 640px) {
   .edit-grid { grid-template-columns: 1fr; }
   .beyond-banner { flex-direction: column; align-items: flex-start; }
+  /* Tabs scroll horizontally instead of wrapping */
+  .doc-tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+  .doc-tabs-bar { flex-wrap: wrap; gap: 4px; }
+  /* Sheet page: reduce internal padding */
+  .sheet-page { padding: 16px 16px 24px !important; }
+  /* Stat grids collapse */
+  .edit-stats-grid { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); }
+  /* Skills grids tighter */
+  .skills-coc-grid { grid-template-columns: 1fr; }
+  .skills-yze-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 500px) {
+  .a4-wrap { transform: rotate(-0.2deg); }
+  .sheet-page { padding: 12px 10px 20px !important; }
+  /* Hide decorative classified stamp on very small screens */
+  .classified-stamp { display: none; }
+  /* Doc box header: just title */
+  .doc-box-header { padding: 8px 12px; }
+  /* Tabs smaller text */
+  .doc-tab { font-size: 0.7em; padding: 4px 10px 5px; }
+  /* Compact condition checks */
+  .condition-check { font-size: 0.8em; }
+}
+
+@media (max-width: 380px) {
+  .sheet-page { padding: 8px 8px 16px !important; }
+  .doc-tab { font-size: 0.65em; padding: 3px 8px 4px; }
+  .doc-nav-btn { width: 22px; height: 22px; font-size: 1em; }
 }
 
 /* ── CoC skill edit grid ─────────────────────────────── */
