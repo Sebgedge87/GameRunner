@@ -1,13 +1,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import blipFallbackUrl from '@/assets/audio/alien/478187__balcoran__motion-tracker-blip.wav'
 
-// Try the proper mp4 first (dropped into client/public/audio/alien/),
-// fall back to the bundled WAV if it 404s.
-const BLIP_URLS = [
-  '/audio/alien/motion-tracker-blip.mp4',
-  blipFallbackUrl,
-]
+const BLIP_URL = '/audio/478187__balcoran__motion-tracker-blip.wav'
 
 const props = defineProps({
   threatLevel: { type: Number, default: 0 },
@@ -54,20 +48,14 @@ let nextContactChangeAt = 0
 function initAudio() {
   if (audioCtx) return
   audioCtx = new (window.AudioContext || window.webkitAudioContext)()
-  loadBlip(BLIP_URLS.slice())
-}
-
-function loadBlip(candidates) {
-  const url = candidates.shift()
-  if (!url) return
-  fetch(url)
+  fetch(BLIP_URL)
     .then(r => { if (!r.ok) throw new Error('not found'); return r.arrayBuffer() })
     .then(buf => audioCtx.decodeAudioData(buf))
     .then(decoded => { blipBuffer = decoded })
-    .catch(() => loadBlip(candidates))
+    .catch(e => console.warn('[MotionTracker] blip load failed:', e))
 }
 
-function playPing(freq) {
+function playPing() {
   if (muted.value || !audioCtx || !blipBuffer) return
   const now = audioCtx.currentTime
   if (now - lastPingTime < 0.08) return
@@ -77,24 +65,8 @@ function playPing(freq) {
   src.buffer = blipBuffer
   src.connect(gain)
   gain.connect(audioCtx.destination)
-  src.playbackRate.value = Math.max(0.5, Math.min(2, freq / 800))
   gain.gain.setValueAtTime(0.6, now)
   src.start(now)
-}
-
-function playSweepTick() {
-  if (muted.value || !audioCtx) return
-  const now = audioCtx.currentTime
-  const osc = audioCtx.createOscillator()
-  const gain = audioCtx.createGain()
-  osc.connect(gain)
-  gain.connect(audioCtx.destination)
-  osc.type = 'sine'
-  osc.frequency.setValueAtTime(180, now)
-  gain.gain.setValueAtTime(0.04, now)
-  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04)
-  osc.start(now)
-  osc.stop(now + 0.05)
 }
 
 // ── Contacts ───────────────────────────────────────────────────────────────
@@ -183,7 +155,7 @@ function drawOverlay() {
       c.lit = 1.0
       const nowMs = Date.now()
       if (nowMs - c.lastPinged > 500) {
-        playPing(600 + (1 - c.d) * 400)
+        playPing()
         c.lastPinged = nowMs
       }
     }
@@ -285,7 +257,6 @@ function tick() {
   sweepTrail.push(angle)
   if (sweepTrail.length > 60) sweepTrail.shift()
   tickCount++
-  if (tickCount % 3 === 0) playSweepTick()
 
   // Per-contact direction change (every 4–8 s, randomised)
   const now = Date.now()
